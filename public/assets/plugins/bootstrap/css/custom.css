@@ -1,0 +1,210 @@
+.has-sidebar-expand-xl .page-sidebar {
+    /* position: absolute; */
+    top: 0;
+    transform: translate3d(100%,0,0);
+}
+
+.has-sidebar-expand-xl.has-sidebar-open .page-sidebar {
+    position: fixed;
+    top: 3.5rem;
+    transform: translateZ(0);
+}
+
+.app.has-compact-menu .has-sidebar-expand-xl.has-sidebar-open {
+    margin-right: 22.5rem;
+}
+
+.select2.select2-sm .select2-selection {
+    max-height: 1.8125rem;
+    font-size: 0.875rem;
+}
+
+.select2.select2-sm .select2-selection__rendered {
+    line-height: 1.75rem;
+}
+
+.select2.select2-sm .select2-selection__arrow {
+    height: 1.75rem;
+}
+
+
+/***Custom Scrollbar***/
+/* width */
+::-webkit-scrollbar {
+    width: 15px;
+    height: 15px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    border-left: 1px solid rgba(136, 136, 136, 0.336);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: rgba(136, 136, 136, 0.336);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+/***Custom Scrollbar***/
+
+.app-header-dark {
+    background-color: var(--gray-dark) !important;
+    color: hsla(0, 0%, 100%, .8);
+}
+
+.modal-body {
+    content: attr(attr-value);
+}
+
+.loading-action {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.1s;
+}
+
+.select-2.select-closed .select-loaded {
+    display: none !important;
+}
+
+.select-2.select-opened .select-loaded {
+    display: block !important;
+}
+
+.select2-selection.select2-selection--single.is-invalid {
+    border-color: #b76ba3;
+}
+
+.card-header {
+    min-height: 45px !important;
+}
+
+.input-like-div {
+    padding: 0 4px;
+    /*background-color: #f0f;*/
+    overflow: hidden;
+    position: sticky;
+    height: 100%;
+}
+
+.input-like-div > input {
+    padding: 2px;
+    width: 100%;
+    margin: 0 -1px 0 -4px;
+    float: left;
+    clear: both;
+    /* border: 1px solid var(--gray) !important; */
+    -webkit-box-shadow: 0px 0px 1px 1px var(--gray) inset !important;
+    -moz-box-shadow: 0px 0px 1px 1px var(--gray) inset !important;
+    box-shadow: 0px 0px 1px 1px var(--gray) inset !important;
+    position: relative;
+    /* background-color: var(--red) !important; */
+    opacity: 0.92;
+    /* border-top: 1px solid var(--gray); */
+    padding: 3px;
+    border-width: 0px;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+}
+
+.td-like-input {
+    vertical-align: middle !important;
+    padding: 1px !important;
+}
+
+.datepicker .datepicker-picker {
+    background-color: unset;
+    box-shadow: 0 2px 3px var(--gray-dark), 0 0 0 1px var(--gray-dark);
+}
+
+.datepicker .datepicker-picker .datepicker-cell.day.focused {
+    background-color: var(--dark);
+    color: var(--light);
+}
+
+.date-selector-wrapper {
+    background-color: var(--light);
+    font-size: 14px;
+    width: 307.875px;
+    font-family: var(--font-family-sans-serif)
+}
+
+.date-selector-wrapper *.active {
+    color: var(--light);
+}
+
+.hide {
+    display: none;
+}
+
+.no-display {
+    display: none !important;
+}
+
+.withoutLabel label {
+    display: none !important;
+}
+
+.file-drop-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 150px;
+    border: 1px dashed var(--primary);
+    border-radius: 0.25rem;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+    overflow: auto;
+}
+
+.file-drop-zone.has-files {
+    display: block;
+}
+
+.file-drop-zone .file-drop-zone-title {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-container {
+    width: 100%;
+}
+
+.truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.file-preview-container {
+    background-color: var(--light);
+    padding: 10px;
+}
+
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-gap: 10px;
+}
+
+.grid-item {
+    padding: 0;
+    /*aspect-ratio: 1/1;*/
+    min-width: 150px;
+    max-width: 300px;
+}
+
+.form-group {
+    z-index: 1;
+}

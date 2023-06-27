@@ -1,0 +1,25 @@
+script.
+   const WORKSPACE = '#{W}';
+   Promise.all([
+       import(`/components/element-manage.js`),
+       import(`/gui/workspace/${WORKSPACE}-workspace.js`),
+       import('#{client_importer}'),
+   ]).then(([element_manage, workspace, app_imported]) => {
+        new element_manage.default().initialize().then(() => {
+            const domContainer = document.querySelector("#app-root");
+            const root = ReactDOM.createRoot(domContainer);
+            root.render(
+                React.createElement(workspace.default, {
+                    meta: !{workspace},
+                    documents: {
+                        "!{key}": {
+                            module: app_imported,
+                            meta: {...!{meta}, key: '#{key}'},
+                            active: true
+                        }
+                    }
+                })
+            );
+        });
+       
+   });
