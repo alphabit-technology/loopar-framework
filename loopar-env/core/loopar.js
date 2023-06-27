@@ -47,7 +47,7 @@ export class Loopar {
 
    gitAppOptions(app) {
       return {
-         baseDir: path.join(this.path_root, "apps", app),
+         baseDir: app ? path.join(this.path_root, "apps", app) : path.join(this.path_root, "apps"),
          binary: 'git',
          maxConcurrentProcesses: 6,
          trimmed: false,

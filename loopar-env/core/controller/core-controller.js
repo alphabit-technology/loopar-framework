@@ -54,9 +54,9 @@ export default class CoreController extends AuthController {
       }
 
       try {
-         if(error.error === 404) {
+         /*if(error.error === 404) {
             return await self.not_found();
-         }
+         }*/
          if (self.method === AJAX) {
             return this.res
                .status(error.error)

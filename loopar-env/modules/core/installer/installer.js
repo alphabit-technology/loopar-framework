@@ -273,7 +273,7 @@ export default class Installer {
       
       if(this.app_name === 'loopar') {
          if(!this.check_if_app_exists()){
-            await this.pull();
+            await loopar.git().clone("https://github.com/alphabit-technology/loopar.git");
          }
 
          await this.set_db_config();
@@ -289,12 +289,12 @@ export default class Installer {
       return true;
    }
 
-   async pull() {
+   async pull(repo) {
       const exist = await loopar.db.get_value('App', "name", this.app_name, null, null);
       const app_file = file_manage.get_config_file("installer", path.join("apps", this.app_name));
 
-      console.log("Pulling " + this.app_name)
-      loopar.validateGitRepository(app_file.App[this.app_name].git_repo);
+      //console.log("Pulling " + this.app_name)
+      loopar.validateGitRepository(repo || app_file.App[this.app_name].git_repo);
 
       if(!exist && this.app_name !== "loopar"){
          loopar.throw(`App ${this.app_name} is not installed, please install it first`);
