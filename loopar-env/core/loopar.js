@@ -82,6 +82,7 @@ export class Loopar {
 
    async make_config() {
       await file_manage.make_folder('', "apps");
+      await file_manage.make_folder('public', "uploads");
       await file_manage.make_folder('public/js', 'components');
       await file_manage.make_file('public/js/components', 'elements', elementGenerator(), 'js', true);
       const write_file = async (data) => {
