@@ -510,9 +510,10 @@ export default class DataBase extends ObjectManage {
       });
    }
 
-   async _count(document, param = { field_name: 'name', field_value: null }, condition = null) {
+   async _count(document, params = { field_name: 'name', field_value: null }, condition = null) {
       const cn = this.connection;
       const c = this.make_condition(condition || {});
+      const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
       return new Promise(async resolve => {
          const WHERE = param.field_value ?

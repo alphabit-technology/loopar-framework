@@ -85,7 +85,7 @@ class FileManager{
          files = FileList(files);
       }
 
-      if (typeof files == "object") {
+      if (files && typeof files == "object") {
          files = Object.values(files);
       }
 

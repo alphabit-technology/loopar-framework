@@ -12,25 +12,25 @@ export default class WebWorkspace extends BaseWorkspace {
 
    render(){
       const data = this.props.meta || {};
-      const menu_data = data.menu_data.__DOCUMENT__;
-      const web_app = data.web_app.__DOCUMENT__;
-      const menu_items = menu_data.menu_items.rows;
+      //const menu_data = data.menu_data.__DOCUMENT__;
+      const web_app = {}//data.web_app.__DOCUMENT__;
+      //const menu_items = menu_data.menu_items.rows;
       const user = data.user;
       const logo = fileManager.getImage(web_app, "logo");
       const logo_width = parseInt(web_app.logo_width || 60);
 
       const cover_style = {
-         position: menu_data.fixed ? "fixed" : "unset",
-         display: menu_data.fixed ? "block" : "none",
+         //position: menu_data.fixed ? "fixed" : "unset",
+         //display: menu_data.fixed ? "block" : "none",
          width: "100%",
          height: 90,
          zIndex: "888888",
-         backgroundColor: menu_data.opacity ? "var(--light)" : "transparent",
-         opacity: menu_data.opacity ? 0.7 : 1,
+         //backgroundColor: menu_data.opacity ? "var(--light)" : "transparent",
+         //opacity: menu_data.opacity ? 0.7 : 1,
       };
 
       const menu_style = {
-         position: menu_data.fixed ? "fixed" : "unset",
+         //position: menu_data.fixed ? "fixed" : "unset",
          width: "100%",
          zIndex: "999999",
       };
@@ -82,14 +82,14 @@ export default class WebWorkspace extends BaseWorkspace {
                ]),
                div({className: "collapse navbar-collapse pl-3", id: "navbarNavDropdown", style: {marginLeft: logo_width}}, [
                   ul({className: "navbar-nav"}, [
-                     menu_items.map((item) => {
+                     /*menu_items.map((item) => {
                         const active = item.menu_link === loopar.current_page_name;
                         return li({className: `nav-item mr-lg-2 ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self}, [
                            a({className: "nav-link py-2", href: "#", onClick: () => {
                               this.navigate(item.menu_link);
                            }}, item.menu_link)
                         ]);
-                     })
+                     })*/
                   ])
                ])
             ])

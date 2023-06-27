@@ -164,7 +164,6 @@ export class Loopar {
             "user": "root",
             "password": "root",
             "port": "3306",
-            "database": "db_36b1a6ecba92b4dee1451bcea2a20acdaa2a5dd0",
             "dialect": "mysql",
             "pool": {
                "max": 5,

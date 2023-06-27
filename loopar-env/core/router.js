@@ -253,7 +253,7 @@ export default class Router {
 
       this.controller_path_file = path.join(this.controller_path, `${this.controller_name}-controller.js`);
 
-      this.exist_controller = await file_manage.exist_file(this.controller_path_file);
+      this.exist_controller = await file_manage.exist_file(this.controller_path_file) && await loopar.db._count("Document", {name: this.document});
 
       this.controller_path_file = this.exist_controller ? this.controller_path_file : `./controller/${this.controller}.js`;
    }

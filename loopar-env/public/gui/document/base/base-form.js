@@ -26,25 +26,32 @@ export default class BaseForm extends BaseDocument {
       this.#formData();
 
       //return
-      http.send({
-         action: options.action,
-         params: this.params,
-         body: this.#formData(),
-         success: r => {
-            if(r && r.success){
-               loopar.root_app.refresh().then(() => {
-                  loopar.notify(r.message);
-               });
-            } else {
-               loopar.notify(r.message, "error");
-            }
+      return new Promise((resolve, reject) => {
+         http.send({
+            action: options.action,
+            params: this.params,
+            body: this.#formData(),
+            success: r => {
+               if(r && r.success){
+                  if(loopar.root_app){
+                     loopar.root_app.refresh().then(() => {
+                        loopar.notify(r.message);
+                     });
+                  }else{
+                     window.location.reload();
+                  }
+               } else {
+                  loopar.notify(r.message, "error");
+               }
 
-            options.success && options.success(r);
-         },
-         error: r => {
-            options.error && options.error(r);
-         },
-         freeze: true
+               options.success && options.success(r);
+               resolve(r);
+            },
+            error: r => {
+               options.error && options.error(r);
+            },
+            freeze: true
+         });
       });
    }
 

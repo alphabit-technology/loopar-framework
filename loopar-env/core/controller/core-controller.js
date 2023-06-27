@@ -45,38 +45,44 @@ export default class CoreController extends AuthController {
    }
 
    async send_error(error) {
-      error = Object.keys(this.error).length === 0 ? error : this.error;
+      const self = this;
+      error = Object.keys(self.error).length === 0 ? error : self.error;
 
       error = {
-         error: this.get_code_error(error.error),
+         error: self.get_code_error(error.error),
          message: error.message || error,
       }
 
       try {
          if(error.error === 404) {
-            return await this.not_found();
+            return await self.not_found();
          }
-         if (this.method === AJAX) {
+         if (self.method === AJAX) {
             return this.res
                .status(error.error)
                .json({error: 'Error ' + error.error, message: error.message}).send();
 
          } else {
-            return await this.render({
+            return await self.renderError({
                title: 'Error ' + error.error,
-               message: error.message
-            }, this.template_error(error.error));
+               message: error.message,
+               error: error.error
+            }, self.templateError(error.error));
          }
       } catch (e) {
          console.log(['Err on to try send error', e]);
       }
    }
 
+   async renderError(data, template = null) {
+      this.res.render(path.join(loopar.path_framework, "workspace",  template) + ".jade", data);
+   }
+
    redirect(url = null) {
       this.res.redirect(url || this.req.originalUrl);
    }
 
-   template_error(code=null) {
+   templateError(code=null) {
       return `errors/${code || 'base-error'}`;
    }
 
@@ -102,8 +108,8 @@ export default class CoreController extends AuthController {
       if(workspace === "desk") {
          WORKSPACE.menu_data = this.has_sidebar ? await CoreController.#sidebar_data() : [];
       } else if(workspace === "web") {
-         WORKSPACE.menu_data = await CoreController.#menu_data();
-         WORKSPACE.web_app = await CoreController.#web_app();
+         //WORKSPACE.menu_data = await CoreController.#menu_data();
+         WORKSPACE.web_app = await this.#web_app();
       }
 
       this.res.render(path.join(loopar.path_framework, "workspace", workspace) + ".jade", {
@@ -127,6 +133,7 @@ export default class CoreController extends AuthController {
    }
 
    async not_found() {
+      console.log('Core controller not found')
       this.controller_path = "apps/loopar/modules/core/not-found";
       this.document = "Not Found";
       this.client = "view";
@@ -142,13 +149,23 @@ export default class CoreController extends AuthController {
    }
 
    static async #menu_data() {
-      const menu = await loopar.get_document("Menu", "default");
-      return await menu.__data__();
+      //const menu = await loopar.get_document("Menu", "default");
+      //return await menu.__data__();
    }
 
-   static async #web_app() {
-      const web_app = await loopar.get_document("App", "qubitcore-webpage");
-      return await web_app.__data__();
+   async #web_app() {
+      const exist = await loopar.db._count("App", "qubitcore-webpage");
+      if(exist){
+         const app = await loopar.get_document("App", "qubitcore-webpage");
+         return await app.__data__();
+      }else{
+         this.renderError({
+            title: 'Error',
+            message: 'You don\'t have Install the Web App',
+            error: 404
+         }, this.templateError(404));
+         return {}
+      }
    }
 
    async action_search() {

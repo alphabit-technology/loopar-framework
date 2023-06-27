@@ -268,9 +268,11 @@ export default class Installer {
    async install() {
       console.warn("Installing " + this.app_name);
       loopar.installing = true;
+
+      console.log(!!this.check_if_app_exists())
       
       if(this.app_name === 'loopar') {
-         if(await this.check_if_app_exists()){
+         if(!this.check_if_app_exists()){
             await this.pull();
          }
 
@@ -291,6 +293,7 @@ export default class Installer {
       const exist = await loopar.db.get_value('App', "name", this.app_name, null, null);
       const app_file = file_manage.get_config_file("installer", path.join("apps", this.app_name));
 
+      console.log("Pulling " + this.app_name)
       loopar.validateGitRepository(app_file.App[this.app_name].git_repo);
 
       if(!exist && this.app_name !== "loopar"){
