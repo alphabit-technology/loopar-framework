@@ -36,10 +36,12 @@ class HeaderClass extends Div {
                this.props.formRef.save();
             }
          }, [
-            span(`Save ${meta.__DOCTYPE__.name}`)
+            span({className: "fa fa-save mr-1"}),
+            " Save"
+            //span(`Save ${meta.__DOCTYPE__.name}`)
          ]),
          meta.__IS_NEW__ ? null : meta.__DOCTYPE__.name === 'Document' ? button({
-            className: "btn btn-success", tabindex: "0", type: "button",
+            className: "btn btn-success", tabindex: "1", type: "button",
             onClick: () => {
                if (meta.__DOCUMENT__.name) {
                   loopar.navigate(`/${meta.__DOCUMENT__.module}/${meta.__DOCUMENT__.name}/${meta.__DOCUMENT__.is_single ? 'update' : 'list'}`);
@@ -54,6 +56,7 @@ class HeaderClass extends Div {
       const meta = this.meta;
       const context = this.getContext();
 
+      const customActions = this.props.gui.props.docRef?.customActions || {};
       return header({
          className: "page-navs shadow-sm pr-3",
          style: {paddingLeft: "1rem", marginBottom: "unset"}
@@ -66,23 +69,32 @@ class HeaderClass extends Div {
                ])
             ]),
             div({className: "ml-auto", style: {position: "fixed", right: "10px"}}, [
-               ...this.primaryActions(),
-               context === 'list' ? button({
-                  className: "btn btn-success", tabindex: "0", type: "button",
-                  onClick: () => {
-                     loopar.navigate('create');
-                  }
-               }, [
-                  span(`Add ${Capitalize(meta.__DOCTYPE__.name)}`)
-               ]) : null,
-               this.props.has_sidebar ? button({
-                  className: "btn btn-secondary", tabindex: "0", type: "button",
-                  onClick: () => {
-                     this.props.gui.toggleSidebar();
-                  }
-               }, [
-                  span({className: "fa fa-bars"})
-               ]) : null
+               div({className: "btn-group mr-1"}, [
+                  Object.values(customActions),
+               ]),
+               div({className: "btn-group mr-1"}, [
+                  ...this.primaryActions(),
+               ]),
+               div({className: "btn-group mr-1"}, [
+                  context === 'list' ? button({
+                     className: "btn btn-success", tabindex: "0", type: "button",
+                     onClick: () => {
+                        loopar.navigate('create');
+                     }
+                  }, [
+                     span({className: "fa fa-plus"}),
+                     " New"
+                     //span(`Add ${Capitalize(meta.__DOCTYPE__.name)}`)
+                  ]) : null,
+                  this.props.has_sidebar ? button({
+                     className: "btn btn-secondary", tabindex: "0", type: "button",
+                     onClick: () => {
+                        this.props.gui.toggleSidebar();
+                     }
+                  }, [
+                     span({className: "fa fa-bars"})
+                  ]) : null
+               ])
             ])
          ])
       ]);

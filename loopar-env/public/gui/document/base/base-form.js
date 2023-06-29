@@ -33,7 +33,7 @@ export default class BaseForm extends BaseDocument {
             body: this.#formData(),
             success: r => {
                if(r && r.success){
-                  if(loopar.root_app){
+                  if(loopar.root_app && loopar.root_app.refresh){
                      loopar.root_app.refresh().then(() => {
                         loopar.notify(r.message);
                      });

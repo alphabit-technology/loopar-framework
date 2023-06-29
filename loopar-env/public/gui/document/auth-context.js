@@ -14,6 +14,7 @@ export default class AuthContext extends BaseForm {
             return Element(el.element,
                {
                   formRef: this,
+                  docRef: this,
                   key: element_manage.getUniqueKey(),
                   meta: {
                      ...el,

@@ -1,5 +1,6 @@
 import {Element, div} from "/components/elements.js";
 import BaseForm from "./base/base-form.js";
+import {loopar} from "/loopar.js";
 
 
 export default class InstallerContext extends BaseForm {
@@ -12,6 +13,7 @@ export default class InstallerContext extends BaseForm {
          ...this.props.meta.__DOCTYPE__.STRUCTURE.map(el => {
             return Element(el.element,
                {
+                  docRef: this,
                   formRef: this,
                   meta: {
                      ...el,
@@ -39,12 +41,10 @@ export default class InstallerContext extends BaseForm {
    }*/
 
    async install() {
-      console.log("install");
       await this.send({action: "install"});
    }
 
    async connect() {
-      console.log("connect");
       await this.send({action: "connect"});
    }
 }

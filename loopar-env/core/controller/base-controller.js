@@ -12,14 +12,14 @@ export default class BaseController extends CoreController {
    }
 
    async action_list() {
+      
       if(this.has_data()) {
          await loopar.session.set(this.document + '_q', this.data.q || {});
          await loopar.session.set(this.document + '_page', this.data.page || 1);
       }
       const data = {...loopar.session.get(this.document + '_q') || {}};
 
-
-      const list = await loopar.get_list(this.document, {q: data || {}});
+      const list = await loopar.get_list(this.document, {q: (data && Object.keys(data).length > 0) ? data : null});
       return this.render(list);
    }
 

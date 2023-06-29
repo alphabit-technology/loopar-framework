@@ -13,6 +13,7 @@ import { simpleGit, CleanOptions } from 'simple-git';
 import elementGenerator from "./element-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
+import { error } from 'console';
 
 simpleGit().clean(CleanOptions.FORCE);
 
@@ -293,7 +294,7 @@ export class Loopar {
       });
    }
 
-   async get_list(document, { fields = null, filters = {}, order_by = 'name', limit = 10, offset = 0, q = null } = {}) {
+   async get_list(document, { fields = null, filters = {}, order_by = 'name', limit = 10, offset = 0, q = null } = {}, ifNotFound = null) {
       const doc = await this.new_document(document);
 
       return await doc.get_list({ fields, filters, order_by, limit, offset, page: this.session.get(document + "_page") || 1, q });

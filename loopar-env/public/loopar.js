@@ -17,6 +17,7 @@ class Loopar extends Router {
    dialog(dialog) {
       const content = dialog.content || dialog.message;
       dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;
+      dialog.open = dialog.open !== false;
       this.root_app && this.root_app.setDialog(dialog);
 
       return new Promise(resolve => {

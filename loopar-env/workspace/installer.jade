@@ -1,20 +1,10 @@
+extends base/base-document
 
-block header
-    h1.h3  Initialize Loopar
-    if(locals.action === 'connect')
-        h6(style="color:orangered") Please install or initialize your Mysql Database server and connect.
-    else
-        h6(style="color:orangered") Initialize your application.
+block content
+    body.dark-skin
+        main.auth.auth-floated#app-root
+            h1 Installer
+            script(src='/assets/particles/particles.js' sync='true' defer='true')
+            include base/importer
 
-
-    script(src='#{client_importer}' type='module')
-    script.
-       var request_data = !{content};
-       Promise.all([
-       import('/components/element-manage.js'),
-       import('#{client_importer}')
-       ]).then(modules => {
-       new modules[0].default().initialize().then(() => {
-       new modules[1].default(request_data);
-       });
-       });
+            include base/footer-scripts

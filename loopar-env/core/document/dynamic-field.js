@@ -45,7 +45,7 @@ export default class DynamicField {
       }
 
       if(this.element === FORM_TABLE){
-         return JSON.parse(value);
+         return this.if_json(value) ? JSON.parse(value) : "{}";
       }
 
       /*if(this.element === FILE){

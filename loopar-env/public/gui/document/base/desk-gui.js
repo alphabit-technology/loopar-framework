@@ -22,6 +22,7 @@ class DeskGUIClass extends React.Component {
                         has_sidebar: this.props.has_sidebar,
                         meta: this.props.meta,
                         gui: this,
+                        docRef: this.props.docRef,
                         formRef: this.props.formRef,
                      }),
                   ]) : null,

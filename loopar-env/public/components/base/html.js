@@ -113,7 +113,7 @@ export class HTML extends React.Component {
             }, {}),
             ...{ style: this.getStyle },
             ...this.state.attrs,
-            ...((action && typeof props.formRef[action] == "function" ) ? { onClick: () => props.formRef[action]()} : {}),
+            ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]()} : {}),
             ...animations
          }
       ]
@@ -153,8 +153,9 @@ export class HTML extends React.Component {
 
    makeElement(el, props = {}) {
       return Element(el.element, {...{
-         ...(el.element === "tabs" ? {key: element_manage.getUniqueKey()} : {}),
+         ...(el.element === "tabs" && this.props.designerRef ? {key: element_manage.getUniqueKey()} : {}),
          ...(this.props.formRef ? { formRef: this.props.formRef } : {}),
+         ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
          ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
          ...(this.props.designer && {
             has_title: true, draggable: true, designer: true

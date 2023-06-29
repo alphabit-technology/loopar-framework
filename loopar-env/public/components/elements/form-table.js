@@ -1,8 +1,8 @@
 import Div from "/components/elements/div.js";
-import { a, button, div, Element, i, input, label, small, span, table, tbody, td, th, thead, tr } from "/components/elements.js";
+import { a, button, div, Element, i, input, label, small, span, table, tbody, td, th, thead, tr, h5} from "/components/elements.js";
 
 import { element_manage } from "../element-manage.js";
-import { avatar } from '/tools/helper.js';
+import { avatar, Capitalize } from '/tools/helper.js';
 import { Pagination } from "/components/common/pagination.js";
 import { loopar } from "/loopar.js";
 import { http } from "/router/http.js";
@@ -30,7 +30,7 @@ class BaseTable extends Div {
          ...this.state,
          meta: props.meta,
          selected_rows: [],
-         isOpenDropdown: false,
+         isOpenDropdown: false
       }
    }
 
@@ -97,8 +97,8 @@ class BaseTable extends Div {
       this.search();
    }
 
-   async search() {
-      const res = await http.post(`list`, { q: this.search_data, page: this.current_page || 1, freeze: true }, { freeze: true });
+   async search(module, document) {
+      const res = await http.post(this.meta.action, { q: this.search_data, page: this.current_page || 1, freeze: true }, { freeze: true });
       const meta = this.meta;
 
       meta.rows = res.meta.rows;
@@ -106,9 +106,13 @@ class BaseTable extends Div {
       this.setState({ meta });
    }
 
-   componentDidUpdate() {
-      super.componentDidUpdate();
-      this.set_selectors_status();
+   componentDidUpdate(prevProps, prevState, snapshot) {
+      super.componentDidUpdate(prevProps, prevState, snapshot);
+      if (this.props.meta !== prevProps.meta) {
+         this.setState({
+            meta: this.props.meta
+         });
+      }
    }
 
    select_all_visible_rows(checked = true) {
@@ -118,7 +122,12 @@ class BaseTable extends Div {
       this.set_selectors_status();
    }
 
+   get viewType() {
+      return this.props.viewType;
+   }
+
    set_selectors_status() {
+      if(this.viewType !== "List") return;
       const selected_rows = this.selectedRows.length;
       this.selectors.selector_all.node.indeterminate = false;
 
@@ -295,20 +304,152 @@ class BaseTable extends Div {
       ];
    }
 
-   /*componentDidUpdate(prevProps) {
-      super.componentDidUpdate(prevProps);
-      if (prevProps.meta !== this.props.meta) {
-         this.setState({
-            meta: this.props.meta
-         });
-      }
-   }*/
-
    fieldIsWritable(field) {
       return elements_dict[field.element]?.is_writable;
    }
 
+   getTableRender(columns, rows){
+      return [
+         table({ className: `table table-${this.grid_size} mb-0 table-hover bordered`, style: {} }, [
+            thead([
+               tr([
+                  columns.map(c => {
+                     const data = c.data;
+                     const props = data.name === "selector_all" ?
+                        { className: "col-checker align-middle", style: { maxWidth: 30 } }
+                        : { ...(data.name === "name" ? { className: "pl-3" } : {}) };
+
+                     return th(props,
+                        typeof data.label == "function" ? data.label() : data.label
+                     )
+                  })
+               ])
+            ]),
+            tbody([
+               rows.length === 0 ? tr(td({ colSpan: columns.length }, [
+                  div({ className: "card empty-state" }, [
+                     div({ className: 'empty-state-container' }, [
+                        div({ className: 'empty-state-icon h1' }, [
+                           i({ className: 'fa fa-exclamation-triangle' })
+                        ]),
+                        div({ className: 'empty-state-text h6' }, [
+                           'No rows to show'
+                        ])
+                     ])
+                  ])
+               ])) :
+                  rows.map(row => {
+                     this.rows_ref[row.name] = {};
+                     return tr({ key: element_manage.uuid() }, [
+                        columns.map(column => {
+                           const row_props = column.rows_props ?? {};
+
+                           if (column.data.name === "selector_all") {
+                              return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
+                           }
+
+                           if (this.is_editable && this.fieldIsWritable(column)) {
+                              const props = { ...column };
+                              props.data ??= {};
+                              props.data.value = row[column.data.name];
+
+                              return td({ key: element_manage.uuid(), ...row_props, },
+                                 Element(column.element, {
+                                    //key: element_manage.uuid(),
+                                    key: row.name + "_" + column.data.name,
+                                    meta: clone(props),
+                                    withoutLabel: true,
+                                    simpleInput: true,
+                                    onChange: (e) => {
+                                       row[column.data.name] = e.target.value
+                                    },
+                                    ref: self => {
+                                       if (self) {
+                                          this.rows_ref[row.name][column.data.name] = self;
+                                       }
+                                    }
+                                 })
+                              );
+                           } else {
+                              return td({ key: element_manage.uuid(), ...row_props }, typeof column.data.value == "function" ? column.data.value(row) : row[column.data.name]);
+                           }
+                        })
+                     ])
+                  })
+            ])
+         ])
+      ]
+   }
+
+   get docRef() {
+      return this.props.docRef || {};
+   }
+
+   getGridRender(columns, rows){
+      return [
+         div({ className: `row row-cards row-deck` }, [
+            rows.length === 0 ? div({ className: "col-12" }, [
+               div({ className: "card empty-state" }, [
+                  div({ className: 'empty-state-container' }, [
+                     div({ className: 'empty-state-icon h1' }, [
+                        i({ className: 'fa fa-exclamation-triangle' })
+                     ]),
+                     div({ className: 'empty-state-text h6' }, [
+                        'No rows to show'
+                     ])
+                  ])
+               ])
+            ]) : [
+               div({ className: "col-12" }, [
+                  div({
+                     className: "grid-container",
+                     style: { gridTemplateColumns: `repeat(auto-fit, minmax(${this.docRef.cardSize || 150}px, 1fr))`}
+                  }, [
+                     rows.map(row => {
+                        const action = row.is_single ? (row.type === 'Page' ? 'view' : 'update') : 'list';
+
+                        return div({className: "grid-item", style: {maxHeight: this.docRef.cardSize || 180}}, [
+                           div({ className: "card text-dark bg-light metric-bordered", style:{height: '100%'}}, [
+                              this.docRef.gridTemplate ? this.docRef.gridTemplate(row, action) : [
+                                 div({ className: "card-body text-center" }, [
+                                    a({ className: `tile tile-lg bg-${loopar.bg_color(row.name)} mb-2`, href: `/${row.module}/${row.name}/${action}`, element: `element-${action}` }, avatar(row.name)),
+                                    h5({ className: "card-title" }, [
+                                       a({ className: "card-title", href: "#" }, row.name)
+                                    ]),
+                                    div({ className: "my-3" }, [
+                                       div({ className: "avatar-group" })
+                                    ])
+                                 ]),
+                                 div({ className: "card-footer" }, [
+                                    a({
+                                       className: "card-footer-item card-footer-item-bordered card-link",
+                                       href: `/${row.module}/${row.name}/${action}`,
+                                       element: "view_list"
+                                    }, Capitalize(action === 'list' ? 'List' : action)),
+                                    a({
+                                       className: "card-footer-item card-footer-item-bordered card-link",
+                                       href: `/${row.module}/${row.name}/create`,
+                                       element: "add",
+                                       style: row.is_single ? { display: 'none' } : {}
+                                    }, "Add")
+                                 ])
+                              ]
+                           ])
+                        ])
+                     })
+                  ])
+               ])
+            ]
+         ])
+      ]
+   }
+
+   get documentName() {
+      return this.props.meta.__DOCTYPE__.name;
+   }
+
    render() {
+      const meta = this.meta;
       const columns = this.columns.filter(col => col.data.hidden !== 1 && col.data.in_list_view !== 0);
       const search_fields = this.baseColumns().filter(col => this.fieldIsWritable(col) && [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) && (col.data.searchable || col.data.name === 'name'));
       const rows = Array.isArray(this.rows) ? this.rows : [];
@@ -389,75 +530,14 @@ class BaseTable extends Div {
                   ])
                ]),
             ]),
-            div({ className: 'card-body border-top', style: { overflow: this.overflow || "", ...(this.has_search_form ? { paddingTop: 0 } : {}) } }, [
-               table({ className: `table table-${this.grid_size} mb-0 table-hover bordered`, style: {} }, [
-                  thead([
-                     tr([
-                        columns.map(c => {
-                           const data = c.data;
-                           const props = data.name === "selector_all" ?
-                              { className: "col-checker align-middle", style: { maxWidth: 30 } }
-                              : { ...(data.name === "name" ? { className: "pl-3" } : {}) };
-
-                           return th(props,
-                              typeof data.label == "function" ? data.label() : data.label
-                           )
-                        })
-                     ])
-                  ]),
-                  tbody([
-                     rows.length === 0 ? tr(td({ colSpan: columns.length }, [
-                        div({ className: "card empty-state" }, [
-                           div({ className: 'empty-state-container' }, [
-                              div({ className: 'empty-state-icon h1' }, [
-                                 i({ className: 'fa fa-exclamation-triangle' })
-                              ]),
-                              div({ className: 'empty-state-text h6' }, [
-                                 'No rows to show'
-                              ])
-                           ])
-                        ])
-                     ])) :
-                        rows.map(row => {
-                           this.rows_ref[row.name] = {};
-                           return tr({ key: element_manage.uuid() }, [
-                              columns.map(column => {
-                                 const row_props = column.rows_props ?? {};
-
-                                 if (column.data.name === "selector_all") {
-                                    return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
-                                 }
-
-                                 if (this.is_editable && this.fieldIsWritable(column)) {
-                                    const props = { ...column };
-                                    props.data ??= {};
-                                    props.data.value = row[column.data.name];
-
-                                    return td({ key: element_manage.uuid(), ...row_props, },
-                                       Element(column.element, {
-                                          //key: element_manage.uuid(),
-                                          key: row.name + "_" + column.data.name,
-                                          meta: clone(props),
-                                          withoutLabel: true,
-                                          simpleInput: true,
-                                          onChange: (e) => {
-                                             row[column.data.name] = e.target.value
-                                          },
-                                          ref: self => {
-                                             if (self) {
-                                                this.rows_ref[row.name][column.data.name] = self;
-                                             }
-                                          }
-                                       })
-                                    );
-                                 } else {
-                                    return td({ key: element_manage.uuid(), ...row_props }, typeof column.data.value == "function" ? column.data.value(row) : row[column.data.name]);
-                                 }
-                              })
-                           ])
-                        })
-                  ])
-               ]),
+            div({ 
+               className: 'card-body border-top', 
+               style: { 
+                  overflow: this.overflow || "",
+                   ...((this.has_search_form && this.viewType === "List")  ? { paddingTop: 0 } : {}) 
+               } 
+            }, [
+               ((this.viewType === "List" && this.docRef.onlyGrid !== true) || this.is_editable) ? this.getTableRender(columns, rows) : this.getGridRender(columns, rows)
             ]),
             div({ className: 'card-footer' }, [
                this.has_footer_options ? [
@@ -529,11 +609,6 @@ export default class FormTable extends BaseTable {
    constructor(props) {
       super(props);
    }
-
-   /*get meta(){
-      console.log("Form table getmeta",this.state.meta)
-      return this.state.meta.data.value;
-   }*/
 
    validate() {
       return Object.entries(this.rows_ref).reduce((acc, [key, row]) => {
@@ -627,6 +702,7 @@ class ListGridClass extends BaseTable {
 
    bulkRemove() {
       loopar.dialog({
+
          type: 'info',
          title: "Info",
          message: `Sorry this feature is not available yet`

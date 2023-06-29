@@ -14,11 +14,12 @@ export default class FormContext extends BaseForm {
       return super.render([
          DeskGUI({
             meta: meta,
-            ref: gui => this.gui = gui,
             has_sidebar: true,
             has_header: true,
+            ref: gui => this.gui = gui,
             sidebarHeaderContent: this.sidebarHeaderContent,
             sidebarContent: this.sidebarContent,
+            docRef: this,
             formRef: this
          }, [
             ...meta.__DOCTYPE__.STRUCTURE.map(el => {
@@ -28,6 +29,7 @@ export default class FormContext extends BaseForm {
                   designer: e === "designer",
                   droppable: e === "designer",
                   formRef: this,
+                  docRef: this,
                   key: meta.key + "_" + el.data.name,
                   meta: {
                      ...el,

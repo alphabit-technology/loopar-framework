@@ -114,7 +114,7 @@ export default class CoreDocument {
 
                         const rows = value;
 
-                        for (const row of rows) {
+                        for (const row of (rows || [])) {
                            row.document_parent = this.__DOCTYPE__.name;
                            row.document_parent_name = this.__DOCUMENT_NAME__;
 

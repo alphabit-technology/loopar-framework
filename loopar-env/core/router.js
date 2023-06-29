@@ -176,7 +176,7 @@ export default class Router {
          this.document_name = this.module; /*Because Module called is a document_name on Module Document*/
          this.module = 'core'; /*because Module document is in core module*/
          this.document = 'Module'; /*Because Module is a document*/
-         this.action = 'view';
+         this.action = 'list';
       }
 
       const res = this.res;

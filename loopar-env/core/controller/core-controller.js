@@ -106,7 +106,9 @@ export default class CoreController extends AuthController {
       const WORKSPACE = {user: loopar.current_user};
 
       if(workspace === "desk") {
+         
          WORKSPACE.menu_data = this.has_sidebar ? await CoreController.#sidebar_data() : [];
+         
       } else if(workspace === "web") {
          //WORKSPACE.menu_data = await CoreController.#menu_data();
          WORKSPACE.web_app = await this.#web_app();
@@ -133,7 +135,6 @@ export default class CoreController extends AuthController {
    }
 
    async not_found() {
-      console.log('Core controller not found')
       this.controller_path = "apps/loopar/modules/core/not-found";
       this.document = "Not Found";
       this.client = "view";
@@ -156,7 +157,7 @@ export default class CoreController extends AuthController {
    async #web_app() {
       const exist = await loopar.db._count("App", "qubitcore-webpage");
       if(exist){
-         const app = await loopar.get_document("App", "qubitcore-webpage");
+         const app = await loopar.get_document("App", loopar.default_web_app);
          return await app.__data__();
       }else{
          this.renderError({

@@ -1,7 +1,6 @@
 import { div } from "../elements.js";
 import Component from "../base/component.js";
 
-
 export default class Section extends Component {
    block_component = true;
    className = "section position-relative py-5 bg-light";

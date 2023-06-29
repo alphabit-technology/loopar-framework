@@ -108,6 +108,7 @@ export default class BaseWorkspace extends Theme {
             this.setState({documents});
          });
       }else{
+         console.log("Document already loaded", res.meta)
          documents[res.key] = {
             module: documents[res.key].module,
             meta: res.meta,

@@ -1,5 +1,6 @@
 script.
    const WORKSPACE = '#{W}';
+   console.log('WORKSPACE', WORKSPACE, '#{client_importer}')
    Promise.all([
        import(`/components/element-manage.js`),
        import(`/gui/workspace/${WORKSPACE}-workspace.js`),

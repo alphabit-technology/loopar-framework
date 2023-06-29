@@ -13,10 +13,9 @@ export default class View extends BaseDocument {
       return super.render([
          DeskGUI({
             meta: this.meta,
-            ref: gui => this.gui = gui,
             has_sidebar: this.has_sidebar,
             has_header: this.has_header,
-            base: this
+            docRef: this,
          }, [
             ...this.meta.__DOCTYPE__.STRUCTURE.map(el => {
                return Element(el.element, {

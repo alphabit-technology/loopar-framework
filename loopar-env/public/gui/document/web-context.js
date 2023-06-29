@@ -11,7 +11,7 @@ export default class View extends BaseDocument {
          ...this.meta.__DOCTYPE__.STRUCTURE.map(el => {
             return Element(el.element,
                {
-                  formRef: this,
+                  docRef: this,
                   meta: {
                      ...el,
                   },
