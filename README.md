@@ -42,34 +42,40 @@ ___
 
 # Short Component review
 ### Document Designer
-![Document Designer](image-1.png)
+![document-designer](https://github.com/alphabit-technology/loopar-framework/assets/87505840/261d1a49-66a2-498b-b1f2-e87fae3a2d91)
+
 #### Generate Via GPT
-![Generate Via GPT](image-9.png)
+![generate-via-gpt](https://github.com/alphabit-technology/loopar-framework/assets/87505840/a6f1c44b-dbcc-487a-a1ae-47e7d63dc8d3)
+
 #### Preview
-![Document Preview](image-2.png)
+![document-preview](https://github.com/alphabit-technology/loopar-framework/assets/87505840/1df1c007-54dd-41a2-a7c7-ef170189d82d)
+
 ### Page Generator
-![Page Generator](image-10.png)
+![page-generator](https://github.com/alphabit-technology/loopar-framework/assets/87505840/616800e6-2bf1-4081-9e02-115349f7e0cf)
+
 #### Page Preview
-![Page Preview](image-11.png)
+![page-preview](https://github.com/alphabit-technology/loopar-framework/assets/87505840/8355721d-6370-4278-98ab-97d723a92884)
 
 ### List View
 Generate based on the Document Structure
-![List View](image-3.png)
+![list-view](https://github.com/alphabit-technology/loopar-framework/assets/87505840/5e3299f9-2a9a-4a2a-82d8-dbc3846a7017)
 
 ### Module View
 Generate based on the modules that are installed
-![Module View](image-4.png)
+![module-view](https://github.com/alphabit-technology/loopar-framework/assets/87505840/c8b2ea78-8749-463a-8e95-d08ab3b5236e)
 
 ### File Manager
-![File Manager](image-5.png)
+![file-manager](https://github.com/alphabit-technology/loopar-framework/assets/87505840/e6069758-ba4b-47e4-94a1-96bbf3fd0a87)
 
 ### Integrations
-![Integrations](image-6.png)
+![integrations](https://github.com/alphabit-technology/loopar-framework/assets/87505840/714c3b5e-b057-4b8b-812d-54c6d2a0378e)
 
 #### GPT Document Designer
-![GPT Document Designer](image-7.png)
+![gpt-document-designer](https://github.com/alphabit-technology/loopar-framework/assets/87505840/aea9d92b-4c62-48ef-82d1-70d73454660d)
+
 #### GPT API Create
-![GPT Api Create](image-8.png)
+![gpt-api-create](https://github.com/alphabit-technology/loopar-framework/assets/87505840/fa763ac9-a54e-462a-a1e0-3679254c161a)
+
 
 ___
 ### How to Use
