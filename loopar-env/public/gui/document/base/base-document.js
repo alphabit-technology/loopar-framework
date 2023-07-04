@@ -19,7 +19,9 @@ export default class BaseDocument extends HTML {
 		return this.props.meta;
 	}
 
-	addCustomAction(name, action) {
+	setCustomAction(name, action) {
 		this.customActions[name] = action;
 	}
+
+	setCustomActions(){}
 }

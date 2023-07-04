@@ -26,6 +26,13 @@ export default class BaseController extends CoreController {
    async action_create() {
       const document = await loopar.new_document(this.document, this.data);
 
+      if (document.__DOCTYPE__.is_single) {
+         return loopar.throw({
+            code: 404,
+            message: "This document is single, you can't create new"
+         });
+      }
+
       if (this.has_data()) {
          await document.save();
          this.redirect('update?document_name=' + document.name);

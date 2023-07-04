@@ -13,7 +13,6 @@ import { simpleGit, CleanOptions } from 'simple-git';
 import elementGenerator from "./element-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
-import { error } from 'console';
 
 simpleGit().clean(CleanOptions.FORCE);
 
@@ -153,9 +152,12 @@ export class Loopar {
          ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
 
          await write_modules(data);
+         this.default_web_app = await this.db.get_value('App', 'name', { '=': { default_app: 1 } });
       } else {
          await write_file(data);
       }
+
+      //
    }
 
    async #write_default_settings() {

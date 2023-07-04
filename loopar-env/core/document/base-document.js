@@ -91,6 +91,13 @@ export default class BaseDocument extends CoreDocument {
    }
 
    async get_list({fields = null, filters = {}, q = null} = {}) {
+      if(this.__DOCTYPE__.is_single) {
+         return loopar.throw({
+            code: 404,
+            message: "This document is single, you can't get list"
+         });
+      }
+      
       this.pagination = {
          page: loopar.session.get(current_controller.document + "_page") || 1,
          page_size: 10,

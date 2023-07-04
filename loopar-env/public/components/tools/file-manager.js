@@ -100,7 +100,7 @@ class FileManager{
       return (files || []).filter(file => typeof file == "object" && !Array.isArray(file)).map(file => {
          const ext = this.getExtention(file);
          return file instanceof File ? file : {
-            ...file, 
+            ...file,
             type: this.getFileType(file), 
             src: this.getSrc(file), 
             extention: ext,
@@ -180,8 +180,8 @@ class FileManager{
       });
    }
 
-   getImage(data, field, avatar = null){
-      const img = this.getMappedFiles(data[field])[0];
+   getImage(data={}, field, avatar = null){
+      const img = this.getMappedFiles((data ||{})[field])[0];
       if (img){
          return img.previewSrc;
       }else if(avatar){

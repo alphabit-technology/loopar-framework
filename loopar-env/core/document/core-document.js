@@ -75,17 +75,18 @@ export default class CoreDocument {
    }
 
    name_is_null() {
-      return !this.name || this.name.length === 0;
+      return (!this.name || this.name === "undefined") || this.name.length === 0;
    }
 
    set_unique_name() {
-      if (this.name_is_null() && this.__IS_NEW__ && this.get_name.hidden === 1) {
+      if (this.name_is_null() && (this.__IS_NEW__ || this.__DOCTYPE__.is_single) && this.get_name.hidden === 1) {
          this.name = loopar.utils.random_string(10);
       }
    }
 
    async save() {
       const args = arguments[0] || {};
+      
       const validate = args.validate || true;
 
       return new Promise(async resolve => {
@@ -127,6 +128,16 @@ export default class CoreDocument {
 
                await update_child();
             }
+         }
+
+         const files = this.__DOCUMENT__.req_upload_files || [];
+
+         console.log("files in document", files);
+
+         for(const file of files){
+            const file_manager = await loopar.new_document("File Manager");
+            file_manager.req_upload_file = file;
+            await file_manager.save();
          }
 
          resolve();

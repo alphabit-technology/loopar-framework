@@ -72,9 +72,7 @@ class Loopar extends Router {
          open: true,
       });
 
-      //setTimeout(() => {
       throw new Error(error.content || error.message || error);
-      //}, 100);
    }
 
    notify(message, type = "success") {

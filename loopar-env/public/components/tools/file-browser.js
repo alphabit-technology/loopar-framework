@@ -186,56 +186,54 @@ class FileBrowserClass extends React.Component {
    render() {
       const files = this.files;
       return [
-         div({className: "",}, [
-            div({className: "pt-0 pb-8"},[
-               this.header(),
-            ]),
-            FileContainer({
-               height: '100%',
-            }, [
-               this.state.isFetchingFiles ? h4({}, "Loading Files...") : (
-                  files.length === 0 ? [
-                        div({className: "col-12 text-center tex-dark", style: {opacity: 0.6}}, [
-                           span({className: "fa fa-folder-open fa-3x pt-5 pb-3"}),
-                           h4({}, "No files found.")
-                        ])
-                     ] :
-                     files.map((file) => {
-                        return FilePreview({
-                           //key: element_manage.getUniqueKey(),
-                           file: file,
-                           selected: file.selected,
-                           onSelect: (file) => {
-                              if (file.type === "folder") {
-                                 this.fetchFiles(file.name);
-                              } else {
-                                 this.setFileSelected(file, file.selected);
-                              }
+         div({className: "pt-0 pb-8"},[
+            this.header(),
+         ]),
+         FileContainer({
+            height: '100%',
+         }, [
+            this.state.isFetchingFiles ? h4({}, "Loading Files...") : (
+               files.length === 0 ? [
+                     div({className: "col-12 text-center tex-dark", style: {opacity: 0.6}}, [
+                        span({className: "fa fa-folder-open fa-3x pt-5 pb-3"}),
+                        h4({}, "No files found.")
+                     ])
+                  ] :
+                  files.map((file) => {
+                     return FilePreview({
+                        //key: element_manage.getUniqueKey(),
+                        file: file,
+                        selected: file.selected,
+                        onSelect: (file) => {
+                           if (file.type === "folder") {
+                              this.fetchFiles(file.name);
+                           } else {
+                              this.setFileSelected(file, file.selected);
                            }
-                        });
-                     })
-               )
-            ]),
-            this.state.uploading ? File_uploader({
-               //key: element_manage.getUniqueKey(),
-               meta: {
-                  data: {
-                     name: "file",
-                     label: "File",
-                     placeholder: "Select file",
-                     accept: "*",
-                     multiple: true,
-                  }
-               },
-               inModal: true,
-               onUpload: () => {
-                  this.fetchFiles();
-               },
-               onClose: () => {
-                  this.setState({uploading: false});
-               },
-            }) : null,
-         ])
+                        }
+                     });
+                  })
+            )
+         ]),
+         this.state.uploading ? File_uploader({
+            //key: element_manage.getUniqueKey(),
+            meta: {
+               data: {
+                  name: "file",
+                  label: "File",
+                  placeholder: "Select file",
+                  accept: "*",
+                  multiple: true,
+               }
+            },
+            inModal: true,
+            onUpload: () => {
+               this.fetchFiles();
+            },
+            onClose: () => {
+               this.setState({uploading: false});
+            },
+         }) : null,
       ]
    }
 

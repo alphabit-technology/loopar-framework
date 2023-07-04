@@ -14,7 +14,6 @@ export default class WebWorkspace extends BaseWorkspace {
       const data = this.props.meta || {};
       //const menu_data = data.menu_data.__DOCUMENT__;
       const web_app = data.web_app.__DOCUMENT__;
-      console.log("web_app", web_app)
       const menu_data = web_app.menu_items;
       const menu_items = menu_data.rows;
 

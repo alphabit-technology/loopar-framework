@@ -104,19 +104,20 @@ export default class BaseWorkspace extends Theme {
                active: true,
             };
 
-            this.progress(102);
-            this.setState({documents});
+            this.setState({documents}, () => {
+               this.progress(102)
+            });
          });
       }else{
-         console.log("Document already loaded", res.meta)
          documents[res.key] = {
             module: documents[res.key].module,
             meta: res.meta,
             active: true,
          };
 
-         this.progress(102);
-         this.setState({documents});
+         this.setState({documents}, () => {
+            this.progress(102)
+         });
       }
    }
 
@@ -265,9 +266,12 @@ export default class BaseWorkspace extends Theme {
    progress(to) {
       let progress = this.state_progress + (this.increment * 0.1);
       this.increment += 1;
-      if(progress >= 101) {progress = 0; this.state_progress = 0; this.increment = 1;}
-      else this.state_progress = progress;
-      //this.setState({progress: progress, to_progress: to});
+
+      if(progress >= 101) {
+         progress = 0; 
+         this.state_progress = 0;
+         this.increment = 1;
+      } else this.state_progress = progress;
 
       const node = this.progress_barr?.node;
 

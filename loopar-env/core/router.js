@@ -5,6 +5,7 @@ import {loopar} from './loopar.js';
 import {file_manage} from "./file-manage.js";
 import multer from "multer";
 import sharp from "sharp";
+import { timingSafeEqual } from "crypto";
 
 export default class Router {
    #route_structure = ["host", "module", "document", "action"];
@@ -14,16 +15,17 @@ export default class Router {
    constructor(options) {
       Object.assign(this, options);
 
-      const storage = multer.diskStorage({
+      /*const storage = multer.diskStorage({
          destination: function (req, file, cb) {
             cb(null, path.join(loopar.path_root, "public", 'uploads/'));
          },
          filename: function (req, file, cb) {
             cb(null, file.originalname);
          }
-      });
+      });*/
 
-      this.uploader = multer({ storage: storage }).any();
+      this.uploader = multer({ storage: multer.memoryStorage() }).any();
+      
    }
 
    get #pathname() {
@@ -42,7 +44,7 @@ export default class Router {
       return source.includes(".") && source.split(".")[1].length > 0;
    }
 
-   use(middleware ) {
+   use(middleware) {
       this.server._router.stack = this.server._router.stack.filter(layer => layer.handle !== this.#custom404Middleware);
       this.server.use(middleware);
       this.server.use(this.#custom404Middleware);
@@ -61,34 +63,13 @@ export default class Router {
    };
 
    route() {
-      const saveThumbnails = async (req, res, next) => {
-         if (req.files && req.files.length > 0) {
-            try {
-               for (const file of req.files) {
-                  const file_name = file.filename;
-                  const file_path = file.path;
-                  const file_type = file.mimetype;
-                  const file_size = file.size;
-                  const file_extension = file.originalname.split(".")[1];
-
-                  const thumbnail_path = path.join(loopar.path_root, "public", "uploads", "thumbnails", file_name);
-                  const thumbnail = await file_manage.exist_file(thumbnail_path);
-
-                  if (!thumbnail) {
-                     await sharp(file_path).resize(200, 200).toFile(thumbnail_path);
-                  }
-               }
-            } catch (error) {
-               console.log(error);
-            }
-         }
-      }
 
       const loadHttp = (req, res, next) => {
-         saveThumbnails(req, res, next);
-
-
          this.data = req.body;
+
+         if(req.files && req.files.length > 0){
+            this.data.req_upload_files = req.files;
+         }
          this.method = req.method;
 
          this.#make_workspace()
@@ -107,9 +88,9 @@ export default class Router {
                this.uploader(req, res, err => {
                   if (err instanceof multer.MulterError) {
                      console.log('A Multer error is detected', err);
-                     return res.status(500).json({error: err.message});
+                     //return res.status(500).json({error: err.message});
                   } else if (err) {
-                     console.log('Error', err);
+                     //console.log('Error', err);
                      return res.status(500).json({error: err.message});
                   }
                   loadHttp(req, res, next);
@@ -235,6 +216,8 @@ export default class Router {
          if(!this.exist_controller && !this.api_request){
             return current_controller.not_found();
          }else{
+            /**Only is in debuger */
+            await this.temporary_login();
             controller.isAuthenticated().then(authenticated => {
                authenticated && controller.isAuthorized().then(authorized => {
                   authorized && send_action();
@@ -242,6 +225,17 @@ export default class Router {
             });
          }
       }
+   }
+
+   async temporary_login() {
+      return new Promise(resolve => {
+        loopar.session.set('user', {
+            name: "Administrator",
+            email: "mail@mail.com",
+            avatar: "AD",
+            profile_picture: "",
+         }, resolve());
+      });
    }
 
    async #make() {

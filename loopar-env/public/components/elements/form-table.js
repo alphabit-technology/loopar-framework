@@ -89,7 +89,9 @@ class BaseTable extends Div {
    selectRow(row, checked) {
       const selected_rows = checked ? Array.from(new Set([...this.selectedRows, row.name])) : this.selectedRows.filter(r => r !== row.name);
 
-      this.setState({ selected_rows });
+      this.setState({ selected_rows }, () => {
+         this.set_selectors_status();
+      });
    }
 
    setPage(page) {
@@ -118,8 +120,9 @@ class BaseTable extends Div {
    select_all_visible_rows(checked = true) {
       const selected_rows = checked ? this.rows_inputs.map(r => r.name) : [];
 
-      this.setState({ selected_rows });
-      this.set_selectors_status();
+      this.setState({ selected_rows },  () => {
+         this.set_selectors_status();
+      });
    }
 
    get viewType() {
@@ -163,15 +166,8 @@ class BaseTable extends Div {
       return this.state.meta || {};
    }
 
-   /*get data(){
-      return this.state.data || {};
-   }*/
-
    get rows() {
       return this.meta.rows
-      //const data_rows = element_manage.isJSON(this.meta.rows) ? JSON.parse(this.meta.rows) : Array.isArray(this.meta.rows) ? this.meta.rows : [];
-      //return data_rows || [];
-      //return this.meta.rows || [];
    }
 
    get rowsCount() {
@@ -184,15 +180,6 @@ class BaseTable extends Div {
       this.state.meta.rows = rows;
       this.setState({ meta: this.meta });
    }
-
-   /*toggleDropdown(show) {
-      const { isOpenDropdown } = this.state;
-      if(show === false && isOpenDropdown === false){
-         return;
-      }
-
-      this.setState({isOpenDropdown: !isOpenDropdown});
-   }*/
 
    get columns() {
       const base_columns = this.baseColumns().filter(c => c.data.in_list_view);
@@ -263,16 +250,16 @@ class BaseTable extends Div {
                         key: row.name + "_selector",
                         type: "checkbox",
                         className: "custom-control-input",
-                        id: row.name,
+                        id: row.name + "_selector",
                         onChange: (e) => {
                            this.selectRow(row, e.target.checked);
                         },
-                        ref: (self) => this.selectors[row.name] = self
+                        ref: (self) => this.selectors[row.name] = self,
                      }),
                      label({
                         key: row.name + "_selector_label",
                         className: "custom-control-label",
-                        htmlFor: row.name
+                        htmlFor: row.name + "_selector",
                      })
                   ])
                }
@@ -308,7 +295,9 @@ class BaseTable extends Div {
       return elements_dict[field.element]?.is_writable;
    }
 
-   getTableRender(columns, rows){
+   getTableRender(_columns, rows){
+      const columns = _columns.filter(c => !this.hiddenColumns.includes(c.data.name))
+
       return [
          table({ className: `table table-${this.grid_size} mb-0 table-hover bordered`, style: {} }, [
             thead([
@@ -338,44 +327,53 @@ class BaseTable extends Div {
                      ])
                   ])
                ])) :
-                  rows.map(row => {
-                     this.rows_ref[row.name] = {};
-                     return tr({ key: element_manage.uuid() }, [
-                        columns.map(column => {
-                           const row_props = column.rows_props ?? {};
+               rows.map(row => {
+                  this.rows_ref[row.name] = {};
+                  return tr({ 
+                     //key: element_manage.uuid()
+                     }, [
+                     columns.map(column => {
+                        const row_props = column.rows_props ?? {};
 
-                           if (column.data.name === "selector_all") {
-                              return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
-                           }
+                        if (column.data.name === "selector_all") {
+                           return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
+                        }
 
-                           if (this.is_editable && this.fieldIsWritable(column)) {
-                              const props = { ...column };
-                              props.data ??= {};
-                              props.data.value = row[column.data.name];
+                        if (this.is_editable && this.fieldIsWritable(column)) {
+                           const props = { ...column };
+                           props.data ??= {};
+                           props.data.value = row[column.data.name];
 
-                              return td({ key: element_manage.uuid(), ...row_props, },
-                                 Element(column.element, {
-                                    //key: element_manage.uuid(),
-                                    key: row.name + "_" + column.data.name,
-                                    meta: clone(props),
-                                    withoutLabel: true,
-                                    simpleInput: true,
-                                    onChange: (e) => {
-                                       row[column.data.name] = e.target.value
-                                    },
-                                    ref: self => {
-                                       if (self) {
-                                          this.rows_ref[row.name][column.data.name] = self;
-                                       }
+                           return td({
+                                 //key: element_manage.uuid(), 
+                                 ...row_props, 
+                              },
+                              Element(column.element, {
+                                 //key: element_manage.uuid(),
+                                 key: row.name + "_" + column.data.name,
+                                 meta: clone(props),
+                                 withoutLabel: true,
+                                 simpleInput: true,
+                                 onChange: (e) => {
+                                    row[column.data.name] = e.target.value
+                                 },
+                                 ref: self => {
+                                    if (self) {
+                                       this.rows_ref[row.name][column.data.name] = self;
                                     }
-                                 })
-                              );
-                           } else {
-                              return td({ key: element_manage.uuid(), ...row_props }, typeof column.data.value == "function" ? column.data.value(row) : row[column.data.name]);
-                           }
-                        })
-                     ])
-                  })
+                                 }
+                              })
+                           );
+                        } else {
+                           return td({ 
+                              //key: element_manage.uuid(),
+                              key: row.name + "_" + column.data.name + "_td",
+                                 ...row_props
+                           }, typeof column.data.value == "function" ? column.data.value(row) : row[column.data.name]);
+                        }
+                     })
+                  ])
+               })
             ])
          ])
       ]
@@ -423,15 +421,16 @@ class BaseTable extends Div {
                                  div({ className: "card-footer" }, [
                                     a({
                                        className: "card-footer-item card-footer-item-bordered card-link",
-                                       href: `/${row.module}/${row.name}/${action}`,
-                                       element: "view_list"
-                                    }, Capitalize(action === 'list' ? 'List' : action)),
+                                       href: "#",
+                                       onClick: (e) => {
+                                          e.preventDefault();
+                                          this.deleteRow(row);
+                                       }
+                                    }, "Delete"),
                                     a({
                                        className: "card-footer-item card-footer-item-bordered card-link",
-                                       href: `/${row.module}/${row.name}/create`,
-                                       element: "add",
-                                       style: row.is_single ? { display: 'none' } : {}
-                                    }, "Add")
+                                       href: `update?document_name=${row.name}`,
+                                    }, "Update")
                                  ])
                               ]
                            ])
@@ -448,8 +447,11 @@ class BaseTable extends Div {
       return this.props.meta.__DOCTYPE__.name;
    }
 
+   get hiddenColumns() {
+      return this.props.docRef?.hiddenColumns || [];
+   }
+
    render() {
-      const meta = this.meta;
       const columns = this.columns.filter(col => col.data.hidden !== 1 && col.data.in_list_view !== 0);
       const search_fields = this.baseColumns().filter(col => this.fieldIsWritable(col) && [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) && (col.data.searchable || col.data.name === 'name'));
       const rows = Array.isArray(this.rows) ? this.rows : [];
@@ -484,7 +486,7 @@ class BaseTable extends Div {
                               meta.focus = this.currrent_input_search === c.data.name;
 
                               return div({
-                                 key: element_manage.uuid(), ...row_props,
+                                 //key: element_manage.uuid(), ...row_props,
                                  className: "col-xl-2 col-lg-3 col-md-4 col-sm-6"
                               }, [
                                  Element(c.element, {
@@ -534,7 +536,7 @@ class BaseTable extends Div {
                className: 'card-body border-top', 
                style: { 
                   overflow: this.overflow || "",
-                   ...((this.has_search_form && this.viewType === "List")  ? { paddingTop: 0 } : {}) 
+                   ...((this.has_search_form && this.viewType === "List") ? { paddingTop: 0 } : {}) 
                } 
             }, [
                ((this.viewType === "List" && this.docRef.onlyGrid !== true) || this.is_editable) ? this.getTableRender(columns, rows) : this.getGridRender(columns, rows)
@@ -688,7 +690,7 @@ class ListGridClass extends BaseTable {
                   loopar.root_app.refresh().then(() => {
                      loopar.navigate(window.location.pathname);
                   });
-                  loopar.dialog({
+                  loopar.notify({
                      type: 'success',
                      title: "Success",
                      message: `Document ${row.name} deleted`

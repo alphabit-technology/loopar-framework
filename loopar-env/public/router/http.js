@@ -75,7 +75,6 @@ class HTTP {
             const data = isJson ? await response.json() : null;
 
             if (!response.ok) {
-               console.log("response error", response)
                const error = data || {error: response.status, message: response.statusText};
                throw new Error(error.content || error.message || error);
             } else {

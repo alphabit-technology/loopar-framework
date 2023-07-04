@@ -268,8 +268,6 @@ export default class Installer {
    async install() {
       console.warn("Installing " + this.app_name);
       loopar.installing = true;
-
-      console.log(!!this.check_if_app_exists())
       
       if(this.app_name === 'loopar') {
          if(!this.check_if_app_exists()){

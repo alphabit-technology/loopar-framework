@@ -26,7 +26,7 @@ class HeaderClass extends Div {
       return ["create", "update"].includes(meta.action) ? "form" : meta.action;
    }
 
-   primaryActions(){
+   formPrimaryActions(){
       const meta = this.meta;
 
       return this.props.formRef ? [
@@ -52,10 +52,34 @@ class HeaderClass extends Div {
          ]) : null
       ] : []
    }
+
+   listPrimaryActions(){
+      const context = this.getContext();
+      return [
+         context === 'list' ? (
+            this.props.docRef.primaryAction ? this.props.docRef.primaryAction() : button({
+               className: "btn btn-success", tabindex: "0", type: "button",
+               onClick: () => {
+                  loopar.navigate('create');
+               }
+            }, [
+               span({ className: "fa fa-plus" }),
+               " New"
+            ]) 
+         ) : null,
+         this.props.has_sidebar ? button({
+            className: "btn btn-secondary", tabindex: "0", type: "button",
+            onClick: () => {
+               this.props.gui.toggleSidebar();
+            }
+         }, [
+            span({ className: "fa fa-bars" })
+         ]) : null
+      ]
+   }
+
    render(){
       const meta = this.meta;
-      const context = this.getContext();
-
       const customActions = this.props.gui.props.docRef?.customActions || {};
       return header({
          className: "page-navs shadow-sm pr-3",
@@ -73,27 +97,10 @@ class HeaderClass extends Div {
                   Object.values(customActions),
                ]),
                div({className: "btn-group mr-1"}, [
-                  ...this.primaryActions(),
+                  ...this.formPrimaryActions(),
                ]),
                div({className: "btn-group mr-1"}, [
-                  context === 'list' ? button({
-                     className: "btn btn-success", tabindex: "0", type: "button",
-                     onClick: () => {
-                        loopar.navigate('create');
-                     }
-                  }, [
-                     span({className: "fa fa-plus"}),
-                     " New"
-                     //span(`Add ${Capitalize(meta.__DOCTYPE__.name)}`)
-                  ]) : null,
-                  this.props.has_sidebar ? button({
-                     className: "btn btn-secondary", tabindex: "0", type: "button",
-                     onClick: () => {
-                        this.props.gui.toggleSidebar();
-                     }
-                  }, [
-                     span({className: "fa fa-bars"})
-                  ]) : null
+                  ...this.listPrimaryActions(),
                ])
             ])
          ])

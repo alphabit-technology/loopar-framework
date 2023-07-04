@@ -21,21 +21,25 @@ export default class ListContext extends BaseDocument {
       super.set_data(data);
       this.grid.setState({data: {meta: data}});
    }*/
+   get viewType(){
+      return this.onlyGrid === true ? "Grid" : this.state.viewType;
+   }
 
-   addCustomActions(){
-      this.addCustomAction('view_tipe', [
+   setCustomActions(){
+      super.setCustomActions();
+      this.setCustomAction('view_tipe', [
          this.onlyGrid !== true ? button({className: 'btn btn-secondary', onClick: () => {
-            const viewType = this.state.viewType === 'List' ? 'Grid' : 'List';
+            const viewType = this.viewType === 'List' ? 'Grid' : 'List';
             localStorage.setItem(this.props.meta.__DOCTYPE__.name + "_viewType", viewType);
             this.setState({viewType});
          }}, [
-            span({className: this.state.viewType === 'List' ? 'oi oi-grid-three-up' : 'oi oi-list'}),
+            span({className: this.viewType === 'List' ? 'oi oi-grid-three-up' : 'oi oi-list'}),
          ]) : null
       ])
    }
 
    render(content){
-      this.addCustomActions();
+      this.setCustomActions();
       return super.render([
          DeskGUI({
             meta: this.props.meta,
@@ -43,12 +47,13 @@ export default class ListContext extends BaseDocument {
             has_header: this.has_header,
             docRef: this
          }, [
-            content || ListGrid({
+            content,
+            !content || this.renderGrid ? ListGrid({
                meta: this.props.meta, 
                //ref: (self) => this.grid = self,
-               viewType: this.state.viewType,
+               viewType: this.viewType,
                docRef: this
-            })
+            }) : null
          ])
       ]);
    }

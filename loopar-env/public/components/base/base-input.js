@@ -43,6 +43,8 @@ export class BaseInput extends Div {
       if (prevProps.meta !== this.props.meta) {
          this.setState({
             meta: this.props.meta
+         }, () => {
+            !this.props.designer && this.props.formRef && this.validate();
          });
       }
 
