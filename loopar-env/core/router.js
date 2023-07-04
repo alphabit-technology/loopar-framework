@@ -217,7 +217,7 @@ export default class Router {
             return current_controller.not_found();
          }else{
             /**Only is in debuger */
-            await this.temporary_login();
+            //await this.temporary_login();
             controller.isAuthenticated().then(authenticated => {
                authenticated && controller.isAuthorized().then(authorized => {
                   authorized && send_action();
