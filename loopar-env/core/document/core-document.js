@@ -93,11 +93,11 @@ export default class CoreDocument {
          this.set_unique_name();
          if (validate) await this.validate();
 
-         const data = this.values_to_set_data_base;
-
          if (this.__IS_NEW__ || this.__DOCTYPE__.is_single) {
             await loopar.db.insert_row(this.__DOCTYPE__.name, this.stringify_values, this.__DOCTYPE__.is_single);
+            this.__DOCUMENT_NAME__ = this.name;
          } else {
+            const data = this.values_to_set_data_base;
             if (Object.keys(data).length) {
                await loopar.db.update_row(
                   this.__DOCTYPE__.name,
@@ -105,35 +105,33 @@ export default class CoreDocument {
                   this.__DOCUMENT_NAME__,
                   this.__DOCTYPE__.is_single
                );
-
-               const update_child = async () => {
-                  const child_values_req = this.child_values_req;
-
-                  if (Object.keys(child_values_req).length) {
-                     for (const [key, value] of Object.entries(child_values_req)) {
-                        await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE document_parent = '${this.__DOCTYPE__.name}' AND document_parent_name = '${this.__DOCUMENT_NAME__}'`)
-
-                        const rows = value;
-
-                        for (const row of (rows || [])) {
-                           row.document_parent = this.__DOCTYPE__.name;
-                           row.document_parent_name = this.__DOCUMENT_NAME__;
-
-                           const document = await loopar.new_document(key, row);
-                           await document.save();
-                        }
-                     }
-                  }
-               }
-
-               await update_child();
             }
          }
 
+         const update_child = async () => {
+            const child_values_req = this.child_values_req;
+           
+
+            if (Object.keys(child_values_req).length) {
+               for (const [key, value] of Object.entries(child_values_req)) {
+                  await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE document_parent = '${this.__DOCTYPE__.name}' AND document_parent_name = '${this.__DOCUMENT_NAME__}'`)
+
+                  let rows = typeof value === 'string' ? JSON.parse(value) : value;
+                  rows = Array.isArray(rows) ? rows : [];
+
+                  for (const row of (rows || [])) {
+                     row.document_parent = this.__DOCTYPE__.name;
+                     row.document_parent_name = this.__DOCUMENT_NAME__;
+
+                     const document = await loopar.new_document(key, row);
+                     await document.save();
+                  }
+               }
+            }
+         }
+
+         await update_child();
          const files = this.__DOCUMENT__.req_upload_files || [];
-
-         console.log("files in document", files);
-
          for(const file of files){
             const file_manager = await loopar.new_document("File Manager");
             file_manager.req_upload_file = file;
@@ -160,7 +158,7 @@ export default class CoreDocument {
    async validate_select_types() {
       const errors = [];
       for (const field of Object.values(this.#fields)) {
-         if (field.element === SELECT) {
+         if (field.element === SELECT && field.options && typeof field.options === 'string') {
             const options = (field.options || "").split("\n");
 
             if (!field.value || field.value === "") continue;
@@ -243,9 +241,16 @@ export default class CoreDocument {
       }, {});
    }
 
+   async rawValues() {
+      return Object.values(this.#fields).reduce(async (acc, cur) => {
+         return { ...await acc, [cur.name]: cur.value }
+      }, {});
+   }
+
    async get_child_values(field) {
       return await loopar.get_list(field, {
          filters: {
+
             "=": {
                document_parent: this.__DOCTYPE__.name,
             },
@@ -260,7 +265,7 @@ export default class CoreDocument {
 
    get stringify_values() {
       return Object.values(this.#fields)
-         .filter(field => field.name !== ID)
+         .filter(field => field.name !== ID && field.element !== FORM_TABLE)
          .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringify_value }), {});
    }
 

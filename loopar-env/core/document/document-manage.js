@@ -63,7 +63,9 @@ class DocumentManage {
          this.document_path_file :
          type === 'Form' ? './document/base-form.js' : './document/base-document.js';
 
-      return file_manage.import_file(document_path_file);
+      return file_manage.import_file(document_path_file, () => {
+         loopar.throw({code: 404, message: `Document ${doctype.name} not found`});
+      });
    }
 }
 

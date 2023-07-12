@@ -8,7 +8,7 @@ import SingleController from "./core/controller/single-controller.js";
 import InstallerController from "./core/controller/installer-controller.js";
 import * as Helpers from "./core/helper.js";
 import Installer from "./modules/core/installer/installer.js";
-import {elements_names} from "./core/global/element-definition.js";
+import {elements_names, elementsNameByType} from "./core/global/element-definition.js";
 
 export {
    loopar,
@@ -21,7 +21,8 @@ export {
    file_manage,
    Helpers,
    Installer,
-   elements_names
+   elements_names,
+   elementsNameByType
 };
 
 await server.initialize();

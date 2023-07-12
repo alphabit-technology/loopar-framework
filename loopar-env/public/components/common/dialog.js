@@ -1,12 +1,11 @@
 import {div,h5,button,span,i,label,input} from "/components/elements.js";
 import {loopar} from "/loopar.js";
+window.dialogsCount ??= 0;
 
 export default class Dialog extends React.Component {
    constructor(props) {
       super(props);
-      window.dialogsCount ??= 0;
-      window.dialogsCount++;
-
+      
       this.state = {
          type: props.type,
          title: props.title,
@@ -84,38 +83,54 @@ export default class Dialog extends React.Component {
       return buttons;
    }
 
-   render(body) {
-      const {open, title, content=body, type="info"} = this.state;
+   getIcon(){
+      const {type} = this.state;
+      let icon = this.props.icon;
 
-      let icon = this.props.icon// 'fa-info-circle';
-      const hasFooter = this.props.hasFooter !== false;
-      if(type === 'alert')
-         icon = 'fa-exclamation-circle';
-      else if(type === 'confirm')
-         icon = 'fa-question-circle';
-      else if(type === 'error')
-         icon = 'fa-exclamation-triangle';
-      else if(type === 'success')
-         icon = 'fa-check-circle';
+      if(!icon){
+         if(type === 'alert')
+            icon = 'fa-exclamation-circle';
+         else if(type === 'confirm')
+            icon = 'fa-question-circle';
+         else if(type === 'error')
+            icon = 'fa-exclamation-triangle';
+         else if(type === 'success')
+            icon = 'fa-check-circle';
+         else if(type === 'prompt')
+            icon = 'fa-question-circle';
+         else if(type === 'info')
+            icon = 'fa-info-circle';
+         
+         icon = 'fa ' + icon;
+      }
 
       const text_colors = {
          info: 'text-blue',
          alert: 'text-dark',
          confirm: 'text-orange',
          error: 'text-red',
-         success: 'text-green'
+         success: 'text-green',
+         prompt: 'text-blue',
+
       };
 
+      return typeof icon === "string" ? i({className: `${icon} ${text_colors[type]} mr-2`}) : icon;
+   }
+
+   render(body) {
+      const {open, title, content=body, type="info", zIndex} = this.state;
+
+      const hasFooter = this.props.hasFooter !== false;
       const contentType = typeof content === "string" ? "text" : "react";
 
       return [
          div({ 
-            className: `modal-backdrop fade ${open ? 'show' : ''}`, 
-            style: { zIndex: 10000 + window.dialogsCount, display: open ? 'block' : 'none'}
+            className: `modal-backdrop fade ${open ? 'show' : ''}`,
+            style: { zIndex: zIndex, display: open ? 'block' : 'none'}
          }),
          div({
             className: `modal modal-${type} fade has-shown ${open ? 'show' : ''}`,
-            style: {display: open ? 'block' : 'none', zIndex: 10000 + window.dialogsCount, ...this.props.style || {}},
+            style: {display: open ? 'block' : 'none', zIndex: zIndex, ...this.props.style || {}},
             onClick: (e) => {
                if(e.target === e.currentTarget){
                   this.close();
@@ -129,7 +144,7 @@ export default class Dialog extends React.Component {
                div({className: 'modal-content'}, [
                   div({ className: `modal-header ${this.props.scrollable ? 'modal-body-scrolled' :''}`},[
                      h5({className: 'modal-title'}, [
-                        i({className: `fa ${this.props.icon || icon} ${text_colors[type]} mr-2`}),
+                        this.getIcon(),
                         title
                      ]),
                      button({
@@ -164,7 +179,11 @@ export default class Dialog extends React.Component {
    }
 
    show(props) {
-      this.setState({...props, open: true}, () => {
+      window.dialogsCount++;
+      this.setState({
+         ...props, open: true,
+         zIndex: 10000 + window.dialogsCount
+      }, () => {
          this.state.onShow && this.state.onShow();
       });
    }
@@ -172,7 +191,6 @@ export default class Dialog extends React.Component {
    close() {
       this.setState({open: false}, () => {
          this.state.onClose && this.state.onClose();
-         
       });
    }
 }

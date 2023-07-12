@@ -64,8 +64,7 @@ class HTTP {
       const self = this;
       options.freeze && loopar.freeze(true);
       fetch(self.url, self.options).then(async response => {
-         //console.log("response", response)
-         //if(response.ok) {
+         return new Promise(async (resolve, reject) => {
             if (response.redirected) {
                window.location.href = response.url;
                return;
@@ -76,14 +75,15 @@ class HTTP {
 
             if (!response.ok) {
                const error = data || {error: response.status, message: response.statusText};
-               throw new Error(error.content || error.message || error);
+               reject(error);
             } else {
                options.success && options.success(data);
+               resolve(data);
             }
-         //}
+         });
       }).catch(error => {
          options.error && options.error(error);
-         //console.log(error)
+         loopar.root_app?.progress(102);
          loopar.throw({
             title: error.error || 'Undefined Error',
             message: error.message || 'Undefined Error',

@@ -398,6 +398,19 @@ export class Loopar {
          return null;
       }
    }
+
+   makePath(...args) {
+      let pathArray = args; // Copiar los argumentos en un nuevo array
+
+      // Verificar si el primer parámetro no comienza con "./"
+      if (!args[0].startsWith("./")) {
+         pathArray = ["/", ...args]; // Agregar una barra diagonal al principio del array
+      }
+
+      const joinedPath = path.join(...pathArray); // Unir los elementos del array utilizando el sistema de archivos
+
+      return Helpers.decamelize(joinedPath.replaceAll(/\s/g, ''), { separator: '-' });
+   }
 }
 
 export const loopar = await new Loopar();

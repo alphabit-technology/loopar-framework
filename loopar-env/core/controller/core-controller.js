@@ -1,12 +1,12 @@
 'use strict'
 
 import express from "express";
-import path from "path";
 import AuthController from "./auth-controller.js";
 import {loopar} from "../loopar.js";
 import {lowercase,} from '../helper.js';
 import {file_manage} from "../file-manage.js";
 import {hash} from "../helper.js";
+import path from "path";
 
 export default class CoreController extends AuthController {
    error = {};
@@ -24,17 +24,18 @@ export default class CoreController extends AuthController {
 
    expose_client_files(){
       this.default_importer_files.forEach(file => {
-         this.router.use(express.static(path.join(this.controller_path, file)));
+         this.router.use(express.static(loopar.makePath(this.controller_path, file)));
       });
 
-      this.router.use(this.express.static(path.join(loopar.path_root, this.controller_path, "client")));
+      this.router.use(this.express.static(loopar.makePath(loopar.path_root, this.controller_path, "client")));
    }
 
    async client_importer() {
       const document = this.document.replaceAll(/\s+/g, '-').toLowerCase();
       const client = this.client || this.workspace;
-      const route = path.join(this.controller_path, 'client', `${document}-${client}.js`).toLocaleLowerCase();
-      return await file_manage.exist_file(route) ? `/${document}-${client}.js` : `/gui/document/${client}-context.js`;
+      const route = loopar.makePath(this.controller_path, 'client', `${document}-${client}.js`).toLowerCase();
+      const _route = await file_manage.exist_file(route) ? `/${document}-${client}.js` : `/gui/document/${client}-context.js`;
+      return loopar.makePath(_route);
    }
 
    get_code_error(code) {
@@ -75,7 +76,7 @@ export default class CoreController extends AuthController {
    }
 
    async renderError(data, template = null) {
-      this.res.render(path.join(loopar.path_framework, "workspace",  template) + ".jade", data);
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + ".jade", data);
    }
 
    redirect(url = null) {
@@ -114,7 +115,7 @@ export default class CoreController extends AuthController {
          WORKSPACE.web_app = await this.#web_app();
       }
 
-      this.res.render(path.join(loopar.path_framework, "workspace", workspace) + ".jade", {
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", workspace) + ".jade", {
          ...response,
          document: lowercase(this.document),
          client_importer: client_importer,
@@ -135,7 +136,7 @@ export default class CoreController extends AuthController {
    }
 
    async not_found() {
-      this.controller_path = "apps/loopar/modules/core/not-found";
+      this.controller_path = loopar.makePath("apps/loopar/modules/core/notFound");
       this.document = "Not Found";
       this.client = "view";
       const document = await loopar.new_document("Not Found");
@@ -155,14 +156,14 @@ export default class CoreController extends AuthController {
    }
 
    async #web_app() {
-      const exist = await loopar.db._count("App", "qubitcore-webpage");
+      const exist = await loopar.db._count("App", loopar.default_web_app);
       if(exist){
          const app = await loopar.get_document("App", loopar.default_web_app);
          return await app.__data__();
       }else{
          this.renderError({
             title: 'Error',
-            message: 'You don\'t have Install the Web App',
+            message: 'You don\'t have Install the Web App, please install it first and set as default',
             error: 404
          }, this.templateError(404));
          return {}

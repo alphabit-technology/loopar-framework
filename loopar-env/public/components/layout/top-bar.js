@@ -145,7 +145,7 @@ class TopBarClass extends Div {
                      }, [
                         //div({className: "dropdown-arrow d-lg-none"}),
                         //div({className: "dropdown-arrow ml-3 d-none d-lg-block"}),
-                        h6({className: "dropdown-header d-none d-md-block d-lg-none"}, "John Doe"),
+                        h6({className: "dropdown-header d-none d-md-block d-lg-none"}, user.name),
                         a({className: "dropdown-item", href: "/core/System%20Settings/update"}, [
                            span({className: "dropdown-icon oi oi-cog"}),
                            "System Settings"

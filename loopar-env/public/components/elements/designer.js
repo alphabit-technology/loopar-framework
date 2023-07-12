@@ -4,6 +4,7 @@ import {Element} from "/components/elements.js";
 import GlobalContext from "/components/global-context.js";
 import {loopar} from "/loopar.js";
 import {element_manage} from "../element-manage.js";
+import {Capitalize} from "../../tools/helper.js";
 
 export default class Designer extends Component {
    block_component = true;
@@ -61,7 +62,8 @@ export default class Designer extends Component {
                   ])
                ]),
                Dialog({
-                  title: [span({className: "fa fa-magic pr-2 text-success"}), "IA Generator via OpenAI"],
+                  title: ["IA Generator via OpenAI"],
+                  icon: span({ className: "fa fa-magic pr-2 text-success" }),
                   size: "lg",
                   open: this.state.IAGenerator,
                   scrollable: true,
@@ -96,11 +98,6 @@ export default class Designer extends Component {
                         name: "send",
                         label: "Send",
                         onClick: (e) => {
-                           if(!this.promptInput){
-                              loopar.throw("Empty prompt", "Please write a prompt to send the request");
-                              return;
-                           }
-                           //this.setState({IAGenerator: false});
                            this.prompt();
                         },
                         internalAction: 'close'
@@ -116,6 +113,16 @@ export default class Designer extends Component {
    }
 
    async prompt() {
+      if (!this.promptInput) {
+         loopar.throw("Empty prompt", "Please write a prompt to send the request.");
+         return;
+      }
+
+      if(!this.props.formRef.getValue("type")){
+         loopar.throw("Empty document", "Please select a document to send the request.");
+         return;
+      }
+
       const dialog = await loopar.dialog({
          type: "info",
          title: "Wait a moment",
@@ -133,7 +140,10 @@ export default class Designer extends Component {
          ]
       });
 
-      loopar.method('GPT', 'prompt', {prompt: this.promptInput}).then((r) => {
+      loopar.method('GPT', 'prompt', {
+         prompt: this.promptInput,
+         document_type: this.props.formRef.getValue("type"),
+      }).then((r) => {
          dialog.close();
          if(!this.state.IAOperation) return;
 
@@ -327,9 +337,26 @@ export default class Designer extends Component {
       return JSON.parse(this.state.meta.data.value || "[]");
    }
 
+   fixElements(elements) {
+      return elements.map(el => {
+         if(!el.data){
+            const names = element_manage.element_name(el.element);
+            el.data = {
+               name: names.name,
+               label: Capitalize(names.label.replaceAll('_', ' ')),
+               id: names.id
+            }
+         }
+         if(el.elements){
+            el.elements = this.fixElements(el.elements);
+         }
+         return el;
+      });
+   }
+
    set #elements(elements) {
       const data = this.state.meta.data;
-      data.value = JSON.stringify(elements);
+      data.value = JSON.stringify(this.fixElements(elements));
       this.state.meta.data = data;
 
       this.props.formRef.hydrate();

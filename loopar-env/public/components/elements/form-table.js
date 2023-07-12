@@ -304,9 +304,25 @@ class BaseTable extends Div {
                tr([
                   columns.map(c => {
                      const data = c.data;
+                     let className = `align-middle`;
+
+                     if ([SWITCH, CHECKBOX].includes(c.element)) {
+                        className += ` text-center`;
+                     } else {
+                        className += ` text-${data.align ?? 'left'}`;
+                     }
+
                      const props = data.name === "selector_all" ?
-                        { className: "col-checker align-middle", style: { maxWidth: 30 } }
-                        : { ...(data.name === "name" ? { className: "pl-3" } : {}) };
+                        { 
+                           className: "col-checker align-middle", 
+                           style: {
+                               maxWidth: 30
+                           } 
+                        } : 
+                        { 
+                           className: className,
+                           ...(data.name === "name" ? { className: "pl-3" } : {}),
+                        };
 
                      return th(props,
                         typeof data.label == "function" ? data.label() : data.label
@@ -365,11 +381,27 @@ class BaseTable extends Div {
                               })
                            );
                         } else {
+                           let value = row[column.data.name];
+                           let className = `align-middle`;
+                           if(typeof column.data.value == "function"){
+                              value = column.data.value(row);
+                           }
+
+                           if([SWITCH, CHECKBOX].includes(column.element)){
+                              value = i({className: `fa fa-fw fa-circle text-${value ? 'green' : 'red'}`});
+                              className += ` text-center`;
+                           }else{
+                              className += ` text-${column.data.align ?? 'left'}`;
+                           }
+
                            return td({ 
                               //key: element_manage.uuid(),
+                              className: className,
                               key: row.name + "_" + column.data.name + "_td",
                                  ...row_props
-                           }, typeof column.data.value == "function" ? column.data.value(row) : row[column.data.name]);
+                           }, [
+                              value
+                           ]);
                         }
                      })
                   ])

@@ -87,6 +87,10 @@ export const elements_names = Object.freeze(Object.values(elements_definition).r
    return acc;
 }, []));
 
+export const elementsNameByType = (type) => {
+   return elements_names.filter(element => elements_dict[element].type.includes(type));
+}
+
 class DataInterface {
    #element = null;
 

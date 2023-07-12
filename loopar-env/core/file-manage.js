@@ -2,6 +2,7 @@ import path from "path";
 import {loopar} from "./loopar.js";
 import {decamelize, lowercase} from './helper.js';
 import fs, {access, mkdir} from 'fs'
+import { on } from "events";
 
 class FileManage {
    async make_file(destiny, name, content, ext = 'js', replace=false) {
@@ -21,7 +22,7 @@ class FileManage {
 
    exist_file_sync(file_route) {
       try {
-         fs.accessSync(path.resolve(path.join(loopar.path_root, file_route)));
+         fs.accessSync(path.resolve(loopar.makePath(loopar.path_root, file_route)));
          return true;
       } catch (e) {
          return false;
@@ -57,6 +58,8 @@ class FileManage {
       const CONSTRUCTOR = EXTENDS ? `super(props);` : 'Object.assign(this, props);';
 
       name = this.class_name(name);
+      const file_name = this.file_name(name);
+      
       const o = importer_type === 'default' ? '' : '{';
       const c = importer_type === 'default' ? '' : '}';
 
@@ -75,11 +78,11 @@ export default class ${name}${_EXTENDS} {
    }
 
    file_name(name, ext = 'js') {
-      return `${lowercase(decamelize(name, {separator: '-'}))}.${ext}`;
+      return `${lowercase(decamelize(name, { separator: '-' }))}.${ext}`;
    }
 
    folder_name(name) {
-      return lowercase(decamelize(name, {separator: '-'}));
+      return lowercase(decamelize(name, { separator: '-' }));
    }
 
    class_name(name) {
@@ -101,7 +104,7 @@ export default class ${name}${_EXTENDS} {
    }
 
    get_app_data(app_name){
-      return this.get_config_file("installer", path.join('apps', app_name), null);
+      return this.get_config_file("installer", loopar.makePath('apps', app_name), null);
    }
 
    async set_config_file(file_name, data, path = null) {
@@ -114,7 +117,7 @@ export default class ${name}${_EXTENDS} {
       const is_relative = file_route.startsWith('.');
 
       return new Promise(resolve => {
-         access(path.resolve(path.join(loopar.path_root, file_route)), (err) => {
+         access(path.resolve(loopar.makePath(loopar.path_root, file_route)), (err) => {
             return resolve(!err);
          });
       });
@@ -128,9 +131,14 @@ export default class ${name}${_EXTENDS} {
       });
    }
 
-   async import_file(file_route) {
+   async import_file(file_route, onError = null) {
       const is_relative = file_route.startsWith('.');
-      return await import( is_relative ? file_route : path.join(loopar.path_root, file_route));
+
+      try{
+         return await import( is_relative ? file_route : loopar.makePath(loopar.path_root, file_route));
+      }catch (e) {
+         onError ? onError(e) : loopar.throw(e);
+      }
    }
 }
 

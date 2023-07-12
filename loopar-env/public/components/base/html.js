@@ -152,6 +152,15 @@ export class HTML extends React.Component {
    }
 
    makeElement(el, props = {}) {
+      if(!el.data){
+         const names = element_manage.element_name(this.props.element);
+         el.data = {
+            name: names.name,
+            label: names.label,
+            id: names.id
+         }
+      }
+      
       return Element(el.element, {...{
          ...(el.element === "tabs" && this.props.designerRef ? {key: element_manage.getUniqueKey()} : {}),
          ...(this.props.formRef ? { formRef: this.props.formRef } : {}),

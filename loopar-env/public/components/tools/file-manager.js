@@ -111,9 +111,9 @@ class FileManager{
 
    getSrc(file, preview = false, ext = null){
       if(file.src && (file.src.includes("data:") || file.src.includes("http"))){
-         return file.src;
+         return encodeURI(file.src);
       }
-      return "/uploads/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name;
+      return encodeURI("/uploads/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
    }
 
    getImagePreview(file) {

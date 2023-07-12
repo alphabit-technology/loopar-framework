@@ -17,7 +17,7 @@ export default class DeskWorkspace extends BaseWorkspace {
 
    render(){
       const {menu, collapse_menu, mobile_menu_user, width} = this.state;
-      const user = this.meta.user;
+      const user = this.meta.user || {};
       const profile_image = fileManager.getImage(user, "profile_picture", "profile.png");
 
       return super.render([

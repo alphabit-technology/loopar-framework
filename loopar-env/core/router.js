@@ -1,11 +1,9 @@
 'use strict';
 import path from "path";
 import {Capitalize, decamelize, lowercase} from './helper.js';
-import {loopar} from './loopar.js';
+import {Loopar, loopar} from './loopar.js';
 import {file_manage} from "./file-manage.js";
 import multer from "multer";
-import sharp from "sharp";
-import { timingSafeEqual } from "crypto";
 
 export default class Router {
    #route_structure = ["host", "module", "document", "action"];
@@ -157,7 +155,7 @@ export default class Router {
          this.document_name = this.module; /*Because Module called is a document_name on Module Document*/
          this.module = 'core'; /*because Module document is in core module*/
          this.document = 'Module'; /*Because Module is a document*/
-         this.action = 'list';
+         this.action = 'view';
       }
 
       const res = this.res;
@@ -213,17 +211,18 @@ export default class Router {
       if (this.controller === 'installer-controller' || this.debugger || this.workspace === "web") {
          send_action();
       } else {
-         if(!this.exist_controller && !this.api_request){
-            return current_controller.not_found();
-         }else{
-            /**Only is in debuger */
-            //await this.temporary_login();
-            controller.isAuthenticated().then(authenticated => {
-               authenticated && controller.isAuthorized().then(authorized => {
-                  authorized && send_action();
-               });
+         controller.isAuthenticated().then(authenticated => {
+            if(!authenticated && !controller.is_login_action){
+               return controller.not_found();
+            }
+            if(!this.exist_controller && !this.api_request){
+               return controller.not_found();
+            }
+
+            authenticated && controller.isAuthorized().then(authorized => {
+               authorized && send_action();
             });
-         }
+         });
       }
    }
 
@@ -245,11 +244,10 @@ export default class Router {
       await this.#set_module_path();
       await this.#set_controller_path();
 
-      this.controller_path_file = path.join(this.controller_path, `${this.controller_name}-controller.js`);
+      this.controller_path_file = loopar.makePath(this.controller_path, `${this.controller_name}-controller.js`);
 
       this.exist_controller = await file_manage.exist_file(this.controller_path_file) && await loopar.db._count("Document", {name: this.document});
-
-      this.controller_path_file = this.exist_controller ? this.controller_path_file : `./controller/${this.controller}.js`;
+      this.controller_path_file = this.exist_controller ? this.controller_path_file : `./${loopar.makePath('controller', this.controller)}.js`;
    }
 
    async #set_app_name() {
@@ -258,26 +256,24 @@ export default class Router {
       }else {
          const module = await loopar.db.get_value("Document", "module", this.document);
          if(module) this.module = module;
-         this.app_name = await loopar.db.get_value("Module", "app_name", module);
+         this.app_name = (await loopar.db.get_value("Module", "app_name", module));
          //this.app_type = await loopar.db.get_value("App", "type", this.app_name);
       }
    }
 
    async #set_app_route() {
-      this.app_route = this.controller === 'installer-controller' ? '' : path.join("apps", this.app_name || "loopar");
+      this.app_route = (this.controller === 'installer-controller' ? '' : loopar.makePath("apps", this.app_name || "loopar"));
    }
 
    async #set_controller_name() {
-      this.controller_name = this.controller === 'installer-controller' ? 'installer' :
-         decamelize(this.document.replaceAll(/\s/g, ''), {separator: '-'});
+      this.controller_name = this.controller === 'installer-controller' ? 'installer' : this.document;
    }
 
    async #set_module_path() {
-      const module = this.module.toLowerCase().replaceAll(/\s+/g, '-')
-      this.module_path = path.join(this.app_route, "modules", module);
+      this.module_path = loopar.makePath(this.app_route, "modules", this.module);
    }
 
    async #set_controller_path() {
-      this.controller_path = path.join(this.module_path, this.controller_name);
+      this.controller_path = loopar.makePath(this.module_path, this.controller_name);
    }
 }

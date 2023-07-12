@@ -78,8 +78,8 @@ export default class Component extends HTML {
       ])
    }
 
-   componentDidMount() {
-      super.componentDidMount();
+   componentDidMount(prevProps, prevState, snapshot) {
+      super.componentDidMount(prevProps, prevState, snapshot);
       if(this.props.designer){
          this.addClass("element designer");
          if(this.droppable || this.props.droppable){
@@ -125,10 +125,11 @@ export default class Component extends HTML {
          if(src && src.length > 0){
             this.has_image = true;
             src = src[0];
+            const imageUrl = src.src || "/uploads/empty-image.svg";
 
             if(image){
                return {
-                  src: src.src || "/uploads/empty-image.svg",
+                  src: imageUrl,
                   alt: data.label || "",
                   title: data.description || "",
 
@@ -136,10 +137,12 @@ export default class Component extends HTML {
             }else if(this.props.element !== "image"){
                this.style = {
                   ...this.style || {},
-                  backgroundImage: `url(${src.src || "/uploads/empty-image.svg"})`,
-                  backgroundSize: data.background_size || "cover",
-                  backgroundPosition: data.background_position || "center",
-                  backgroundRepeat: data.background_repeat || "no-repeat",
+                  ...{
+                     backgroundImage: `url('${imageUrl}')`,
+                     backgroundSize: data.background_size || "cover",
+                     backgroundPosition: data.background_position || "center",
+                     backgroundRepeat: data.background_repeat || "no-repeat"
+                  }
                }
             }
             return;
@@ -153,7 +156,9 @@ export default class Component extends HTML {
 
       this.style = {
          ...this.style || {},
-         backgroundImage: "unset"
+         ...{
+            backgroundImage: "unset"
+         }
       }
    }
 }

@@ -84,6 +84,11 @@ export default class BaseForm extends BaseDocument {
       return this.form_fields[name] || null;
    }
 
+   getValue(name) {
+      const field = this.get_field(name);
+      return field ? field.val() : null;
+   }
+
    get form_values() {
       return Object.entries(this.form_fields).reduce((obj, [key, input]) => {
          if (input.group_element === FILE_INPUT){

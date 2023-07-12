@@ -5,8 +5,8 @@ export default class BaseTextBlock extends Component{
       super(props);
    }
 
-   componentDidMount(){
-      super.componentDidMount();
+   componentDidMount(prevProps, prevState, snapshot){
+      super.componentDidMount(prevProps, prevState, snapshot);
       const meta = this.props.meta;
 
       setTimeout(() => {
