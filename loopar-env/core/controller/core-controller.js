@@ -6,6 +6,7 @@ import {loopar} from "../loopar.js";
 import {lowercase,} from '../helper.js';
 import {file_manage} from "../file-manage.js";
 import {hash} from "../helper.js";
+import pug from "pug";
 import path from "path";
 
 export default class CoreController extends AuthController {
@@ -76,7 +77,7 @@ export default class CoreController extends AuthController {
    }
 
    async renderError(data, template = null) {
-      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + ".jade", data);
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplae || ".jade", data);
    }
 
    redirect(url = null) {
@@ -92,7 +93,6 @@ export default class CoreController extends AuthController {
       const response = {
          meta: meta,
          key: this.getKey(),
-         //source_url: this.url,
          client_importer: client_importer || await this.client_importer(),
          context: this.context
       }
@@ -115,15 +115,21 @@ export default class CoreController extends AuthController {
          WORKSPACE.web_app = await this.#web_app();
       }
 
-      this.res.render(loopar.makePath(loopar.path_framework, "workspace", workspace) + ".jade", {
-         ...response,
-         document: lowercase(this.document),
-         client_importer: client_importer,
-         action: this.action,
-         workspace: JSON.stringify(WORKSPACE),
-         W: workspace,
-         key: this.getKey()
-      });
+      const engineTemplae = this.engineTemplate === "pug" ? ".pug" : ".jade";
+
+      if(engineTemplae === "pug") {
+         this.res.locals.basedir = path.join(loopar.path_root, this.controller_path, "workspace", workspace);
+      }else{
+         this.res.render(loopar.makePath(loopar.path_framework, "workspace", workspace) + engineTemplae, {
+            ...response,
+            document: lowercase(this.document),
+            client_importer: client_importer,
+            action: this.action,
+            workspace: JSON.stringify(WORKSPACE),
+            W: workspace,
+            key: this.getKey()
+         });
+      }
    }
 
    getKey(route = this.url) {
