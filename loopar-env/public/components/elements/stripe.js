@@ -1,4 +1,4 @@
-import {a, h6, i, span, form, button, input, small} from "../elements.js";
+import {a, h6, i, span, form, button, input, small, p} from "../elements.js";
 import {div} from "../elements.js";
 import Component from "../base/component.js";
 import { loopar } from "/loopar.js";
@@ -16,6 +16,10 @@ export default class StripeClass extends Component {
          ...this.state,
          open: props.open,
       }
+   }
+
+   get open() {
+      return this.state.open === true;
    }
 
    render(content = null) {
@@ -39,13 +43,14 @@ export default class StripeClass extends Component {
             size: "md",
             title: this.data.label || "Payment",
             id: "payment_modal",
-            open: this.state.open,
+            open: this.open,
             icon: "fa fa-lock",
             onClose: () => {
                this.setState({
                   open: false
+               }, () => {
+                  this.props.onClose && this.props.onClose();
                });
-               this.props.onClose && this.props.onClose();
             },
             hasFooter: false,
             buttons: [],
@@ -69,7 +74,6 @@ export default class StripeClass extends Component {
                }
             ],*/
          }, [
-            span({ className: "fab fa-stripe fa-4x" }),
             small({className: "text-muted"}, [
                "Your payment is secure with us. We've partnered with Stripe, a trusted and industry-leading payment platform. Rest assured that your transaction is protected by Stripe's state-of-the-art security measures. Your trust and peace of mind are our top priorities."
             ]),
@@ -129,6 +133,9 @@ export default class StripeClass extends Component {
                         ]),
                      ]),
                      div({id: "payment-request-button"}),
+                     div({className: 'col-12 text-center'}, [
+                        span({className: "fab fa-stripe fa-5x"})
+                     ]),
                   ])
                ])
             ])

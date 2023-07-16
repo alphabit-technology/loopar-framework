@@ -37,6 +37,7 @@ export default class Dialog extends React.Component {
       const buttons = this.state.buttons || [];
       if(buttons.length === 0) {
          buttons.push({
+            name: "ok",
             text: 'OK',
             onClick: () => {
                this.state.ok && this.state.ok(this.state.value);
@@ -47,6 +48,7 @@ export default class Dialog extends React.Component {
 
          this.state.type === "confirm" &&
          buttons.push({
+            name: "cancel",
             text: 'Cancel',
             onClick: () => {
                this.state.cancel && this.state.cancel();
@@ -163,12 +165,18 @@ export default class Dialog extends React.Component {
                         div({}, content)
                   ]),
                   hasFooter ? div({className: 'modal-footer'}, this.buttons.map(b => {
+                     console.log("button", b);
                      return button({
                         type: 'button',
                         className: b.className || `btn btn-${b.type || 'primary'}`,
                         onClick: () => {
                            b.dismiss && this.close();
                            b.onClick();
+                        },
+                        ref: ref => {
+                           if(ref){
+                              this[`button_${b.name}`] = ref;
+                           }
                         }
                      }, b.content || b.text || b.label);
                   })) : null
@@ -192,6 +200,10 @@ export default class Dialog extends React.Component {
       this.setState({open: false}, () => {
          this.state.onClose && this.state.onClose();
       });
+   }
+
+   componentDidUpdate() {
+      this.button_ok?.focus();
    }
 }
 

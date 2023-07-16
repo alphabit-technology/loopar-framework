@@ -3,10 +3,13 @@ import { DragAndDropUtils } from "/tools/drag-and-drop.js";
 import { styleToObject } from "/components/element-manage.js";
 import { Element } from "/components/elements.js";
 import {element_manage} from "../element-manage.js";
+import { Capitalize } from "../../tools/helper.js";
 
 export class HTML extends React.Component {
    states = [];
    elements_list = [];
+   attrs = {};
+   attrsList = [];
 
    get $state() {
       return (this.states.length > 0 ? this.states[this.states.length - 1] : this.state) || {};
@@ -112,9 +115,10 @@ export class HTML extends React.Component {
                return acc;
             }, {}),
             ...{ style: this.getStyle },
-            ...this.state.attrs,
+            //...this.state.attrs,
             ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]()} : {}),
-            ...animations
+            ...animations,
+            ...this.attrs
          }
       ]
 
@@ -202,8 +206,25 @@ export class HTML extends React.Component {
    }
 
    on(event, callback) {
-      this.setAttrs({ ["on" + event]: () => { callback() } });
+      this.attrsList["on" + Capitalize(event) ] ??= [];
+
+      const events = this.attrsList["on" + Capitalize(event) ];
+
+      const check = events.some(e => {
+         return e.toString() === callback.toString();
+      });
+
+      if (!check) {
+         events.push(callback);
+      }
+
+      this.attrs["on" + Capitalize(event) ] = (e) => {
+         events.forEach(callback => {
+            callback(e);
+         });
+      }
    }
+
 
    show() {
       this.removeClass("no-display");
@@ -345,6 +366,8 @@ export class HTML extends React.Component {
       this.onRemove && this.onRemove();
    }
 
+   makeEvents() {}
+
    get meta() {
       const meta = this.state.meta || this.props.meta || {};
       return meta || {};
@@ -357,6 +380,10 @@ export class HTML extends React.Component {
 
    get node() {
       return this._reactInternals.child.stateNode;
+   }
+
+   focus() {
+      this.node?.focus();
    }
 
    css(prop, value = null) {

@@ -111,6 +111,7 @@ export class BaseInput extends Div {
             ...([CHECKBOX, SWITCH].includes(this.input_type) ? { checked: value_is_true(data.value) } : {}),
             ...(this.input_tag_name === "textarea" ? { rows: data.rows || 5 } : {}),
             ...(this.input_type === "file" ? { multiple: this.state.multiple, accept: this.state.accept } : {}),
+            
          }).tag(this.input_tag_name)
       ]
    }
@@ -127,6 +128,10 @@ export class BaseInput extends Div {
 
    focus() {
       this.input?.node?.focus();
+   }
+
+   on(event, callback) {
+      this.input?.on(event, callback);
    }
 
    disable(on_disable = true) {

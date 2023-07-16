@@ -12,12 +12,10 @@ export default class WebWorkspace extends BaseWorkspace {
 
    render(){
       const data = this.props.meta || {};
-      //const menu_data = data.menu_data.__DOCUMENT__;
       const web_app = data.web_app.__DOCUMENT__;
       const menu_data = web_app.menu_items;
       const menu_items = menu_data.rows;
 
-      //const menu_items = menu_data.menu_items.rows;
       const user = data.user;
       const logo = fileManager.getImage(web_app, "logo");
       const logo_width = parseInt(web_app.logo_width || 60);
@@ -110,19 +108,10 @@ export default class WebWorkspace extends BaseWorkspace {
       ]);
    }
 
-   componentDidMount(){
-      super.componentDidMount();
+   componentDidMount(prevProps, prevState, snapshot) {
+      super.componentDidMount(prevProps, prevState, snapshot);
+      
       AOS.init();
-   }
-
-   navigate(url){
-      loopar.navigate(url);
-      loopar.current_page_name = url;
-      this.setState({});
-   }
-
-   make(){
-      super.make();
       Object.values(this.footer.node.getElementsByTagName("a")).forEach(a => {
          a.addEventListener("click", (e) => {
             e.preventDefault();
@@ -131,5 +120,11 @@ export default class WebWorkspace extends BaseWorkspace {
             this.navigate(a.href.split("/").pop());
          });
       });
+   }
+
+   navigate(url){
+      loopar.navigate(url);
+      loopar.current_page_name = url;
+      this.setState({});
    }
 }

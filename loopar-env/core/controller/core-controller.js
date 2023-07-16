@@ -6,13 +6,12 @@ import {loopar} from "../loopar.js";
 import {lowercase,} from '../helper.js';
 import {file_manage} from "../file-manage.js";
 import {hash} from "../helper.js";
-import pug from "pug";
-import path from "path";
 
 export default class CoreController extends AuthController {
    error = {};
    default_importer_files = ['index', 'form'];
    response = {};
+   #engineTemplate = 'pug';
 
    constructor(props) {
       super(props);
@@ -76,8 +75,12 @@ export default class CoreController extends AuthController {
       }
    }
 
+   get engineTemplate(){
+      return "." + this.#engineTemplate;
+   }
+
    async renderError(data, template = null) {
-      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplae || ".jade", data);
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplae, data);
    }
 
    redirect(url = null) {
@@ -111,25 +114,18 @@ export default class CoreController extends AuthController {
          WORKSPACE.menu_data = this.has_sidebar ? await CoreController.#sidebar_data() : [];
          
       } else if(workspace === "web") {
-         //WORKSPACE.menu_data = await CoreController.#menu_data();
          WORKSPACE.web_app = await this.#web_app();
       }
 
-      const engineTemplae = this.engineTemplate === "pug" ? ".pug" : ".jade";
-
-      if(engineTemplae === "pug") {
-         this.res.locals.basedir = path.join(loopar.path_root, this.controller_path, "workspace", workspace);
-      }else{
-         this.res.render(loopar.makePath(loopar.path_framework, "workspace", workspace) + engineTemplae, {
-            ...response,
-            document: lowercase(this.document),
-            client_importer: client_importer,
-            action: this.action,
-            workspace: JSON.stringify(WORKSPACE),
-            W: workspace,
-            key: this.getKey()
-         });
-      }
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", workspace) + this.engineTemplate, {
+         ...response,
+         document: lowercase(this.document),
+         client_importer: client_importer,
+         action: this.action,
+         workspace: JSON.stringify(WORKSPACE),
+         W: workspace,
+         key: this.getKey()
+      });
    }
 
    getKey(route = this.url) {
