@@ -115,7 +115,7 @@ export class HTML extends React.Component {
                return acc;
             }, {}),
             ...{ style: this.getStyle },
-            //...this.state.attrs,
+            ...this.state.attrs,
             ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]()} : {}),
             ...animations,
             ...this.attrs

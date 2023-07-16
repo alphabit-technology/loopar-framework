@@ -3,7 +3,7 @@
 
 import { access } from 'fs'
 import DataBase from '../database/database.js';
-import DataBaseMongo from '../database/database-mongo.js';
+import DataBaseSqlLite from '../database/database sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { document_manage } from './document/document-manage.js';
 import path from "path";
@@ -67,7 +67,8 @@ export class Loopar {
       console.log('Initializing Loopar...');
       await this.GlobalEnvironment();
       await this.#load_config();
-      this.db = new DataBaseMongo();
+      //this.db = new DataBase();
+      this.db = new DataBaseSqlLite();
       await this.db.initialize();
       await this.make_config();
       this.utils = Helpers;
