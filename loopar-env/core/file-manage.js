@@ -2,7 +2,6 @@ import path from "path";
 import {loopar} from "./loopar.js";
 import {decamelize, lowercase} from './helper.js';
 import fs, {access, mkdir} from 'fs'
-import { on } from "events";
 
 class FileManage {
    async make_file(destiny, name, content, ext = 'js', replace=false) {
@@ -95,6 +94,7 @@ export default class ${name}${_EXTENDS} {
       try {
          return JSON.parse(fs.readFileSync(path.resolve(loopar.path_root, path_file), 'utf8') || {});
       }catch (e) {
+         console.log(['get_config_file err', e, if_error]);
          if(if_error === "throw"){
             throw new Error(e);
          }else{

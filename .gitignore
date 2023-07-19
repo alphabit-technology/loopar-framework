@@ -5,3 +5,4 @@ config
 apps
 public/uploads
 public/js/components
+database

@@ -3,7 +3,7 @@
 
 import { access } from 'fs'
 import DataBase from '../database/database.js';
-import DataBaseSqlLite from '../database/database sqlite.js';
+import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { document_manage } from './document/document-manage.js';
 import path from "path";
@@ -15,7 +15,7 @@ import elementGenerator from "./element-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
 
-simpleGit().clean(CleanOptions.FORCE);
+//simpleGit().clean(CleanOptions.FORCE);
 
 export class Loopar {
    installing = false;
@@ -56,6 +56,7 @@ export class Loopar {
    }
 
    git(app) {
+      simpleGit().clean(CleanOptions.FORCE);
       return simpleGit(this.gitAppOptions(app));
    }
 
@@ -67,8 +68,8 @@ export class Loopar {
       console.log('Initializing Loopar...');
       await this.GlobalEnvironment();
       await this.#load_config();
-      //this.db = new DataBase();
-      this.db = new DataBaseSqlLite();
+      this.db = new DataBase();
+      //this.db = new DataBaseSqlLite();
       await this.db.initialize();
       await this.make_config();
       this.utils = Helpers;
@@ -78,7 +79,7 @@ export class Loopar {
       if (data) {
          Object.assign(this, data);
       } else {
-         await this.#load_config(file_manage.get_config_file('loopar.config'));
+         await this.#load_config(file_manage.get_config_file('loopar.config', null, {}));
       }
    }
 
@@ -208,7 +209,7 @@ export class Loopar {
       await this.#write_default_settings();
 
       env.db_config = file_manage.get_config_file('db.config');
-      env.loopar_config = file_manage.get_config_file('loopar.config');
+      env.loopar_config = file_manage.get_config_file('loopar.config', null, {});
       env.server_config = file_manage.get_config_file('server.config');
 
       process.on('uncaughtException', err => {

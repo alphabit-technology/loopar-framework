@@ -279,7 +279,9 @@ export default class Installer {
          await loopar.db.alter_schema();
 
          await this.#make_core_table();
+         console.log("make_core_table")
       }
+
       await this.#make_doctypes();
       await this.#insert_app_data();
 

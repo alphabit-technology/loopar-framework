@@ -87,7 +87,7 @@ export default class CoreDocument {
    async save() {
       const args = arguments[0] || {};
       
-      const validate = args.validate || true;
+      const validate = args.validate !== false;
 
       return new Promise(async resolve => {
          this.set_unique_name();

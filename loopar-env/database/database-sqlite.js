@@ -1,14 +1,18 @@
 'use strict';
+import sqlite3 from 'sqlite3';
+import fs from 'fs';
+
 
 import mysql from 'mysql';
 import ObjectManage from "../core/ObjectManage.js";
 //import {element_definition} from '../core/global/element-definition.js';
 import { UPPERCASE } from '../core/helper.js';
 import { loopar } from "../core/loopar.js";
+import { file_manage } from "../core/file-manage.js";
 
 const ENGINE = 'ENGINE=INNODB';
 
-export default class DataBase extends ObjectManage {
+export default class DataBaseSqlLite extends ObjectManage {
     #connection = null;
     table_prefix = 'tbl';
     transaction = false;
@@ -27,7 +31,11 @@ export default class DataBase extends ObjectManage {
     }
 
     async initialize() {
-        this.#connection = new mysql.createConnection(this.db_config);
+        await file_manage.make_folder('', "database");
+        await file_manage.make_file('database', this.database, '', 'db', true);
+        const dbPath = loopar.makePath(loopar.path_root, 'database', `${this.database}.db`);
+
+        this.#connection = new sqlite3.Database(dbPath);
     }
 
     datatype(field) {
@@ -38,7 +46,7 @@ export default class DataBase extends ObjectManage {
 
         const data_type = (type) => {
             if (field.element === ID) {
-                return 'INT(11) AUTO_INCREMENT';
+                return 'INTEGER PRIMARY KEY AUTOINCREMENT';
             }
 
             const types = [
@@ -66,13 +74,13 @@ export default class DataBase extends ObjectManage {
 
     start() {
         if (this.#connection) {
-            this.#connection.connect();
+            //this.#connection.connect();
         }
     }
 
     end() {
         if (this.#connection) {
-            this.#connection.end();
+            //this.#connection.end();
         }
     }
 
@@ -96,16 +104,14 @@ export default class DataBase extends ObjectManage {
         const connection = this.connection;
 
         return new Promise(resolve => {
-            connection.beginTransaction(async err => {
-                if (err) {
-                    this.throw(err);
-                }
+            connection.serialize(async () => {
+                connection.run('BEGIN TRANSACTION');
 
                 const promises_transaction = this.transactions.map(query => {
                     return new Promise(resolve => {
-                        connection.query(query, (err, rows, fields) => {
+                        connection.run(query, "", (err) => {
                             if (err) {
-                                connection.rollback(() => {
+                                connection.run('ROLLBACK', "", (err) => {
                                     this.throw(err);
                                 });
                             } else {
@@ -117,15 +123,16 @@ export default class DataBase extends ObjectManage {
 
                 await Promise.all(promises_transaction);
 
-                connection.commit(error => {
-                    if (error) {
-                        connection.rollback(() => {
-                            this.throw(error);
+                connection.run('COMMIT', "", (err) => {
+                    if (err) {
+                        connection.run('ROLLBACK', "", (err) => {
+                            this.throw(err);
                         });
                     }
                     resolve();
                 });
             });
+
         });
     }
 
@@ -137,7 +144,6 @@ export default class DataBase extends ObjectManage {
     }
 
     execute(query = this.query, in_transaction = true) {
-        //console.log(["**********execute query**********", query, "**********execute query**********"]);
         return new Promise(async (resolve, reject) => {
             if (this.transaction && in_transaction) {
                 this.transactions.push(query);
@@ -146,9 +152,15 @@ export default class DataBase extends ObjectManage {
                 try {
                     const connection = this.connection;
 
-                    connection.query(query, (err, result) => {
+                    console.log(["**********execute query**********", query, "**********execute query**********"])
+
+                    connection.all(query, [], function (err, result) {
                         err ? reject(err) : resolve(result);
                     });
+                    /*connection.run(query, (err, result) => {
+                        console.log(["**********execute query**********", result, "**********execute query**********"]);
+                        err ? reject(err) : resolve(result);
+                    });*/
                 } catch (err) {
                     reject(err);
                 }
@@ -190,18 +202,18 @@ export default class DataBase extends ObjectManage {
 
                     if (sub_operand) {
                         if (field === 'CONCAT') {
-                            return `CONCAT(${definition.CONCAT.map(field => con.escapeId(field)).join(',')}) ${sub_operand} ${con.escape(definition.value)}`;
+                            return `CONCAT(${definition.CONCAT.map(field => this.escapeId(field)).join(',')}) ${sub_operand} ${this.escape(definition.value)}`;
 
                         } else if (sub_operand === 'IN' || sub_operand === 'NOT IN') {
-                            return `${field} ${sub_operand} (${value.map(v => con.escape(v)).join(',')})`;
+                            return `${field} ${sub_operand} (${value.map(v => this.escape(v)).join(',')})`;
 
                         } else if (sub_operand === 'BETWEEN' || sub_operand === 'NOT BETWEEN') {
-                            return value.map(v => con.escape(v)).join(sub_operand);
+                            return value.map(v => this.escape(v)).join(sub_operand);
 
                         } else if (sub_operand === 'LIKE' || sub_operand === 'NOT LIKE') {
-                            return `${field} ${sub_operand} ${con.escape(`%${value}%`)}`;
+                            return `${field} ${sub_operand} ${this.escape(`%${value}%`)}`;
                         } else {
-                            return `AND ${field} ${sub_operand} ${con.escape(value)}`;
+                            return `AND ${field} ${sub_operand} ${this.escape(value)}`;
                         }
                     }
                 }
@@ -238,6 +250,7 @@ export default class DataBase extends ObjectManage {
     }
 
     async #escape(value, connection = null) {
+        return value;
         connection = connection || this.connection;
 
         return connection.escape(value);
@@ -251,7 +264,7 @@ export default class DataBase extends ObjectManage {
                 const fields = ['name', 'document', 'field', 'value'];
 
                 const values = Object.entries(data).reduce((acc, [field, value]) => {
-                    acc.push(`(${con.escape(document + '-' + field)},${con.escape(document)},${con.escape(field)},${con.escape(value)})`);
+                    acc.push(`(${this.escape(document + '-' + field)},${this.escape(document)},${con.escape(field)},${this.escape(value)})`);
 
                     return acc;
                 }, []);
@@ -264,13 +277,28 @@ export default class DataBase extends ObjectManage {
 
                 this.execute(query, false).then(resolve).catch(reject);
             } else {
-                con.query(`INSERT INTO ${this.table_name(document)} SET ?`, data, function (error, results) {
+                const table = this.table_name(document);
+                const query = `INSERT INTO ${table} (${Object.keys(data).join(', ')}) VALUES (${Object.keys(data).map(() => '?').join(', ')})`;
+                const values = Object.values(data);
+
+                con.run(query, values, function (error, results) {
+                    error ? reject(error) : resolve(results);
+                });
+
+                /*return new Promise((resolve, reject) => {
+                    this.execute(query).then(result => {
+                        resolve(result);
+                    }).catch(err => {
+                        reject(err);
+                    });
+                });*/
+                /*con.query(`INSERT INTO ${this.table_name(document)} SET ?`, data, function (error, results) {
                     if (error) {
                         reject(error);
                     } else {
                         resolve(results);
                     }
-                });
+                });*/
             }
         });
     }
@@ -279,13 +307,13 @@ export default class DataBase extends ObjectManage {
         const connection = this.connection;
 
         return Object.keys(data).map(x => {
-            return `${connection.escapeId(x)}=${connection.escape(data[x])}`
+            return `${this.escapeId(x)}=${this.escape(data[x])}`
         }).join(',');
     }
 
     async update_row(document, data = {}, name, is_single = false) {
         const connection = this.connection;
-        const query = `UPDATE ${this.table_name(document)} SET ${this.merge_data(data)} WHERE \`name\`=${connection.escape(name)}`;
+        const query = `UPDATE ${this.table_name(document)} SET ${this.merge_data(data)} WHERE \`name\`=${this.escape(name)}`;
 
         return new Promise((resolve, reject) => {
             this.execute(query).then(result => {
@@ -383,6 +411,7 @@ export default class DataBase extends ObjectManage {
 
                     const column = `${pre} ${field.data.name} ${this.datatype(field)}`
 
+                    pre
                     acc.push(column);
                 }
             }
@@ -394,7 +423,7 @@ export default class DataBase extends ObjectManage {
     table_name(document, like_param = false) {
         const connection = this.connection;
         const table = `${this.table_prefix}${document}`;
-        return like_param ? connection.escape(table) : connection.escapeId(table);
+        return like_param ? this.escape(table) : this.escapeId(table);
     }
 
     async make_table(name, fields) {
@@ -408,8 +437,10 @@ export default class DataBase extends ObjectManage {
 
         return new Promise(resolve => {
             if (exist) {
-                this.execute(`SHOW COLUMNS FROM ${TABLE}`, false).then(columns => {
-                    const db_fields = columns.reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
+                this.execute(`PRAGMA table_info(${TABLE})`, false).then(columns => {
+                    const db_fields = columns.map(col => {
+                        return {Field: col.name, ...col}
+                    }).reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
 
                     const alter_columns = [
                         ...this.make_columns(fields, db_fields),
@@ -420,10 +451,12 @@ export default class DataBase extends ObjectManage {
 
                     resolve(this.query);
                 });
-            } else {
-                const columns = [...this.make_columns(fields), `PRIMARY KEY (\`id\`)`];
 
-                this.query = `CREATE TABLE IF NOT EXISTS ${TABLE} (${columns.join(',')}) ${ENGINE};`;
+                
+            } else {
+                const columns = [...this.make_columns(fields)];
+
+                this.query = `CREATE TABLE IF NOT EXISTS ${TABLE} (${columns.join(',')});`;
 
                 resolve(this.query);
             }
@@ -489,25 +522,39 @@ export default class DataBase extends ObjectManage {
     }
 
     #make_fields(fields = ['*']) {
-        return fields.map(field => field === '*' ? field : this.connection.escapeId(field)).join(',');
+        return fields.map(field => field === '*' ? field : this.escapeId(field)).join(',');
     }
 
     async has_pk(document) {
         const table = this.table_name(document, true);
-        return new Promise(async resolve => {
-            this.execute(`SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`TABLE_NAME\` = ${table}`, false).then(res => {
-                resolve(res[0].count);
+        return new Promise(async (resolve) => {
+            this.execute(`PRAGMA table_info(${table})`, false).then((res) => {
+                const primaryKeyColumns = res.filter((column) => column.pk === 1);
+                resolve(primaryKeyColumns.length > 0);
             });
         });
     }
 
     async count(document) {
         const table = this.table_name(document, true);
-        return new Promise(async resolve => {
-            this.execute(`SELECT COUNT(table_name) as count FROM INFORMATION_SCHEMA.TABLES WHERE \`table_name\` = ${table}`, false).then(res => {
+        return new Promise(async (resolve) => {
+            this.execute(`SELECT COUNT(*) as count FROM ${table}`, false).then((res) => {
                 resolve(res[0].count);
             });
         });
+    }
+
+    escape(value) {
+        if (typeof value === 'string') {
+            return `'${value}'`;
+        }else if (typeof value === 'object') {
+            return `'${JSON.stringify(value)}'`;
+        }
+    }
+
+    escapeId(id){
+        return `\`${id}\``;
+        return id;
     }
 
     async _count(document, params = { field_name: 'name', field_value: null }, condition = null) {
@@ -518,7 +565,7 @@ export default class DataBase extends ObjectManage {
 
         return new Promise(async resolve => {
             const WHERE = param.field_value ?
-                `WHERE ${cn.escapeId(param.field_name)}=${cn.escape(param.field_value)} ${c.replace('WHERE', 'AND')}` :
+                `WHERE ${this.escapeId(param.field_name)}=${this.escape(param.field_value)} ${c.replace('WHERE', 'AND')}` :
                 c;
 
             this.execute(`SELECT COUNT(*) as count FROM ${this.table_name(document)} ${WHERE}`, false).then(async res => {
@@ -531,6 +578,8 @@ export default class DataBase extends ObjectManage {
         return new Promise(resolve => {
             if (this.connection.state === 'authenticated') return resolve(true);
 
+            resolve(this.#connection || false)
+            return;
             this.connection.connect(err => {
                 err && console.log(err);
 
@@ -555,12 +604,11 @@ export default class DataBase extends ObjectManage {
         const tables_test = ['Document', 'Module', 'Module Group'].map(table => this.table_name(table, true));
 
         const q = `
-SELECT COUNT(table_name) as count
-FROM INFORMATION_SCHEMA.TABLES 
-WHERE \`table_name\` in (${tables_test.join(',')}) AND \`table_schema\` = '${this.database}'`;
+            SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name in (${tables_test.join(',')})`;
 
         return new Promise(async resolve => {
             this.execute(q, false).then(res => {
+                console.log("res", res);
                 return resolve(res[0].count === tables_test.length);
             });
         });
