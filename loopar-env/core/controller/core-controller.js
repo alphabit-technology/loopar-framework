@@ -80,7 +80,9 @@ export default class CoreController extends AuthController {
    }
 
    async renderError(data, template = null) {
-      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplae, data);
+      console.log("renderError", loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplate);
+
+      this.res.render(loopar.makePath(loopar.path_framework, "workspace", template) + this.engineTemplate, data);
    }
 
    redirect(url = null) {
