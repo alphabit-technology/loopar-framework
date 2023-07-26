@@ -1,6 +1,6 @@
 'use strict'
-import {data_interface} from '../global/element-definition.js';
-import {value_is_true} from "../../public/tools/helper.js";
+import { dataInterface } from '../global/element-definition.js';
+import { trueValue } from "../../public/tools/helper.js";
 
 export default class DynamicField {
    #value = null;
@@ -14,38 +14,38 @@ export default class DynamicField {
       const data = props.data || {};
       delete props.data;
 
-      Object.assign(this, data, props, );
+      Object.assign(this, data, props,);
    }
 
    set value(value) {
       this.#value = value;
    }
 
-   get is_parsed() {
+   get isParsed() {
       return this.element === 'text_editor' || ['__DOCTYPE__', 'doc_structure', 'form_structure'].includes(this.name);
    }
 
    get value() {
-      const value = this.is_parsed ? this.#parse() : this.#value;
+      const value = this.isParsed ? this.#parse() : this.#value;
 
-      if([CHECKBOX, SWITCH].includes(this.element)){
-         return value_is_true(value) ? 1 : 0;
+      if ([CHECKBOX, SWITCH].includes(this.element)) {
+         return trueValue(value) ? 1 : 0;
       }
 
       return value == null || typeof value == "undefined" ? "" : value;
    }
 
-   get stringify_value() {
+   get stringifyValue() {
       const value = this.#value;
-      if([DATE, TIME, DATE_TIME].includes(this.element)){
-         if(value == null || typeof value == "undefined" || value === "" || value === "Invalid Date")
+      if ([DATE, TIME, DATE_TIME].includes(this.element)) {
+         if (value == null || typeof value == "undefined" || value === "" || value === "Invalid Date")
             return null;
 
          return dayjs(value).format(this.format);
       }
 
-      if(this.element === FORM_TABLE){
-         return this.if_json(value) ? JSON.parse(value) : "{}";
+      if (this.element === FORM_TABLE) {
+         return this.ifJson(value) ? JSON.parse(value) : "{}";
       }
 
       /*if(this.element === FILE){
@@ -60,18 +60,18 @@ export default class DynamicField {
    }
 
    #parse() {
-      return this.if_json() ? JSON.parse(this.#value) : this.#value;
+      return this.ifJson() ? JSON.parse(this.#value) : this.#value;
    }
 
-   get formatted_value() {
+   get formattedValue() {
       return this.#value;
    }
 
    validate() {
-      return data_interface(this).validate();
+      return dataInterface(this).validate();
    }
 
-   if_json() {
+   ifJson() {
       try {
          JSON.parse(this.#value);
          return true;

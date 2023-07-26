@@ -78,6 +78,10 @@ class HTTP {
                reject(error);
             } else {
                options.success && options.success(data);
+
+               if(data.notify) {
+                  loopar.notify(data.notify);
+               }
                resolve(data);
             }
          });

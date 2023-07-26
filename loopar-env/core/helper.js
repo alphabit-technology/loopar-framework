@@ -21,7 +21,8 @@ const handlePreserveConsecutiveUppercase = (decamelized, separator) => {
    );
 };
 
-function decamelize(text, {separator = '-', preserveConsecutiveUppercase = false} = {}) {
+function decamelize(text, { separator = '-', preserveConsecutiveUppercase = false } = {}) {
+   text = _text(text).replaceAll(/\s/g, '');
    if (!(typeof text === 'string' && typeof separator === 'string')) {
       throw new TypeError(
          'The `text` and `separator` arguments should be of type `string`',
@@ -114,7 +115,7 @@ function hash(text) {
  * @param {*} value
  * @returns
  */
-function value_is_true(value) {
+function trueValue(value) {
    return [true, "true", 1, "1"].includes(value);
 }
 
@@ -157,7 +158,7 @@ function random_string(length) {
    for (let i = 0; i < length; i++) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
    }
-   return 'N'+result;
+   return 'N' + result;
 }
 
 export {
@@ -166,7 +167,7 @@ export {
    lowercase,
    debug_name,
    hash,
-   value_is_true,
+   trueValue,
    humanize,
    JSONstringify,
    JSONparse,

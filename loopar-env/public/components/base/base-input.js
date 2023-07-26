@@ -1,8 +1,8 @@
 import Div from "/components/elements/div.js";
 import { elements } from "/components/elements.js";
-import { data_interface } from "/element-definition.js";
+import { dataInterface } from "/element-definition.js";
 import { label } from "/components/elements.js";
-import { Capitalize, value_is_true } from "../../tools/helper.js";
+import { Capitalize, trueValue } from "../../tools/helper.js";
 import { element_manage } from "../element-manage.js";
 
 export class BaseInput extends Div {
@@ -108,10 +108,10 @@ export class BaseInput extends Div {
             onChange: (e) => {
                this.handleInputChange(e);
             },
-            ...([CHECKBOX, SWITCH].includes(this.input_type) ? { checked: value_is_true(data.value) } : {}),
+            ...([CHECKBOX, SWITCH].includes(this.input_type) ? { checked: trueValue(data.value) } : {}),
             ...(this.input_tag_name === "textarea" ? { rows: data.rows || 5 } : {}),
             ...(this.input_type === "file" ? { multiple: this.state.multiple, accept: this.state.accept } : {}),
-            
+
          }).tag(this.input_tag_name)
       ]
    }
@@ -165,7 +165,7 @@ export class BaseInput extends Div {
    }
 
    validate() {
-      const validation = data_interface(this).validate();
+      const validation = dataInterface(this).validate();
       this.setState({ is_invalid: !validation.valid });
       return validation;
    }

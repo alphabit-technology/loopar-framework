@@ -3,16 +3,16 @@
 import cookieParser from "cookie-parser";
 import session from 'express-session';
 import express from "express";
-import {loopar} from "./loopar.js";
+import { loopar } from "./loopar.js";
 import Router from "./router.js";
 import path from "path";
 
-class Server extends Router{
+class Server extends Router {
    express = express;
    server = new express();
    url = null;
 
-   constructor() {super()}
+   constructor() { super() }
 
    async initialize() {
       await loopar.initialize();
@@ -24,12 +24,12 @@ class Server extends Router{
    }
 
    #initialize_session() {
-      const session_config = env.server_config.session;
+      const session_config = env.serverConfig.session;
       session_config.maxAge = session_config.maxAge * 1000 * 60 * 60 * 24;
 
       this.server.use(cookieParser());
       this.server.use(this.express.json());
-      this.server.use(this.express.urlencoded({extended: true}));
+      this.server.use(this.express.urlencoded({ extended: true }));
       this.server.use(session(session_config));
    }
 
@@ -39,7 +39,7 @@ class Server extends Router{
          'node_modules/mime-types'
       ];
       public_dirs.forEach(dir => {
-         this.server.use(this.express.static(path.join(loopar.path_root, dir)));
+         this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
       });
 
       //this.server.use(express.static(path.join(loopar.path_root, 'apps/loopar/modules/core/document/client')));
@@ -47,9 +47,9 @@ class Server extends Router{
 
    #start() {
       loopar.server = this;
-      const port = env.server_config.port;
+      const port = env.serverConfig.port;
 
-      const install_message = loopar.framework_installed ? '' : '\n\nContinue in your browser to complete the installation';
+      const install_message = loopar.frameworkInstalled ? '' : '\n\nContinue in your browser to complete the installation';
 
       this.server.listen(port, () => {
          console.log("Server is started in " + port + install_message);

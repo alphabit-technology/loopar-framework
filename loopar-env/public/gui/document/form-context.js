@@ -11,10 +11,11 @@ export default class FormContext extends BaseForm {
       if (content) return content;
       const meta = this.props.meta;
 
+      console.log("FormContext", meta);
       return super.render([
          DeskGUI({
             meta: meta,
-            has_sidebar: true,
+            hasSidebar: true,
             has_header: true,
             ref: gui => this.gui = gui,
             sidebarHeaderContent: this.sidebarHeaderContent,
@@ -41,7 +42,7 @@ export default class FormContext extends BaseForm {
                         if (el.data.name) {
                            if (self.is_writable)
                               this.form_fields[el.data.name] = self;
-                           else 
+                           else
                               this[el.data.name] = self;
                         }
                      }

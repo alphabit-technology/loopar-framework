@@ -1,19 +1,19 @@
-import {Capitalize} from "/tools/helper.js";
-import {loopar} from "/loopar.js";
-import {Breadcrumbs} from "/components/layout/breadcrumbs.js";
+import { Capitalize } from "/tools/helper.js";
+import { loopar } from "/loopar.js";
+import { Breadcrumbs } from "/components/layout/breadcrumbs.js";
 import Div from "/components/elements/div.js";
-import {header, div, span, h6, h1, button} from "/components/elements.js";
+import { header, div, span, h6, h1, button } from "/components/elements.js";
 
 class HeaderClass extends Div {
    constructor(props) {
       super(props);
    }
 
-   get meta(){
+   get meta() {
       return this.props.meta;
    }
 
-   getTitle(){
+   getTitle() {
       const meta = this.meta;
       const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
 
@@ -21,12 +21,12 @@ class HeaderClass extends Div {
          (['list', 'view'].includes(context) || meta.action === 'create') ? meta.__DOCTYPE__.name : meta.__DOCUMENT__.name) || meta.__DOCTYPE__.name;
    }
 
-   getContext(){
+   getContext() {
       const meta = this.meta;
       return ["create", "update"].includes(meta.action) ? "form" : meta.action;
    }
 
-   formPrimaryActions(){
+   formPrimaryActions() {
       const meta = this.meta;
 
       return this.props.formRef ? [
@@ -36,7 +36,7 @@ class HeaderClass extends Div {
                this.props.formRef.save();
             }
          }, [
-            span({className: "fa fa-save mr-1"}),
+            span({ className: "fa fa-save mr-1" }),
             " Save"
             //span(`Save ${meta.__DOCTYPE__.name}`)
          ]),
@@ -53,7 +53,7 @@ class HeaderClass extends Div {
       ] : []
    }
 
-   listPrimaryActions(){
+   listPrimaryActions() {
       const context = this.getContext();
       return [
          context === 'list' ? (
@@ -65,9 +65,9 @@ class HeaderClass extends Div {
             }, [
                span({ className: "fa fa-plus" }),
                " New"
-            ]) 
+            ])
          ) : null,
-         this.props.has_sidebar ? button({
+         this.props.hasSidebar ? button({
             className: "btn btn-secondary", tabindex: "0", type: "button",
             onClick: () => {
                this.props.gui.toggleSidebar();
@@ -78,28 +78,28 @@ class HeaderClass extends Div {
       ]
    }
 
-   render(){
+   render() {
       const meta = this.meta;
       const customActions = this.props.gui.props.docRef?.customActions || {};
       return header({
          className: "page-navs shadow-sm pr-3",
-         style: {paddingLeft: "1rem", marginBottom: "unset"}
+         style: { paddingLeft: "1rem", marginBottom: "unset" }
       }, [
-         div({className: "btn-account"}, [
-            div({className: "account-summary"}, [
-               h1({className: "card-title"}, Capitalize(this.getTitle())),
-               h6({className: "card-subtitle text-muted"}, [
-                  Breadcrumbs({meta: this.meta})
+         div({ className: "btn-account" }, [
+            div({ className: "account-summary" }, [
+               h1({ className: "card-title" }, Capitalize(this.getTitle())),
+               h6({ className: "card-subtitle text-muted" }, [
+                  Breadcrumbs({ meta: this.meta })
                ])
             ]),
-            div({className: "ml-auto", style: {position: "fixed", right: "10px"}}, [
-               div({className: "btn-group mr-1"}, [
+            div({ className: "ml-auto", style: { position: "fixed", right: "10px" } }, [
+               div({ className: "btn-group mr-1" }, [
                   Object.values(customActions),
                ]),
-               div({className: "btn-group mr-1"}, [
+               div({ className: "btn-group mr-1" }, [
                   ...this.formPrimaryActions(),
                ]),
-               div({className: "btn-group mr-1"}, [
+               div({ className: "btn-group mr-1" }, [
                   ...this.listPrimaryActions(),
                ])
             ])

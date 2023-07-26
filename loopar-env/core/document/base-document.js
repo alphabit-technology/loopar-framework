@@ -9,21 +9,21 @@ export default class BaseDocument extends CoreDocument {
       super(props);
    }
 
-   get_field_properties(field_name) {
+   getFieldProperties(field_name) {
       const fields = Object.values(this.fields)
          .filter(k => k.name !== "__DOCTYPE__" && k.in_list_view).map(k => k[field_name]).filter(k => lowercase(k) !== 'id');
 
       return fields.length === 0 ? ['name'] : fields;
    }
 
-   get_field_list_names() {
-      const fields = this.get_field_properties('name');
+   getFieldListNames() {
+      const fields = this.getFieldProperties('name');
 
       return fields.length === 0 ? ['name'] : fields;
    }
 
-   get_field_list_labels() {
-      const labels = this.get_field_properties('label');
+   getFieldListLabels() {
+      const labels = this.getFieldProperties('label');
 
       return labels.length === 0 ? ['Name'] : labels;
    }
@@ -51,7 +51,7 @@ export default class BaseDocument extends CoreDocument {
     *    },
     * }
     */
-   build_condition(q = null) {
+   buildCondition(q = null) {
       if (q === null) return {};
 
       return Object.entries(q).reduce((acc, [key, value], index) => {
@@ -60,7 +60,7 @@ export default class BaseDocument extends CoreDocument {
 
          const operand = [SELECT,SWITCH,CHECKBOX].includes(field.element) ? '=' : 'LIKE';
 
-         const set_condition = (where) => {
+         const setCondition = (where) => {
             if (value && value.length > 0) {
                if([SWITCH, CHECKBOX].includes(field.element)){
                   if([1, '1'].includes(value)) where[operand] = {[key]: value}
@@ -71,7 +71,7 @@ export default class BaseDocument extends CoreDocument {
          }
 
          if (index === 0) {
-            set_condition(acc);
+            setCondition(acc);
             if (Object.keys(q).length > 1) acc['AND'] = {};
 
             return acc;
@@ -82,7 +82,7 @@ export default class BaseDocument extends CoreDocument {
             current = current['AND'];
          }
 
-         set_condition(current);
+         setCondition(current);
 
          if (index < Object.keys(q).length - 1) current['AND'] = {};
 
@@ -90,7 +90,7 @@ export default class BaseDocument extends CoreDocument {
       }, {});
    }
 
-   async get_list({fields = null, filters = {}, q = null} = {}) {
+   async getList({fields = null, filters = {}, q = null} = {}) {
       if(this.__DOCTYPE__.is_single) {
          return loopar.throw({
             code: 404,
@@ -99,7 +99,7 @@ export default class BaseDocument extends CoreDocument {
       }
       
       this.pagination = {
-         page: loopar.session.get(current_controller.document + "_page") || 1,
+         page: loopar.session.get(currentController.document + "_page") || 1,
          page_size: 10,
          total_pages: 4,
          total_records: 1,
@@ -107,49 +107,49 @@ export default class BaseDocument extends CoreDocument {
          sort_order: "asc"
       };
 
-      const list_fields = fields || this.get_field_list_names();
+      const listFields = fields || this.getFieldListNames();
       //TODO: add filters on document is virtual deleted
-      const filter_if_is_deleted = {};//{'<>': {'is_deleted': 1}};
+      const filterIfIsDeleted = {};//{'<>': {'is_deleted': 1}};
 
-      if (this.__DOCTYPE__.name === 'Document' && current_controller.document !== "Document") {
-         list_fields.push('is_single');
+      if (this.__DOCTYPE__.name === 'Document' && currentController.document !== "Document") {
+         listFields.push('is_single');
       }
 
-      const condition = this.build_condition(q);
+      const condition = this.buildCondition(q);
       this.pagination.total_records = await this.records(condition);
 
       this.pagination.total_pages = Math.ceil(this.pagination.total_records / this.pagination.page_size);
       loopar.db.pagination = this.pagination;
 
-      const rows = await loopar.db.get_list(this.__DOCTYPE__.name, list_fields, {...condition, ...filters, ...filter_if_is_deleted});
+      const rows = await loopar.db.getList(this.__DOCTYPE__.name, listFields, {...condition, ...filters, ...filterIfIsDeleted});
 
       if(rows.length === 0 && this.pagination.page > 1){
          await loopar.session.set(this.__DOCTYPE__.name + "_page", 1);
-         return await this.get_list({fields, filters, q});
+         return await this.getList({fields, filters, q});
       }
 
       return Object.assign(await this.__data__(), {
-         labels: this.get_field_list_labels(),
-         fields: list_fields,
+         labels: this.getFieldListLabels(),
+         fields: listFields,
          rows: rows,
          pagination: this.pagination,
          q
       });
    }
 
-   build_condition_to_select(q = null) {
-      return {'LIKE': {'CONCAT': this.get_field_select_names(), value: `%${q}%`}};
+   buildConditionToSelect(q = null) {
+      return {'LIKE': {'CONCAT': this.getFieldSelectNames(), value: `%${q}%`}};
    }
 
-   get_field_select_names() {
+   getFieldSelectNames() {
       return Array.from(new Set([...this.__DOCTYPE__.search_fields.split(',').filter(field => field !== ''), 'name']));
    }
 
-   get_field_select_labels() {
+   getFieldSelectLabels() {
       return Array.from(new Set([...this.__DOCTYPE__.title_fields.split(',').filter(field => field !== ''), 'name']));
    }
 
-   async get_list_to_select_element(q = null) {
+   async getListToSelectElement(q = null) {
       this.pagination = {
          page: 1,
          page_size: 20,
@@ -161,15 +161,15 @@ export default class BaseDocument extends CoreDocument {
 
       loopar.db.pagination = this.pagination;
 
-      const list_fields = this.get_field_select_labels();
+      const listFields = this.getFieldSelectLabels();
 
-      const rows = await loopar.db.get_list(this.__DOCTYPE__.name, list_fields, this.build_condition_to_select(q));
+      const rows = await loopar.db.getList(this.__DOCTYPE__.name, listFields, this.buildConditionToSelect(q));
 
       this.pagination.total_records = await this.records();
       this.pagination.total_pages = Math.ceil(this.pagination.total_records / this.pagination.page_size);
 
       return Object.assign({
-         title_fields: list_fields,
+         title_fields: listFields,
          rows: rows
       });
    }

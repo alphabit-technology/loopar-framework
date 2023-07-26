@@ -1,8 +1,8 @@
-import {a, i, ul, li, h1, h4} from "../elements.js";
-import {div} from "../elements.js";
+import { a, i, ul, li, h1, h4 } from "../elements.js";
+import { div } from "../elements.js";
 import Component from "../base/component.js";
-import {element_manage} from "../element-manage.js";
-import {loopar} from "/loopar.js";
+import { element_manage } from "../element-manage.js";
+import { loopar } from "/loopar.js";
 
 export default class Tabs extends Component {
    className = "card";
@@ -19,11 +19,11 @@ export default class Tabs extends Component {
    }
 
    addTab() {
-      const elements = this.elements_dict;
+      const elements = this.elementsDict;
       const [name, label] = [`tab_${element_manage.uuid()}`, `Tab ${elements.length + 1}`];
 
       elements.push({
-         data: {name, id: name, label, droppable: true, draggable: false}
+         data: { name, id: name, label, droppable: true, draggable: false }
       });
 
       this.set_elements(elements);
@@ -31,23 +31,23 @@ export default class Tabs extends Component {
    }
 
    selectLastTab() {
-      const elements = this.elements_dict;
+      const elements = this.elementsDict;
       this.selectTab(elements[elements.length - 1]?.data?.name);
    }
 
    selectFirstTab() {
-      const elements = this.elements_dict;
+      const elements = this.elementsDict;
       this.selectTab(elements[0]?.data?.name);
    }
 
    removeTab(name) {
-      this.set_elements(this.elements_dict.filter(element => element.data.name !== name));
+      this.set_elements(this.elementsDict.filter(element => element.data.name !== name));
       this.selectLastTab();
    }
 
    selectTab(name) {
       !this.props.notManageSelectedStatus && localStorage.setItem(this.props.meta.data.name, name);
-      this.setState({active: name});
+      this.setState({ active: name });
 
       setTimeout(() => {
          this[name] && this.props.designer && loopar.sidebar_option !== "preview" && loopar.document_form.editElement(this[name].props);
@@ -55,8 +55,8 @@ export default class Tabs extends Component {
    }
 
    updateTab(name, data) {
-      const elements = this.elements_dict.map((element) => {
-         if(element.data.name === name) {
+      const elements = this.elementsDict.map((element) => {
+         if (element.data.name === name) {
             element.data = data;
          }
 
@@ -68,19 +68,19 @@ export default class Tabs extends Component {
 
    set_elements(elements) {
       super.set_elements(elements);
-      loopar.Designer.updateElements(this, this.elements_dict);
+      loopar.Designer.updateElements(this, this.elementsDict);
    }
 
-   currentTab(){
+   currentTab() {
       return this.props.notManageSelectedStatus ? null : localStorage.getItem(this.props.meta.data.name);
    }
 
-   componentDidMount(){
+   componentDidMount() {
       super.componentDidMount();
 
-      if(this.elements_dict.length === 0 && this.props.designer){
+      if (this.elementsDict.length === 0 && this.props.designer) {
          this.addTab();
-      }else {
+      } else {
          !this.checkIfTabExists(this.currentTab()) && this.selectFirstTab();
       }
    }
@@ -90,21 +90,21 @@ export default class Tabs extends Component {
    }
 
    checkIfTabExists(name) {
-      return this.elements_dict.some(element => element.data.name === name);
+      return this.elementsDict.some(element => element.data.name === name);
    }
 
-   get elements_dict(){
-      return this.props.children || super.elements_dict;
+   get elementsDict() {
+      return this.props.children || super.elementsDict;
    }
 
    render() {
-      const elements_dict = this.elements_dict;
+      const elementsDict = this.elementsDict;
       const bodyStyle = this.props.bodyStyle || {};
       return super.render([
-         div({className: 'card-header', style: {...(this.props.headerStyle || {})}}, [
+         div({ className: 'card-header', style: { ...(this.props.headerStyle || {}) } }, [
             this.props.meta.data.label ? h4({ className: "card-title" }, this.props.meta.data.label) : null,
-            ul({className: "nav nav-tabs card-header-tabs"}, [
-               elements_dict.map(element => {
+            ul({ className: "nav nav-tabs card-header-tabs" }, [
+               elementsDict.map(element => {
                   return li({
                      className: "nav-item"
                   }, [
@@ -118,7 +118,7 @@ export default class Tabs extends Component {
                      }, element.data.label)
                   ])
                }),
-               this.props.designer ? li({className: "nav-item"}, [
+               this.props.designer ? li({ className: "nav-item" }, [
                   a({
                      className: "nav-link", onClick: e => {
                         e.preventDefault();
@@ -126,7 +126,7 @@ export default class Tabs extends Component {
                         this.addTab();
                      }
                   }, [
-                     i({className: "fa fa-plus"})
+                     i({ className: "fa fa-plus" })
                   ])
                ]) : null,
             ])
@@ -138,7 +138,7 @@ export default class Tabs extends Component {
             div({
                className: "tab-content"
             }, [
-               ...elements_dict.map(element => {
+               ...elementsDict.map(element => {
                   return Tab({
                      element: "tab",
                      className: "sub-element tab-pane fade" + (element.data.name === this.state.active ? " show active" : ""),
@@ -159,7 +159,7 @@ export default class Tabs extends Component {
                         has_title: true, draggable: true, designer: true
                      } || {}),
                      ref: tab => {
-                        if(tab){
+                        if (tab) {
                            this[element.data.name] = tab;
                            if (this.props.designer) {
                               tab.parentComponent = this;
@@ -183,7 +183,7 @@ class TabClass extends Component {
       this.props.parent_element.removeTab(this.props.meta.data.name);
    }
 
-   setData(data){
+   setData(data) {
       super.setData(data);
       this.props.parent_element.updateTab(this.props.meta.data.name, data);
    }

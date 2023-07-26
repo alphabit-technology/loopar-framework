@@ -1,8 +1,8 @@
-import {div, h5} from "/components/elements.js";
+import { div, h5 } from "/components/elements.js";
 import Div from "../elements/div.js";
-import {DesignElement} from "../design-elements.js";
-import {elements_definition} from "/element-definition.js";
-import {Capitalize} from "/tools/helper.js";
+import { DesignElement } from "../design-elements.js";
+import { elementsDefinition } from "/element-definition.js";
+import { Capitalize } from "/tools/helper.js";
 
 export class DesignerFormClass extends Div {
    constructor(props) {
@@ -11,13 +11,13 @@ export class DesignerFormClass extends Div {
 
    render() {
       return super.render([
-         Object.keys(elements_definition).map((element) => {
+         Object.keys(elementsDefinition).map((element) => {
             return (
-               div({className: "col"}, [
-               h5(Capitalize(element) + " Elements"),
-                  div({className: "row"}, [
-                     elements_definition[element].filter(el => el.show_in_design !== false).map((element) => {
-                        return DesignElement({element});
+               div({ className: "col" }, [
+                  h5(Capitalize(element) + " Elements"),
+                  div({ className: "row" }, [
+                     elementsDefinition[element].filter(el => el.show_in_design !== false).map((element) => {
+                        return DesignElement({ element });
                      })
                   ])
                ])

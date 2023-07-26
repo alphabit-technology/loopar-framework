@@ -1,4 +1,4 @@
-import {http} from '/router/http.js';
+import { http } from '/router/http.js';
 
 export default class Router {
    #route = window.location;
@@ -43,7 +43,7 @@ export default class Router {
             return null;
          } else {
             let a = String(params[key]);
-            if (a && a.match(/[%'"\s\t]/)) {}
+            if (a && a.match(/[%'"\s\t]/)) { }
             return a;
          }
       }).join('/') || "/desk";
@@ -127,7 +127,7 @@ export default class Router {
       const query = ROUTE.search ? ROUTE.search.split('?') : '';
       this.route.query = query[1] || '';
 
-      const id = this.route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'document_name').join();
+      const id = this.route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'documentName').join();
 
       return hash(`${this.route.pathname}${id}`.toLowerCase());
    }*/
@@ -145,7 +145,7 @@ export default class Router {
       const isLoggedIn = this.isLoggedIn();
       const is_auth_route = route.split('/')[1] === 'auth' && !isLoggedIn;
       const is_desk_route = route.split('/')[1] === 'desk' && isLoggedIn;
-      const workspace = is_desk_route ? "" : (this.workspace === "desk" ? `/${this.workspace}` : "") ;
+      const workspace = is_desk_route ? "" : (this.workspace === "desk" ? `/${this.workspace}` : "");
 
       const ROUTE = is_auth_route ? route : route.split('/')[0] === '' ? workspace + route : route;
 
@@ -158,7 +158,7 @@ export default class Router {
       return this.user.name;
    }
 
-   get user(){
+   get user() {
       return this.root_app && this.root_app.meta.user || {};
    }
 }

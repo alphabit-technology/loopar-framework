@@ -1,76 +1,76 @@
 'use-strict';
 
-const common_props = ['draggable', 'draggable_actions'];
-const droppable_props = ['droppable', 'droppable_actions'];
+const commonProps = ['draggable', 'draggable_actions'];
+const droppableProps = ['droppable', 'droppable_actions'];
 
-const varchar_len = '(255)';
-const [text,long_text,varchar,decimal,int,mediumint,longint,date,date_time,time] =
+const varcharLen = '(255)';
+const [text, long_text, varchar, decimal, int, mediumint, longint, date, date_time, time] =
    ['text', 'longtext', 'varchar', 'decimal', 'int', 'mediumint', 'longint', 'date', 'datetime', 'time'];
 
 const [LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT] = ['layout', 'design', 'form'];
 
-export const elements_definition = {
+export const elementsDefinition = {
    [LAYOUT_ELEMENT]: [
-      {element: "section", icon: "fa fa-th-large"},
-      {element: "div", icon: "fa fa-code"},
-      {element: "row", icon: "fa fa-plus"},
-      {element: "col", icon: "fas fa-columns"},
-      {element: "card", icon: "fa fa-id-card"},
-      {element: "panel", icon: "fa fa-window-maximize"},
+      { element: "section", icon: "fa fa-th-large" },
+      { element: "div", icon: "fa fa-code" },
+      { element: "row", icon: "fa fa-plus" },
+      { element: "col", icon: "fas fa-columns" },
+      { element: "card", icon: "fa fa-id-card" },
+      { element: "panel", icon: "fa fa-window-maximize" },
       //{element: "table", icon: "fa fa-table"},
-      {element: "banner", icon: "fa fa-image"},
-      {element: "banner_image", icon: "fa fa-image"},
-      {element: "tabs", icon: "fa fa-window-maximize"}
+      { element: "banner", icon: "fa fa-image" },
+      { element: "banner_image", icon: "fa fa-image" },
+      { element: "tabs", icon: "fa fa-window-maximize" }
    ],
    [DESIGN_ELEMENT]: [
-      {element: "image", icon: "fa fa-image"},
-      {element: "text_block", icon: "fa fa-font"},
-      {element: "text_block_icon", icon: "fa fa-font"},
-      {element: "button", icon: "fa fa-hand-pointer"},
+      { element: "image", icon: "fa fa-image" },
+      { element: "text_block", icon: "fa fa-font" },
+      { element: "text_block_icon", icon: "fa fa-font" },
+      { element: "button", icon: "fa fa-hand-pointer" },
       //{element: "icon", icon: "fa fa-hand-pointer"},
-      {element: "markdown", icon: "fa fa-text-height"},
-      {element: "title", icon: "fa fa-heading"},
+      { element: "markdown", icon: "fa fa-text-height" },
+      { element: "title", icon: "fa fa-heading" },
       //{element: "subtitle", icon: "fa fa-heading"},
       //{element: "link", icon: "fa fa-link"},
       //{element: "list", icon: "fa fa-list"},
-      {element: "stripe", icon: "fab fa-stripe"},
-      {element: "gallery", icon: "fa fa-images"},
+      { element: "stripe", icon: "fab fa-stripe" },
+      { element: "gallery", icon: "fa fa-images" },
    ],
    [FORM_ELEMENT]: [
-      {element: "input", icon: "fa fa-italic", type: [varchar, varchar_len]},
-      {element: "password", icon: "fa fa-key", type: [varchar, varchar_len]},
-      {element: "date", icon: "fa fa-calendar-plus", type: [date, ''], format: 'YYYY-MM-DD'},
-      {element: "date_time", icon: "fa fa-calendar-plus", type: [date_time, ''], format: 'YYYY-MM-DD HH:mm:ss'},
-      {element: "time", icon: "fa fa-calendar-plus", type: [time, '6'], format: 'HH:mm:ss'},
-      {element: "currency", icon: "fa fa-dollar-sign", type: [decimal, '(18,6)'], show_in_design: false},
-      {element: "integer", icon: "fa-duotone fa-input-numeric", type: [int, '(11)'], show_in_design: false},
-      {element: "decimal", icon: "fa fa-00", type: [decimal, '(18,6)'], show_in_design: false},
-      {element: "select", icon: "fa fa-search-plus", type: [varchar, varchar_len]},
-      {element: "textarea", icon: "fa fa-text-height", type: [long_text, '']},
-      {element: "text_editor", icon: "fa fa-text-height", type: [long_text, '']},
-      {element: "checkbox", icon: "fa fa-check-square", type: [int, '(11)']},
-      {element: "switch", icon: "fa fa-toggle-on", type: [int, '(11)']},
-      {element: "id", icon: "fa fa-id-card", type: [int], show_in_design: false},
-      {element: "form_table", icon: "fa fa-table", type: [varchar, varchar_len]},
-      {element: "markdown_input", icon: "fa fa-text-height", type: [long_text, '']},
-      {element: "designer", icon: "fa fa-id-card", type: [long_text, '']},
-      {element: "file_input", icon: "fa fa-file", type: [long_text, '']},
-      {element: "file_uploader", icon: "fa fa-upload", type: [long_text, '']},
-      {element: "image_input", icon: "fa fa-image", type: [long_text, '']},
-      {element: "color_picker", icon: "fa fa-palette", type: [varchar, varchar_len] }
+      { element: "input", icon: "fa fa-italic", type: [varchar, varcharLen] },
+      { element: "password", icon: "fa fa-key", type: [varchar, varcharLen] },
+      { element: "date", icon: "fa fa-calendar-plus", type: [date, ''], format: 'YYYY-MM-DD' },
+      { element: "date_time", icon: "fa fa-calendar-plus", type: [date_time, ''], format: 'YYYY-MM-DD HH:mm:ss' },
+      { element: "time", icon: "fa fa-calendar-plus", type: [time, '6'], format: 'HH:mm:ss' },
+      { element: "currency", icon: "fa fa-dollar-sign", type: [decimal, '(18,6)'], show_in_design: false },
+      { element: "integer", icon: "fa-duotone fa-input-numeric", type: [int, '(11)'], show_in_design: false },
+      { element: "decimal", icon: "fa fa-00", type: [decimal, '(18,6)'], show_in_design: false },
+      { element: "select", icon: "fa fa-search-plus", type: [varchar, varcharLen] },
+      { element: "textarea", icon: "fa fa-text-height", type: [long_text, ''] },
+      { element: "text_editor", icon: "fa fa-text-height", type: [long_text, ''] },
+      { element: "checkbox", icon: "fa fa-check-square", type: [int, '(11)'] },
+      { element: "switch", icon: "fa fa-toggle-on", type: [int, '(11)'] },
+      { element: "id", icon: "fa fa-id-card", type: [int], show_in_design: false },
+      { element: "form_table", icon: "fa fa-table", type: [varchar, varcharLen] },
+      { element: "markdown_input", icon: "fa fa-text-height", type: [long_text, ''] },
+      { element: "designer", icon: "fa fa-id-card", type: [long_text, ''] },
+      { element: "file_input", icon: "fa fa-file", type: [long_text, ''] },
+      { element: "file_uploader", icon: "fa fa-upload", type: [long_text, ''] },
+      { element: "image_input", icon: "fa fa-image", type: [long_text, ''] },
+      { element: "color_picker", icon: "fa fa-palette", type: [varchar, varcharLen] }
    ]
 }
 
-export const elements_dict = Object.freeze(Object.entries(elements_definition).reduce((acc, [key, value]) => {
+export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
    value.forEach(element => {
-      const props = {props: (element.props || []).concat(common_props)};
-      acc[element.element] = {...element, ...props, ...{group: key, is_writable: key === FORM_ELEMENT}};
+      const props = { props: (element.props || []).concat(commonProps) };
+      acc[element.element] = { ...element, ...props, ...{ group: key, is_writable: key === FORM_ELEMENT } };
    });
 
    return acc;
 }, {}));
 
-export const elements_names = Object.freeze(Object.values(elements_definition).reduce((acc, current) => {
+export const elementsNames = Object.freeze(Object.values(elementsDefinition).reduce((acc, current) => {
    acc = [...acc, ...current.map(element => {
       if (!global[element.element.toUpperCase()]) {
          Object.defineProperty(global, element.element.toUpperCase(), {
@@ -88,7 +88,7 @@ export const elements_names = Object.freeze(Object.values(elements_definition).r
 }, []));
 
 export const elementsNameByType = (type) => {
-   return elements_names.filter(element => elements_dict[element].type.includes(type));
+   return elementsNames.filter(element => elementsDict[element].type.includes(type));
 }
 
 class DataInterface {
@@ -103,17 +103,17 @@ class DataInterface {
       return this.#element.data || this.#element;
    }
 
-   debug_text(text) {
+   debugText(text) {
       return text.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s/g, '');
    }
 
    /*function to replace underscore with space*/
-   replace_underscore(text) {
+   replaceUnderscore(text) {
       return text.replace(/_/g, ' ');
    }
 
    /*function to replace space with underscore*/
-   replace_space(text) {
+   replaceSpace(text) {
       return text.replace(/ /g, '_');
    }
 
@@ -124,7 +124,7 @@ class DataInterface {
       //return this.data.value// this.#element.val ? this.#element.val() : this.#element.value;
    }
 
-   validator_rules() {
+   validatorRules() {
       var type = this.#element.element === INPUT ? this.data.format || this.#element.element : this.#element.element;
 
       type = type.charAt(0).toUpperCase() + type.slice(1);
@@ -257,8 +257,7 @@ class DataInterface {
       }
    }
 
-   validator_required() {
-
+   validatorRequired() {
       const required = [true, 'true', 1, '1'].includes(this.data.required);
 
       return {
@@ -268,23 +267,23 @@ class DataInterface {
    }
 
    validate() {
-      const validator_required = this.validator_required();
+      const validator_required = this.validatorRequired();
 
       if (!validator_required.valid) {
-         return this.#validator_message(validator_required);
+         return this.#validatorMessage(validator_required);
       }
 
       if (this.data.no_validate_type) {
-         return {valid: true, message: ''};
+         return { valid: true, message: '' };
       }
 
-      const validator_rules = this.validator_rules();
+      const validator_rules = this.validatorRules();
       validator_rules.message = (validator_rules.message || "") + " in " + this.__label();
 
-      return this.#validator_message(validator_rules);
+      return this.#validatorMessage(validator_rules);
    }
 
-   #validator_message(validator) {
+   #validatorMessage(validator) {
       const message = `<strong><i class="fa fa-solid fa-angle-right mr-1" style="color: var(--red);"></i><strong>${validator.message}</strong>`
 
       return {
@@ -298,12 +297,12 @@ class DataInterface {
    }
 }
 
-export const data_interface = (element) => {
+export const dataInterface = (element) => {
    return new DataInterface(element);
 }
 
-global.ELEMENT_DEFINITION = function (element, or=null) {
-   return (elements_dict[element] || elements_dict[or]) || new Error('Element ' + element + ' not found');
+global.ELEMENT_DEFINITION = function (element, or = null) {
+   return (elementsDict[element] || elementsDict[or]) || new Error('Element ' + element + ' not found');
 }
 
 export const GlobalEnvironment = () => {
@@ -311,23 +310,23 @@ export const GlobalEnvironment = () => {
 
 
    global.fieldIsWritable = (field) => {
-      return elements_dict[field.element]?.is_writable;
+      return elementsDict[field.element]?.is_writable;
    }
-   global.VALIDATION_ERROR = {code: 400, title: 'Validation error'};
-   global.NOT_FOUND_ERROR = {code: 404, title: 'Not found'};
-   global.INTERNAL_SERVER_ERROR = {code: 500, title: 'Internal server error'};
-   global.UNAUTHORIZED_ERROR = {code: 401, title: 'Unauthorized'};
-   global.FORBIDDEN_ERROR = {code: 403, title: 'Forbidden'};
-   global.BAD_REQUEST_ERROR = {code: 400, title: 'Bad request'};
-   global.CONFLICT_ERROR = {code: 409, title: 'Conflict'};
-   global.NOT_ACCEPTABLE_ERROR = {code: 406, title: 'Not acceptable'};
-   global.UNPROCESSABLE_ENTITY_ERROR = {code: 422, title: 'Unprocessable entity'};
-   global.SERVICE_UNAVAILABLE_ERROR = {code: 503, title: 'Service unavailable'};
-   global.INTERNAL_SERVER_ERROR = {code: 500, title: 'Internal server error'};
-   global.NOT_IMPLEMENTED_ERROR = {code: 501, title: 'Not implemented'};
-   global.GATEWAY_TIMEOUT_ERROR = {code: 504, title: 'Gateway timeout'};
-   global.UNSUPPORTED_MEDIA_TYPE_ERROR = {code: 415, title: 'Unsupported media type'};
-   global.LENGTH_REQUIRED_ERROR = {code: 411, title: 'Length required'};
-   global.REQUEST_ENTITY_TOO_LARGE_ERROR = {code: 413, title: 'Request entity too large'};
-   global.REQUEST_URI_TOO_LONG_ERROR = {code: 414, title: 'Request URI too long'};
+   global.VALIDATION_ERROR = { code: 400, title: 'Validation error' };
+   global.NOT_FOUND_ERROR = { code: 404, title: 'Not found' };
+   global.INTERNAL_SERVER_ERROR = { code: 500, title: 'Internal server error' };
+   global.UNAUTHORIZED_ERROR = { code: 401, title: 'Unauthorized' };
+   global.FORBIDDEN_ERROR = { code: 403, title: 'Forbidden' };
+   global.BAD_REQUEST_ERROR = { code: 400, title: 'Bad request' };
+   global.CONFLICT_ERROR = { code: 409, title: 'Conflict' };
+   global.NOT_ACCEPTABLE_ERROR = { code: 406, title: 'Not acceptable' };
+   global.UNPROCESSABLE_ENTITY_ERROR = { code: 422, title: 'Unprocessable entity' };
+   global.SERVICE_UNAVAILABLE_ERROR = { code: 503, title: 'Service unavailable' };
+   global.INTERNAL_SERVER_ERROR = { code: 500, title: 'Internal server error' };
+   global.NOT_IMPLEMENTED_ERROR = { code: 501, title: 'Not implemented' };
+   global.GATEWAY_TIMEOUT_ERROR = { code: 504, title: 'Gateway timeout' };
+   global.UNSUPPORTED_MEDIA_TYPE_ERROR = { code: 415, title: 'Unsupported media type' };
+   global.LENGTH_REQUIRED_ERROR = { code: 411, title: 'Length required' };
+   global.REQUEST_ENTITY_TOO_LARGE_ERROR = { code: 413, title: 'Request entity too large' };
+   global.REQUEST_URI_TOO_LONG_ERROR = { code: 414, title: 'Request URI too long' };
 }

@@ -1,25 +1,26 @@
-import {loopar} from '/loopar.js';
+import { loopar } from '/loopar.js';
 import BaseDocument from "./base-document.js";
-import {http} from '/router/http.js';
+import { http } from '/router/http.js';
 
 export default class BaseForm extends BaseDocument {
    tag_name = "form";
    form_fields = {};
-   has_sidebar = true;
+   hasSidebar = true;
 
    constructor(props) {
       super(props);
    }
 
    save() {
-      this.send({action: this.props.meta.action});
+      this.send({ action: this.props.meta.action });
    }
 
-   hydrate(){
+   hydrate() {
       loopar.root_app.updateDocument(this.props.meta.key, this.form_values, false);
    }
 
-   send(options={action: this.props.meta.action}) {
+   send(options = { action: this.props.meta.action }) {
+      options = typeof options === 'string' ? { action: options } : options;
       this.hydrate();
       this.validate();
 
@@ -32,12 +33,12 @@ export default class BaseForm extends BaseDocument {
             params: this.params,
             body: this.#formData(),
             success: r => {
-               if(r && r.success){
-                  if(loopar.root_app && loopar.root_app.refresh){
+               if (r && r.success) {
+                  if (loopar.root_app && loopar.root_app.refresh) {
                      loopar.root_app.refresh().then(() => {
                         loopar.notify(r.message);
                      });
-                  }else{
+                  } else {
                      window.location.reload();
                   }
                } else {
@@ -55,15 +56,15 @@ export default class BaseForm extends BaseDocument {
       });
    }
 
-  get params() {
+   get params() {
       return {
-         document_name: this.props.meta.__DOCUMENT_NAME__,
+         documentName: this.props.meta.__documentName__,
       }
    }
 
    validate() {
-      const errors =Object.values(this.form_fields).filter(e => e.data.hidden !== 1).reduce((errors, field) => {
-         if(field.element === FORM_TABLE) {
+      const errors = Object.values(this.form_fields).filter(e => e.data.hidden !== 1).reduce((errors, field) => {
+         if (field.element === FORM_TABLE) {
             const table_errors = field?.validate();
             return [...errors, ...table_errors];
          } else {
@@ -71,7 +72,7 @@ export default class BaseForm extends BaseDocument {
          }
       }, []).flat().filter(e => !e?.valid).map(e => e?.message);
 
-      if(errors.length > 0) {
+      if (errors.length > 0) {
          loopar.throw({
             type: 'error',
             title: 'Validation error',
@@ -91,13 +92,13 @@ export default class BaseForm extends BaseDocument {
 
    get form_values() {
       return Object.entries(this.form_fields).reduce((obj, [key, input]) => {
-         if (input.group_element === FILE_INPUT){
+         if (input.group_element === FILE_INPUT) {
             const files = input.files;
             const meta_files = [];
 
-            for(let i = 0; i < files.length; i++){
+            for (let i = 0; i < files.length; i++) {
                const file = files[i];
-               if(file instanceof File){
+               if (file instanceof File) {
                   meta_files.push({
                      name: files[i].name,
                      size: files[i].size,

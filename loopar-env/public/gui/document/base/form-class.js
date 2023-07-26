@@ -18,7 +18,7 @@ export class FormClass {
          success: r => {
             if (r && r.content && r.content.success) {
                loopar.root_app.refresh().then(() => {
-                  loopar.navigate("update?document_name=" + r.content.document_name);
+                  loopar.navigate("update?documentName=" + r.content.documentName);
                });
                loopar.notify(r.content.message);
             }
@@ -58,7 +58,7 @@ export class FormClass {
 
    get params() {
       return {
-         document_name: this.data.__DOCUMENT_NAME__,
+         documentName: this.data.__documentName__,
       }
    }
 

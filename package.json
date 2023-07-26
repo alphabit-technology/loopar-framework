@@ -43,6 +43,7 @@
     "validator": "^13.7.0"
   },
   "devDependencies": {
+    "eslint": "^8.45.0",
     "mysql": "^2.18.1"
   }
 }

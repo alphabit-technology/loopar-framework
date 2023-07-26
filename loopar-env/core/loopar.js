@@ -5,9 +5,9 @@ import { access } from 'fs'
 import DataBase from '../database/database.js';
 import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
-import { document_manage } from './document/document-manage.js';
+import { documentManage } from './document/document-manage.js';
 import path from "path";
-import { file_manage } from "./file-manage.js";
+import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
 import * as Helpers from "./helper.js";
 import { simpleGit, CleanOptions } from 'simple-git';
@@ -15,25 +15,16 @@ import elementGenerator from "./element-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
 
-//simpleGit().clean(CleanOptions.FORCE);
-
 export class Loopar {
    installing = false;
-   modules_group = []
-   path_root = process.env.PWD;
-   path_framework = process.argv[1];
-   base_document_fields = ["id", "name", "type", "module", "doc_structure", "title_fields", "search_fields", "is_single", "is_static"];
+   modulesGroup = []
+   pathRoot = process.env.PWD;
+   pathFramework = process.argv[1];
+   pathCore = process.argv[1];
+   baseDocumentFields = ["id", "name", "type", "module", "doc_structure", "title_fields", "search_fields", "is_single", "is_static"];
    session = new Session();
-   constructor() {
-      /*const options = {...CleanOptions, ...{
-            baseDir: path.join(this.path_root, "apps"),
-            binary: 'git',
-            maxConcurrentProcesses: 6,
-            trimmed: false,
-         }};
 
-      this.git = simpleGit(options);*/
-   }
+   constructor() { }
 
    validateGitRepository(repository) {
       if (!this.gitRepositoryIsValid(repository)) {
@@ -48,7 +39,7 @@ export class Loopar {
 
    gitAppOptions(app) {
       return {
-         baseDir: app ? path.join(this.path_root, "apps", app) : path.join(this.path_root, "apps"),
+         baseDir: app ? path.join(this.pathRoot, "apps", app) : path.join(this.pathRoot, "apps"),
          binary: 'git',
          maxConcurrentProcesses: 6,
          trimmed: false,
@@ -67,42 +58,43 @@ export class Loopar {
    async initialize() {
       console.log('Initializing Loopar...');
       await this.GlobalEnvironment();
-      await this.#load_config();
+      await this.#loadConfig();
       this.db = new DataBase();
       //this.db = new DataBaseSqlLite();
       await this.db.initialize();
-      await this.make_config();
+      await this.makeConfig();
       this.utils = Helpers;
    }
 
-   async #load_config(data = null) {
+   async #loadConfig(data = null) {
       if (data) {
          Object.assign(this, data);
       } else {
-         await this.#load_config(file_manage.get_config_file('loopar.config', null, {}));
+         await this.#loadConfig(fileManage.getConfigFile('loopar.config', null, {}));
       }
    }
 
-   async make_config() {
-      await file_manage.make_folder('', "apps");
-      await file_manage.make_folder('public/uploads', "thumbnails");
-      await file_manage.make_folder('public/js', 'components');
-      await file_manage.make_file('public/js/components', 'elements', elementGenerator(), 'js', true);
-      const write_file = async (data) => {
-         await file_manage.set_config_file('loopar.config', data);
+   async makeConfig() {
+      await fileManage.makeFolder('', "apps");
+      await fileManage.makeFolder('public/uploads', "thumbnails");
+      await fileManage.makeFolder('public/js', 'components');
+      await fileManage.makeFile('public/js/components', 'elements', elementGenerator(), 'js', true);
 
-         await this.#load_config(data)
+      const writeFile = async (data) => {
+         await fileManage.setConfigFile('loopar.config', data);
+
+         await this.#loadConfig(data)
       }
 
-      const write_modules = async (data) => {
+      const writeModules = async (data) => {
          this.db.pagination = null;
 
-         const group_list = await this.db.get_list('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
+         const group_list = await this.db.getList('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
 
          for (const g of group_list) {
             const modules_group = { name: g.name, description: g.description, modules: [] };
 
-            const module_list = await this.db.get_list(
+            const module_list = await this.db.getList(
                'Module',
                ['name', 'icon', 'description', 'module_group'],
                {
@@ -116,7 +108,7 @@ export class Loopar {
             for (const m of module_list) {
                const module = { link: m.name, icon: m.icon, description: m.description, routes: [] };
 
-               const route_list = await this.db.get_list("Document", ['name', 'is_single'], {
+               const route_list = await this.db.getList("Document", ['name', 'is_single'], {
                   '=': { module: m.name }
                });
 
@@ -127,47 +119,43 @@ export class Loopar {
                modules_group.modules.push(module);
             }
 
-            data.modules_group.push(modules_group);
+            data.modulesGroup.push(modules_group);
          }
 
-         data.initialized_modules = true;
-         this.modules_group = data.modules_group;
+         data.initializedModules = true;
+         this.modulesGroup = data.modulesGroup;
 
-         await write_file(data);
+         await writeFile(data);
       }
 
       const data = {
-         database_initialized: this.database_initialized,
-         modules_group: []
+         databaseInitialized: this.databaseInitialized,
+         modulesGroup: []
       };
 
-      data.database_server_initialized = await this.db.test_server();
-      data.database_initialized = data.database_server_initialized && await this.db.test_database();
-      data.framework_installed = data.database_initialized && await this.db.test_framework();
+      data.databaseServerInitialized = await this.db.testServer();
+      data.databaseInitialized = data.databaseServerInitialized && await this.db.testDatabase();
+      data.frameworkInstalled = data.databaseInitialized && await this.db.testFramework();
 
-      if (data.framework_installed) {
-         data.base_document_fields = this.#make_doctype_fields(
-            JSON.parse(await this.db.get_value('Document', 'doc_structure', 'Document')) || []
+      if (data.frameworkInstalled) {
+         data.baseDocumentFields = this.#makeDoctypeFields(
+            JSON.parse(await this.db.getValue('Document', 'doc_structure', 'Document')) || []
          ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
 
-         data.base_form_fields = this.#make_doctype_fields(
-            JSON.parse(await this.db.get_value('Document', 'doc_structure', 'Form')) || []
-         ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
-
-         await write_modules(data);
-         this.default_web_app = await this.db.get_value('App', 'name', { '=': { default_app: 1 } });
+         await writeModules(data);
+         this.defaultWebApp = await this.db.getValue('App', 'name', { '=': { default_app: 1 } });
       } else {
-         await write_file(data);
+         await writeFile(data);
       }
 
       //
    }
 
-   async #write_default_settings() {
-      await file_manage.make_folder('', "config");
+   async #writeDefaultSSettings() {
+      await fileManage.makeFolder('', "config");
 
-      if (!file_manage.exist_file_sync(path.join('config', 'db.config.json'))) {
-         await file_manage.set_config_file('db.config', {
+      if (!fileManage.existFileSync(path.join('config', 'db.config.json'))) {
+         await fileManage.setConfigFile('db.config', {
             "host": "localhost",
             "user": "root",
             "password": "root",
@@ -182,12 +170,12 @@ export class Loopar {
          });
       }
 
-      if (!file_manage.exist_file_sync(path.join('config', 'loopar.config.json'))) {
-         await file_manage.set_config_file('loopar.config', {});
+      if (!fileManage.existFileSync(path.join('config', 'loopar.config.json'))) {
+         await fileManage.setConfigFile('loopar.config', {});
       }
 
-      if (!file_manage.exist_file_sync(path.join('config', 'server.config.json'))) {
-         await file_manage.set_config_file('server.config', {
+      if (!fileManage.existFileSync(path.join('config', 'server.config.json'))) {
+         await fileManage.setConfigFile('server.config', {
             "port": 3030,
             "session": {
                "secret": "secrctekeyf5d665dd56ff59fbd24699e502a528f77eb786e8",
@@ -203,14 +191,14 @@ export class Loopar {
       GlobalEnvironment();
 
       global.AJAX = 'POST';
-      global.current_controller = null;
+      global.currentController = null;
       global.env = {};
       global.dayjs = dayjs;
-      await this.#write_default_settings();
+      await this.#writeDefaultSSettings();
 
-      env.db_config = file_manage.get_config_file('db.config');
-      env.loopar_config = file_manage.get_config_file('loopar.config', null, {});
-      env.server_config = file_manage.get_config_file('server.config');
+      env.dbConfig = fileManage.getConfigFile('db.config');
+      env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
+      env.serverConfig = fileManage.getConfigFile('server.config');
 
       process.on('uncaughtException', err => {
          console.error(['uncaughtException', err]);
@@ -220,28 +208,26 @@ export class Loopar {
             this.db.transactions = [];
          }
 
-         if (current_controller) {
-            current_controller.send_error(err);
+         if (currentController) {
+            currentController.sendError(err);
          }
       });
    }
 
-   #make_doctype_fields(fields = JSON.parse(this.__DOCTYPE__.doc_structure) || []) {
+   #makeDoctypeFields(fields = JSON.parse(this.__DOCTYPE__.doc_structure) || []) {
       return fields.reduce((acc, field) => {
-         return acc.concat(field, ...this.#make_doctype_fields(field.elements || []));
+         return acc.concat(field, ...this.#makeDoctypeFields(field.elements || []));
       }, []);
    }
 
-   async #GET_DOCTYPE(document, type = 'Document', field_doc_structure, by_file = null) {
-      const fields = type === 'Document' ? this.base_document_fields : this.base_form_fields;
+   async #GET_DOCTYPE(document, type = 'Document', fieldDocStructure, byFile = null) {
+      const fields = this.baseDocumentFields;
       let doctype;
 
-
-      if (by_file) {
-         const doc = document.replaceAll(/\s+/g, '-').toLowerCase();
-         doctype = file_manage.get_config_file(doc, path.join("apps", by_file, doc));
+      if (byFile) {
+         doctype = fileManage.getConfigFile(document, loopar.makePath("apps", byFile, document));
       } else {
-         doctype = await loopar.db.get_doc(type, document, [field_doc_structure, ...fields]);
+         doctype = await loopar.db.getDoc(type, document, [fieldDocStructure, ...fields]);
       }
 
       if (!doctype) {
@@ -254,41 +240,41 @@ export class Loopar {
       return doctype;
    }
 
-   async get_document(document, document_name, data = null, by_file = null) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', by_file);
+   async getDocument(document, documentName, data = null, byFile = null) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', byFile);
 
-      if (DOCTYPE && by_file) {
-         DOCTYPE.app_name = by_file.split('/')[0];
+      if (DOCTYPE && byFile) {
+         DOCTYPE.app_name = byFile.split('/')[0];
       }
 
-      return await document_manage.get_document(DOCTYPE, document_name, data);
+      return await documentManage.getDocument(DOCTYPE, documentName, data);
    }
 
-   async new_document(document, data = {}, document_name = null, by_file = null) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', by_file);
-      if (DOCTYPE && by_file) {
-         DOCTYPE.app_name = by_file.split('/')[0];
+   async newDocument(document, data = {}, documentName = null, byFile = null) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', byFile);
+      if (DOCTYPE && byFile) {
+         DOCTYPE.app_name = byFile.split('/')[0];
       }
 
-      return await document_manage.new_document(DOCTYPE, data, document_name);
+      return await documentManage.newDocument(DOCTYPE, data, documentName);
    }
 
-   async delete_document(document, document_name, update_installer = true) {
-      const doc = await this.get_document(document, document_name);
+   async deleteDocument(document, documentName, updateInstaller = true) {
+      const doc = await this.getDocument(document, documentName);
 
-      doc.delete({ update_installer });
+      await doc.delete({ updateInstaller });
    }
 
-   async get_form(form_name, data = {}) {
-      const DOCTYPE = await this.#GET_DOCTYPE(form_name, 'Form', 'form_structure');
+   async getForm(formName, data = {}) {
+      const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
 
-      return document_manage.get_form(DOCTYPE, data);
+      return documentManage.getForm(DOCTYPE, data);
    }
 
-   async new_form(form_name, data = {}) {
-      const DOCTYPE = await this.#GET_DOCTYPE(form_name, 'Form', 'form_structure');
+   async newForm(formName, data = {}) {
+      const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
 
-      return await document_manage.new_form(DOCTYPE, data);
+      return await documentManage.newForm(DOCTYPE, data);
    }
 
    exist(path) {
@@ -299,13 +285,13 @@ export class Loopar {
       });
    }
 
-   async get_list(document, { fields = null, filters = {}, order_by = 'name', limit = 10, offset = 0, q = null } = {}, ifNotFound = null) {
-      const doc = await this.new_document(document);
+   async getList(document, { fields = null, filters = {}, order_by = 'name', limit = 10, offset = 0, q = null } = {}, ifNotFound = null) {
+      const doc = await this.newDocument(document);
 
-      return await doc.get_list({ fields, filters, order_by, limit, offset, page: this.session.get(document + "_page") || 1, q });
+      return await doc.getList({ fields, filters, order_by, limit, offset, page: this.session.get(document + "_page") || 1, q });
    }
 
-   json_parse(json) {
+   jsonParse(json) {
       try {
          return JSON.parse(json);
       } catch (e) {
@@ -313,11 +299,7 @@ export class Loopar {
       }
    }
 
-   get base_path() {
-      return Helpers.lowercase(path.join(__dirname.split('apps')[0], 'apps', 'loopar'));
-   }
-
-   get_error(error_type, error_message, error_code = 500) {
+   getError(error_type, error_message, error_code = 500) {
       return {
          code: err.code || 500,
          message: err.message || 'Internal Server Error',
@@ -342,15 +324,15 @@ export class Loopar {
          };
       }
 
-      if (current_controller) {
-         current_controller.error = error;
+      if (currentController) {
+         currentController.error = error;
       }
 
       throw new Error(error.message);
    }
 
-   async get_user(user_id) {
-      const user = await this.db.get_list('User',
+   async getUser(user_id) {
+      const user = await this.db.getList('User',
          ['name', 'email', 'password', 'disabled', 'profile_picture'],
          { '=': { name: user_id }, "OR": { '=': { email: user_id } } }
       );
@@ -363,58 +345,64 @@ export class Loopar {
    }
 
    isLoggedIn() {
-      return this.current_user;
+      return this.currentUser;
    }
 
-   get current_user() {
-      //return { name: "Administrator", email: "test@mail.common" }
+   get currentUser() {
       return this.session.get('user') || null;
-      //return this.session.user || null;
    }
 
-   async update_installer(_path, document, name, record, delete_record = false) {
+   async updateInstaller() {
+      const { doctype, documentName, appName, record, deleteRecord = false } = arguments[0];
+      const document = doctype.name;
+
+      const appPath = loopar.makePath("apps", appName);
       if (this.installing) return;
 
-      const installer_data = file_manage.get_config_file('installer', _path) || {};
+      const installerData = fileManage.getConfigFile('installer', appPath, {});
 
-      if (installer_data) {
-         if (delete_record) {
-            delete installer_data[document][name];
+      if (deleteRecord) {
+         delete installerData[document][record.name];
+      } else {
+         installerData[document] ??= {};
+         installerData[document].doctypeId = doctype.id;
+         installerData[document].documents ??= {};
+
+         if (record instanceof Array) {
+            record.forEach(rec => {
+               installerData[document].documents[rec.name] = rec;
+            });
          } else {
-            installer_data[document] = installer_data[document] || {};
-
-            installer_data[document][name] = record;
+            installerData[document].documents[record.name] = record;
          }
-
-         await file_manage.set_config_file('installer', installer_data, _path);
       }
+
+      await fileManage.setConfigFile('installer', installerData, appPath);
    }
 
-   async app_status(app_name) {
-      return await loopar.db.get_value('App', 'name', app_name) ? 'installed' : 'uninstalled';
+   async appStatus(appName) {
+      return await loopar.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
    }
 
-   async get_app(app_name) {
-      if (await this.app_status(app_name) === 'installed') {
-         return await loopar.db.get_doc('App', app_name);
+   async getApp(appName) {
+      if (await this.appStatus(appName) === 'installed') {
+         return await loopar.db.getDoc('App', appName);
       } else {
          return null;
       }
    }
 
    makePath(...args) {
-      let pathArray = args; // Copiar los argumentos en un nuevo array
+      let pathArray = args;
 
-      // Verificar si el primer parámetro no comienza con "./"
       if (!args[0].startsWith("./")) {
-         pathArray = ["/", ...args]; // Agregar una barra diagonal al principio del array
+         pathArray = ["/", ...args];
       }
 
-      const joinedPath = path.join(...pathArray); // Unir los elementos del array utilizando el sistema de archivos
+      const joinedPath = path.join(...pathArray);
 
-      return Helpers.decamelize(joinedPath.replaceAll(/\s/g, ''), { separator: '-' });
+      return Helpers.decamelize(joinedPath, { separator: '-' }).toLowerCase();
    }
 }
 
 export const loopar = await new Loopar();
-

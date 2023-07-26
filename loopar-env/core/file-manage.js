@@ -1,14 +1,14 @@
 import path from "path";
-import {loopar} from "./loopar.js";
-import {decamelize, lowercase} from './helper.js';
-import fs, {access, mkdir} from 'fs'
+import { loopar } from "./loopar.js";
+import { decamelize, lowercase } from './helper.js';
+import fs, { access, mkdir } from 'fs'
 
 class FileManage {
-   async make_file(destiny, name, content, ext = 'js', replace=false) {
-      const file_path = this.join(loopar.path_root, destiny, this.file_name(name, ext));
+   async makeFile(destiny, name, content, ext = 'js', replace = false) {
+      const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
 
       return new Promise((resolve, reject) => {
-         fs.existsSync(file_path) && ext === 'js' && !replace ? resolve(true) : fs.writeFile(file_path, content, (err) => {
+         fs.existsSync(filePath) && ext === 'js' && !replace ? resolve(true) : fs.writeFile(filePath, content, (err) => {
             if (err) {
                console.log(['make_file err', err]);
                reject(err);
@@ -19,46 +19,32 @@ class FileManage {
       });
    }
 
-   exist_file_sync(file_route) {
+   existFileSync(fileRoute) {
       try {
-         fs.accessSync(path.resolve(loopar.makePath(loopar.path_root, file_route)));
+         fs.accessSync(path.resolve(loopar.makePath(loopar.pathRoot, fileRoute)));
          return true;
       } catch (e) {
          return false;
       }
    }
 
-   async make_folder(destiny, name) {
-      const folder_path = this.join(loopar.path_root, destiny, this.folder_name(name));
+   async makeFolder(destiny, name) {
+      const folder_path = loopar.makePath(loopar.pathRoot, destiny, name);
 
       return new Promise((resolve, reject) => {
-         mkdir(folder_path, {recursive: true}, (err) => {
+         mkdir(folder_path, { recursive: true }, (err) => {
             err ? reject(err) : resolve(true);
          });
       });
    }
 
-   join(...args) {
-      const paths = args.reduce((acc, arg) => {
-         if (typeof arg === 'string') {
-            return acc.concat(arg.split('/'));
-         }
-
-         if (typeof arg === 'object') {
-            return acc.concat(arg);
-         }
-      }, []);
-
-      return lowercase(path.join('/', ...paths));
-   }
-
-   async make_class(destiny, name, {IMPORTS = {}, EXTENDS = null} = {}, importer_type = '') {
+   async makeClass(destiny, name, { IMPORTS = {}, EXTENDS = null } = {}, importer_type = '') {
       const _EXTENDS = EXTENDS ? ` extends ${EXTENDS}` : '';
       const CONSTRUCTOR = EXTENDS ? `super(props);` : 'Object.assign(this, props);';
 
-      name = this.class_name(name);
-      const file_name = this.file_name(name);
-      
+      name = this.className(name);
+      const file_name = this.fileName(name);
+
       const o = importer_type === 'default' ? '' : '{';
       const c = importer_type === 'default' ? '' : '}';
 
@@ -73,73 +59,71 @@ export default class ${name}${_EXTENDS} {
     }
 }`;
 
-      await this.make_file(destiny, name, class_content);
+      await this.makeFile(destiny, name, class_content);
    }
 
-   file_name(name, ext = 'js') {
+   fileName(name, ext = 'js') {
       return `${lowercase(decamelize(name, { separator: '-' }))}.${ext}`;
    }
 
-   folder_name(name) {
+   folderName(name) {
       return lowercase(decamelize(name, { separator: '-' }));
    }
 
-   class_name(name) {
+   className(name) {
       return name.replace(/\s/g, '');
    }
 
-   get_config_file(file_name, _path=null, if_error = "throw") {
-      const path_file = this.file_name((`./${_path || `config`}/${file_name}`), 'json');
+   getConfigFile(file_name, _path = null, if_error = "throw") {
+      const path_file = this.fileName((`./${_path || `config`}/${file_name}`), 'json');
 
       try {
-         return JSON.parse(fs.readFileSync(path.resolve(loopar.path_root, path_file), 'utf8') || {});
-      }catch (e) {
+         return JSON.parse(fs.readFileSync(path.resolve(loopar.pathRoot, path_file), 'utf8') || {});
+      } catch (e) {
          console.log(['get_config_file err', e, if_error]);
-         if(if_error === "throw"){
+         if (if_error === "throw") {
             throw new Error(e);
-         }else{
+         } else {
             return if_error;
          }
       }
    }
 
-   get_app_data(app_name){
-      return this.get_config_file("installer", loopar.makePath('apps', app_name), null);
+   getAppData(app_name) {
+      return this.getConfigFile("installer", loopar.makePath('apps', app_name), null);
    }
 
-   async set_config_file(file_name, data, path = null) {
+   async setConfigFile(file_name, data, path = null) {
       const dir_path = path || `config`;
 
-      await this.make_file(dir_path, file_name, JSON.stringify(data, null, 2), 'json');
+      await this.makeFile(dir_path, file_name, JSON.stringify(data, null, 2), 'json');
    }
 
-   async exist_file(file_route) {
-      const is_relative = file_route.startsWith('.');
-
+   async existFile(fileRoute) {
       return new Promise(resolve => {
-         access(path.resolve(loopar.makePath(loopar.path_root, file_route)), (err) => {
+         access(path.resolve(loopar.makePath(loopar.pathRoot, fileRoute)), (err) => {
             return resolve(!err);
          });
       });
    }
 
-   async exist_folder(folder_route) {
+   async existFolder(folder_route) {
       return new Promise(resolve => {
-         access(path.resolve(loopar.path_root + folder_route), (err) => {
+         access(path.resolve(loopar.makePath(loopar.pathRoot, folder_route)), (err) => {
             return resolve(!err);
          });
       });
    }
 
-   async import_file(file_route, onError = null) {
-      const is_relative = file_route.startsWith('.');
-
-      try{
-         return await import( is_relative ? file_route : loopar.makePath(loopar.path_root, file_route));
-      }catch (e) {
+   async importFile(fileRoute, onError = null) {
+      const is_relative = fileRoute.startsWith('.');
+      
+      try {
+         return await import(is_relative ? fileRoute : loopar.makePath(loopar.pathRoot, fileRoute));
+      } catch (e) {
          onError ? onError(e) : loopar.throw(e);
       }
    }
 }
 
-export const file_manage = new FileManage();
+export const fileManage = new FileManage();

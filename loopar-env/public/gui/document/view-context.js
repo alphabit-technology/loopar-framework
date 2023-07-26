@@ -1,19 +1,19 @@
 import BaseDocument from "./base/base-document.js";
-import {DeskGUI} from "./base/desk-gui.js";
-import {Element} from "/components/elements.js";
+import { DeskGUI } from "./base/desk-gui.js";
+import { Element } from "/components/elements.js";
 
 export default class View extends BaseDocument {
-   has_sidebar = true;
+   hasSidebar = true;
    has_header = true;
    constructor(props) {
       super(props);
    }
 
-   render(content){
+   render(content) {
       return super.render([
          DeskGUI({
             meta: this.meta,
-            has_sidebar: this.has_sidebar,
+            hasSidebar: this.hasSidebar,
             has_header: this.has_header,
             docRef: this,
          }, [

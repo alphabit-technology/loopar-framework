@@ -9,7 +9,7 @@ export default class InstallerController extends CoreController {
    workspace = "installer";
    default_action = 'install';
    //context = "installer";
-   has_sidebar = false;
+   hasSidebar = false;
 
    constructor(props) {
       super(props);

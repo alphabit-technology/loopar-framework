@@ -1,12 +1,11 @@
 'use strict'
 
-import Installer from "../../modules/core/installer/core-installer.js";
+import Installer from "../../modules/core/installer/installer.js";
 import BaseController from "./base-controller.js";
 import { loopar } from "../loopar.js";
-import { fileManage } from "../file-manage.js";
 
 
-export default class InstallerController extends BaseController {
+export default class CoreInstallerController extends BaseController {
    constructor(props) {
       super(props);
    }
@@ -14,7 +13,7 @@ export default class InstallerController extends BaseController {
    async actionConnect() {
       const model = new Installer();
 
-      if (this.hasData()) {
+      if (this.has_data()) {
          Object.assign(model, this.data);
 
          if (await model.connect()) {
@@ -26,26 +25,12 @@ export default class InstallerController extends BaseController {
       }
    }
 
-   getAppName() {
-      return this.app_name || null;
-   }
-
-   async getInstallerModel() {
-      const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js');
-
-      if (fileManage.existFileSync(installerRoute)) {
-         const InstallerModel = await fileManage.importFile(installerRoute);
-         return InstallerModel.default;
-      } else {
-         return Installer;
-      }
-   }
-
    async actionInstall() {
-      const installerModel = await this.getInstallerModel();
-      const model = new installerModel(this.data);
+      const model = new Installer();
 
       if (this.hasData()) {
+         Object.assign(model, this.data);
+
          if (loopar.frameworkInstalled && await loopar.appStatus(model.app_name) === 'installed') {
             loopar.throw("App already installed please refresh page");
          }
@@ -64,15 +49,15 @@ export default class InstallerController extends BaseController {
    async actionReinstall() {
       const model = new Installer();
 
-      if (this.hasData()) {
+      if (this.has_data()) {
          Object.assign(model, this.data);
 
          if (await model.update()) {
-            await loopar.makeConfig();
+            await loopar.make_config();
             return this.success("App updated successfully");
          }
       } else {
-         const response = await model.__dataInstall__();
+         const response = await model.__data_install__();
          await this.render(response);
       }
    }
@@ -110,10 +95,11 @@ export default class InstallerController extends BaseController {
       for (const module of modules.rows) {
          await loopar.deleteDocument("Module", module.name, false);
 
-         const documents = await loopar.getList("Document", {
-            fields: ['name'],
-            filters: { '=': { module: module.name } }
-         });
+         const documents = await loopar.getList("Document",
+            {
+               fields: ['name'],
+               filters: { '=': { module: module.name } }
+            });
 
          for (const document of documents.rows) {
             setTimeout(async () => {

@@ -1,10 +1,10 @@
-import {button, code, div, h4, h5, h6, i, pre, span, Tabs, Textarea, hr, Dialog, p} from "../elements.js";
+import { button, code, div, h4, h5, h6, i, pre, span, Tabs, Textarea, hr, Dialog, p } from "../elements.js";
 import Component from "../base/component.js";
-import {Element} from "/components/elements.js";
+import { Element } from "/components/elements.js";
 import GlobalContext from "/components/global-context.js";
-import {loopar} from "/loopar.js";
-import {element_manage} from "../element-manage.js";
-import {Capitalize} from "../../tools/helper.js";
+import { loopar } from "/loopar.js";
+import { element_manage } from "../element-manage.js";
+import { Capitalize } from "../../tools/helper.js";
 
 export default class Designer extends Component {
    block_component = true;
@@ -27,16 +27,16 @@ export default class Designer extends Component {
 
    header() {
       return [
-         div({className: "page-title-bar mb-2"}, [
-            div({className: "row align-items-center"}, [
-               div({className: "col-md-6 col-12"}, [
-                  div({className: "page-title"}, [
+         div({ className: "page-title-bar mb-2" }, [
+            div({ className: "row align-items-center" }, [
+               div({ className: "col-md-6 col-12" }, [
+                  div({ className: "page-title" }, [
                      h5({}, this.data.label)
                   ])
                ]),
-               div({className: "col-md-6 col-12"}, [
-                  div({className: "breadcrumb-bar text-right"}, [
-                     div({className: "btn-group"}, [
+               div({ className: "col-md-6 col-12" }, [
+                  div({ className: "breadcrumb-bar text-right" }, [
+                     div({ className: "btn-group" }, [
                         button({
                            className: "btn btn-secondary btn-sm mr-1",
                            onClick: (e) => {
@@ -45,17 +45,17 @@ export default class Designer extends Component {
                               this.props.formRef.toggleDesign("designer");
                            }
                         }, [
-                           i({className: "oi oi-brush mr-2"}),
+                           i({ className: "oi oi-brush mr-2" }),
                            "Design"
                         ]),
                         button({
                            className: "btn btn-secondary btn-sm mr-1",
                            onClick: (e) => {
                               e.preventDefault();
-                              this.setState({IAGenerator: true, IAOperation: true});
+                              this.setState({ IAGenerator: true, IAOperation: true });
                            }
                         }, [
-                           i({ className: "fa fa-magic mr-2 text-success"}),
+                           i({ className: "fa fa-magic mr-2 text-success" }),
                            "Design IA"
                         ]),
                      ])
@@ -68,11 +68,11 @@ export default class Designer extends Component {
                   open: this.state.IAGenerator,
                   scrollable: true,
                   content: [
-                     div({className: "form-control bg-light", style: {minHeight: 100, padding: 0}},
-                        pre({style: {padding: 10, position: "relative", height: "100%"}}, [
+                     div({ className: "form-control bg-light", style: { minHeight: 100, padding: 0 } },
+                        pre({ style: { padding: 10, position: "relative", height: "100%" } }, [
                            code({
                               className: "text-success",
-                              style: {position: "absolute", height: "100%", width: "calc(100% -10px)"}
+                              style: { position: "absolute", height: "100%", width: "calc(100% -10px)" }
                            }, [
                               'Based on the type of API you have contracted with OpenAI, you may need to wait for a specific',
                               hr(),
@@ -104,7 +104,7 @@ export default class Designer extends Component {
                      }
                   ],
                   onClose: () => {
-                     this.setState({IAGenerator: false});
+                     this.setState({ IAGenerator: false });
                   }
                })
             ])
@@ -118,7 +118,7 @@ export default class Designer extends Component {
          return;
       }
 
-      if(!this.props.formRef.getValue("type")){
+      if (!this.props.formRef.getValue("type")) {
          loopar.throw("Empty document", "Please select a document to send the request.");
          return;
       }
@@ -134,7 +134,7 @@ export default class Designer extends Component {
                name: "cancel",
                label: "Cancel",
                onClick: (e) => {
-                  this.setState({IAOperation: false});
+                  this.setState({ IAOperation: false });
                }
             }
          ]
@@ -145,7 +145,7 @@ export default class Designer extends Component {
          document_type: this.props.formRef.getValue("type"),
       }).then((r) => {
          dialog.close();
-         if(!this.state.IAOperation) return;
+         if (!this.state.IAOperation) return;
 
          const evaluateResponse = (message, start, end = start) => {
             if (message.includes(start)) {
@@ -182,31 +182,31 @@ export default class Designer extends Component {
       const className = (loopar.sidebar_option !== "preview" ? " element designer design true" : "");
 
       return super.render([
-         div({className: "card-header pb-1"}, [
+         div({ className: "card-header pb-1" }, [
             this.header()
             ///h4({className: "card-title"}, data.label),
          ]),
-         div({style: {marginBottom: "-20px"}}, [
+         div({ style: { marginBottom: "-20px" } }, [
             Tabs({
-               meta: {data: {name: this.props.meta.data.name + "_designer_tab"}},
-               style: {paddingBottom: 0},
-               bodyStyle: loopar.sidebar_option !== "preview" ? {padding: 0} : {},
+               meta: { data: { name: this.props.meta.data.name + "_designer_tab" } },
+               style: { paddingBottom: 0 },
+               bodyStyle: loopar.sidebar_option !== "preview" ? { padding: 0 } : {},
                notManageSelectedStatus: this.props.designerRef
             }, [
                {
                   data: {
-                     label: h6([span({className: "oi oi-brush mr-2"}), "Designer"]),
+                     label: h6([span({ className: "oi oi-brush mr-2" }), "Designer"]),
                      name: this.props.meta.data.name + "_designer-tab"
                   },
                   content: [
                      div({
                         className: "design design-area " + className,
-                        style: {padding: 0, margin: 0}
+                        style: { padding: 0, margin: 0 }
                      }, [
                         div({
                            Component: this,
                            className: "collapse element sub-element droppable show" + (this.props.bodyClassName ? " " + this.props.bodyClassName : ""),
-                           style: {...(this.state.collapsed ? {display: "none"} : {})},
+                           style: { ...(this.state.collapsed ? { display: "none" } : {}) },
                            ref: self => this.container = self
                         }, [
                            this.elements,
@@ -217,15 +217,15 @@ export default class Designer extends Component {
                },
                {
                   data: {
-                     label: h6([span({className: "fa fa-code mr-2"}), "Model"]),
+                     label: h6([span({ className: "fa fa-code mr-2" }), "Model"]),
                      name: this.props.meta.data.name + "_model-tab"
                   },
                   content: [
-                     div({className: "form-control bg-light", style: {minHeight: 520, padding: 0}},
-                        pre({style: {padding: 10, position: "relative", height: "100%"}}, [
+                     div({ className: "form-control bg-light", style: { minHeight: 520, padding: 0 } },
+                        pre({ style: { padding: 10, position: "relative", height: "100%" } }, [
                            code({
                               className: "text-success",
-                              style: {position: "absolute", height: "100%", width: "calc(100% -10px)"}
+                              style: { position: "absolute", height: "100%", width: "calc(100% -10px)" }
                            }, [
                               formattedValue
                            ])
@@ -274,7 +274,7 @@ export default class Designer extends Component {
    }
 
    toggleHide() {
-      this.setState({collapsed: !this.state.collapsed});
+      this.setState({ collapsed: !this.state.collapsed });
    }
 
    componentDidMount() {
@@ -339,7 +339,7 @@ export default class Designer extends Component {
 
    fixElements(elements) {
       return elements.map(el => {
-         if(!el.data){
+         if (!el.data) {
             const names = element_manage.element_name(el.element);
             el.data = {
                name: names.name,
@@ -347,7 +347,7 @@ export default class Designer extends Component {
                id: names.id
             }
          }
-         if(el.elements){
+         if (el.elements) {
             el.elements = this.fixElements(el.elements);
          }
          return el;
@@ -362,11 +362,11 @@ export default class Designer extends Component {
       this.props.formRef.hydrate();
 
       setTimeout(() => {
-         this.setState({meta: this.state.meta, IAOperation: false});
+         this.setState({ meta: this.state.meta, IAOperation: false });
       }, 100);
    }
 
-   get elements_dict() {
+   get elementsDict() {
       return this.#elements;
    }
 
@@ -399,7 +399,7 @@ export default class Designer extends Component {
       const updateElement = (structure) => {
          return structure.map(el => {
             if (el.data.name === name) {
-               el.data = merge ? {...el.data, ...data} : data;//{...el.data, ...data};
+               el.data = merge ? { ...el.data, ...data } : data;//{...el.data, ...data};
             } else {
                el.elements = updateElement(el.elements || []);
             }
@@ -413,7 +413,7 @@ export default class Designer extends Component {
             }, {});
             /**Purify Meta */
 
-            return {element: el.element, data: el.data, elements: el.elements};
+            return { element: el.element, data: el.data, elements: el.elements };
          });
       }
 

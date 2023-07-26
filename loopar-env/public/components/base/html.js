@@ -2,7 +2,7 @@ import { loopar } from "/loopar.js";
 import { DragAndDropUtils } from "/tools/drag-and-drop.js";
 import { styleToObject } from "/components/element-manage.js";
 import { Element } from "/components/elements.js";
-import {element_manage} from "../element-manage.js";
+import { element_manage } from "../element-manage.js";
 import { Capitalize } from "../../tools/helper.js";
 
 export class HTML extends React.Component {
@@ -89,20 +89,20 @@ export class HTML extends React.Component {
       const className = this.getClassName;
       if (className && className.length > 0) props.className = className;
       const animations = {}
-      if(data.animation && !props.designer){
+      if (data.animation && !props.designer) {
          animations["data-aos"] = data.animation;
 
-         if(data.animation_delay){
-            animations["data-aos-delay"] =  data.animation_delay;
+         if (data.animation_delay) {
+            animations["data-aos-delay"] = data.animation_delay;
          }
 
-         if(data.animation_duration && data.animation_duration > 0){
+         if (data.animation_duration && data.animation_duration > 0) {
             animations["data-aos-duration"] = data.animation_duration;
-         }else{
-            animations["data-aos-duration"] =  2000;
+         } else {
+            animations["data-aos-duration"] = 2000;
          }
       }
-      
+
       const action = props?.meta?.data?.action;
 
       const component = [
@@ -116,7 +116,7 @@ export class HTML extends React.Component {
             }, {}),
             ...{ style: this.getStyle },
             ...this.state.attrs,
-            ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]()} : {}),
+            ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]() } : {}),
             ...animations,
             ...this.attrs
          }
@@ -136,7 +136,7 @@ export class HTML extends React.Component {
       const selfStyle = this.style || {};
       const dataStyle = styleToObject(this.data.style) || {};
 
-      return {...selfStyle, ...dataStyle, ...this.props.style || {}};
+      return { ...selfStyle, ...dataStyle, ...this.props.style || {} };
    }
 
    make() {
@@ -156,7 +156,7 @@ export class HTML extends React.Component {
    }
 
    makeElement(el, props = {}) {
-      if(!el.data){
+      if (!el.data) {
          const names = element_manage.element_name(this.props.element);
          el.data = {
             name: names.name,
@@ -164,37 +164,39 @@ export class HTML extends React.Component {
             id: names.id
          }
       }
-      
-      return Element(el.element, {...{
-         ...(el.element === "tabs" && this.props.designerRef ? {key: element_manage.getUniqueKey()} : {}),
-         ...(this.props.formRef ? { formRef: this.props.formRef } : {}),
-         ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
-         ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
-         ...(this.props.designer && {
-            has_title: true, draggable: true, designer: true
-         } || {}),
-         ref: self => {
-            if (self) {
-               /*For inputs and other elements that have a name and have */
-               if (this.props.formRef && el.data.name && !this.props.designer) {
-                  if (self.is_writable){
-                     /*For inputs elements*/
-                     this.props.formRef.form_fields[el.data.name] = self;
-                  }else{
-                     /*For other elements*/
-                     this.props.formRef[el.data.name] = self;
+
+      return Element(el.element, {
+         ...{
+            ...(el.element === "tabs" && this.props.designerRef ? { key: element_manage.getUniqueKey() } : {}),
+            ...(this.props.formRef ? { formRef: this.props.formRef } : {}),
+            ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
+            ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
+            ...(this.props.designer && {
+               has_title: true, draggable: true, designer: true
+            } || {}),
+            ref: self => {
+               if (self) {
+                  /*For inputs and other elements that have a name and have */
+                  if (this.props.formRef && el.data.name && !this.props.designer) {
+                     if (self.is_writable) {
+                        /*For inputs elements*/
+                        this.props.formRef.form_fields[el.data.name] = self;
+                     } else {
+                        /*For other elements*/
+                        this.props.formRef[el.data.name] = self;
+                     }
+                  }
+
+                  if (this.props.designer) {
+                     self.parentComponent = this;
                   }
                }
-
-               if (this.props.designer) {
-                  self.parentComponent = this;
-               }
-            }
-         },
-         meta: {
-            ...el
-         },
-      }, ...props})
+            },
+            meta: {
+               ...el
+            },
+         }, ...props
+      })
    }
 
    add_child(child, merge = false) {
@@ -206,9 +208,9 @@ export class HTML extends React.Component {
    }
 
    on(event, callback) {
-      this.attrsList["on" + Capitalize(event) ] ??= [];
+      this.attrsList["on" + Capitalize(event)] ??= [];
 
-      const events = this.attrsList["on" + Capitalize(event) ];
+      const events = this.attrsList["on" + Capitalize(event)];
 
       const check = events.some(e => {
          return e.toString() === callback.toString();
@@ -218,7 +220,7 @@ export class HTML extends React.Component {
          events.push(callback);
       }
 
-      this.attrs["on" + Capitalize(event) ] = (e) => {
+      this.attrs["on" + Capitalize(event)] = (e) => {
          events.forEach(callback => {
             callback(e);
          });
@@ -366,7 +368,7 @@ export class HTML extends React.Component {
       this.onRemove && this.onRemove();
    }
 
-   makeEvents() {}
+   makeEvents() { }
 
    get meta() {
       const meta = this.state.meta || this.props.meta || {};
@@ -480,7 +482,7 @@ export class HTML extends React.Component {
       const container = this.container || this;
       const self = this.Component || this;
       const { elementToCreate, elementToDrag, lastElementTargetSibling } = DragAndDropUtils;
-      let elements = self.elements_dict;
+      let elements = self.elementsDict;
       let new_elements = null;
 
       container.removeClass("over-drag");
@@ -563,7 +565,7 @@ export class HTML extends React.Component {
    add_element(element = null) {
       if (!element) return;
 
-      this.set_elements([...this.elements_dict, element], element);
+      this.set_elements([...this.elementsDict, element], element);
    }
 
    /**Parent component is the component that contains the current element, only for Block Elements ej: Card*/
@@ -574,7 +576,7 @@ export class HTML extends React.Component {
    /**Parent element is the element that contains the current element for all Elements*/
    remove() {
       if (this.parent_element) {
-         const current_elements = this.parent_element.elements_dict;
+         const current_elements = this.parent_element.elementsDict;
          current_elements.findIndex((element) => {
             if (element.data.name === this.data.name) {
                current_elements.splice(current_elements.indexOf(element), 1);
@@ -591,7 +593,7 @@ export class HTML extends React.Component {
       }, 0);
    }
 
-   get elements_dict() {
+   get elementsDict() {
       return this.meta.elements || [];
    }
 

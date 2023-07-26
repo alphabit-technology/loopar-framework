@@ -165,7 +165,6 @@ export default class Dialog extends React.Component {
                         div({}, content)
                   ]),
                   hasFooter ? div({className: 'modal-footer'}, this.buttons.map(b => {
-                     console.log("button", b);
                      return button({
                         type: 'button',
                         className: b.className || `btn btn-${b.type || 'primary'}`,

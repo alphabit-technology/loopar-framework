@@ -1,5 +1,5 @@
 import Router from '/router/router.js';
-import {UiManage} from "./components/uui.js";
+import { UiManage } from "./components/uui.js";
 import { http } from "/router/http.js";
 
 class Loopar extends Router {
@@ -7,7 +7,7 @@ class Loopar extends Router {
    current_page_name = "";
    root_app = null;
    workspace = WORKSPACE || "";
-   #colors= JSON.parse(localStorage.getItem('colors') || "{}");
+   #colors = JSON.parse(localStorage.getItem('colors') || "{}");
    base_colors = ['pink', 'purple', 'indigo', 'blue', 'cyan', 'teal', 'green', 'orange', 'red']
    sidebar_option = "preview";
    constructor() {
@@ -68,7 +68,7 @@ class Loopar extends Router {
       this.dialog({
          type: "error",
          title: title,
-         content : content || message,
+         content: content || message,
          open: true,
       });
 
@@ -76,7 +76,8 @@ class Loopar extends Router {
    }
 
    notify(message, type = "success") {
-      this.root_app && this.root_app.setNotify({message, type});
+      const data = typeof message === "object" ? message : { message, type };
+      this.root_app && this.root_app.setNotify(data);
    }
 
    toggle_theme() {
@@ -85,7 +86,7 @@ class Loopar extends Router {
       this.root_app && this.root_app.setState({});
    }
 
-   sidebar(){
+   sidebar() {
       return true;
    }
 
@@ -102,7 +103,7 @@ class Loopar extends Router {
    }
 
    #random_color(name) {
-      const color = this.base_colors[Math.floor(Math.random() *  this.base_colors.length)];
+      const color = this.base_colors[Math.floor(Math.random() * this.base_colors.length)];
       const colors = this.colors;
 
       colors[name] ??= color;
@@ -128,9 +129,10 @@ class Loopar extends Router {
 
    async method(Document, method, params = {}) {
       const url = `/desk/method/${Document}/${method}`;
-      return await http.post(url, params, {freeze: false});
+      params = typeof params === "string" ? { documentName: params } : params;
+      return await http.post(url, params, { freeze: false });
    }
 }
 
 const loopar = new Loopar();
-export {loopar};
+export { loopar };

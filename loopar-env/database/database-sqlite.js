@@ -8,7 +8,7 @@ import ObjectManage from "../core/ObjectManage.js";
 //import {element_definition} from '../core/global/element-definition.js';
 import { UPPERCASE } from '../core/helper.js';
 import { loopar } from "../core/loopar.js";
-import { file_manage } from "../core/file-manage.js";
+import { fileManage } from "../core/file-manage.js";
 
 const ENGINE = 'ENGINE=INNODB';
 
@@ -31,9 +31,9 @@ export default class DataBaseSqlLite extends ObjectManage {
     }
 
     async initialize() {
-        await file_manage.make_folder('', "database");
-        await file_manage.make_file('database', this.database, '', 'db', true);
-        const dbPath = loopar.makePath(loopar.path_root, 'database', `${this.database}.db`);
+        await fileManage.makeFolder('', "database");
+        await fileManage.makeFile('database', this.database, '', 'db', true);
+        const dbPath = loopar.makePath(loopar.pathRoot, 'database', `${this.database}.db`);
 
         this.#connection = new sqlite3.Database(dbPath);
     }
@@ -439,7 +439,7 @@ export default class DataBaseSqlLite extends ObjectManage {
             if (exist) {
                 this.execute(`PRAGMA table_info(${TABLE})`, false).then(columns => {
                     const db_fields = columns.map(col => {
-                        return {Field: col.name, ...col}
+                        return { Field: col.name, ...col }
                     }).reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
 
                     const alter_columns = [
@@ -452,7 +452,7 @@ export default class DataBaseSqlLite extends ObjectManage {
                     resolve(this.query);
                 });
 
-                
+
             } else {
                 const columns = [...this.make_columns(fields)];
 
@@ -547,12 +547,12 @@ export default class DataBaseSqlLite extends ObjectManage {
     escape(value) {
         if (typeof value === 'string') {
             return `'${value}'`;
-        }else if (typeof value === 'object') {
+        } else if (typeof value === 'object') {
             return `'${JSON.stringify(value)}'`;
         }
     }
 
-    escapeId(id){
+    escapeId(id) {
         return `\`${id}\``;
         return id;
     }

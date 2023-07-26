@@ -1,12 +1,12 @@
 import Div from "/components/elements/div.js";
-import { a, button, div, Element, i, input, label, small, span, table, tbody, td, th, thead, tr, h5} from "/components/elements.js";
+import { a, button, div, Element, i, input, label, small, span, table, tbody, td, th, thead, tr, h5 } from "/components/elements.js";
 
 import { element_manage } from "../element-manage.js";
 import { avatar, Capitalize } from '/tools/helper.js';
 import { Pagination } from "/components/common/pagination.js";
 import { loopar } from "/loopar.js";
 import { http } from "/router/http.js";
-import { elements_dict } from "/element-definition.js";
+import { elementsDict } from "/element-definition.js";
 
 class BaseTable extends Div {
    selectors = {};
@@ -120,7 +120,7 @@ class BaseTable extends Div {
    select_all_visible_rows(checked = true) {
       const selected_rows = checked ? this.rows_inputs.map(r => r.name) : [];
 
-      this.setState({ selected_rows },  () => {
+      this.setState({ selected_rows }, () => {
          this.set_selectors_status();
       });
    }
@@ -130,7 +130,7 @@ class BaseTable extends Div {
    }
 
    set_selectors_status() {
-      if(this.viewType !== "List") return;
+      if (this.viewType !== "List") return;
       const selected_rows = this.selectedRows.length;
       this.selectors.selector_all.node.indeterminate = false;
 
@@ -292,10 +292,10 @@ class BaseTable extends Div {
    }
 
    fieldIsWritable(field) {
-      return elements_dict[field.element]?.is_writable;
+      return elementsDict[field.element]?.is_writable;
    }
 
-   getTableRender(_columns, rows){
+   getTableRender(_columns, rows) {
       const columns = _columns.filter(c => !this.hiddenColumns.includes(c.data.name))
 
       return [
@@ -313,13 +313,13 @@ class BaseTable extends Div {
                      }
 
                      const props = data.name === "selector_all" ?
-                        { 
-                           className: "col-checker align-middle", 
+                        {
+                           className: "col-checker align-middle",
                            style: {
-                               maxWidth: 30
-                           } 
-                        } : 
-                        { 
+                              maxWidth: 30
+                           }
+                        } :
+                        {
                            className: className,
                            ...(data.name === "name" ? { className: "pl-3" } : {}),
                         };
@@ -343,69 +343,69 @@ class BaseTable extends Div {
                      ])
                   ])
                ])) :
-               rows.map(row => {
-                  this.rows_ref[row.name] = {};
-                  return tr({ 
-                     //key: element_manage.uuid()
+                  rows.map(row => {
+                     this.rows_ref[row.name] = {};
+                     return tr({
+                        //key: element_manage.uuid()
                      }, [
-                     columns.map(column => {
-                        const row_props = column.rows_props ?? {};
+                        columns.map(column => {
+                           const row_props = column.rows_props ?? {};
 
-                        if (column.data.name === "selector_all") {
-                           return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
-                        }
+                           if (column.data.name === "selector_all") {
+                              return td({ className: "col-checker align-middle", ...row_props }, column.data.value(row));
+                           }
 
-                        if (this.is_editable && this.fieldIsWritable(column)) {
-                           const props = { ...column };
-                           props.data ??= {};
-                           props.data.value = row[column.data.name];
+                           if (this.is_editable && this.fieldIsWritable(column)) {
+                              const props = { ...column };
+                              props.data ??= {};
+                              props.data.value = row[column.data.name];
 
-                           return td({
+                              return td({
                                  //key: element_manage.uuid(), 
-                                 ...row_props, 
+                                 ...row_props,
                               },
-                              Element(column.element, {
-                                 //key: element_manage.uuid(),
-                                 key: row.name + "_" + column.data.name,
-                                 meta: clone(props),
-                                 withoutLabel: true,
-                                 simpleInput: true,
-                                 onChange: (e) => {
-                                    row[column.data.name] = e.target.value
-                                 },
-                                 ref: self => {
-                                    if (self) {
-                                       this.rows_ref[row.name][column.data.name] = self;
+                                 Element(column.element, {
+                                    //key: element_manage.uuid(),
+                                    key: row.name + "_" + column.data.name,
+                                    meta: clone(props),
+                                    withoutLabel: true,
+                                    simpleInput: true,
+                                    onChange: (e) => {
+                                       row[column.data.name] = e.target.value
+                                    },
+                                    ref: self => {
+                                       if (self) {
+                                          this.rows_ref[row.name][column.data.name] = self;
+                                       }
                                     }
-                                 }
-                              })
-                           );
-                        } else {
-                           let value = row[column.data.name];
-                           let className = `align-middle`;
-                           if(typeof column.data.value == "function"){
-                              value = column.data.value(row);
-                           }
+                                 })
+                              );
+                           } else {
+                              let value = row[column.data.name];
+                              let className = `align-middle`;
+                              if (typeof column.data.value == "function") {
+                                 value = column.data.value(row);
+                              }
 
-                           if([SWITCH, CHECKBOX].includes(column.element)){
-                              value = i({className: `fa fa-fw fa-circle text-${value ? 'green' : 'red'}`});
-                              className += ` text-center`;
-                           }else{
-                              className += ` text-${column.data.align ?? 'left'}`;
-                           }
+                              if ([SWITCH, CHECKBOX].includes(column.element)) {
+                                 value = i({ className: `fa fa-fw fa-circle text-${value ? 'green' : 'red'}` });
+                                 className += ` text-center`;
+                              } else {
+                                 className += ` text-${column.data.align ?? 'left'}`;
+                              }
 
-                           return td({ 
-                              //key: element_manage.uuid(),
-                              className: className,
-                              key: row.name + "_" + column.data.name + "_td",
+                              return td({
+                                 //key: element_manage.uuid(),
+                                 className: className,
+                                 key: row.name + "_" + column.data.name + "_td",
                                  ...row_props
-                           }, [
-                              value
-                           ]);
-                        }
-                     })
-                  ])
-               })
+                              }, [
+                                 value
+                              ]);
+                           }
+                        })
+                     ])
+                  })
             ])
          ])
       ]
@@ -415,7 +415,7 @@ class BaseTable extends Div {
       return this.props.docRef || {};
    }
 
-   getGridRender(columns, rows){
+   getGridRender(columns, rows) {
       return [
          div({ className: `row row-cards row-deck` }, [
             rows.length === 0 ? div({ className: "col-12" }, [
@@ -433,13 +433,13 @@ class BaseTable extends Div {
                div({ className: "col-12" }, [
                   div({
                      className: "grid-container",
-                     style: { gridTemplateColumns: `repeat(auto-fit, minmax(${this.docRef.cardSize || 150}px, 1fr))`}
+                     style: { gridTemplateColumns: `repeat(auto-fit, minmax(${this.docRef.cardSize || 150}px, 1fr))` }
                   }, [
                      rows.map(row => {
                         const action = row.is_single ? (row.type === 'Page' ? 'view' : 'update') : 'list';
 
-                        return div({className: "grid-item", style: {maxHeight: this.docRef.cardSize || 180}}, [
-                           div({ className: "card text-dark bg-light metric-bordered", style:{height: '100%'}}, [
+                        return div({ className: "grid-item", style: { maxHeight: this.docRef.cardSize || 180 } }, [
+                           div({ className: "card text-dark bg-light metric-bordered", style: { height: '100%' } }, [
                               this.docRef.gridTemplate ? this.docRef.gridTemplate(row, action) : [
                                  div({ className: "card-body text-center" }, [
                                     a({ className: `tile tile-lg bg-${loopar.bg_color(row.name)} mb-2`, href: `/${row.module}/${row.name}/${action}`, element: `element-${action}` }, avatar(row.name)),
@@ -461,7 +461,7 @@ class BaseTable extends Div {
                                     }, "Delete"),
                                     a({
                                        className: "card-footer-item card-footer-item-bordered card-link",
-                                       href: `update?document_name=${row.name}`,
+                                       href: `update?documentName=${row.name}`,
                                     }, "Update")
                                  ])
                               ]
@@ -564,12 +564,12 @@ class BaseTable extends Div {
                   ])
                ]),
             ]),
-            div({ 
-               className: 'card-body border-top', 
-               style: { 
+            div({
+               className: 'card-body border-top',
+               style: {
                   overflow: this.overflow || "",
-                   ...((this.has_search_form && this.viewType === "List") ? { paddingTop: 0 } : {}) 
-               } 
+                  ...((this.has_search_form && this.viewType === "List") ? { paddingTop: 0 } : {})
+               }
             }, [
                ((this.viewType === "List" && this.docRef.onlyGrid !== true) || this.is_editable) ? this.getTableRender(columns, rows) : this.getGridRender(columns, rows)
             ]),
@@ -688,13 +688,13 @@ class ListGridClass extends BaseTable {
                      a({
                         key: row.name + "_avatar",
                         test_element: "avatar",
-                        href: `update?document_name=${row.name}`,
+                        href: `update?documentName=${row.name}`,
                         className: `tile bg-${loopar.bg_color(row.name)} text-white mr-2`
                      }, avatar(row.name)),
                      div({ className: "media-body" }, [
                         a({
                            key: row.name + "_description",
-                           href: `update?document_name=${row.name}`
+                           href: `update?documentName=${row.name}`
                         }, row.description || row.name),
                         small({ className: "d-block text-muted" }, row.name)
                      ])
@@ -717,7 +717,7 @@ class ListGridClass extends BaseTable {
          ok: () => {
             http.send({
                action: 'delete',
-               params: { document_name: row.name },
+               params: { documentName: row.name },
                success: (data) => {
                   loopar.root_app.refresh().then(() => {
                      loopar.navigate(window.location.pathname);
@@ -748,7 +748,7 @@ class ListGridClass extends BaseTable {
          ok: () => {
             http.send({
                action: 'bulk_delete',
-               params: {document_names: this.selected_rows},
+               params: {documentNames: this.selected_rows},
                success: (data) => {
                   loopar.root_app.refresh().then(() => {
                      loopar.navigate(window.location.pathname);

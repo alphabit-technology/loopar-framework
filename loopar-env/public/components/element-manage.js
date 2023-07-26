@@ -1,8 +1,8 @@
-import {loopar} from "/loopar.js";
-import {Capitalize} from '/tools/helper.js';
+import { loopar } from "/loopar.js";
+import { Capitalize } from '/tools/helper.js';
 
 /**Need to global tags*/
-//import {elements_names} from "/element-definition.js";
+//import {elementsNames} from "/element-definition.js";
 /**Need to global tags*/
 
 export default class ElementManage {
@@ -51,8 +51,8 @@ export default class ElementManage {
 
 export const element_manage = new ElementManage();
 
-export function styleToObject(style){
-   if(typeof style != "string") return style;
+export function styleToObject(style) {
+   if (typeof style != "string") return style;
 
    return style.replaceAll(" ", "").split(';').reduce((acc, cur) => {
       const [key, value] = cur.split(':');
