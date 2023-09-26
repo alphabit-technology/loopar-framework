@@ -1,5 +1,5 @@
 const GlobalContext = React.createContext({
-	sidebar_option: 'designer',
+	sidebarOption: 'designer',
 });
 
 export default GlobalContext;

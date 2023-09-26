@@ -6,7 +6,7 @@ import { fileManage } from "./core/file-manage.js";
 import BaseController from "./core/controller/base-controller.js";
 import SingleController from "./core/controller/single-controller.js";
 import InstallerController from "./core/controller/installer-controller.js";
-import * as Helpers from "./core/helper.js";
+import * as Helpers from "./core/global/helper.js";
 import CoreInstaller from "./modules/core/installer/core-installer.js";
 import { elementsNames, elementsNameByType } from "./core/global/element-definition.js";
 

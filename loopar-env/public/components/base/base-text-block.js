@@ -1,5 +1,5 @@
 import Component from "./component.js";
-export default class BaseTextBlock extends Component{
+export default class BaseTextBlock extends Component {
    defaultDescription = "I'm a awesome Text Block widget, you can customize in edit button in design mode.";
    constructor(props) {
       super(props);

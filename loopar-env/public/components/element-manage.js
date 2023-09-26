@@ -1,5 +1,4 @@
 import { loopar } from "/loopar.js";
-import { Capitalize } from '/tools/helper.js';
 
 /**Need to global tags*/
 //import {elementsNames} from "/element-definition.js";
@@ -16,7 +15,7 @@ export default class ElementManage {
       });
    }
 
-   element_name(element) {
+   elementName(element) {
       let counter = loopar['element' + element];
       counter = !counter || isNaN(counter) ? 1 : counter + 1;
       loopar['element' + element] = counter;
@@ -27,7 +26,7 @@ export default class ElementManage {
       return {
          id: id,
          name: id,
-         label: Capitalize(base_name)
+         label: loopar.utils.Capitalize(base_name)
       };
    }
 
@@ -49,7 +48,7 @@ export default class ElementManage {
    }
 }
 
-export const element_manage = new ElementManage();
+export const elementManage = new ElementManage();
 
 export function styleToObject(style) {
    if (typeof style != "string") return style;

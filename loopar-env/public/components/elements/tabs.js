@@ -1,13 +1,13 @@
 import { a, i, ul, li, h1, h4 } from "../elements.js";
 import { div } from "../elements.js";
 import Component from "../base/component.js";
-import { element_manage } from "../element-manage.js";
+import { elementManage } from "../element-manage.js";
 import { loopar } from "/loopar.js";
 
 export default class Tabs extends Component {
    className = "card";
    droppable = false;
-   block_component = true;
+   blockComponent = true;
 
    constructor(props) {
       super(props);
@@ -20,7 +20,7 @@ export default class Tabs extends Component {
 
    addTab() {
       const elements = this.elementsDict;
-      const [name, label] = [`tab_${element_manage.uuid()}`, `Tab ${elements.length + 1}`];
+      const [name, label] = [`tab_${elementManage.uuid()}`, `Tab ${elements.length + 1}`];
 
       elements.push({
          data: { name, id: name, label, droppable: true, draggable: false }
@@ -50,7 +50,7 @@ export default class Tabs extends Component {
       this.setState({ active: name });
 
       setTimeout(() => {
-         this[name] && this.props.designer && loopar.sidebar_option !== "preview" && loopar.document_form.editElement(this[name].props);
+         this[name] && this.props.designer && loopar.sidebarOption !== "preview" && loopar.document_form.editElement(this[name].props);
       }, 50);
    }
 
@@ -151,9 +151,9 @@ export default class Tabs extends Component {
                      },
                      draggable: false,
                      key: element.data.name,
-                     element_title: element.data.label,
+                     elementTitle: element.data.label,
                      designerRef: this.props.designerRef,
-                     ...(this.props.formRef ? { formRef: this.props.formRef } : {}),
+                     ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
                      ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
                      ...(this.props.designer && {
                         has_title: true, draggable: true, designer: true

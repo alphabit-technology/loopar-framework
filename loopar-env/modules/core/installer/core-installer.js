@@ -81,7 +81,7 @@ export default class CoreInstaller {
                }
             ]
          },
-         __documentName__: "Installer"
+         __DOCUMENT_NAME__: "Installer"
       }
    }
 
@@ -200,7 +200,7 @@ export default class CoreInstaller {
             name: "Installer",
             STRUCTURE: this.formConnectStructure
          },
-         __documentName__: "Installer",
+         __DOCUMENT_NAME__: "Installer",
          __DOCUMENT__: dbConfig
       }
    }
@@ -210,24 +210,14 @@ export default class CoreInstaller {
    }
 
    async getDoctypeData(app, module, document) {
-      const appRoot = loopar.makePath('apps', app);
-      const documentRoot = loopar.makePath(appRoot, "modules", module, document);
+      const moduleRoute = loopar.makePath('apps', app);
+      const documentRoot = loopar.makePath(moduleRoute, "modules", module, document);
 
       return await fileManage.getConfigFile(document, documentRoot);
    }
 
    getNameToFileName(name) {
-      return Helpers.decamelize(name.replaceAll(/\s/g, ''), { separator: '-' });
-   }
-
-   async insertRecord(table, data, by_file = null) {
-      if (await loopar.db.getValue(table, 'name', data.name, null, null)) {
-         const to_update_doc = await loopar.getDocument(table, data.name, data, by_file);
-         to_update_doc.save({ validate: false });
-      } else {
-         const document = await loopar.newDocument(table, data, null, by_file);
-         await document.save({ validate: false });
-      }
+      return loopar.utils.decamelize(name.replaceAll(/\s/g, ''), { separator: '-' });
    }
 
    checkIfAppExists() {
@@ -245,6 +235,30 @@ export default class CoreInstaller {
       }
    }
 
+   async unInstall() {
+      loopar.installing = true;
+      if(this.app_name === 'loopar'){
+         loopar.throw("You can't uninstall Loopar");
+      }
+
+      const moduleRoute = loopar.makePath('apps', this.app_name);
+      const appData = await fileManage.getConfigFile('installer', moduleRoute);
+
+      for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].doctypeId - a[1].doctypeId)) {
+         console.warn("Uninstalling", doc_name, this.app_name);
+         for (const document of Object.values(records.documents).sort((a, b) => b.id - a.id)) {
+            if (document.__document_status__ === "Deleted") continue;
+            console.warn("Uninstalling", doc_name, document.name);
+
+            await loopar.deleteDocument(doc_name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
+         }
+      }
+
+      loopar.installing = false;
+
+      return `App ${this.app_name} uninstalled successfully!`;
+   }
+
    async install() {
       console.warn("Installing " + this.app_name);
       loopar.installing = true;
@@ -260,19 +274,19 @@ export default class CoreInstaller {
       await this.installData();
 
       loopar.installing = false;
-      return true;
+      await loopar.server.exposeClientAppFiles(this.app_name);
+      return "App installed successfully!";
    }
 
    async installData() {
-      const appRoot = loopar.makePath('apps', this.app_name);
-      const appData = await fileManage.getConfigFile('installer', appRoot);
+      const moduleRoute = loopar.makePath('apps', this.app_name);
+      const appData = await fileManage.getConfigFile('installer', moduleRoute);
 
       for (const [doc_name, records] of Object.entries(appData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
          for (const document of Object.values(records.documents).sort(item => item.id - item.id)) {
-            if (document.is_deleted === 1) continue;
-
+            if (document.__document_status === "Deleted") continue;
+            
             if (doc_name === "Document") {
-               console.log("Installing Document")
                const doctype = await this.getDoctypeData(this.app_name, document.module, document.name);
                await this.insertRecord(doc_name, doctype, "loopar/modules/core");
             } else {
@@ -281,10 +295,22 @@ export default class CoreInstaller {
          }
       }
 
-      if (this.app_name === "loopar" && installing) {
+      if (this.app_name === "loopar" && loopar.installing) {
          const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password }
 
          await this.insertRecord('User', userData);
+      }
+   }
+
+   async insertRecord(table, data, moduleRoute = null) {
+      if (await loopar.db.getValue(table, 'name', data.name)) {
+         console.log(`Updating ${table} ${data.name}`);
+         const toUpdateDoc = await loopar.getDocument(table, data.name, data, moduleRoute);
+         toUpdateDoc.save({ validate: false });
+      } else {
+         console.log(`Inserting ${table} ${data.name}`);
+         const document = await loopar.newDocument(table, data, moduleRoute);
+         await document.save({ validate: false });
       }
    }
 
@@ -292,10 +318,9 @@ export default class CoreInstaller {
       const exist = await loopar.db.getValue('App', "name", this.app_name, null, null);
       const app_file = fileManage.getConfigFile("installer", path.join("apps", this.app_name));
 
-      //console.log("Pulling " + this.app_name)
-      loopar.validateGitRepository(repo || app_file.App[this.app_name].git_repo);
+      loopar.validateGitRepository(this.app_name, repo || app_file.App[this.app_name].git_repo);
 
-      if (!exist && this.app_name !== "loopar") {
+      if (!exist) {
          loopar.throw(`App ${this.app_name} is not installed, please install it first`);
          return;
       }

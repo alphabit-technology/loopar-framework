@@ -1,28 +1,32 @@
 import Router from '/router/router.js';
 import { UiManage } from "./components/uui.js";
 import { http } from "/router/http.js";
+import * as Helpers from "/helper.js";
 
 class Loopar extends Router {
    ui = new UiManage();
-   current_page_name = "";
-   root_app = null;
+   currentPageName = "";
+   rootApp = null;
    workspace = WORKSPACE || "";
    #colors = JSON.parse(localStorage.getItem('colors') || "{}");
-   base_colors = ['pink', 'purple', 'indigo', 'blue', 'cyan', 'teal', 'green', 'orange', 'red']
-   sidebar_option = "preview";
+   baseColors = ['pink', 'purple', 'indigo', 'blue', 'cyan', 'teal', 'green', 'orange', 'red'];
+   sidebarOption = "preview";
+   #loadedMeta = {};
+
    constructor() {
       super();
+      this.utils = Helpers;
    }
 
    dialog(dialog) {
       const content = dialog.content || dialog.message;
       dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;
       dialog.open = dialog.open !== false;
-      this.root_app && this.root_app.setDialog(dialog);
+      this.rootApp && this.rootApp.setDialog(dialog);
 
       return new Promise(resolve => {
          setTimeout(() => {
-            resolve(this.root_app.dialogs.dialogs[dialog.id]);
+            resolve(this.rootApp.dialogs.dialogs[dialog.id]);
          }, 0);
       });
    }
@@ -32,11 +36,11 @@ class Loopar extends Router {
       dialog.id = dialog.title;
       dialog.open = true;
       dialog.type = "prompt";
-      this.root_app && this.root_app.setDialog(dialog);
+      this.rootApp && this.rootApp.setDialog(dialog);
 
       return new Promise(resolve => {
          setTimeout(() => {
-            resolve(this.root_app.dialogs.dialogs[dialog.id]);
+            resolve(this.rootApp.dialogs.dialogs[dialog.id]);
          }, 0);
       });
    }
@@ -46,7 +50,7 @@ class Loopar extends Router {
          type: "confirm",
          title: "Confirm",
          content: message,
-         callback: callback,
+         ok: callback,
       });
    }
 
@@ -60,7 +64,7 @@ class Loopar extends Router {
    }
 
    closeDialog(id) {
-      this.root_app && this.root_app.closeDialog(id);
+      this.rootApp && this.rootApp.closeDialog(id);
    }
 
    throw(error, m) {
@@ -77,13 +81,13 @@ class Loopar extends Router {
 
    notify(message, type = "success") {
       const data = typeof message === "object" ? message : { message, type };
-      this.root_app && this.root_app.setNotify(data);
+      this.rootApp && this.rootApp.setNotify(data);
    }
 
-   toggle_theme() {
-      window.toggle_theme();
+   toggleTheme() {
+      window.toggleTheme();
 
-      this.root_app && this.root_app.setState({});
+      this.rootApp && this.rootApp.setState({});
    }
 
    sidebar() {
@@ -99,11 +103,11 @@ class Loopar extends Router {
    }
 
    emit(event, data) {
-      this.root_app && this.root_app.emit(event, data);
+      this.rootApp && this.rootApp.emit(event, data);
    }
 
-   #random_color(name) {
-      const color = this.base_colors[Math.floor(Math.random() * this.base_colors.length)];
+   #randomColor(name) {
+      const color = this.baseColors[Math.floor(Math.random() * this.baseColors.length)];
       const colors = this.colors;
 
       colors[name] ??= color;
@@ -118,19 +122,27 @@ class Loopar extends Router {
       return typeof colors === "object" ? colors : {};
    }
 
-   bg_color(name) {
+   bgColor(name) {
       const colors = this.colors;
-      return colors[name] || this.#random_color(name);
+      return colors[name] || this.#randomColor(name);
    }
 
    freeze(freeze = true) {
-      this.root_app?.freeze(freeze);
+      this.rootApp?.freeze(freeze);
    }
 
-   async method(Document, method, params = {}) {
+   async method(Document, method, params = {}, options = {}) {
       const url = `/desk/method/${Document}/${method}`;
       params = typeof params === "string" ? { documentName: params } : params;
-      return await http.post(url, params, { freeze: false });
+      return await http.post(url, params, { freeze: false, ...options });
+   }
+
+   async getMeta(Document, action, params = {}, options = {}) {
+      if(!this.#loadedMeta[Document + action]) {
+         this.#loadedMeta[Document + action] = await this.method(Document, action, params, options);
+      }
+
+      return this.#loadedMeta[Document + action];
    }
 }
 

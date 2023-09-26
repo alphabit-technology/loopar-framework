@@ -6,7 +6,7 @@ import { Modal } from "../common/dialog.js";
 
 export default class StripeClass extends Component {
    className = "";
-   stripe_elements_list = [];
+   stripeElementsList = [];
    completeComponent = false;
 
    constructor(props) {
@@ -149,7 +149,7 @@ export default class StripeClass extends Component {
       if (this.theme === theme) return;
       this.theme = theme;
 
-      this.stripe_elements_list.card?.update({style: {
+      this.stripeElementsList.card?.update({style: {
          base: {
             color: theme === "dark" ? '#fff' : '#000',
             iconColor: theme === "dark" ? '#fff' : '#000',
@@ -181,7 +181,7 @@ export default class StripeClass extends Component {
          },
       }
 
-      this.stripe_elements_list["card"] = this.stripe_elements.create('card', {
+      this.stripeElementsList["card"] = this.stripe_elements.create('card', {
          hidePostalCode: true,
          style: {
             base: {
@@ -201,7 +201,7 @@ export default class StripeClass extends Component {
          }
       });
 
-      this.stripe_elements_list.card.mount(this.card.node);
+      this.stripeElementsList.card.mount(this.card.node);
 
       this.form.node.addEventListener('submit', async (event) => {
          event.preventDefault();
@@ -212,7 +212,7 @@ export default class StripeClass extends Component {
          const nameIput = this.form.node.querySelector('input[name="name"]');
          const {error: stripeError, paymentIntent} = await this.stripe.confirmCardPayment(clientSecret, {
             payment_method: {
-               card: this.stripe_elements_list.card,
+               card: this.stripeElementsList.card,
                billing_details: {
                   name: nameIput.value,
                },

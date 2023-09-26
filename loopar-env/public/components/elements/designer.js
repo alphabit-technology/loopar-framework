@@ -1,14 +1,13 @@
 import { button, code, div, h4, h5, h6, i, pre, span, Tabs, Textarea, hr, Dialog, p } from "../elements.js";
 import Component from "../base/component.js";
-import { Element } from "/components/elements.js";
 import GlobalContext from "/components/global-context.js";
 import { loopar } from "/loopar.js";
-import { element_manage } from "../element-manage.js";
-import { Capitalize } from "../../tools/helper.js";
+import { elementManage } from "../element-manage.js";
+import { Modal } from "/components/common/dialog.js";
 
 export default class Designer extends Component {
-   block_component = true;
-   is_writable = true;
+   blockComponent = true;
+   isWritable = true;
    static contextType = GlobalContext;
    droppable = false;
    className = "card";
@@ -42,7 +41,7 @@ export default class Designer extends Component {
                            onClick: (e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              this.props.formRef.toggleDesign("designer");
+                              this.props.docRef.toggleDesign("designer");
                            }
                         }, [
                            i({ className: "oi oi-brush mr-2" }),
@@ -52,6 +51,7 @@ export default class Designer extends Component {
                            className: "btn btn-secondary btn-sm mr-1",
                            onClick: (e) => {
                               e.preventDefault();
+                              e.stopPropagation();
                               this.setState({ IAGenerator: true, IAOperation: true });
                            }
                         }, [
@@ -61,7 +61,7 @@ export default class Designer extends Component {
                      ])
                   ])
                ]),
-               Dialog({
+               Modal({
                   title: ["IA Generator via OpenAI"],
                   icon: span({ className: "fa fa-magic pr-2 text-success" }),
                   size: "lg",
@@ -103,7 +103,7 @@ export default class Designer extends Component {
                         internalAction: 'close'
                      }
                   ],
-                  onClose: () => {
+                  onClose: (e) => {
                      this.setState({ IAGenerator: false });
                   }
                })
@@ -118,7 +118,7 @@ export default class Designer extends Component {
          return;
       }
 
-      if (!this.props.formRef.getValue("type")) {
+      if (!this.props.docRef.getValue("type")) {
          loopar.throw("Empty document", "Please select a document to send the request.");
          return;
       }
@@ -142,7 +142,7 @@ export default class Designer extends Component {
 
       loopar.method('GPT', 'prompt', {
          prompt: this.promptInput,
-         document_type: this.props.formRef.getValue("type"),
+         document_type: this.props.docRef.getValue("type"),
       }).then((r) => {
          dialog.close();
          if (!this.state.IAOperation) return;
@@ -158,7 +158,7 @@ export default class Designer extends Component {
          }
          const elements = evaluateResponse(r.message, "[", "]");
 
-         if (element_manage.isJSON(elements)) {
+         if (elementManage.isJSON(elements)) {
             this.#elements = JSON.parse(elements);
          } else {
             this.setState({
@@ -170,6 +170,8 @@ export default class Designer extends Component {
                content: "Please resend petition to try to receive a correct format"
             })
          }
+      }).catch(e => {
+         dialog.close();
       });
    }
 
@@ -179,7 +181,7 @@ export default class Designer extends Component {
       const model = data.value || "[]";
       const formattedValue = JSON.stringify(JSON.parse(model), null, 3);
 
-      const className = (loopar.sidebar_option !== "preview" ? " element designer design true" : "");
+      const className = (loopar.sidebarOption !== "preview" ? " element designer design true" : "");
 
       return super.render([
          div({ className: "card-header pb-1" }, [
@@ -190,7 +192,7 @@ export default class Designer extends Component {
             Tabs({
                meta: { data: { name: this.props.meta.data.name + "_designer_tab" } },
                style: { paddingBottom: 0 },
-               bodyStyle: loopar.sidebar_option !== "preview" ? { padding: 0 } : {},
+               bodyStyle: loopar.sidebarOption !== "preview" ? { padding: 0 } : {},
                notManageSelectedStatus: this.props.designerRef
             }, [
                {
@@ -242,7 +244,7 @@ export default class Designer extends Component {
       const makeElements = (elements) => {
          return elements.map(el => {
             return super.makeElement(el, {
-               //key: element_manage.getUniqueKey(),
+               //key: elementManage.getUniqueKey(),
                draggable: true,
                designer: true,
                has_title: true,
@@ -255,7 +257,7 @@ export default class Designer extends Component {
                }
             })//
             /*return Element(el.element, {
-               key: element_manage.getUniqueKey(),
+               key: elementManage.getUniqueKey(),
                draggable: true,
                designer: true,
                has_title: true,
@@ -340,10 +342,10 @@ export default class Designer extends Component {
    fixElements(elements) {
       return elements.map(el => {
          if (!el.data) {
-            const names = element_manage.element_name(el.element);
+            const names = elementManage.elementName(el.element);
             el.data = {
                name: names.name,
-               label: Capitalize(names.label.replaceAll('_', ' ')),
+               label: loopar.utils.Capitalize(names.label.replaceAll('_', ' ')),
                id: names.id
             }
          }
@@ -359,7 +361,7 @@ export default class Designer extends Component {
       data.value = JSON.stringify(this.fixElements(elements));
       this.state.meta.data = data;
 
-      this.props.formRef.hydrate();
+      this.props.docRef.hydrate();
 
       setTimeout(() => {
          this.setState({ meta: this.state.meta, IAOperation: false });
@@ -384,10 +386,10 @@ export default class Designer extends Component {
       }
 
       this.#elements = removeElement();
-      this.props.formRef.toggleDesign("designer");
+      this.props.docRef.toggleDesign("designer");
    }
 
-   updateElement(name, data, merge = false) {
+   updateElement(name, data, merge = true) {
       const selfElements = this.#elements;
       const exist = this.findElementByName(data.name, selfElements, name);
 
@@ -406,7 +408,7 @@ export default class Designer extends Component {
 
             /**Purify Data */
             el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
-               if (![null, undefined, "", "0", 0, "false", false].includes(value)) {
+               if (![null, undefined, "", "0", "false", false].includes(value)) {
                   obj[key] = value;
                }
                return obj;

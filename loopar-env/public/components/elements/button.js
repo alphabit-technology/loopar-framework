@@ -12,8 +12,8 @@ const buttons = {
 export default class Button extends Div {
    className = "btn";
    constructor(props) {
-      if(!props.designer){
-         props.tag_name = "button";
+      if (!props.designer) {
+         props.tagName = "button";
       }
 
       super(props);
@@ -23,7 +23,7 @@ export default class Button extends Div {
       const data = this.data;
 
       /***create function to Replace all classes that start with btn-***/
-      if(this.className){
+      if (this.className) {
          this.className = this.className.replace(/btn-[^ ]*/, "");
       }
 
@@ -61,14 +61,14 @@ export default class Button extends Div {
       this.addClass('btn');
    }*/
 
-   set_type(type='default') {
+   setType(type = 'default') {
       /*this.removeClass(`btn-${this.data.type}`).addClass(`btn-${type}`);
       this.data.type = type;
 
       return this;*/
    }
 
-   set_size(size='md') {
+   setSize(size = 'md') {
       /*this.removeClass(`btn-${this.data.size}`).addClass(`btn-${size}`);
       this.data.size = size;
 

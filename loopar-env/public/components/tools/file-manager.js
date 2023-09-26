@@ -1,26 +1,26 @@
-import { div, span,  a, p, small, image, figure, h6} from "/components/elements.js";
-import {element_manage} from "../element-manage.js";
+import { div, span, a, p, small, image, figure, h6, strong} from "/components/elements.js";
+import { elementManage } from "../element-manage.js";
 
-class FileManager{
-   group_element = FILE_INPUT;
-   input_type = 'file';
-   file_icons = {
-      image: {icon: 'fas fa-file-image', color: 'primary'},
-      video: {icon: 'fas fa-file-video', color: 'danger'},
-      audio: {icon: 'fas fa-file-audio', color: 'warning'},
-      pdf: {icon: 'fas fa-file-pdf', color: 'danger'},
-      word: {icon: 'fas fa-file-word', color: 'primary'},
-      excel: {icon: 'fas fa-file-excel', color: 'success'},
-      powerpoint: {icon: 'fas fa-file-powerpoint', color: 'danger'},
-      zip: {icon: 'fa fa-file-archive', color: 'yellow'},
-      code: {icon: 'fas fa-file-code', color: 'secondary'},
-      text: {icon: 'fas fa-file-alt', color: 'secondary'},
-      default: {icon: 'fas fa-file', color: 'secondary'},
-      folder: {icon: 'fas fa-folder', color: 'yellow'},
-      application: {icon: 'fas fa-file', color: 'secondary'}
+class FileManager {
+   groupElement = FILE_INPUT;
+   inputType = 'file';
+   fileIcons = {
+      image: { icon: 'fas fa-file-image', color: 'primary' },
+      video: { icon: 'fas fa-file-video', color: 'danger' },
+      audio: { icon: 'fas fa-file-audio', color: 'warning' },
+      pdf: { icon: 'fas fa-file-pdf', color: 'danger' },
+      word: { icon: 'fas fa-file-word', color: 'primary' },
+      excel: { icon: 'fas fa-file-excel', color: 'success' },
+      powerpoint: { icon: 'fas fa-file-powerpoint', color: 'danger' },
+      zip: { icon: 'fa fa-file-archive', color: 'yellow' },
+      code: { icon: 'fas fa-file-code', color: 'secondary' },
+      text: { icon: 'fas fa-file-alt', color: 'secondary' },
+      default: { icon: 'fas fa-file', color: 'secondary' },
+      folder: { icon: 'fas fa-folder', color: 'yellow' },
+      application: { icon: 'fas fa-file', color: 'secondary' }
    };
 
-   file_extensions = {
+   fileRxtensions = {
       image: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp', 'ico', 'webp', 'tiff', 'tif', 'psd', 'ai', 'raw', 'indd', 'heif', 'heic', 'eps', 'svgz', 'jfif'],
       video: ['mp4', 'avi', 'mkv', 'webm', 'mov', 'flv', 'wmv', 'mpg', 'mpeg', '3gp', '3g2', 'm4v', 'h264', 'rmvb', 'vob', 'ts', 'm2ts', 'mts', 'divx', 'xvid', 'asf', 'ogv', 'rm', 'swf', 'f4v', 'dat', 'm2v', 'mpeg1', 'mpeg2', 'mpeg4', 'vcd', 'svcd', 'dvd', 'm1v', 'm2p', 'm2ts', 'm2v', 'm4e', 'mjp', 'mjpeg', 'mod', 'movie', 'mp21', 'mpe', 'mpv', 'ogx', 'qt', 'viv', 'vivo', 'vob', 'vro', 'xlmv'],
       audio: ['mp3', 'wav', 'ogg', 'm4a', 'wma', 'flac', 'aac', 'aiff', 'alac', 'pcm', 'dsd', 'awb', 'ac3', 'dts', 'mp2', 'mka', 'm3u', 'm3u8', 'opus', 'ra', 'rm', 'tta', 'wv', 'webm', 'caf', 'amr', 'mpc', 'mid', 'midi', 'log', 'cue', 'aif', 'aifc', 'cda', 'dct', 'dss', 'dvf', 'gsm', 'm3u', 'pls', 'sln', 'vox', 'wma', 'wpl', 'zab', 'm4b', 'm4p', 'oga', 'mogg', 'spx', 'opus', '3gp', 'aa', 'aax', 'act', 'aiff', 'alac', 'amr', 'ape', 'au', 'awb', 'dct', 'dss', 'dvf', 'flac', 'gsm', 'iklax', 'ivs', 'm4a', 'm4b', 'm4p', 'mmf', 'mpc', 'msv', 'nmf', 'nsf', 'ogg', 'oga', 'mogg', 'opus', 'ra', 'rm', 'raw', 'rf64', 'sln', 'tta', 'voc', 'vox', 'wav', 'wma', 'wv', 'webm', '8svx', 'cda', 'm3u', 'pls', 'spx', 'wpl', 'zab'],
@@ -36,20 +36,20 @@ class FileManager{
 
    getIconByExtention(ext, type) {
       if (type === 'folder') {
-         return this.file_icons['folder'];
+         return this.fileIcons['folder'];
       }
 
-      for (const [key, value] of Object.entries(this.file_extensions)) {
+      for (const [key, value] of Object.entries(this.fileRxtensions)) {
          if (value.includes(ext)) {
-            return this.file_icons[key];
+            return this.fileIcons[key];
          }
       }
 
-      return this.file_icons['default'];
+      return this.fileIcons['default'];
    }
 
    getTypeByExtension(ext) {
-      for (const [key, value] of Object.entries(this.file_extensions)) {
+      for (const [key, value] of Object.entries(this.fileRxtensions)) {
          if (value.includes(ext)) {
             return key;
          }
@@ -57,31 +57,52 @@ class FileManager{
 
       return 'default';
    }
-   
+
    getExtention(file) {
       const explit = file.name.split('.');
-      if(explit.length === 1) return 'folder';
+      if (explit.length === 1) return 'folder';
 
       return explit.pop().toLowerCase();
    }
 
    getFileType(file) {
-      if(element_manage.isJSON(file)){
+      if (elementManage.isJSON(file)) {
          file = JSON.parse(file);
       }
 
       return file.type === "folder" ? "folder" : this.getTypeByExtension(this.getExtention(file));
    }
 
-   getMappedFiles(files = []){
+   getFileSize(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+      return [parseFloat((bytes / Math.pow(k, i)).toFixed(dm)), small({className: "pl-1"}, strong(sizes[i]))];
+   }
+
+   getFileIcon(type) {
+      return this.fileIcons[type] ? this.fileIcons[type].icon : this.fileIcons['default'].icon;
+   }
+
+   getRenderedFileIcon(type) {
+      const TYPE = this.fileIcons[type] || this.fileIcons['default'];
+      return span({className: TYPE.icon + " fa-2x" + " text-" + TYPE.color});
+   }
+
+   getMappedFiles(files = []) {
       /*if(files instanceof FileList){
          return files;
       }*/
-      if(typeof files === "string" && !element_manage.isJSON(files)){
+      if (typeof files === "string" && !elementManage.isJSON(files)) {
          files = [files]
       }
 
-      if(files instanceof File){
+      if (files instanceof File) {
          files = FileList(files);
       }
 
@@ -89,11 +110,11 @@ class FileManager{
          files = Object.values(files);
       }
 
-      if(typeof files === "string" && element_manage.isJSON(files)){
+      if (typeof files === "string" && elementManage.isJSON(files)) {
          files = JSON.parse(files);
       }
 
-      if(typeof files == "object" && !Array.isArray(files)){
+      if (typeof files == "object" && !Array.isArray(files)) {
          files = [];
       }
 
@@ -101,16 +122,16 @@ class FileManager{
          const ext = this.getExtention(file);
          return file instanceof File ? file : {
             ...file,
-            type: this.getFileType(file), 
-            src: this.getSrc(file), 
+            type: this.getFileType(file),
+            src: this.getSrc(file),
             extention: ext,
             previewSrc: this.getSrc(file, true, ext)
-         } 
+         }
       });
    }
 
-   getSrc(file, preview = false, ext = null){
-      if(file.src && (file.src.includes("data:") || file.src.includes("http"))){
+   getSrc(file, preview = false, ext = null) {
+      if (file.src && (file.src.includes("data:") || file.src.includes("http"))) {
          return encodeURI(file.src);
       }
       return encodeURI("/uploads/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
@@ -149,11 +170,11 @@ class FileManager{
       const promises = Array.from(files).map((file) => {
          return new Promise((resolve, reject) => {
             if (file instanceof File) {
-               if (file.type.match('image.*')){
+               if (file.type.match('image.*')) {
                   const reader = new FileReader();
 
                   reader.onload = (e) => {
-                     const imageFile = {name: file.name, src: e.target.result, type: "image"}
+                     const imageFile = { name: file.name, src: e.target.result, type: "image" }
                      resolve(this.getImagePreview(imageFile));
                   };
 
@@ -163,7 +184,7 @@ class FileManager{
 
                   return reader.readAsDataURL(file);
                }
-            } else if(file.type === "image"){
+            } else if (file.type === "image") {
                return resolve(this.getImagePreview(file));
             }
 
@@ -180,15 +201,9 @@ class FileManager{
       });
    }
 
-   getImage(data={}, field, avatar = null){
-      const img = this.getMappedFiles((data ||{})[field])[0];
-      if (img){
-         return img.previewSrc;
-      }else if(avatar){
-         return `assets/images/avatars/${avatar}`;
-      }
-
-      return null
+   getImage(data = {}, field, avatar = null) {
+      const img = this.getMappedFiles((data || {})[field])[0];
+      return img ? img.previewSrc : avatar ? `/assets/images/avatars/${avatar}` : null;
    }
 }
 

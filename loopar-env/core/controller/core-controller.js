@@ -2,10 +2,8 @@
 
 import express from "express";
 import AuthController from "./auth-controller.js";
-import { loopar } from "../loopar.js";
-import { lowercase, } from '../helper.js';
+import { loopar } from "loopar-env";
 import { fileManage } from "../file-manage.js";
-import { hash } from "../helper.js";
 
 export default class CoreController extends AuthController {
    error = {};
@@ -24,10 +22,10 @@ export default class CoreController extends AuthController {
 
    exposeClientFiles() {
       this.defaultImporterFiles.forEach(file => {
-         this.router.use(express.static(loopar.makePath(this.controllerPath, file)));
+         loopar.server.use(express.static(loopar.makePath(this.controllerPath, file)));
       });
 
-      this.router.use(this.express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
+      loopar.server.use(express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
    }
 
    async clientImporter() {
@@ -55,7 +53,17 @@ export default class CoreController extends AuthController {
       }
 
       try {
-         if (error.error === 404) {
+         return await self.renderError({
+            title: 'Error ' + error.error,
+            message: error.message,
+            error: error.error
+         }, self.templateError(error.error));
+      }catch(e){
+         console.log(['Err on to try send error', error]);
+      }
+
+      //try {
+         /*if (error.error === 404) {
             return await self.notFound();
          }
          if (self.method === AJAX) {
@@ -63,16 +71,16 @@ export default class CoreController extends AuthController {
                .status(error.error)
                .json({ error: 'Error ' + error.error, message: error.message }).send();
 
-         } else {
-            return await self.renderError({
+         } else {*/
+            /*return await self.renderError({
                title: 'Error ' + error.error,
                message: error.message,
                error: error.error
-            }, self.templateError(error.error));
-         }
-      } catch (e) {
-         console.log(['Err on to try send error', e]);
-      }
+            }, self.templateError(error.error));*/
+         //}
+      //} catch (e) {
+      //   console.log(['Err on to try send error', e]);
+      //}
    }
 
    get engineTemplate() {
@@ -80,63 +88,18 @@ export default class CoreController extends AuthController {
    }
 
    async renderError(data, template = null) {
-      console.log("renderError", loopar.makePath(loopar.pathFramework, "workspace", template) + this.engineTemplate);
-
-      this.res.render(loopar.makePath(loopar.pathFramework, "workspace", template) + this.engineTemplate, data);
-   }
-
-   redirect(url = null) {
-      this.res.redirect(url || this.req.originalUrl);
-   }
-
-   templateError(code = null) {
-      return `errors/${code || 'base-error'}`;
-   }
-
-   async render(meta, workspace = this.workspace, client_importer = null) {
-      meta.action = this.action;
-      const response = {
-         meta: meta,
-         key: this.getKey(),
-         client_importer: client_importer || await this.clientImporter(),
-         context: this.context
+      if (this.method === AJAX) {
+         return this.res.status(404).json({ error: data.title, message: data.message || 'Internal Server Error' }).send();
       }
+      this.controllerPath = loopar.makePath("apps/loopar/modules/core/error");
+      this.document = "Error";
+      this.client = "view";
+      const document = await loopar.newDocument("Error");
+      document.__DOCUMENT__ = data; 
 
-      this.method === AJAX ? this.res.send(response) : await this.main(response, workspace);
-   }
+      this.exposeClientFiles();
 
-   async main(response = {}, workspace) {
-      if (response.meta) response.meta = JSON.stringify(response.meta);
-
-      const client_importer = await this.clientImporter();
-      const WORKSPACE = { user: loopar.currentUser };
-
-      if (workspace === "desk") {
-
-         WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
-
-      } else if (workspace === "web") {
-         WORKSPACE.web_app = await this.#webApp();
-      }
-
-      this.res.render(loopar.makePath(loopar.pathFramework, "workspace", workspace) + this.engineTemplate, {
-         ...response,
-         document: lowercase(this.document),
-         client_importer: client_importer,
-         action: this.action,
-         workspace: JSON.stringify(WORKSPACE),
-         W: workspace,
-         key: this.getKey()
-      });
-   }
-
-   getKey(route = this.url) {
-      const query = route.search ? route.search.split('?') : '';
-      route.query = query[1] || '';
-
-      const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'documentName').join();
-
-      return hash(`${route.pathname}${key}`.toLowerCase());
+      return this.render(document);
    }
 
    async notFound(message = null) {
@@ -151,6 +114,58 @@ export default class CoreController extends AuthController {
       this.exposeClientFiles();
 
       return this.render(document);
+   }
+
+   redirect(url = null) {
+      this.res.redirect(url || this.req.originalUrl);
+   }
+
+   templateError(code = null) {
+      return `errors/${code || 'base-error'}`;
+   }
+
+   async render(meta, workspace = this.workspace, clientImporter = null) {
+      meta.action = this.action;
+      const response = {
+         meta: meta,
+         key: this.getKey(),
+         client_importer: clientImporter || await this.clientImporter(),
+         context: this.context
+      }
+
+      this.method === AJAX ? this.res.send(response) : await this.main(response, workspace);
+   }
+
+   async main(response = {}, workspace) {
+      if (response.meta) response.meta = JSON.stringify(response.meta);
+
+      const client_importer = await this.clientImporter();
+      const WORKSPACE = { user: loopar.currentUser };
+
+      if (workspace === "desk") {
+         WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
+      } else if (workspace === "web") {
+         WORKSPACE.web_app = await this.#webApp();
+      }
+
+      this.res.render(loopar.makePath(loopar.pathFramework, "workspace", workspace) + this.engineTemplate, {
+         ...response,
+         document: loopar.utils.lowercase(this.document),
+         client_importer: client_importer,
+         action: this.action,
+         workspace: JSON.stringify(WORKSPACE),
+         W: workspace,
+         key: this.getKey()
+      });
+   }
+
+   getKey(route = this.dictUrl) {
+      const query = route.search ? route.search.split('?') : '';
+      route.query = query[1] || '';
+
+      const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'documentName').join();
+
+      return loopar.utils.hash(`${route.pathname}${key}`.toLowerCase());
    }
 
    static async sidebarData() {

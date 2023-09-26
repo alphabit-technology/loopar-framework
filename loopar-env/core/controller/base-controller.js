@@ -12,11 +12,11 @@ export default class BaseController extends CoreController {
    }
 
    async actionList() {
-
       if (this.hasData()) {
          await loopar.session.set(this.document + '_q', this.data.q || {});
          await loopar.session.set(this.document + '_page', this.data.page || 1);
       }
+      
       const data = { ...loopar.session.get(this.document + '_q') || {} };
 
       const list = await loopar.getList(this.document, { q: (data && Object.keys(data).length > 0) ? data : null });
@@ -64,5 +64,18 @@ export default class BaseController extends CoreController {
       const result = await document.delete();
 
       this.res.send(result);
+   }
+
+   async actionBulkDelete() {
+      const documentNames = loopar.utils.isJSON(this.documentNames) ? JSON.parse(this.documentNames) : [];
+
+      if(Array.isArray(documentNames)) {
+         for(const documentName of documentNames) {
+            const document = await loopar.getDocument(this.document, documentName);
+            await document.delete();
+         }
+      } 
+
+      return this.success(`Documents ${documentNames.join(', ')} deleted successfully`, { documentName: documentNames.join(', ') });
    }
 }

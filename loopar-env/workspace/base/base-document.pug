@@ -32,7 +32,7 @@ html(lang='en')
 
         script.
             window.global = window;
-            window.toggle_theme = (toggle = true) => {
+            window.toggleTheme = (toggle = true) => {
                 const skin = localStorage.getItem('skin') || 'dark';
                 const theme = toggle ? (skin === 'dark' ? 'default' : 'dark') : skin;
                 const theme_style = theme === 'dark' ? '-dark' : '';
@@ -43,6 +43,6 @@ html(lang='en')
                 localStorage.setItem('skin', theme);
             }
 
-            window.toggle_theme(false);
+            window.toggleTheme(false);
     include unsupported-browsers
     block content

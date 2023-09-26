@@ -1,6 +1,6 @@
 import FileInput from "./file-input.js";
 export default class ImageInput extends FileInput {
-   input_type = 'file';
+   //inputType = 'file';
 
    constructor(props) {
       super(props);

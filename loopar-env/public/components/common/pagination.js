@@ -6,95 +6,86 @@ export class PaginationClass extends Div {
    style = {width: '100%'};
    constructor(props) {
       super(props);
-
-      this.state = {
-         pagination : this.props.pagination
-      }
    }
 
    get pagination() {
       return this.props.pagination;
    }
 
-   getPages(){
-      const {page, total_pages} = this.pagination;
-      const max_pages_to_show = 5;
+   getPages() {
+      const { page, totalPages } = this.pagination;
+      const maxPagesToShow = 5;
       const pages = [];
 
-      if (total_pages <= max_pages_to_show) {
-         return new Array(total_pages).fill().map(( _, i) => i + 1);
+      if (totalPages <= maxPagesToShow) {
+         return new Array(totalPages).fill().map((_, i) => i + 1);
       } else {
-         const half_max_pages_to_show = Math.floor(max_pages_to_show / 2);
-         let start_page = page - half_max_pages_to_show;
-         let end_page = page + half_max_pages_to_show;
+         const halfMaxPagesToShow = Math.floor(maxPagesToShow / 2);
+         let startPage = page - halfMaxPagesToShow;
+         let endPage = page + halfMaxPagesToShow;
 
-         if (start_page < 1) {
-            end_page += Math.abs(start_page) + 1;
-            start_page = 1;
+         if (startPage <= 0) {
+            endPage = maxPagesToShow;
+            startPage = 1;
+         } else if (endPage > totalPages) {
+            endPage = totalPages;
+            startPage = totalPages - maxPagesToShow + 1;
          }
 
-         if (end_page > total_pages) {
-            start_page -= end_page - total_pages;
-            end_page = total_pages;
+         if (startPage > 1) {
+            pages.push(1);
+            startPage > 2 && pages.push('...');
          }
 
-         for (let i = start_page; i <= end_page; i++) {
+         for (let i = startPage; i <= endPage; i++) {
             pages.push(i);
          }
 
-         if (start_page > half_max_pages_to_show) {
-            pages.unshift('...');
-            pages.unshift(1);
-         } else if (start_page === half_max_pages_to_show) {
-            pages.unshift(1);
+         if (endPage < totalPages) {
+            endPage < totalPages - 1 && pages.push('...');
+            pages.push(totalPages);
          }
 
-         if (end_page < total_pages - half_max_pages_to_show) {
-            pages.push('...');
-            pages.push(total_pages);
-         } else if (end_page === total_pages - half_max_pages_to_show) {
-            pages.push(total_pages);
-         }
+         return pages;
       }
-
-      return pages;
    }
 
    render() {
-      const {page, page_size, total_records, total_pages} = this.pagination;
+      const {page, pageSize, totalRecords, totalPages} = this.pagination;
 
-      const initial = (page - 1) * page_size + 1;
-      const final = (page * page_size) > total_records ? total_records : (page * page_size);
+      const initial = (page - 1) * pageSize + 1;
+      const final = (page * pageSize) > totalRecords ? totalRecords : (page * pageSize);
 
-      return super.render([
-         div({className: 'col-sm-12 col-md-5'}, [
-            div({className: 'dataTables_info'}, [
-               `Showing ${initial} to ${final} of ${total_records} entries`
-            ])
-         ]),
-         div({className: 'col-sm-12 col-md-7 d-flex justify-content-end'}, [
-            div({className: 'dataTables_paginate paging_simple_numbers'}, [
-               ul({className: 'pagination justify-content-center', style: {paddingTop: 15}}, [
-                  li({className: `paginate_button page-item previous ${total_pages <= 1 || page === 1 ? 'disabled' : '' }`}, [
-                     a({className: 'page-link', onClick: () => {this.setPage(page-1)}}, [
-                        i({className: "fa fa-lg fa-angle-left"})
-                     ])
-                  ]),
-                  this.getPages().map(p => {
-                     return li({className: `paginate_button page-item ${p === page ? 'active' : ''}`}, [
-                        a({className: 'page-link', onClick: () => {p !== '...' && this.setPage(p)}}, p)
-                     ])
-                  }),
-                  li({className: `paginate_button page-item previous ${page >= total_pages || total_pages <= 1 ? 'disabled' : ''}`}, [
-                     a({className: 'page-link', onClick: () => {this.setPage(page + 1)}}, [
-                        i({className: "fa fa-lg fa-angle-right"})
+      return super.render(totalRecords > 0 ? [
+            div({className: 'col-sm-12 col-md-5'}, [
+               div({className: 'dataTables_info'}, [
+                  `Showing ${initial} to ${final} of ${totalRecords} entries`
+               ])
+            ]),
+            div({className: 'col-sm-12 col-md-7 d-flex justify-content-end'}, [
+               div({className: 'dataTables_paginate paging_simple_numbers'}, [
+                  ul({className: 'pagination justify-content-center', style: {paddingTop: 15}}, [
+                     li({className: `paginate_button page-item previous ${totalPages <= 1 || page === 1 ? 'disabled' : '' }`}, [
+                        a({className: 'page-link', onClick: () => {this.setPage(page-1)}}, [
+                           i({className: "fa fa-lg fa-angle-left"})
+                        ])
+                     ]),
+                     this.getPages().map(p => {
+
+                        return li({className: `paginate_button page-item ${p === page ? 'active' : ''}`}, [
+                           a({className: 'page-link', onClick: () => {p !== '...' && this.setPage(p)}}, p)
+                        ])
+                     }),
+                     li({className: `paginate_button page-item previous ${page >= totalPages || totalPages <= 1 ? 'disabled' : ''}`}, [
+                        a({className: 'page-link', onClick: () => {this.setPage(page + 1)}}, [
+                           i({className: "fa fa-lg fa-angle-right"})
+                        ])
                      ])
                   ])
                ])
             ])
-         ])
-
-      ]);
+         ] : []
+      );
    }
 
    setPage(page) {

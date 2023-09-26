@@ -2,15 +2,15 @@ import Div from "/components/elements/div.js";
 import { elements } from "/components/elements.js";
 import { dataInterface } from "/element-definition.js";
 import { label } from "/components/elements.js";
-import { Capitalize, trueValue } from "../../tools/helper.js";
-import { element_manage } from "../element-manage.js";
+import { elementManage } from "../element-manage.js";
+import { loopar } from "/loopar.js";
 
 export class BaseInput extends Div {
-   input_tag_name = 'input';
-   input_type = 'text';
+   inputTagName = 'input';
+   inputType = 'text';
    autocomplete = 'off';
-   group_element = INPUT;
-   is_writable = true;
+   groupElement = INPUT;
+   isWritable = true;
    droppable = false;
    names = null;
 
@@ -44,7 +44,7 @@ export class BaseInput extends Div {
          this.setState({
             meta: this.props.meta
          }, () => {
-            !this.props.designer && this.props.formRef && this.validate();
+            !this.props.designer && this.props.docRef && this.validate();
          });
       }
 
@@ -72,20 +72,25 @@ export class BaseInput extends Div {
    }
 
    get data() {
-      this.names ??= element_manage.element_name(this.props.element);
+      this.names ??= elementManage.elementName(this.props.element);
       const data = this.meta.data || {};
 
       //data.id ??= names.id;
       data.id = this.names.id;
       data.name ??= this.names.name;
-      data.label ??= Capitalize(data.name.replaceAll('_', ' '));
+      data.label ??= loopar.utils.Capitalize(data.name.replaceAll('_', ' '));
 
       return data;
    }
 
-   get_structure() {
+   get readOnly() {
+      return this.props.readOnly || this.data.readOnly;
+   }
+
+   getStructure() {
       const data = this.data
-      const inputClass = `form-control${data.size ? ` form-control-${data.size}` : ''}${this.state.is_invalid ? ' is-invalid' : ''}`;
+      const readOnly = this.readOnly;
+      const inputClass = `form-control${data.size ? ` form-control-${data.size}` : ''} ${this.state.is_invalid ? ' is-invalid' : ''} ${readOnly ? 'text-muted' : ''}`;
 
       return [
          label({
@@ -98,28 +103,26 @@ export class BaseInput extends Div {
          elements({
             key: data.id,
             ref: input => this.input = input,
-            value: (this.input_type === "file" ? [] : data.value),
-            type: [CHECKBOX, SWITCH, PASSWORD].includes(this.props.element) ? this.input_type : (data.format || this.input_type),
+            value: (this.inputType === "file" ? [] : data.value),
+            type: [CHECKBOX, SWITCH, PASSWORD].includes(this.props.element) ? this.inputType : (data.format || this.inputType),
             name: data.name || data.id,
             autoComplete: this.autocomplete,
-            className: inputClass + ` ${this.visible_input === false ? 'd-none' : ''}`,
+            className: inputClass + ` ${this.visibleInput === false ? 'd-none' : ''}`,
             id: data.id,
             placeholder: data.placeholder || data.label,
             onChange: (e) => {
                this.handleInputChange(e);
             },
-            ...([CHECKBOX, SWITCH].includes(this.input_type) ? { checked: trueValue(data.value) } : {}),
-            ...(this.input_tag_name === "textarea" ? { rows: data.rows || 5 } : {}),
-            ...(this.input_type === "file" ? { multiple: this.state.multiple, accept: this.state.accept } : {}),
+            ...([CHECKBOX, SWITCH].includes(this.inputType) ? { checked: loopar.utils.trueValue(data.value) } : {}),
+            ...(this.inputTagName === "textarea" ? { rows: data.rows || 5 } : {}),
+            ...(this.inputType === "file" ? { multiple: this.state.multiple, accept: this.state.accept } : {}),
 
-         }).tag(this.input_tag_name)
+         }).tag(readOnly ? "div" : this.inputTagName, readOnly ? data.value : null)
       ]
    }
 
    render(content = []) {
-      const structure = this.get_structure();
-      const meta = this.meta;
-
+      const structure = this.getStructure();
       return super.render([
          ...([SWITCH, CHECKBOX].includes(this.props.element) ? structure.reverse() : structure),
          ...content
@@ -170,7 +173,7 @@ export class BaseInput extends Div {
       return validation;
    }
 
-   set_size(size = 'md') {
+   setSize(size = 'md') {
       this.input.removeClass(`form-control-${this.data.size}`).addClass(`form-control-${size}`);
       this.label.removeClass(`col-form-label-${this.data.size}`).addClass(`col-form-label-${size}`);
       this.data.size = size;

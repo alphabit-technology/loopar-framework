@@ -1,1 +1,9 @@
-h1 Test file Error 500
+extends ../base/base-error
+
+block title
+    h1.state-header.display-1.font-weight-bold
+        span 5
+        i.far.fa-frown.text-red
+        span 0
+    #{message}
+    

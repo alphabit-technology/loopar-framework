@@ -2,7 +2,7 @@ import { BaseInput } from "/components/base/base-input.js";
 import { loopar } from "/loopar.js";
 
 export default class Markdown extends BaseInput {
-   is_writable = false;
+   isWritable = false;
 
    constructor(props = {}) {
       super(props);

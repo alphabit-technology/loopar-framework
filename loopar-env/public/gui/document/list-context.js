@@ -4,9 +4,10 @@ import { DeskGUI } from "./base/desk-gui.js";
 import { button, span } from "/components/elements.js";
 
 export default class ListContext extends BaseDocument {
-   has_header = true;
+   hasHeader = true;
+   hasSidebar = true;
    context = 'index';
-   render_structure = false;
+   renderStructure = false;
 
    constructor(props) {
       super(props);
@@ -41,22 +42,28 @@ export default class ListContext extends BaseDocument {
    }
 
    render(content) {
-      this.setCustomActions();
-      return super.render([
-         DeskGUI({
+      content = [
+         content,
+         !content || this.renderGrid ? ListGrid({
             meta: this.props.meta,
-            hasSidebar: true,
-            has_header: this.has_header,
+            viewType: this.viewType,
+            docRef: this,
+            ref: (grid) => {
+               this.grid = grid;
+            }
+         }) : null
+      ];
+
+      return super.render([
+         this.props.modal ? content :
+         DeskGUI({
             docRef: this
-         }, [
-            content,
-            !content || this.renderGrid ? ListGrid({
-               meta: this.props.meta,
-               //ref: (self) => this.grid = self,
-               viewType: this.viewType,
-               docRef: this
-            }) : null
-         ])
+         }, content)
       ]);
+   }
+
+   componentDidMount() {
+      super.componentDidMount();
+      this.setCustomActions();
    }
 }

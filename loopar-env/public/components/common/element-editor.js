@@ -1,18 +1,18 @@
-import {Element, hr, h5, br, div, Tabs, label} from "/components/elements.js";
-import {Capitalize} from "/tools/helper.js";
+import { Element, hr, h5, br, div, Tabs, label } from "/components/elements.js";
+
 import DivClass from "/components/elements/div.js";
-import {loopar} from "/loopar.js";
-import {element_manage} from "/components/element-manage.js";
-import {Divider} from "/components/gui/divider.js";
+import { loopar } from "/loopar.js";
+import { elementManage } from "/components/element-manage.js";
+import { Divider } from "/components/gui/divider.js";
 
 export class ElementEditorClass extends DivClass {
-   form_fields = [];
+   formFields = [];
 
    constructor(props) {
       super(props);
 
       this.state = {
-         connected_element: null,
+         connectedElement: null,
          data: {}
       }
    }
@@ -33,23 +33,23 @@ export class ElementEditorClass extends DivClass {
             group: 'form',
             elements: {
                //tag: {element: INPUT},
-               label: {element: INPUT},
-               name: {element: INPUT},
-               description: {element: TEXTAREA},
+               label: { element: INPUT },
+               name: { element: INPUT },
+               description: { element: TEXTAREA },
                format: {
                   element: SELECT,
                   data: {
                      options: [
-                        {option: 'data', value: 'Data'},
-                        {option: 'text', value: 'Text'},
-                        {option: 'email', value: 'Email'},
-                        {option: 'decimal', value: 'Decimal'},
-                        {option: 'percent', value: 'Percent'},
-                        {option: 'currency', value: 'Currency'},
-                        {option: 'int', value: 'Int'},
-                        {option: 'long_int', value: 'Long Int'},
-                        {option: 'password', value: 'Password'},
-                        {option: 'read_only', value: 'Read Only'}
+                        { option: 'data', value: 'Data' },
+                        { option: 'text', value: 'Text' },
+                        { option: 'email', value: 'Email' },
+                        { option: 'decimal', value: 'Decimal' },
+                        { option: 'percent', value: 'Percent' },
+                        { option: 'currency', value: 'Currency' },
+                        { option: 'int', value: 'Int' },
+                        { option: 'long_int', value: 'Long Int' },
+                        { option: 'password', value: 'Password' },
+                        { option: 'read_only', value: 'Read Only' }
                      ],
                      selected: 'data'
                   }
@@ -58,9 +58,9 @@ export class ElementEditorClass extends DivClass {
                   element: SELECT,
                   data: {
                      options: [
-                        {option: 'sm', value: 'Small'},
-                        {option: 'md', value: 'Medium'},
-                        {option: 'lg', value: 'Large'}
+                        { option: 'sm', value: 'Small' },
+                        { option: 'md', value: 'Medium' },
+                        { option: 'lg', value: 'Large' }
                      ],
                      selected: 'md'
                   }
@@ -69,28 +69,28 @@ export class ElementEditorClass extends DivClass {
                   element: SELECT,
                   data: {
                      options: [
-                        {option: 'default', value: 'Default'},
-                        {option: 'primary', value: 'Primary'},
-                        {option: 'success', value: 'Success'},
-                        {option: 'info', value: 'Info'},
-                        {option: 'link', value: 'link'},
+                        { option: 'default', value: 'Default' },
+                        { option: 'primary', value: 'Primary' },
+                        { option: 'success', value: 'Success' },
+                        { option: 'info', value: 'Info' },
+                        { option: 'link', value: 'link' },
                      ],
                      selected: 'default'
                   }
                },
-               action: {element: INPUT},
-               options: {element: TEXTAREA},
+               action: { element: INPUT },
+               options: { element: TEXTAREA },
 
                file_info1: Divider({
-                 style: {
-                    marginTop: 10,
-                    marginBottom: 0,
-                    color: 'red'
-                 },
-                 label: "For File Input Only"
+                  style: {
+                     marginTop: 10,
+                     marginBottom: 0,
+                     color: 'red'
+                  },
+                  label: "For File Input Only"
                }),
-               accept: {element: INPUT},
-               multiple: {element: SWITCH},
+               accept: { element: INPUT },
+               multiple: { element: SWITCH },
                file_info2: Divider({
                   style: {
                      marginTop: 0,
@@ -98,19 +98,19 @@ export class ElementEditorClass extends DivClass {
                   },
                   label: ""
                }),
-               not_validate_type: {element: SWITCH},
-               required: {element: SWITCH},
-               unique: {element: SWITCH},
-               set_only_time: {element: SWITCH},
-               readonly: {element: SWITCH},
-               in_list_view: {element: SWITCH},
-               searchable: {element: SWITCH},
+               not_validate_type: { element: SWITCH },
+               required: { element: SWITCH },
+               unique: { element: SWITCH },
+               set_only_time: { element: SWITCH },
+               readonly: { element: SWITCH },
+               in_list_view: { element: SWITCH },
+               searchable: { element: SWITCH },
             }
          },
          {
             group: 'design',
             elements: {
-               background_color: {element: COLOR_PICKER},
+               background_color: { element: COLOR_PICKER },
                background_image: {
                   element: IMAGE_INPUT,
                   height: 200,
@@ -119,28 +119,28 @@ export class ElementEditorClass extends DivClass {
                   element: SELECT,
                   data: {
                      options: [
-                        {option: 'cover', value: 'Cover'},
-                        {option: 'contain', value: 'Contain'},
-                        {option: 'auto', value: 'Auto'},
+                        { option: 'cover', value: 'Cover' },
+                        { option: 'contain', value: 'Contain' },
+                        { option: 'auto', value: 'Auto' },
                      ],
                      selected: 'cover'
                   }
                },
-               color_overlay: {element: COLOR_PICKER},
+               color_overlay: { element: COLOR_PICKER },
                //background_color: {element: COLOR_PICKER},
 
-               class: {element: TEXTAREA},
-               style: {element: TEXTAREA},
-               hidden: {element: SWITCH},
-               disabled: {element: SWITCH},
-               collapsed: {element: SWITCH}
+               class: { element: TEXTAREA },
+               style: { element: TEXTAREA },
+               hidden: { element: SWITCH },
+               disabled: { element: SWITCH },
+               collapsed: { element: SWITCH }
             }
          },
          {
             group: 'Animation',
             elements: {
                info: label({
-                  style: {paddingTop: 10},
+                  style: { paddingTop: 10 },
                   className: "text-danger"
                }, "Animations allowed in Website Only"),
                animation: {
@@ -176,8 +176,8 @@ export class ElementEditorClass extends DivClass {
                      }
                   }
                },
-               animation_duration: {element: INPUT, data: {format: 'number'}},
-               animation_delay: {element: INPUT, data: {format: 'number'}},
+               animation_duration: { element: INPUT, data: { format: 'number' } },
+               animation_delay: { element: INPUT, data: { format: 'number' } },
                /*easing: {
                   element: "select",
                   data: {
@@ -261,31 +261,57 @@ export class ElementEditorClass extends DivClass {
    }
 
    render() {
-      const connected_element = this.connectedElement || null;
-      if (!connected_element) return null;
-      this.form_fields = [];
-      const meta = connected_element.meta || {};
-      meta.id ??= element_manage.getUniqueKey();
+      const connectedElement = this.connectedElement || null;
+      if (!connectedElement) return null;
+      this.formFields = [];
+      const meta = connectedElement.meta || {};
+      meta.id ??= elementManage.getUniqueKey();
       const data = meta.data || {};
-      const DI = []//this.optionsDisabled(connected_element.element); //disabled inputs
+      const DI = []//this.optionsDisabled(connectedElement.element); //disabled inputs
+
+      const dataElements = this.dataElements.map(({ group, elements }) => {
+         if(group === 'form') {
+            elements['divider_default'] = Divider({
+               style: {
+                  marginTop: 10,
+                  marginBottom: 0,
+                  color: 'red'
+               },
+               label: ""
+            });
+            
+            elements['default_value'] = {
+               element: connectedElement.element,
+               data: {
+                  ...connectedElement.meta.data,
+                  key: connectedElement.meta.id + "_default",
+                  label: "Default",
+                  name: "default_vaule",
+                  hidden: 0
+               }
+            }
+         }
+
+         return { group, elements };
+      });
 
       return super.render([
          h5({
             className: "pt-2",
-            style: {position: "absolute", zIndex: 100}
-         }, Capitalize(connected_element.element) + " Editor"),
+            style: { position: "absolute", zIndex: 100 }
+         }, loopar.utils.Capitalize(connectedElement.element) + " Editor"),
          Tabs({
             className: "nav nav-tabs",
             meta: {
-               data: {name: "element_editor_tabs"}
+               data: { name: "element_editor_tabs" }
             },
-            headerStyle: {paddingLeft: 0},
-            bodyStyle: {padding: 0},
-            style: {top: 25, width: "100%"},
+            headerStyle: { paddingLeft: 0 },
+            bodyStyle: { padding: 0 },
+            style: { top: 25, width: "100%" },
          }, [
-            ...this.dataElements.map(({group, elements}) => {
+            ...dataElements.map(({ group, elements }) => {
                return {
-                  data: {label: Capitalize(group), name: group + "_tab"},
+                  data: { label: loopar.utils.Capitalize(group), name: group + "_tab" },
                   content: [
                      Object.entries(elements).map(([field, props]) => {
                         if (!props.element) {
@@ -295,7 +321,7 @@ export class ElementEditorClass extends DivClass {
                         return hide ? null : Element(props.element, {
                            key: meta.id + "_" + field,
                            style: props.style || {},
-                           ref: self => this.form_fields[field] = self,
+                           ref: self => this.formFields[field] = self,
                            meta: {
                               data: Object.assign({}, props.data || {}, {
                                  name: field,
@@ -307,16 +333,15 @@ export class ElementEditorClass extends DivClass {
                               this.saveData();
                            }
                         })
-                     }),
-                     hr()
+                     })
                   ]
                }
-            })
+            }),
          ]),
          /*...Object.entries(this.dataElements).map(([field, props]) => {
                const hide = DI.length > 0 && DI.includes(field) && DI[0] !== 'all' || (DI[0] === 'all' && !DI.includes(field));
                return hide ? null : Element(props.element, {
-                  ref: self => this.form_fields[field] = self,
+                  ref: self => this.formFields[field] = self,
                   meta: {
                      data: Object.assign({}, props.data || {}, {name: field, value: data[field] || '', test_field: 'test'}),
                   },
@@ -330,35 +355,36 @@ export class ElementEditorClass extends DivClass {
    }
 
    componentDidUpdate() {
-      Object.entries(this.form_fields).forEach(([field_name, field]) => {
+      super.componentDidUpdate();
+      Object.entries(this.formFields).forEach(([fieldName, field]) => {
          field && field.removeClass("form-group").addClass("my-1");
       });
    }
 
    getData() {
-      return Object.entries(this.form_fields).reduce((acc, [key, field]) => {
-         acc[key] = field ? (field.mappedFiles || field.val()) : null;
+      return Object.entries(this.formFields).reduce((acc, [key, field]) => {
+         acc[key] = (field && field.isWritable) ? (field.mappedFiles || field.val()) : null;
          return acc;
       }, {});
    }
 
    editElement(element) {
-      this.setState({connected_element: element});
+      this.setState({ connectedElement: element });
    }
 
    get connectedElement() {
-      return this.state.connected_element;
+      return this.state.connectedElement;
    }
 
    saveData() {
       setTimeout(() => {
          const data = this.getData();
 
-         if (loopar.Designer.updateElement(this.connectedElement.meta.data.name, data)) {
-            this.state.connected_element.meta.data = data;
+         if (loopar.Designer.updateElement(this.connectedElement.meta.data.name, data, false)) {
+            this.state.connectedElement.meta.data = data;
          }
 
-         this.setState({data});
+         this.setState({ data });
       }, 100);
    }
 
@@ -367,17 +393,17 @@ export class ElementEditorClass extends DivClass {
        * Describe which inputs are disabled for each element
        */
       //const inputs = ['droppable', 'collapsed', 'type', 'action', 'options', 'background_image', 'background_color', 'accept', 'multiple']
-      const input_type_format = 'droppable,collapsed,type,action,options,accept,multiple,background_image,background_size,background_color,color_overlay,animation,animation_duration,animation,animation_delay'.split(',');
-      const inputs_type_element = [...input_type_format, 'format', 'action', 'size', 'options'];
+      const inputType_format = 'droppable,collapsed,type,action,options,accept,multiple,background_image,background_size,background_color,color_overlay,animation,animation_duration,animation,animation_delay'.split(',');
+      const inputs_type_element = [...inputType_format, 'format', 'action', 'size', 'options'];
       const html = 'required,in_list_view,collapsed,label,description,format,datatype,options,type,size,action,no_validate_type,unique,accept,multiple,size,in_list_view,required,unique,not_validate_type,readonly,searchable,set_only_time'.split(',');
-      const button = html.concat(input_type_format).filter(item => !['label', 'size', 'type', 'action'].includes(item));
+      const button = html.concat(inputType_format).filter(item => !['label', 'size', 'type', 'action'].includes(item));
       const markdown = ['all', 'style', 'class'];
       const file_input = [...inputs_type_element, ...'in_list_view,required,unique,not_validate_type,readonly,searchable,set_only_time,description'.split(',')];
 
       return {
-         [INPUT]: input_type_format,
-         [TEXTAREA]: input_type_format,
-         [PASSWORD]: input_type_format,
+         [INPUT]: inputType_format,
+         [TEXTAREA]: inputType_format,
+         [PASSWORD]: inputType_format,
          [DATE]: inputs_type_element,
          [DATE_TIME]: inputs_type_element,
          [TIME]: inputs_type_element,

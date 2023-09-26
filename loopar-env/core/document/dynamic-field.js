@@ -1,24 +1,25 @@
 'use strict'
 import { dataInterface } from '../global/element-definition.js';
-import { trueValue } from "../../public/tools/helper.js";
+import { loopar } from '../loopar.js';
 
 export default class DynamicField {
    #value = null;
 
    constructor(props, value) {
       this.#make(props, value);
+
       this.value = value;
    }
 
    #make(props) {
-      const data = props.data || {};
+      const data = Object.assign({}, props.data || {});
       delete props.data;
 
-      Object.assign(this, data, props,);
+      Object.assign(this, data, props);
    }
 
    set value(value) {
-      this.#value = value;
+      this.#value = loopar.utils.nullValue(value) ? this.default_value : value;
    }
 
    get isParsed() {
@@ -29,9 +30,9 @@ export default class DynamicField {
       const value = this.isParsed ? this.#parse() : this.#value;
 
       if ([CHECKBOX, SWITCH].includes(this.element)) {
-         return trueValue(value) ? 1 : 0;
+         return loopar.utils.trueValue(value) ? 1 : 0;
       }
-
+      
       return value == null || typeof value == "undefined" ? "" : value;
    }
 
@@ -45,7 +46,11 @@ export default class DynamicField {
       }
 
       if (this.element === FORM_TABLE) {
-         return this.ifJson(value) ? JSON.parse(value) : "{}";
+         return loopar.utils.isJSON(value) ? JSON.parse(value) : "{}";
+      }
+
+      if ([CHECKBOX, SWITCH].includes(this.element)) {
+         return loopar.utils.trueValue(value) ? 1 : 0;
       }
 
       /*if(this.element === FILE){
@@ -60,7 +65,7 @@ export default class DynamicField {
    }
 
    #parse() {
-      return this.ifJson() ? JSON.parse(this.#value) : this.#value;
+      return loopar.utils.isJSON(this.#value) ? JSON.parse(this.#value) : this.#value;
    }
 
    get formattedValue() {
@@ -69,14 +74,5 @@ export default class DynamicField {
 
    validate() {
       return dataInterface(this).validate();
-   }
-
-   ifJson() {
-      try {
-         JSON.parse(this.#value);
-         return true;
-      } catch (error) {
-         return false;
-      }
    }
 }

@@ -1,18 +1,18 @@
-import {HTML} from "/components/base/html.js";
-import {element_title} from "/components/element-manage.js";
-import {h1} from "/components/elements.js";
+import { HTML } from "/components/base/html.js";
+import { elementTitle } from "/components/element-manage.js";
+import { h1 } from "/components/elements.js";
 
 export default class Element extends HTML {
-   tag_name = "div";
+   tagName = "div";
    droppable = true;
    draggable = true;
    constructor(props) {
       super(props);
    }
 
-   render(content=null) {
+   render(content = null) {
       return super.render([
-         this.options.has_title ? element_title(this) : null,
+         this.options.has_title ? elementTitle(this) : null,
          content || this.state.children || this.props.children || [],
          h1(this.data.description || "Test")
       ]);

@@ -1,37 +1,37 @@
-import {div, span, button, ul, li, a, image, section, hr, h5, p} from "/components/elements.js";
+import { div, span, button, ul, li, a, image, section, hr, h5, p } from "/components/elements.js";
 import BaseWorkspace from "./base/base-workspace.js";
-import {loopar} from "../../loopar.js";
+import { loopar } from "../../loopar.js";
 import { StripeComponent } from "../../components/elements/stripe.js";
 import { fileManager } from "../../components/tools/file-manager.js";
 
 export default class WebWorkspace extends BaseWorkspace {
    headerHeight = 90;
-   constructor(props){
+   constructor(props) {
       super(props);
    }
 
-   render(){
+   render() {
       const data = this.props.meta || {};
-      const web_app = data.web_app.__DOCUMENT__;
-      const menu_data = web_app.menu_items;
-      const menu_items = menu_data.rows;
+      const webApp = data.web_app.__DOCUMENT__;
+      const menuData = webApp.menu_items;
+      const menuItems = menuData.rows;
 
       const user = data.user;
-      const logo = fileManager.getImage(web_app, "logo");
-      const logo_width = parseInt(web_app.logo_width || 60);
+      const logo = fileManager.getImage(webApp, "logo");
+      const logo_width = parseInt(webApp.logo_width || 60);
 
-      const cover_style = {
-         position: web_app.fixed ? "fixed" : "unset",
-         display: web_app.fixed ? "block" : "none",
+      const coverStyle = {
+         position: webApp.fixed ? "fixed" : "unset",
+         display: webApp.fixed ? "block" : "none",
          width: "100%",
          height: 90,
          zIndex: "9999999",
-         backgroundColor: web_app.opacity ? "var(--light)" : "transparent",
-         opacity: web_app.opacity ? 0.7 : 1,
+         backgroundColor: webApp.opacity ? "var(--light)" : "transparent",
+         opacity: webApp.opacity ? 0.7 : 1,
       };
 
-      const menu_style = {
-         position: web_app.fixed ? "fixed" : "unset",
+      const menuStyle = {
+         position: webApp.fixed ? "fixed" : "unset",
          width: "100%",
          zIndex: "9999999",
       };
@@ -40,18 +40,18 @@ export default class WebWorkspace extends BaseWorkspace {
          /*div({className: "toast-bottom-left", id: "toast-container", style: {position: "fixed", bottom: "0px", left: "0px", right: "0px", zIndex: 999999}},
             this.notifies,
          ),*/
-         div({style: cover_style}),
-         div({className: "navbar navbar-expand-lg navbar-light py-4 aos-init aos-animate", style: menu_style}, [
-            div({className: "container"}, [
-               button({className: "hamburger hamburger-squeeze hamburger-light d-flex d-lg-none", type: "button", "data-toggle": "collapse", "data-target": "#navbarNavDropdown", "aria-controls": "navbarNavDropdown", "aria-expanded": "false", "aria-label": "Toggle navigation"}, [
-                  span({className: "hamburger-box"}, [
-                     span({className: "hamburger-inner"})
+         div({ style: coverStyle }),
+         div({ className: "navbar navbar-expand-lg navbar-light py-4 aos-init aos-animate", style: menuStyle }, [
+            div({ className: "container" }, [
+               button({ className: "hamburger hamburger-squeeze hamburger-light d-flex d-lg-none", type: "button", "data-toggle": "collapse", "data-target": "#navbarNavDropdown", "aria-controls": "navbarNavDropdown", "aria-expanded": "false", "aria-label": "Toggle navigation" }, [
+                  span({ className: "hamburger-box" }, [
+                     span({ className: "hamburger-inner" })
                   ])
                ]),
-               a({className: "navbar-brand ml-auto", style: {position: "absolute"}}, [
-                  image({ src: logo, alt: "Logo", className: "img-fluid", width: logo_width})
+               a({ className: "navbar-brand ml-auto", style: { position: "absolute" } }, [
+                  image({ src: logo, alt: "Logo", className: "img-fluid", width: logo_width })
                ]),
-               div({className: "ml-auto order-lg-2"}, [
+               div({ className: "ml-auto order-lg-2" }, [
                   StripeComponent({
                      buttonClassName: "navbar-btn btn btn-subtle-success ml-auto order-lg-2 mr-1",
                      meta: {
@@ -73,22 +73,25 @@ export default class WebWorkspace extends BaseWorkspace {
                         }
                      }
                   }),
-                  user ? a({className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/desk", redirect: true}, "Desk") :
-                     a({className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/auth/login/login", redirect: true}, "Login"),
-
-                  a({className: "navbar-btn btn btn-subtle-secondary ml-auto order-lg-2", onClick: () => {
-                     loopar.toggle_theme(true);
-                     this.setState({});
-                  }}, span({className: `oi oi-${window.theme === "dark" ? "sun" : "moon"}`})),
+                  user ? a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/desk", redirect: true }, "Desk") :
+                     a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/auth/login/login", redirect: true }, "Login"),
+                  a({
+                     className: "navbar-btn btn btn-subtle-secondary ml-auto order-lg-2", onClick: () => {
+                        loopar.toggleTheme(true);
+                        this.setState({});
+                     }
+                  }, span({ className: `oi oi-${window.theme === "dark" ? "sun" : "moon"}` })),
                ]),
-               div({className: "collapse navbar-collapse pl-3", id: "navbarNavDropdown", style: {marginLeft: logo_width}}, [
-                  ul({className: "navbar-nav"}, [
-                     menu_items.map((item) => {
-                        const active = item.menu_link === loopar.current_page_name;
-                        return li({className: `nav-item mr-lg-2 ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self}, [
-                           a({className: "nav-link py-2", href: "#", onClick: () => {
-                              this.navigate(item.menu_link);
-                           }}, item.menu_link)
+               div({ className: "collapse navbar-collapse pl-3", id: "navbarNavDropdown", style: { marginLeft: logo_width } }, [
+                  ul({ className: "navbar-nav" }, [
+                     menuItems.map((item) => {
+                        const active = item.menu_link === loopar.currentPageName;
+                        return li({ className: `nav-item mr-lg-2 ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self }, [
+                           a({
+                              className: "nav-link py-2", href: "#", onClick: () => {
+                                 this.navigate(item.menu_link);
+                              }
+                           }, item.menu_link)
                         ]);
                      })
                   ])
@@ -96,13 +99,13 @@ export default class WebWorkspace extends BaseWorkspace {
             ])
          ]),
          ...super.documents,
-         section({className: "py-5 bg-black", ref: footer => this.footer = footer}, [
-            web_app.has_footer ? div({className: "container"}, [
-               React.createElement("div", this.innerHtml(marked.parse(web_app.footer || ""))),
+         section({ className: "py-5 bg-black", ref: footer => this.footer = footer }, [
+            webApp.has_footer ? div({ className: "container" }, [
+               React.createElement("div", this.innerHtml(marked.parse(webApp.footer || ""))),
             ]) : null,
-            web_app.has_copyright ? div({className: "container container-fluid-xl"}, [
-               hr({className: "my-4"}),
-               React.createElement("div", this.innerHtml(marked.parse(web_app.copyright || "")))
+            webApp.has_copyright ? div({ className: "container container-fluid-xl" }, [
+               hr({ className: "my-4" }),
+               React.createElement("div", this.innerHtml(marked.parse(webApp.copyright || "")))
             ]) : null,
          ])
       ]);
@@ -110,7 +113,7 @@ export default class WebWorkspace extends BaseWorkspace {
 
    componentDidMount(prevProps, prevState, snapshot) {
       super.componentDidMount(prevProps, prevState, snapshot);
-      
+
       AOS.init();
       Object.values(this.footer.node.getElementsByTagName("a")).forEach(a => {
          a.addEventListener("click", (e) => {
@@ -122,9 +125,9 @@ export default class WebWorkspace extends BaseWorkspace {
       });
    }
 
-   navigate(url){
+   navigate(url) {
       loopar.navigate(url);
-      loopar.current_page_name = url;
+      loopar.currentPageName = url;
       this.setState({});
    }
 }

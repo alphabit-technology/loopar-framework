@@ -13,6 +13,7 @@ export default class BaseDate extends BaseInput {
          showTime: this.type === 'datetime' || this.type === 'time',
          showDate: this.type !== 'time',
          onUpdateInput: (e) => {
+            e.preventDefault();
             this.handleInputChange({target: {value: e.value}});
          }
       });
@@ -20,6 +21,7 @@ export default class BaseDate extends BaseInput {
 
    componentDidUpdate(prevProps, prevState, snapshot) {
       super.componentDidUpdate(prevProps, prevState, snapshot);
+
       const formattedValue = dayjs(this.props.meta.data.value).format(this.props.format);
 
       if (prevProps.meta.data.value !== formattedValue){
@@ -32,7 +34,6 @@ export default class BaseDate extends BaseInput {
 
    val(val) {
       if(val){
-
          val = dayjs(val).format(this.format);
          this.dtsel.inputElem.value = val;
       }else{

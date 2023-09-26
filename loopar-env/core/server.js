@@ -17,13 +17,13 @@ class Server extends Router {
    async initialize() {
       await loopar.initialize();
 
-      this.#expose_public_directories();
-      this.#initialize_session();
+      await this.#exposePublicDirectories();
+      this.#initializeSession();
       this.route();
       this.#start();
    }
 
-   #initialize_session() {
+   #initializeSession() {
       const session_config = env.serverConfig.session;
       session_config.maxAge = session_config.maxAge * 1000 * 60 * 60 * 24;
 
@@ -33,7 +33,7 @@ class Server extends Router {
       this.server.use(session(session_config));
    }
 
-   #expose_public_directories() {
+   async #exposePublicDirectories() {
       const public_dirs = [
          'src', 'public', "public/js", 'node_modules/loopar-env/core/global', 'node_modules/loopar-env/public', 'node_modules/dayjs',
          'node_modules/mime-types'
@@ -42,7 +42,20 @@ class Server extends Router {
          this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
       });
 
-      //this.server.use(express.static(path.join(loopar.path_root, 'apps/loopar/modules/core/document/client')));
+      await this.exposeClientAppFiles();
+   }
+
+   async exposeClientAppFiles(appName) {
+      if (loopar.frameworkInstalled) {
+         const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
+
+         for (const app of installedsApps) {
+            const appPath = loopar.makePath(loopar.pathRoot, "apps", app.name, "public");
+
+            console.log("Exposing public directory for: " + app.name)
+            this.server.use(this.express.static(appPath));
+         }
+      }
    }
 
    #start() {

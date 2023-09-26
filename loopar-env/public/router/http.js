@@ -1,30 +1,30 @@
-import {loopar} from '/loopar.js';
+import { loopar } from '/loopar.js';
 
 class HTTP {
-   #json_params = {};
+   #jsonParams = {};
    #options = {};
 
    send(options) {
       this.#options = options;
-      this.#send_petition(options);
+      this.#sendPetition(options);
    }
 
-   get method() {return this.#options.method || "POST"}
-   get action() {return this.#options.action}
-   get body() {return this.#options.body}
+   get method() { return this.#options.method || "POST" }
+   get action() { return this.#options.action }
+   get body() { return this.#options.body }
 
    get params() {
       const params = this.#options.params;
-      if (this.if_json(params)) {
-         this.#json_params = this.json_parse(params);
+      if (loopar.utils.isJSON(params)) {
+         this.#jsonParams = loopar.utils.JSONParse(params);
       } else {
-         this.#json_params = params;
+         this.#jsonParams = params;
       }
 
-      if (typeof this.#json_params == "object") {
+      if (typeof this.#jsonParams == "object") {
          return "?" + Object.keys(params).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
       } else {
-         return this.#json_params;
+         return this.#jsonParams;
       }
    }
 
@@ -49,7 +49,7 @@ class HTTP {
          body: this.body, // body data type must match "Content-Type" header),
       };
 
-      if (!(this.body instanceof FormData)){
+      if (!(this.body instanceof FormData)) {
          options.headers = {
             'Content-Type': 'application/json',
          };
@@ -60,7 +60,7 @@ class HTTP {
       return options;
    }
 
-   #send_petition(options) {
+   #sendPetition(options) {
       const self = this;
       options.freeze && loopar.freeze(true);
       fetch(self.url, self.options).then(async response => {
@@ -74,12 +74,12 @@ class HTTP {
             const data = isJson ? await response.json() : null;
 
             if (!response.ok) {
-               const error = data || {error: response.status, message: response.statusText};
+               const error = data || { error: response.status, message: response.statusText };
                reject(error);
             } else {
                options.success && options.success(data);
 
-               if(data.notify) {
+               if (data && data.notify) {
                   loopar.notify(data.notify);
                }
                resolve(data);
@@ -87,7 +87,7 @@ class HTTP {
          });
       }).catch(error => {
          options.error && options.error(error);
-         loopar.root_app?.progress(102);
+         loopar.rootApp?.progress(102);
          loopar.throw({
             title: error.error || 'Undefined Error',
             message: error.message || 'Undefined Error',
@@ -98,7 +98,7 @@ class HTTP {
       });
    }
 
-   async get(url, params, options={}) {
+   async get(url, params, options = {}) {
       return new Promise((resolve, reject) => {
          return this.send({
             method: 'GET',
@@ -111,12 +111,13 @@ class HTTP {
       });
    }
 
-   async post(url, params, options={}) {
+   async post(url, params, options = {}) {
       return new Promise((resolve, reject) => {
          this.send({
             method: 'POST',
             action: url,
-            body: params,
+            params: params,
+            body: options.body || params,
             success: resolve,
             error: reject,
             ...options,
@@ -124,7 +125,7 @@ class HTTP {
       });
    }
 
-   json_parse(json) {return this.if_json(json) ? JSON.parse(json) : json}
+   json_parse(json) { return this.if_json(json) ? JSON.parse(json) : json }
 
    if_json(json) {
       try {

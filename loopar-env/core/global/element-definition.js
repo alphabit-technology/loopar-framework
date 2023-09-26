@@ -50,7 +50,7 @@ export const elementsDefinition = {
       { element: "text_editor", icon: "fa fa-text-height", type: [long_text, ''] },
       { element: "checkbox", icon: "fa fa-check-square", type: [int, '(11)'] },
       { element: "switch", icon: "fa fa-toggle-on", type: [int, '(11)'] },
-      { element: "id", icon: "fa fa-id-card", type: [int], show_in_design: false },
+      { element: "id", icon: "fa fa-id-card", type: [int] },
       { element: "form_table", icon: "fa fa-table", type: [varchar, varcharLen] },
       { element: "markdown_input", icon: "fa fa-text-height", type: [long_text, ''] },
       { element: "designer", icon: "fa fa-id-card", type: [long_text, ''] },
@@ -305,13 +305,10 @@ global.ELEMENT_DEFINITION = function (element, or = null) {
    return (elementsDict[element] || elementsDict[or]) || new Error('Element ' + element + ' not found');
 }
 
+global.fieldIsWritable = (field) => {
+   return elementsDict[field.element]?.is_writable;
+}
 export const GlobalEnvironment = () => {
-   //global.element_definition = element_definition;
-
-
-   global.fieldIsWritable = (field) => {
-      return elementsDict[field.element]?.is_writable;
-   }
    global.VALIDATION_ERROR = { code: 400, title: 'Validation error' };
    global.NOT_FOUND_ERROR = { code: 404, title: 'Not found' };
    global.INTERNAL_SERVER_ERROR = { code: 500, title: 'Internal server error' };

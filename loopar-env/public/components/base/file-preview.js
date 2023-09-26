@@ -1,6 +1,6 @@
-import { div, span, label, input, i, figure, figcaption, ul, li, image, a} from "/components/elements.js";
-import {element_manage} from "../element-manage.js";
+import { div, span, label, input, i, figure, figcaption, ul, li, image, a } from "/components/elements.js";
 import { fileManager } from "../tools/file-manager.js";
+import { loopar } from "/loopar.js";
 
 class ImageWithFallback extends React.Component {
    constructor(props) {
@@ -27,7 +27,7 @@ class ImageWithFallback extends React.Component {
          //span({ className: "fa fa-image fa-8x", style: {opacity: 0.4}}),
          image({
             className: this.props.className,
-            src: fallbackSrc, 
+            src: fallbackSrc,
             alt: alt,
             style: {
                opacity: 0.7,
@@ -42,7 +42,7 @@ class ImageWithFallback extends React.Component {
          isValidImage ? (
             image({
                className: this.props.className,
-               src: src, 
+               src: src,
                alt: alt,
                onLoad: () => this.handleImageLoad(),
                onError: () => this.handleImageError(),
@@ -68,15 +68,15 @@ class FilePreviewClass extends React.Component {
       }
    }
 
-   getSrc(file, preview = false){
+   getSrc(file, preview = false) {
       return "/uploads/" + (preview ? "thumbnails/" : '') + file.name;
    }
 
-   get file(){
+   get file() {
       return this.props.file
    }
 
-   get extention(){
+   get extention() {
       return fileManager.getExtention(this.file);
    }
 
@@ -84,7 +84,7 @@ class FilePreviewClass extends React.Component {
       return fileManager.getFileType(this.file);
    }
 
-   get icon(){
+   get icon() {
       return fileManager.getIconByExtention(this.extention, this.type);
    }
 
@@ -93,7 +93,7 @@ class FilePreviewClass extends React.Component {
    }
 
    get size() {
-      return this.file.size;
+      return fileManager.getFileSize(this.file);
    }
 
    get isSelected() {
@@ -119,20 +119,29 @@ class FilePreviewClass extends React.Component {
       }
    }
 
-   render() {
-      const type = this.type;
-      const icon = this.icon;
-      const file = this.file;
+   get docRef() {
+      return this.props.docRef;
+   }
 
+   get grid() {
+      return this.props.grid;
+   }
+
+   render() {
+      const {type, icon, file} = this;
+      const data = this.props.file;
+      
       return [
          div({
-            className: "grid-item",
+            className: "grid-item"
          }, [
             div({
                className: "card card-figure",
-               style:{paddingBottom: 0, ...(this.isSelected ? {
-                  boxShadow : "inset 0 0 0 3px var(--primary)", background: "var(--secondary)"
-               } : {})}
+               style: {
+                  paddingBottom: 0, ...(this.isSelected ? {
+                     boxShadow: "inset 0 0 0 3px var(--primary)", background: "var(--secondary)"
+                  } : {})
+               }
             }, [
                figure({
                   className: "figure",
@@ -140,28 +149,30 @@ class FilePreviewClass extends React.Component {
                      this.select(!this.isSelected);
                   }
                }, [
-                  div({ className: "figure-attachment"}, [
+                  div({ className: "figure-attachment" }, [
                      type === "image" ? React.createElement(ImageWithFallback, {
                         className: "img-fluid",
                         src: file.previewSrc || file.src,
                         fallbackSrc: '/uploads/empty-image.svg',
                         alt: this.name
                      }) : null,
-                     a({href: this.getSrc(), className: "img-link", "data-size": "600x450"}, [
-                        span({className: "img-caption d-none"}, this.name)
+                     a({ href: this.getSrc(), className: "img-link", "data-size": "600x450" }, [
+                        span({ className: "img-caption d-none" }, this.name)
                      ]),
-                     type !== "folder" ? div({ className: "figure-attachment figure-action ", style: { 
-                        backgroundColor: '#000000cf', width: "100%", display: "flex", 
-                        justifyContent: "center", alignItems: "center", padding: "0.5rem"
-                     }}, [
+                     type !== "folder" ? div({
+                        className: "figure-attachment figure-action ", style: {
+                           backgroundColor: '#000000cf', width: "100%", display: "flex",
+                           justifyContent: "center", alignItems: "center", padding: "0.5rem"
+                        }
+                     }, [
                         a({
                            className: "btn btn-sm btn-danger",
                            onClick: (e) => {
                               e.preventDefault();
                               this.props.onDelete && this.props.onDelete(this.attributes);
                            }
-                        },[
-                           span({className: "oi oi-trash"}),
+                        }, [
+                           span({ className: "oi oi-trash" }),
                         ]),
                         /*a({
                            className: "btn btn-sm btn-default",
@@ -174,8 +185,8 @@ class FilePreviewClass extends React.Component {
                      ]) : null,
                      type !== "image" ? i({ className: `fa ${icon.icon} fa-7x text-${icon.color}` }) : null,
                   ]),
-                  figcaption({className: "figure-caption"}, [
-                     ul({ className: "list-inline d-flex text-muted mb-0"}, [
+                  figcaption({ className: "figure-caption" }, [
+                     ul({ className: "list-inline d-flex text-muted mb-0" }, [
                         li({
                            className: "list-inline-item text-truncate mr-auto",
                         }, [
@@ -183,20 +194,25 @@ class FilePreviewClass extends React.Component {
                            " ",*/
                            this.name
                         ]),
-                        li({ className: "list-inline-item"}, [
+                        li({ className: "list-inline-item" }, [
                            div({
                               className: "custom-control custom-control-inline custom-checkbox",
                               style: { marginRight: 0 }
                            }, [
                               input({
                                  className: "custom-control-input",
-                                 key: element_manage.getUniqueKey(),
+                                 //key: elementManage.getUniqueKey(),
+                                 key: `file-${data.name}`,
                                  type: "checkbox",
-                                 id: `file-${this.name}`,
-                                 checked: this.isSelected,
+                                 id: `file-${data.name}`,
+                                 ...(!this.grid ? { checked: this.isSelected } : {}),
+                                 //checked: this.isSelected,
                                  onChange: (e) => {
                                     e.preventDefault();
                                     this.select(e.target.checked);
+                                 },
+                                 ref: selector => {
+                                    (this.grid && selector) && (this.grid.selectors[data.name] = selector);
                                  }
                               }),
                               label({
@@ -216,16 +232,94 @@ class FilePreviewClass extends React.Component {
       ]
    }
 
+   isValidFileType(acceptedTypes="*/*") {
+      const fileType = this.type;
+      const fileExtension = this.extention;
+      acceptedTypes = Array.isArray(acceptedTypes) ? acceptedTypes : acceptedTypes.split(',');
+
+      for (let i = 0; i < acceptedTypes.length; i++) {
+         const acceptedType = acceptedTypes[i];
+
+         if (acceptedType === fileType || acceptedType === fileExtension || acceptedType === '*/*') {
+
+            return true;
+         }
+
+         if (acceptedType.endsWith('/*') && fileType.startsWith(acceptedType.slice(0, -2))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   multiple() {
+      return typeof this.props.multiple === "undefined" ? true : this.props.multiple;
+   }
+
+   /*setFileSelected(selected) {
+      const files = this.files;
+      const index = files.findIndex((f) => f.name === file.name);
+
+      if (!this.multiple()) {
+         files.forEach((f) => {
+            f.selected = false;
+            //return f;
+         });
+      }
+
+      if (index !== -1) {
+         const file = files[index];
+         files[index].selected = selected;
+
+         if (this.props.accept && !this.isValidFileType(file, this.props.accept)) {
+            files[index].selected = false
+
+            loopar.dialog({
+               type: "error",
+               title: "Invalid file type",
+               content: `You can only select ${this.props.accept} files`
+            });
+         }
+
+         this.setState({ files });
+      }
+   }*/
+
    select(selected) {
-      const trigger = () => {
-         this.props.onSelect && this.props.onSelect(this.attributes);
+      const data = this.props.file;
+      if(this.isValidFileType(this.props.accept) === false) {
+         loopar.notify(`You can only select ${this.props.accept} files`, "danger");
+         selected = false;
+      }
+
+      if(this.grid){
+         if(this.props.multiple === false) {
+            Object.values(this.docRef.filesRefs).forEach((ref) => {
+               ref && ref !== this && ref.setState({ selected: false });
+            });
+
+            this.grid.clearSelection(() => {
+               this.grid.selectRow(data, selected);
+            });
+         }else {
+            this.grid.selectRow(data, selected);
+         }
+      }
+      //}
+//
+      this.setState({ selected }, () => {
+         //trigger();
+      });
+      /*const trigger = () => {
+         //this.props.onSelect && this.props.onSelect({...this.attributes, selected});
       }
 
       this.type === "folder" && trigger();
 
       this.setState({ selected }, () => {
          trigger();
-      });
+      });*/
    }
 }
 

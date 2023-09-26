@@ -13,7 +13,7 @@ export default class CoreInstallerController extends BaseController {
    async actionConnect() {
       const model = new Installer();
 
-      if (this.has_data()) {
+      if (this.hasData()) {
          Object.assign(model, this.data);
 
          if (await model.connect()) {
@@ -49,15 +49,15 @@ export default class CoreInstallerController extends BaseController {
    async actionReinstall() {
       const model = new Installer();
 
-      if (this.has_data()) {
+      if (this.hasData()) {
          Object.assign(model, this.data);
 
          if (await model.update()) {
-            await loopar.make_config();
+            await loopar.makeConfig();
             return this.success("App updated successfully");
          }
       } else {
-         const response = await model.__data_install__();
+         const response = await model.__dataInstall__();
          await this.render(response);
       }
    }
@@ -73,44 +73,8 @@ export default class CoreInstallerController extends BaseController {
    }
 
    async actionUninstall() {
-      const app_name = this.data.app_name;
-      loopar.installing = true;
-
-      if (app_name === "loopar") {
-         loopar.throw("You can't uninstall app Loopar");
-      }
-
-      if (await loopar.appStatus(app_name) === 'uninstalled') {
-         loopar.throw("App already uninstalled please refresh page");
-      }
-
-      await loopar.deleteDocument("App", app_name, false);
-
-      const modules = await loopar.getList("Module",
-         {
-            fields: ['name'],
-            filters: { '=': { app_name } }
-         });
-
-      for (const module of modules.rows) {
-         await loopar.deleteDocument("Module", module.name, false);
-
-         const documents = await loopar.getList("Document",
-            {
-               fields: ['name'],
-               filters: { '=': { module: module.name } }
-            });
-
-         for (const document of documents.rows) {
-            setTimeout(async () => {
-               await loopar.deleteDocument("Document", document.name, false);
-            }, 0);
-            //await loopar.delete_document("Document", document.name, false);
-         }
-      }
-
-      await loopar.makeConfig();
-
-      return this.success('App uninstalled successfully');
+      const app = await loopar.getDocument("App", this.data.app_name);
+      
+      return this.success(await app.unInstall());
    }
 }

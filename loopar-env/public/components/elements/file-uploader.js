@@ -1,8 +1,9 @@
-import {span, File_input} from "/components/elements.js";
-import {Modal} from "/components/common/dialog.js";
+import { span, FileInput } from "/components/elements.js";
+import { Modal} from "/components/common/dialog.js";
 import { loopar } from "/loopar.js";
+import Div from "/components/elements/div.js";
 
-export default class ImageInput extends React.Component {
+export default class FileUploader extends Div {
    origins = [
       {name: "Local", icon: "fa-desktop"}
    ]
@@ -19,50 +20,58 @@ export default class ImageInput extends React.Component {
    }
    
    FileInput(){
-      return File_input({
-         multiple: this.state.multiple,
-         accept: this.state.accept,
+      return FileInput({
+         meta: {
+            data: {
+               name: "file_upload_input",
+               label: "Upload",
+               multiple: this.state.multiple,
+               accept: this.state.accept               
+            }
+         },
          withoutLabel: true,
          origins: this.origins,
          ref: (ref) => {
-            this.file_input = ref;
+            this.fileInput = ref;
          }
       });
    }
    
    render(){
-      return this.props.inModal ? [
-         Modal({
-            icon: "fas fa-folder-open",
-            position: "top",
-            size: "lg",
-            title: "File Uploader",
-            open: true,
-            content: [
-               this.FileInput()
-            ],
-            buttons: [
-               {
-                  name: "ok",
-                  className: "btn btn-primary",
-                  content: [
-                     span({className: "fa fa-upload pr-2"}),
-                     span("Upload")
-                  ],
-                  onClick: () => {
-                     this.upload();
+      return super.render(
+         this.props.inModal ? [
+            Modal({
+               icon: "fas fa-folder-open",
+               position: "top",
+               size: "lg",
+               title: "File Uploader",
+               open: true,
+               content: [
+                  this.FileInput()
+               ],
+               buttons: [
+                  {
+                     name: "ok",
+                     className: "btn btn-primary",
+                     content: [
+                        span({className: "fa fa-upload pr-2"}),
+                        span("Upload")
+                     ],
+                     onClick: () => {
+                        this.upload();
+                     }
                   }
+               ],
+               onClose: () => {
+                  this.props.onClose && this.props.onClose();
                }
-            ],
-            onClose: () => {
-               this.props.onClose && this.props.onClose();
-            }
-         })
-      ] : this.FileInput();
+            })
+         ] : this.FileInput()
+      );
    }
 
    get files() {
-      return this.file_input?.files || [];
+      return this.fileInput?.files || [];
    }
 
    upload() {

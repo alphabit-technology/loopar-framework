@@ -57,28 +57,28 @@ export default class Dialog extends React.Component {
             dismiss: true
          });
       }else{
-         const ok_button = buttons.find(b => b.name === "ok");
+         const okButton = buttons.find(b => b.name === "ok");
 
-         if(ok_button){
-            const okFunc = ok_button.onClick;
-            ok_button.onClick = () => {
+         if(okButton){
+            const okFunc = okButton.onClick;
+            okButton.onClick = () => {
                okFunc && okFunc();
                this.state.ok && this.state.ok();
                this.close();
             };
-            //ok_button.dismiss = true;
+            //okButton.dismiss = true;
          }
 
-         const cancel_button = buttons.find(b => b.name === "cancel");
+         const cancelButton = buttons.find(b => b.name === "cancel");
 
-         if(cancel_button){
-            const cancelFunc = cancel_button.onClick;
-            cancel_button.onClick = () => {
+         if(cancelButton){
+            const cancelFunc = cancelButton.onClick;
+            cancelButton.onClick = () => {
                cancelFunc && cancelFunc();
                this.state.cancel && this.state.cancel();
                this.close();
             };
-            //cancel_button.dismiss = true;
+            //cancelButton.dismiss = true;
          }
       }
 
@@ -87,26 +87,18 @@ export default class Dialog extends React.Component {
 
    getIcon(){
       const {type} = this.state;
-      let icon = this.props.icon;
+      const icons = {
+         info: 'fa-info-circle',
+         alert: 'fa-exclamation-circle',
+         confirm: 'fa-question-circle',
+         error: 'fa-exclamation-triangle',
+         success: 'fa-check-circle',
+         prompt: 'fa-question-circle',
+      };
 
-      if(!icon){
-         if(type === 'alert')
-            icon = 'fa-exclamation-circle';
-         else if(type === 'confirm')
-            icon = 'fa-question-circle';
-         else if(type === 'error')
-            icon = 'fa-exclamation-triangle';
-         else if(type === 'success')
-            icon = 'fa-check-circle';
-         else if(type === 'prompt')
-            icon = 'fa-question-circle';
-         else if(type === 'info')
-            icon = 'fa-info-circle';
-         
-         icon = 'fa ' + icon;
-      }
+      const icon = this.props.icon || 'fa ' + icons[type];
 
-      const text_colors = {
+      const textColors = {
          info: 'text-blue',
          alert: 'text-dark',
          confirm: 'text-orange',
@@ -116,7 +108,7 @@ export default class Dialog extends React.Component {
 
       };
 
-      return typeof icon === "string" ? i({className: `${icon} ${text_colors[type]} mr-2`}) : icon;
+      return typeof icon === "string" ? i({className: `${icon} ${textColors[type]} mr-2`}) : icon;
    }
 
    render(body) {
@@ -189,7 +181,7 @@ export default class Dialog extends React.Component {
       window.dialogsCount++;
       this.setState({
          ...props, open: true,
-         zIndex: 10000 + window.dialogsCount
+         zIndex: this.state.zIndex || 10000 + window.dialogsCount
       }, () => {
          this.state.onShow && this.state.onShow();
       });

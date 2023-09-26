@@ -1,11 +1,8 @@
 
-import { div, span, i, h4, button, File_uploader, Tabs, nav, ol, li, a} from "/components/elements.js";
-import {Modal} from "/components/common/dialog.js";
+import { div, span, i, h4, button, nav, ol, li, a, FileUploader } from "/components/elements.js";
+import { Modal } from "/components/common/dialog.js";
 import { loopar } from "/loopar.js";
-import {fileManager} from "/components/tools/file-manager.js";
-import { FilePreview } from "../base/file-preview.js";
 import { FileContainer } from "../base/file-container.js";
-import {element_manage} from "../element-manage.js";
 
 class FileBrowserClass extends React.Component {
    history = [];
@@ -19,11 +16,12 @@ class FileBrowserClass extends React.Component {
          isFetchingFiles: true,
          currentRoute: null,
          uploading: false,
+         metaIsLoaded: false,
       }
    }
 
    async fetchFiles(route = null) {
-      if (route){
+      if (route) {
          this.history[route] = route;
 
          const keys = Object.keys(this.history);
@@ -35,31 +33,51 @@ class FileBrowserClass extends React.Component {
                delete this.history[key];
             });
          }
-      }else{
+      } else {
          this.history = {}
       }
 
       const fetchRoute = Object.values(this.history).join("/");
 
-      loopar.method('File Manager', 'files', { route: fetchRoute }).then((r) => {
+      /*loopar.method('File Manager', 'files', { route: fetchRoute }).then((r) => {
          this.setState({
             isFetchingFiles: false,
             files: r.meta.files,
             currentRoute: route
          });
+      });*/
+
+      const component = await loopar.method("File Manager", "list");
+      this.setState({
+         meta: component.meta,
+         isFetchingFiles: false,
+         component: this.state.component || await import(component.client_importer),
       });
    }
 
+   async getMeta(){
+      if (!this.state.metaIsLoaded){
+         const component = await loopar.getMeta("File Manager", "list");
+         this.setState({   
+            metaIsLoaded: true,
+            meta: component.meta,
+            //isFetchingFiles: false,
+            component: this.state.component || await import(component.client_importer),
+         });
+      }
+   }
+
    componentDidMount() {
-      if(this.props.files && this.props.files.length > 0){
+      this.getMeta();
+      /*if (this.props.files && this.props.files.length > 0) {
          this.setState({
             isFetchingFiles: false,
             files: this.props.files,
             currentRoute: null
          });
-      }else{
+      } else {
          this.fetchFiles();
-      }
+      }*/
    }
 
    /*typeByExt(ext) {
@@ -70,11 +88,11 @@ class FileBrowserClass extends React.Component {
       return fileManager.getIconByExtention(ext);
    }*/
 
-   breadcrumbs(){
+   breadcrumbs() {
       return [
          nav([
-            ol({className: "breadcrumb"}, [
-               li({className: "breadcrumb-item active"}, [
+            ol({ className: "breadcrumb" }, [
+               li({ className: "breadcrumb-item active" }, [
                   a({
                      href: "#",
                      onClick: (e) => {
@@ -82,13 +100,13 @@ class FileBrowserClass extends React.Component {
                         this.fetchFiles();
                      }
                   }, [
-                     i({className: "breadcrumb-icon fa fa-angle-left mr-2"}),
+                     i({ className: "breadcrumb-icon fa fa-angle-left mr-2" }),
                      "Layouts"
                   ]),
                ]),
                ...Object.values(this.history).map((route) => {
                   return [
-                     li({className: "breadcrumb-item active"}, [
+                     li({ className: "breadcrumb-item active" }, [
                         a({
                            onClick: (e) => {
                               e.preventDefault();
@@ -107,54 +125,54 @@ class FileBrowserClass extends React.Component {
 
    header() {
       return [
-         div({className: "page-title-bar fixed"}, [
-            div({className: "col-12"}, [
-               div({className: "row align-items-center"}, [
-                  div({className: "col-md-6 col-12"}, [
-                     this.props.has_title ? div({className: "page-title"}, [
+         div({ className: "page-title-bar fixed" }, [
+            div({ className: "col-12" }, [
+               div({ className: "row align-items-center" }, [
+                  div({ className: "col-md-6 col-12" }, [
+                     this.props.has_title ? div({ className: "page-title" }, [
                         h4({}, "File Manager"),
                         //this.breadcrumbs()
                      ]) :
-                     div({className: "btn-group"}, [
-                        button({
-                           className: "btn btn-success btn-sm mr-1",
-                           onClick: (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              this.fetchFiles();
-                           }
-                        }, [
-                           i({ className: "fa fa-home mr-2" }),
-                           "Home"
+                        div({ className: "btn-group" }, [
+                           button({
+                              className: "btn btn-success btn-sm mr-1",
+                              onClick: (e) => {
+                                 e.preventDefault();
+                                 e.stopPropagation();
+                                 this.fetchFiles();
+                              }
+                           }, [
+                              i({ className: "fa fa-home mr-2" }),
+                              "Home"
+                           ]),
+                           Object.values(this.history).map((route) => {
+                              return [
+                                 button({
+                                    className: "btn btn-primary btn-sm mr-1",
+                                    onClick: (e) => {
+                                       e.preventDefault();
+                                       e.stopPropagation();
+                                       this.fetchFiles(route);
+                                    }
+                                 }, [
+                                    i({ className: "fa fa-angle-right mr-1" }),
+                                    route
+                                 ])
+                              ]
+                           }),
                         ]),
-                        Object.values(this.history).map((route) => {
-                           return [
-                              button({
-                                 className: "btn btn-primary btn-sm mr-1",
-                                 onClick: (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    this.fetchFiles(route);
-                                 }
-                              }, [
-                                 i({ className: "fa fa-angle-right mr-1" }),
-                                 route
-                              ])
-                           ]
-                        }),
-                     ]),
                      this.props.has_title ? this.breadcrumbs() : null
                      //this.breadcrumbs()
                   ]),
-                  div({className: "col-md-6 col-12"}, [
-                     div({className: "breadcrumb-bar text-right"}, [
-                        div({className: "btn-group"}, [
+                  div({ className: "col-md-6 col-12" }, [
+                     div({ className: "breadcrumb-bar text-right" }, [
+                        div({ className: "btn-group" }, [
                            button({
                               className: "btn btn-secondary btn-sm mr-1",
                               onClick: (e) => {
                                  e.preventDefault();
                                  e.stopPropagation();
-                                 this.setState({uploading: true});
+                                 this.setState({ uploading: true });
                               }
                            }, [
                               i({ className: "fa fa-upload mr-2" }),
@@ -179,29 +197,48 @@ class FileBrowserClass extends React.Component {
       ]
    }
 
-   get files(){
-      return fileManager.getMappedFiles(this.state.files);
+   get files() {
+      return this.filesRef?.getFiles() || [];
+   }
+
+   getSelectedFiles() {
+      const selectsFiles = this.filesRef?.getSelectedFiles() || [];
+      return this.files.filter((file) => selectsFiles.includes(file.name));
    }
 
    render() {
-      const files = this.files;
+      const {component, meta, metaIsLoaded} = this.state;
+      const files = meta?.rows || [];
+
       return [
-         div({className: "pt-0 pb-8"},[
+         div({ className: "pt-0 pb-8" }, [
             this.header(),
          ]),
          FileContainer({
             height: '100%',
          }, [
-            this.state.isFetchingFiles ? h4({}, "Loading Files...") : (
+            !metaIsLoaded ? h4({}, "Loading Files...") : (
                files.length === 0 ? [
-                     div({className: "col-12 text-center tex-dark", style: {opacity: 0.6}}, [
-                        span({className: "fa fa-folder-open fa-3x pt-5 pb-3"}),
-                        h4({}, "No files found.")
-                     ])
-                  ] :
-                  files.map((file) => {
+                  div({ className: "col-12 text-center tex-dark", style: { opacity: 0.6 } }, [
+                     span({ className: "fa fa-folder-open fa-3x pt-5 pb-3" }),
+                     h4({}, "No files found.")
+                  ])
+               ] :
+               component ? 
+                  React.createElement(this.state.component.default, {
+                     meta,
+                     modal: true,
+                     onlyGrid: true,
+                     accept: this.props.accept || "/*",
+                     multiple: this.props.multiple,
+                     ref: (ref) => {
+                        this.filesRef = ref;
+                     }
+                  }) : null
+            
+                  /*files.map((file) => {
                      return FilePreview({
-                        //key: element_manage.getUniqueKey(),
+                        //key: elementManage.getUniqueKey(),
                         file: file,
                         selected: file.selected,
                         onSelect: (file) => {
@@ -212,11 +249,11 @@ class FileBrowserClass extends React.Component {
                            }
                         }
                      });
-                  })
+                  })*/
             )
          ]),
-         this.state.uploading ? File_uploader({
-            //key: element_manage.getUniqueKey(),
+         this.state.uploading ? FileUploader({
+            //key: elementManage.getUniqueKey(),
             meta: {
                data: {
                   name: "file",
@@ -231,7 +268,7 @@ class FileBrowserClass extends React.Component {
                this.fetchFiles();
             },
             onClose: () => {
-               this.setState({uploading: false});
+               this.setState({ uploading: false });
             },
          }) : null,
       ]
@@ -257,15 +294,15 @@ class FileBrowserClass extends React.Component {
       return false;
    }
 
-   multiple(){
+   multiple() {
       return typeof this.props.multiple === "undefined" ? true : this.props.multiple;
    }
 
-   setFileSelected(file, selected) {
+   /*setFileSelected(file, selected) {
       const files = this.files;
       const index = files.findIndex((f) => f.name === file.name);
-
-      if(!this.multiple()){
+      
+      if (!this.multiple()) {
          files.forEach((f) => {
             f.selected = false;
             //return f;
@@ -276,7 +313,7 @@ class FileBrowserClass extends React.Component {
          const file = files[index];
          files[index].selected = selected;
 
-         if(this.props.accept && !this.isValidFileType(file, this.props.accept)){
+         if (this.props.accept && !this.isValidFileType(file, this.props.accept)) {
             files[index].selected = false
 
             loopar.dialog({
@@ -288,7 +325,7 @@ class FileBrowserClass extends React.Component {
 
          this.setState({ files });
       }
-   }
+   }*/
 }
 
 class FileBrowserModalClass extends FileBrowserClass {
@@ -312,15 +349,17 @@ class FileBrowserModalClass extends FileBrowserClass {
                name: "ok",
                text: "Select",
                onClick: () => {
-                  const files = this.state.files.filter((f) => f.selected);
-                  this.props.onSelect && this.props.onSelect(files);
+                  this.props.onSelect && this.props.onSelect(this.getSelectedFiles());
                   this.props.onClose && this.props.onClose();
                }
             }
          ],
          content: [
             super.render()
-         ]
+         ],
+         onShow: () => {
+            //this.fetchFiles();
+         }
       });
    }
 }

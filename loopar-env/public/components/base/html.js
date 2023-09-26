@@ -2,8 +2,7 @@ import { loopar } from "/loopar.js";
 import { DragAndDropUtils } from "/tools/drag-and-drop.js";
 import { styleToObject } from "/components/element-manage.js";
 import { Element } from "/components/elements.js";
-import { element_manage } from "../element-manage.js";
-import { Capitalize } from "../../tools/helper.js";
+import { elementManage } from "../element-manage.js";
 
 export class HTML extends React.Component {
    states = [];
@@ -24,7 +23,7 @@ export class HTML extends React.Component {
       };
    }
 
-   merge_attributes(target, ...sources) {
+   mergeAttributes(target, ...sources) {
       function isObject(item) {
          return (item && typeof item === 'object' && !Array.isArray(item));
       }
@@ -85,7 +84,7 @@ export class HTML extends React.Component {
          }
       }
 
-      const tag = this.tag_name || this.props.tag_name || "div";
+      const tag = this.tagName || this.props.tagName || "div";
       const className = this.getClassName;
       if (className && className.length > 0) props.className = className;
       const animations = {}
@@ -109,14 +108,14 @@ export class HTML extends React.Component {
          (tag === "image" ? "img" : tag),
          {
             ...Object.keys(props).reduce((acc, key) => {
-               if (key !== "style" && !["object"].includes(typeof props[key]) && !["element", "tag_name", "key"].includes(key)) {
+               if (key !== "style" && !["object"].includes(typeof props[key]) && !["element", "tagName", "key"].includes(key)) {
                   acc[key] = props[key];
                }
                return acc;
             }, {}),
             ...{ style: this.getStyle },
             ...this.state.attrs,
-            ...((action && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]() } : {}),
+            ...((action && props.docRef && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]() } : {}),
             ...animations,
             ...this.attrs
          }
@@ -124,7 +123,7 @@ export class HTML extends React.Component {
 
       if (!this.tagDontHaveChild(tag)) {
          component.push(children);
-         !this.block_component && component.push(
+         !this.blockComponent && component.push(
             this.elements
          );
       }
@@ -157,7 +156,7 @@ export class HTML extends React.Component {
 
    makeElement(el, props = {}) {
       if (!el.data) {
-         const names = element_manage.element_name(this.props.element);
+         const names = elementManage.elementName(this.props.element);
          el.data = {
             name: names.name,
             label: names.label,
@@ -165,25 +164,28 @@ export class HTML extends React.Component {
          }
       }
 
+      if (el.data.hidden && !this.props.designer) return null;
+
       return Element(el.element, {
          ...{
-            ...(el.element === "tabs" && this.props.designerRef ? { key: element_manage.getUniqueKey() } : {}),
-            ...(this.props.formRef ? { formRef: this.props.formRef } : {}),
+            key: 'element' + el.data.name,
+            ...(el.element === "tabs" && this.props.designerRef ? { key: elementManage.getUniqueKey() } : {}),
             ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
             ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
             ...(this.props.designer && {
                has_title: true, draggable: true, designer: true
             } || {}),
+            ...(this.props.docRef && this.props.docRef.readOnly && { readOnly: true } || {}),
             ref: self => {
                if (self) {
                   /*For inputs and other elements that have a name and have */
-                  if (this.props.formRef && el.data.name && !this.props.designer) {
-                     if (self.is_writable) {
+                  if (this.props.docRef && el.data.name && !this.props.designer) {
+                     if (self.isWritable) {
                         /*For inputs elements*/
-                        this.props.formRef.form_fields[el.data.name] = self;
+                        this.props.docRef.formFields[el.data.name] = self;
                      } else {
                         /*For other elements*/
-                        this.props.formRef[el.data.name] = self;
+                        this.props.docRef[el.data.name] = self;
                      }
                   }
 
@@ -196,10 +198,10 @@ export class HTML extends React.Component {
                ...el
             },
          }, ...props
-      })
+      });
    }
 
-   add_child(child, merge = false) {
+   addChild(child, merge = false) {
       this.setState({ children: child }, merge);
    }
 
@@ -208,9 +210,9 @@ export class HTML extends React.Component {
    }
 
    on(event, callback) {
-      this.attrsList["on" + Capitalize(event)] ??= [];
+      this.attrsList["on" + loopar.utils.Capitalize(event)] ??= [];
 
-      const events = this.attrsList["on" + Capitalize(event)];
+      const events = this.attrsList["on" + loopar.utils.Capitalize(event)];
 
       const check = events.some(e => {
          return e.toString() === callback.toString();
@@ -220,7 +222,7 @@ export class HTML extends React.Component {
          events.push(callback);
       }
 
-      this.attrs["on" + Capitalize(event)] = (e) => {
+      this.attrs["on" + loopar.utils.Capitalize(event)] = (e) => {
          events.forEach(callback => {
             callback(e);
          });
@@ -261,11 +263,11 @@ export class HTML extends React.Component {
       ).join(' ') + (dataClassName ? " " + dataClassName : "");
    }
 
-   has_class(className) {
+   hasClass(className) {
       return this.getClassName.includes(className);
    }
 
-   toggle_class(class_name) {
+   toggleClass(class_name) {
       if (this.getClassName.includes(class_name)) {
          this.removeClass(class_name);
       } else {
@@ -274,7 +276,7 @@ export class HTML extends React.Component {
       return this;
    }
 
-   replace_class(class_name, new_class_name) {
+   replaceClass(class_name, new_class_name) {
       const new_class = this.getClassName.replace(class_name, new_class_name);
       this.setState({ className: new_class });
       return this;
@@ -292,7 +294,7 @@ export class HTML extends React.Component {
 
    setState(state, callback, merge = false) {
       const last_state = this.state || {};
-      const new_state = merge ? this.merge_attributes(last_state, state) : state;
+      const new_state = merge ? this.mergeAttributes(last_state, state) : state;
 
       super.setState(new_state, typeof callback === "function" ? callback : undefined);
    }
@@ -327,12 +329,12 @@ export class HTML extends React.Component {
       return this;
    }
 
-   removeClass(class_name) {
-      if (!this.hasClass(class_name)) return this;
+   removeClass(className) {
+      if (!this.hasClass(className)) return this;
       const current_class = this.getClassName.split(" ");
       const where_is_class = (this.$state || {}).className ? "state" : "props";
 
-      class_name.split(" ").map(c => {
+      className.split(" ").map(c => {
          const index = current_class.indexOf(c);
          index > -1 && current_class.splice(index, 1);
       });
@@ -381,7 +383,7 @@ export class HTML extends React.Component {
    }
 
    get node() {
-      return this._reactInternals.child.stateNode;
+      return this._reactInternals?.child?.stateNode;
    }
 
    focus() {
@@ -401,8 +403,8 @@ export class HTML extends React.Component {
 
    onUpdate() { }
 
-   draggable_actions() {
-      this.over_animations();
+   draggableActions() {
+      this.overAnimations();
 
       this.setAttrs({
          draggable: true,
@@ -416,7 +418,7 @@ export class HTML extends React.Component {
          onDragEnter: (event) => {
             event.stopPropagation();
 
-            this.apply_event_drag_end();
+            this.applyEventDragEnd();
          }
       });
 
@@ -437,8 +439,8 @@ export class HTML extends React.Component {
       return this;
    }
 
-   droppable_actions() {
-      this.over_animations();
+   droppableActions() {
+      this.overAnimations();
       this.setAttrs({
          droppable: true,
          onDrop: e => {
@@ -459,12 +461,12 @@ export class HTML extends React.Component {
          onDragEnter: e => {
             e.preventDefault();
             e.stopPropagation();
-            this.apply_event_drag_end();
+            this.applyEventDragEnd();
          }
       });
    }
 
-   apply_event_drag_end() {
+   applyEventDragEnd() {
       if (DragAndDropUtils.lastElementTargetSibling) {
          if (DragAndDropUtils.currentElementTargetSibling.identifier !== this.identifier) {
 
@@ -483,14 +485,14 @@ export class HTML extends React.Component {
       const self = this.Component || this;
       const { elementToCreate, elementToDrag, lastElementTargetSibling } = DragAndDropUtils;
       let elements = self.elementsDict;
-      let new_elements = null;
+      let newElements = null;
 
       container.removeClass("over-drag");
 
       if (elementToCreate) {
          if (elementToCreate.element) {
             elements.push(elementToCreate);
-            new_elements = this.sort_elements(elements, elementToCreate, lastElementTargetSibling, "create");
+            newElements = this.sortElements(elements, elementToCreate, lastElementTargetSibling, "create");
          }
       } else if (elementToDrag && elementToDrag !== self) {
          if (!elementToDrag.isParentOf(this)) {
@@ -503,18 +505,18 @@ export class HTML extends React.Component {
                elements.push(element);
             }
 
-            new_elements = this.sort_elements(elements, element, lastElementTargetSibling);
+            newElements = this.sortElements(elements, element, lastElementTargetSibling);
          }
       }
 
-      new_elements && loopar.Designer.updateElements(self, new_elements, elementToDrag);
+      newElements && loopar.Designer.updateElements(self, newElements, elementToDrag);
 
       DragAndDropUtils.elementToCreate = null;
       DragAndDropUtils.elementToDrag = null;
       DragAndDropUtils.lastElementTargetSibling = null;
    }
 
-   sort_elements(elements, moved_element, target_element, type, direction = vertical_direction) {
+   sortElements(elements, moved_element, target_element, type, direction = vertical_direction) {
       /**before moving the element, we need to check if the target element is in the elements array*/
       const target_in_elements = elements.some(element => {
          return element.data.name === target_element.data.name;
@@ -553,43 +555,47 @@ export class HTML extends React.Component {
    }
 
    get app() {
-      return (this.parent_component || this).options.app;
+      return (this.parentComponent || this).options.app;
    }
 
-   set_elements(elements) {
+   setElements(elements) {
       const meta = this.meta;
       meta.elements = elements;
       this.setState({ meta });
    }
 
-   add_element(element = null) {
+   addElement(element = null) {
       if (!element) return;
 
-      this.set_elements([...this.elementsDict, element], element);
+      this.setElements([...this.elementsDict, element], element);
    }
 
    /**Parent component is the component that contains the current element, only for Block Elements ej: Card*/
-   get parent_component() {
+   /*get parentComponent() {
       return this.options.component;
    }
+
+   set parentComponent(component) {
+      this.options.component = component;
+   }*/
 
    /**Parent element is the element that contains the current element for all Elements*/
    remove() {
       if (this.parent_element) {
-         const current_elements = this.parent_element.elementsDict;
-         current_elements.findIndex((element) => {
+         const currentElements = this.parent_element.elementsDict;
+         currentElements.findIndex((element) => {
             if (element.data.name === this.data.name) {
-               current_elements.splice(current_elements.indexOf(element), 1);
+               currentElements.splice(currentElements.indexOf(element), 1);
                return true;
             }
          });
 
-         this.parent_element.set_elements(current_elements);
+         this.parent_element.setElements(currentElements);
       }
 
       setTimeout(() => {
          //trigger && this.onRemove && this.onRemove();
-         loopar.document_form && loopar.document_form.make_doc_structure();
+         loopar.documentForm && loopar.documentForm.makeDocStructure();
       }, 0);
    }
 
@@ -597,7 +603,7 @@ export class HTML extends React.Component {
       return this.meta.elements || [];
    }
 
-   over_animations() {
+   overAnimations() {
       this.setAttrs({
          onMouseOver: e => {
             this.addClass("hover");

@@ -4,7 +4,9 @@ import { Element } from "/components/elements.js";
 
 export default class View extends BaseDocument {
    hasSidebar = true;
-   has_header = true;
+   hasHeader = true;
+   hasHistory = true;
+
    constructor(props) {
       super(props);
    }
@@ -12,12 +14,10 @@ export default class View extends BaseDocument {
    render(content) {
       return super.render([
          DeskGUI({
-            meta: this.meta,
-            hasSidebar: this.hasSidebar,
-            has_header: this.has_header,
-            docRef: this,
+            docRef: this
          }, [
             ...this.meta.__DOCTYPE__.STRUCTURE.map(el => {
+               if (el.data.hidden) return null;
                return Element(el.element, {
                   meta: {
                      ...el,

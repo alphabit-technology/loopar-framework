@@ -1,9 +1,9 @@
 import Component from "../base/component.js";
-import {div} from "/components/elements.js";
+import { div } from "/components/elements.js";
 
 export default class Col extends Component {
    className = "col";
-   block_component= true;
+   blockComponent = true;
    constructor(props) {
       super(props);
    }
@@ -16,13 +16,13 @@ export default class Col extends Component {
       ]);
    }
 
-   componentDidMount(){
+   componentDidMount() {
       super.componentDidMount()
 
       const data = this.data || {};
-      const {size="md", col=6} = data;
+      const { size = "md", col = 6 } = data;
       this.props.designer && this.addClass("element draggable");
-      this.addClass(`col-${col*2} col-${size}-${col}`);
+      this.addClass(`col-${col * 2} col-${size}-${col}`);
    }
 }
 

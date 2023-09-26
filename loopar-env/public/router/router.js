@@ -2,44 +2,45 @@ import { http } from '/router/http.js';
 
 export default class Router {
    #route = window.location;
-   route_history = [];
-   route_options = null;
-   current_route = null;
+   routeHistory = [];
+   routeOptions = null;
+   currentRoute = null;
    http = http;
 
    constructor() {
-      this.#bind_events();
+      this.#bindEvents();
    }
-   set_route() {
-      return this.#set_route.apply(this, arguments);
+
+   setRoute() {
+      return this.#setRoute.apply(this, arguments);
    }
 
    get route() {
       return this.#route;
    }
 
-   send_route() {
-      this.current_route = this.get_sub_path();
-      this.set_history(this.current_route);
+   sendRoute() {
+      this.currentRoute = this.getSubPath();
+      this.setHistory(this.currentRoute);
       this.change();
    }
 
-   set_history() {
-      this.route_history.push(this.current_route);
+   setHistory() {
+      this.routeHistory.push(this.currentRoute);
    }
 
-   #set_route() {
-      this.push_state(this.make_url(arguments));
+   #setRoute() {
+      this.pushState(this.makeUrl(arguments));
    }
 
-   make_url(params) {
+   makeUrl(params) {
       const isPlainObject = function (obj) {
          return Object.prototype.toString.call(obj) === '[object Object]';
       };
 
       return Object.keys(params).map((key) => {
          if (isPlainObject(params[key])) {
-            this.route_options = params[key];
+            this.routeOptions = params[key];
             return null;
          } else {
             let a = String(params[key]);
@@ -49,35 +50,35 @@ export default class Router {
       }).join('/') || "/desk";
    }
 
-   push_state(url) {
+   pushState(url) {
       if (window.location.pathname !== url) {
          window.location.hash = '';
 
          history.pushState(null, null, url);
       }
 
-      this.send_route();
+      this.sendRoute();
    }
 
-   get_sub_path_string(route) {
+   getSubPathString(route) {
       if (!route) {
          route = window.location.hash || (window.location.pathname + window.location.search);
       }
-      return this.strip_prefix(route);
+      return this.stripPrefix(route);
    }
 
-   strip_prefix(route) {
+   stripPrefix(route) {
       if (route.startsWith('desk')) route = route.substr(5);
       if (["/", "#", "!"].includes(route.substr(0, 1) === '/')) route = route.substr(1);
 
       return route;
    }
 
-   get_sub_path(route) {
-      return this.get_sub_path_string(route).split('/').map(c => this.decode_component(c));
+   getSubPath(route) {
+      return this.getSubPathString(route).split('/').map(c => this.decodeComponent(c));
    }
 
-   decode_component(r) {
+   decodeComponent(r) {
       try {
          return decodeURIComponent(r);
       } catch (e) {
@@ -100,9 +101,9 @@ export default class Router {
    }
 
    async loadDocument() {
-      this.root_app.progress(20);
+      this.rootApp.progress(20);
       //const res = await this.#fetch();
-      this.root_app.setDocument(await this.#fetch())
+      this.rootApp.setDocument(await this.#fetch())
    }
    #fetch() {
       return new Promise((resolve, reject) => {
@@ -132,26 +133,26 @@ export default class Router {
       return hash(`${this.route.pathname}${id}`.toLowerCase());
    }*/
 
-   #bind_events() {
+   #bindEvents() {
       window.addEventListener('popstate', (e) => {
          e.preventDefault();
 
-         this.send_route();
+         this.sendRoute();
          return false;
       });
    }
 
    navigate(route) {
       const isLoggedIn = this.isLoggedIn();
-      const is_auth_route = route.split('/')[1] === 'auth' && !isLoggedIn;
-      const is_desk_route = route.split('/')[1] === 'desk' && isLoggedIn;
-      const workspace = is_desk_route ? "" : (this.workspace === "desk" ? `/${this.workspace}` : "");
+      const isAuthRoute = route.split('/')[1] === 'auth' && !isLoggedIn;
+      const isDeskRoute = route.split('/')[1] === 'desk' && isLoggedIn;
+      const workspace = isDeskRoute ? "" : (this.workspace === "desk" ? `/${this.workspace}` : "");
 
-      const ROUTE = is_auth_route ? route : route.split('/')[0] === '' ? workspace + route : route;
+      const ROUTE = isAuthRoute ? route : route.split('/')[0] === '' ? workspace + route : route;
 
-      if (is_auth_route && isLoggedIn) return;
+      if (isAuthRoute && isLoggedIn) return;
 
-      this.set_route(ROUTE);
+      this.setRoute(ROUTE);
    }
 
    isLoggedIn() {
@@ -159,6 +160,6 @@ export default class Router {
    }
 
    get user() {
-      return this.root_app && this.root_app.meta.user || {};
+      return this.rootApp && this.rootApp.meta.user || {};
    }
 }

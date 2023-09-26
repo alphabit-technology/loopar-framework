@@ -9,11 +9,12 @@ import { documentManage } from './document/document-manage.js';
 import path from "path";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
-import * as Helpers from "./helper.js";
+import * as Helpers from "./global/helper.js";
 import { simpleGit, CleanOptions } from 'simple-git';
 import elementGenerator from "./element-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
+import crypto from "crypto-js";
 
 export class Loopar {
    installing = false;
@@ -26,9 +27,9 @@ export class Loopar {
 
    constructor() { }
 
-   validateGitRepository(repository) {
+   validateGitRepository(appName, repository) {
       if (!this.gitRepositoryIsValid(repository)) {
-         loopar.throw('Invalid GitHub URL ' + repository);
+         this.throw(`The app ${appName} does not have a valid git repository`);
       }
    }
 
@@ -39,7 +40,7 @@ export class Loopar {
 
    gitAppOptions(app) {
       return {
-         baseDir: app ? path.join(this.pathRoot, "apps", app) : path.join(this.pathRoot, "apps"),
+         baseDir: app ? this.makePath(this.pathRoot, "apps", app) : this.pathRoot(this.pathRoot, "apps"),
          binary: 'git',
          maxConcurrentProcesses: 6,
          trimmed: false,
@@ -57,13 +58,16 @@ export class Loopar {
 
    async initialize() {
       console.log('Initializing Loopar...');
+      
+      this.utils = Helpers;
       await this.GlobalEnvironment();
+      
       await this.#loadConfig();
       this.db = new DataBase();
       //this.db = new DataBaseSqlLite();
       await this.db.initialize();
       await this.makeConfig();
-      this.utils = Helpers;
+      
    }
 
    async #loadConfig(data = null) {
@@ -89,23 +93,23 @@ export class Loopar {
       const writeModules = async (data) => {
          this.db.pagination = null;
 
-         const group_list = await this.db.getList('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
+         const groupList = await this.db.getList('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
 
-         for (const g of group_list) {
-            const modules_group = { name: g.name, description: g.description, modules: [] };
+         for (const g of groupList) {
+            const modulesGroup = { name: g.name, description: g.description, modules: [] };
 
-            const module_list = await this.db.getList(
+            const moduleList = await this.db.getList(
                'Module',
                ['name', 'icon', 'description', 'module_group'],
                {
-                  '=': { module_group: g.name },
-                  'AND': {
-                     '=': { in_sidebar: 1 },
-                  },
+                  '=': {
+                     module_group: g.name,
+                     in_sidebar: 1
+                  }
                }
             );
 
-            for (const m of module_list) {
+            for (const m of moduleList) {
                const module = { link: m.name, icon: m.icon, description: m.description, routes: [] };
 
                const route_list = await this.db.getList("Document", ['name', 'is_single'], {
@@ -116,10 +120,10 @@ export class Loopar {
                   return { link: route.is_single ? 'update' : route.name, description: route.name }
                });
 
-               modules_group.modules.push(module);
+               modulesGroup.modules.push(module);
             }
 
-            data.modulesGroup.push(modules_group);
+            data.modulesGroup.push(modulesGroup);
          }
 
          data.initializedModules = true;
@@ -190,16 +194,6 @@ export class Loopar {
    async GlobalEnvironment() {
       GlobalEnvironment();
 
-      global.AJAX = 'POST';
-      global.currentController = null;
-      global.env = {};
-      global.dayjs = dayjs;
-      await this.#writeDefaultSSettings();
-
-      env.dbConfig = fileManage.getConfigFile('db.config');
-      env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
-      env.serverConfig = fileManage.getConfigFile('server.config');
-
       process.on('uncaughtException', err => {
          console.error(['uncaughtException', err]);
 
@@ -208,10 +202,20 @@ export class Loopar {
             this.db.transactions = [];
          }
 
-         if (currentController) {
-            currentController.sendError(err);
+         if (this.lastController) {
+            this.lastController && this.lastController.sendError(err);
          }
       });
+
+      global.crypto = crypto;
+      global.AJAX = 'POST';
+      global.env = {};
+      global.dayjs = dayjs;
+      await this.#writeDefaultSSettings();
+
+      env.dbConfig = fileManage.getConfigFile('db.config');
+      env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
+      env.serverConfig = fileManage.getConfigFile('server.config');
    }
 
    #makeDoctypeFields(fields = JSON.parse(this.__DOCTYPE__.doc_structure) || []) {
@@ -220,49 +224,60 @@ export class Loopar {
       }, []);
    }
 
-   async #GET_DOCTYPE(document, type = 'Document', fieldDocStructure, byFile = null) {
+   async #GET_DOCTYPE(document, type = 'Document', fieldDocStructure, moduleRoute = null) {
       const fields = this.baseDocumentFields;
-      let doctype;
+      let DOCTYPE = null;
 
-      if (byFile) {
-         doctype = fileManage.getConfigFile(document, loopar.makePath("apps", byFile, document));
+      if (moduleRoute) {
+         DOCTYPE = fileManage.getConfigFile(document, loopar.makePath("apps", moduleRoute, document));
       } else {
-         doctype = await loopar.db.getDoc(type, document, [fieldDocStructure, ...fields]);
+         DOCTYPE = await loopar.db.getDoc(type, document, [fieldDocStructure, ...fields]);
       }
 
-      if (!doctype) {
+      if (!DOCTYPE) {
          this.throw({
             code: 404,
             message: `Document ${document} not found`,
          });
       }
 
-      return doctype;
+      moduleRoute && (DOCTYPE.app_name = moduleRoute.split('/')[0]);
+
+      return DOCTYPE;
    }
 
-   async getDocument(document, documentName, data = null, byFile = null) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', byFile);
-
-      if (DOCTYPE && byFile) {
-         DOCTYPE.app_name = byFile.split('/')[0];
-      }
+   /**
+    * 
+    * @param {*} document DocumentType name
+    * @param {*} documentName Document name
+    * @param {*} data
+    * @param {*} moduleRoute Path to app root folder 
+    * @returns 
+    */
+   async getDocument(document, documentName, data = null, moduleRoute) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', moduleRoute);
 
       return await documentManage.getDocument(DOCTYPE, documentName, data);
    }
 
-   async newDocument(document, data = {}, documentName = null, byFile = null) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', byFile);
-      if (DOCTYPE && byFile) {
-         DOCTYPE.app_name = byFile.split('/')[0];
-      }
+   /**
+    * 
+    * @param {*} document 
+    * @param {*} data 
+    * @param {*} moduleRoute 
+    * @param {*} documentName 
+    * @returns 
+    */
+   async newDocument(document, data = {}, moduleRoute, documentName = null) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', moduleRoute);
 
       return await documentManage.newDocument(DOCTYPE, data, documentName);
    }
 
-   async deleteDocument(document, documentName, updateInstaller = true) {
+   async deleteDocument(document, documentName, {updateInstaller = true, sofDelete = true, force=false, ifNotFound=null, updateHistory=true}={}) {
       const doc = await this.getDocument(document, documentName);
 
-      await doc.delete({ updateInstaller });
+      await doc.delete({ updateInstaller, sofDelete, force, updateHistory });
    }
 
    async getForm(formName, data = {}) {
@@ -285,10 +300,10 @@ export class Loopar {
       });
    }
 
-   async getList(document, { fields = null, filters = {}, order_by = 'name', limit = 10, offset = 0, q = null } = {}, ifNotFound = null) {
+   async getList(document, { fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null } = {}, ifNotFound = null) {
       const doc = await this.newDocument(document);
 
-      return await doc.getList({ fields, filters, order_by, limit, offset, page: this.session.get(document + "_page") || 1, q });
+      return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1)), q });
    }
 
    jsonParse(json) {
@@ -299,43 +314,44 @@ export class Loopar {
       }
    }
 
-   getError(error_type, error_message, error_code = 500) {
+   /*getError(errorType, errorMessage, errorCode = 500) {
       return {
          code: err.code || 500,
          message: err.message || 'Internal Server Error',
          data: err.data || null,
       };
-   }
+   }*/
 
    throw(error) {
       this.installing = false;
-      const error_type = NOT_IMPLEMENTED_ERROR;
+      const errorType = NOT_IMPLEMENTED_ERROR;
       if (typeof error === 'string') {
          error = {
-            error: error_type.code,
-            error_type: error_type.title,
+            error: errorType.code,
+            errorType: errorType.title,
             message: error
          };
       } else if (typeof error === 'object') {
          error = {
-            error: (error.code || error_type.code),
-            error_type: (error.code ? 'Error ' + error.code : error_type.title),
-            message: error.message || error_type.title,
+            error: (error.code || errorType.code),
+            errorType: (error.code ? 'Error ' + error.code : errorType.title),
+            message: error.message || errorType.title,
          };
       }
 
-      if (currentController) {
-         currentController.error = error;
-      }
-
+      this.lastController && (this.lastController.error = error);
+      
       throw new Error(error.message);
    }
 
    async getUser(user_id) {
       const user = await this.db.getList('User',
          ['name', 'email', 'password', 'disabled', 'profile_picture'],
-         { '=': { name: user_id }, "OR": { '=': { email: user_id } } }
-      );
+         { 
+            '=': { name: user_id }, 
+            "OR": { '=': { email: user_id } 
+         }
+      });
 
       return user.length > 0 ? user[0] : null;
    }
@@ -353,7 +369,7 @@ export class Loopar {
    }
 
    async updateInstaller() {
-      const { doctype, documentName, appName, record, deleteRecord = false } = arguments[0];
+      const { doctype, appName, record, deleteRecord = false } = arguments[0];
       const document = doctype.name;
 
       const appPath = loopar.makePath("apps", appName);
@@ -384,6 +400,36 @@ export class Loopar {
       return await loopar.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
    }
 
+   unInstallApp(appName) {
+      if(this.installing) return;
+
+      if(appName === "loopar"){
+         this.throw("You can't uninstall app Loopar");
+         return;
+      }
+
+      return new Promise(async (resolve, reject) => {
+         this.installing = true;
+
+         const installerRoute = this.makePath('apps', appName, 'installer.js');
+
+         const installer = await fileManage.importClass(installerRoute, () => {
+            this.throw(`App ${appName} does not have an installer`);
+         });
+
+         const Installer = new installer({ app_name: appName });
+
+         return Installer.unInstall().then(async r => {
+            await this.makeConfig();
+            this.installing = false;
+            resolve(r);
+         }).catch((error) => {
+            this.installing = false;
+            reject(error);
+         });
+      });
+   }
+
    async getApp(appName) {
       if (await this.appStatus(appName) === 'installed') {
          return await loopar.db.getDoc('App', appName);
@@ -401,7 +447,7 @@ export class Loopar {
 
       const joinedPath = path.join(...pathArray);
 
-      return Helpers.decamelize(joinedPath, { separator: '-' }).toLowerCase();
+      return loopar.utils.decamelize(joinedPath, { separator: '-' });
    }
 }
 

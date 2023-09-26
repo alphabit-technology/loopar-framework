@@ -1,10 +1,9 @@
-import {a, h6, i, span} from "../elements.js";
-import {div} from "../elements.js";
+import { a, h6, i, span } from "../elements.js";
+import { div } from "../elements.js";
 import Component from "../base/component.js";
-import {Element} from "/components/elements.js";
 
 export default class Card extends Component {
-   block_component = true;
+   blockComponent = true;
    className = "card card-fluid";
 
    constructor(props) {
@@ -20,22 +19,22 @@ export default class Card extends Component {
       const data = this.props.meta.data;
 
       return super.render([
-         div({className: 'card-header'},
+         div({ className: 'card-header' },
             h6(
                a({
                   className: "btn btn-reset",
                   onClick: () => {
-                     this.toggle_hide();
+                     this.toggleHide();
                   }
                }, [
-                  span({lassName: 'mr-2'},
+                  span({ lassName: 'mr-2' },
                      data.label
                   ),
-                  span({className: 'collapse-icon ml-2'},
+                  span({ className: 'collapse-icon ml-2' },
                      i({
                         className: `fas fa-chevron-${this.state.collapsed ? "down" : "up"}`,
                         onClick: () => {
-                           this.toggle_hide();
+                           this.toggleHide();
                         }
                      })
                   )
@@ -46,7 +45,7 @@ export default class Card extends Component {
             Component: this,
             ref: el => this.container = el,
             className: "card-body collapse show element sub-element" + (this.props.bodyClassName || ""),
-            style: this.state.collapsed ? {display: "none"} : {}
+            style: this.state.collapsed ? { display: "none" } : {}
          }, [
             this.props.children,
             content,
@@ -55,8 +54,8 @@ export default class Card extends Component {
       ]);
    }
 
-   toggle_hide() {
-      this.setState({collapsed: !this.state.collapsed});
+   toggleHide() {
+      this.setState({ collapsed: !this.state.collapsed });
    }
 }
 

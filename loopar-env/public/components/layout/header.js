@@ -1,4 +1,3 @@
-import { Capitalize } from "/tools/helper.js";
 import { loopar } from "/loopar.js";
 import { Breadcrumbs } from "/components/layout/breadcrumbs.js";
 import Div from "/components/elements/div.js";
@@ -9,16 +8,24 @@ class HeaderClass extends Div {
       super(props);
    }
 
-   get meta() {
-      return this.props.meta;
-   }
-
    getTitle() {
       const meta = this.meta;
       const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
 
       return ((meta.title || context === 'module') ? meta.module_group :
          (['list', 'view'].includes(context) || meta.action === 'create') ? meta.__DOCTYPE__.name : meta.__DOCUMENT__.name) || meta.__DOCTYPE__.name;
+   }
+   
+   get docRef() {
+      return this.props.gui.docRef;
+   }
+
+   get gui() {
+      return this.props.gui;
+   }
+
+   get meta() {
+      return this.gui.meta;
    }
 
    getContext() {
@@ -29,11 +36,11 @@ class HeaderClass extends Div {
    formPrimaryActions() {
       const meta = this.meta;
 
-      return this.props.formRef ? [
+      return this.docRef.canUpdate ? [
          button({
             className: "btn btn-primary", tabindex: "0", type: "button",
             onClick: () => {
-               this.props.formRef.save();
+               this.docRef.save();
             }
          }, [
             span({ className: "fa fa-save mr-1" }),
@@ -48,7 +55,7 @@ class HeaderClass extends Div {
                }
             }
          }, [
-            span(`Go to ${Capitalize(meta.__DOCUMENT__.name)}`)
+            span(`Go to ${loopar.utils.Capitalize(meta.__DOCUMENT__.name)}`)
          ]) : null
       ] : []
    }
@@ -57,7 +64,7 @@ class HeaderClass extends Div {
       const context = this.getContext();
       return [
          context === 'list' ? (
-            this.props.docRef.primaryAction ? this.props.docRef.primaryAction() : button({
+            this.docRef.primaryAction ? this.docRef.primaryAction() : button({
                className: "btn btn-success", tabindex: "0", type: "button",
                onClick: () => {
                   loopar.navigate('create');
@@ -67,7 +74,7 @@ class HeaderClass extends Div {
                " New"
             ])
          ) : null,
-         this.props.hasSidebar ? button({
+         this.docRef.hasSidebar ? button({
             className: "btn btn-secondary", tabindex: "0", type: "button",
             onClick: () => {
                this.props.gui.toggleSidebar();
@@ -79,15 +86,15 @@ class HeaderClass extends Div {
    }
 
    render() {
-      const meta = this.meta;
-      const customActions = this.props.gui.props.docRef?.customActions || {};
+      //const meta = this.meta;
+      const customActions = this.docRef.customActions || {};
       return header({
          className: "page-navs shadow-sm pr-3",
          style: { paddingLeft: "1rem", marginBottom: "unset" }
       }, [
          div({ className: "btn-account" }, [
             div({ className: "account-summary" }, [
-               h1({ className: "card-title" }, Capitalize(this.getTitle())),
+               h1({ className: "card-title" }, loopar.utils.Capitalize(this.getTitle())),
                h6({ className: "card-subtitle text-muted" }, [
                   Breadcrumbs({ meta: this.meta })
                ])

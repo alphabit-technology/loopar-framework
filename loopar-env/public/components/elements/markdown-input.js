@@ -1,7 +1,7 @@
 import { BaseInput } from "/components/base/base-input.js";
 
 export default class MarkdownInput extends BaseInput {
-   is_writable = true;
+   isWritable = true;
 
    constructor(props = {}) {
       super(props);

@@ -1,12 +1,12 @@
-import {HTML} from "/components/base/html.js";
-import {DragAndDropUtils} from "/tools/drag-and-drop.js";
-import {humanize} from "/tools/helper.js";
-import {a, i} from "/components/elements.js";
-import {element_manage} from "./element-manage.js";
+import { HTML } from "/components/base/html.js";
+import { DragAndDropUtils } from "/tools/drag-and-drop.js";
+import { a, i } from "/components/elements.js";
+import { elementManage } from "./element-manage.js";
+import { loopar } from "/loopar.js";
 
 export class DesignElementClass extends HTML {
    #toElement = null;
-   tag_name = "div";
+   tagName = "div";
 
    className = "btn-app-container";
    constructor(props) {
@@ -28,8 +28,8 @@ export class DesignElementClass extends HTML {
                DragAndDropUtils.elementToCreate = null;
             }
          }, [
-            i({className: element.icon}),
-            humanize(element.element)
+            i({ className: element.icon }),
+            loopar.utils.humanize(element.element)
          ])
       ])
    }
@@ -39,11 +39,11 @@ export class DesignElementClass extends HTML {
    }
 
    get toElement() {
-     return this.props.element.element;
+      return this.props.element.element;
    }
 
    get elementToCreate() {/*Return element to set in drag*/
-      const element_name = element_manage.element_name(this.toElement);
+      const element_name = elementManage.elementName(this.toElement);
 
       return {
          element: this.toElement,
@@ -59,6 +59,6 @@ export class DesignElementClass extends HTML {
    }
 }
 
-export const DesignElement = (props={}, content=[]) => {
+export const DesignElement = (props = {}, content = []) => {
    return React.createElement(DesignElementClass, props, content);
 }

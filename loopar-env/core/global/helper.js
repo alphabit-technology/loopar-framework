@@ -21,7 +21,12 @@ const handlePreserveConsecutiveUppercase = (decamelized, separator) => {
    );
 };
 
+function camelCase(str) {
+   return str.toLowerCase().replace(/[_-](.)/g, (_, letter) => letter.toUpperCase());
+}
+
 function decamelize(text, { separator = '-', preserveConsecutiveUppercase = false } = {}) {
+   text = _text(text).replaceAll(/\s/g, '');
    if (!(typeof text === 'string' && typeof separator === 'string')) {
       throw new TypeError(
          'The `text` and `separator` arguments should be of type `string`',
@@ -99,14 +104,8 @@ function debug_name(name) {
  * @returns
  */
 
-function hash(text) {
-   var self = text, range = Array(text.length);
-   for (var i = 0; i < self.length; i++) {
-      range[i] = i;
-   }
-   return 'has' + Array.prototype.map.call(range, function (i) {
-      return self.charCodeAt(i).toString(16);
-   }).join('');
+function hash(input) {
+   return crypto.MD5(input).toString();
 }
 
 /**
@@ -118,8 +117,12 @@ function trueValue(value) {
    return [true, "true", 1, "1"].includes(value);
 }
 
+function nullValue(value) {
+   return [null, "null", undefined, "undefined"].includes(value);
+}
+
 function avatar(name, size = 32) {
-   return name.split(" ").map((n) => n.charAt(0)).join("").toUpperCase();
+   return (name.split(" ").map((n) => n.charAt(0)).join("").toUpperCase()).slice(0, 2);
 }
 
 function humanize(string) {
@@ -132,6 +135,15 @@ function humanize(string) {
    string = string.charAt(0).toUpperCase() + string.slice(1);
 
    return string;
+}
+
+function isJSON(str) {
+   try {
+      JSON.parse(str);
+   } catch (e) {
+      return false;
+   }
+   return true;
 }
 
 function fixJSON(json) {
@@ -153,15 +165,11 @@ function JSONparse(obj) {
    return typeof obj == "object" ? obj : JSON.parse(fixJSON(obj));
 }
 
-function random_string(length) {
-   var result = '';
-   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-   const charactersLength = characters.length;
-   for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-   }
-   return 'N' + result;
+function randomString(length = 15) {
+   const alphabet =  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy';
+   const characters = `0123456789${alphabet}${Date.now()}`.split('').sort(() => Math.random() - Math.random()).join('');
+   const start = Math.floor(Math.random() * (characters.length - length));
+   return `${alphabet.charAt(Math.floor(Math.random() * alphabet.length))}${characters.slice(start+1, start + length)}`
 }
 
 function avatarLetter(word) {
@@ -176,6 +184,14 @@ function avatarLetter(word) {
    return value;
 }
 
+function fieldList (fields){
+   fields = isJSON(fields) ? JSONparse(fields) : fields;
+
+   return (fields || []).reduce((acc, field) => {
+      return acc.concat(field, fieldList(field.elements || []));
+   }, []);
+}
+
 export {
    Capitalize,
    UPPERCASE,
@@ -188,6 +204,10 @@ export {
    JSONparse,
    decamelize,
    avatar,
-   random_string,
+   randomString,
    avatarLetter,
+   camelCase,
+   nullValue,
+   isJSON,
+   fieldList
 }

@@ -61,11 +61,11 @@ class ObjectManage {
       if (this.is_obj(obj)) {
          try {
 
-         Object.keys(obj).forEach((key) => {
-            if (obj.hasOwnProperty(key)) {
-               f(obj[key], key);
-            }
-         });
+            Object.keys(obj).forEach((key) => {
+               if (obj.hasOwnProperty(key)) {
+                  f(obj[key], key);
+               }
+            });
          } catch (e) {
             console.log(e);
          }
@@ -82,7 +82,7 @@ class ObjectManage {
       if (['content', 'label'].includes(key)) {
          return new_text
       } else {
-         return ((['element', 'tag_name'].includes(key) || base_text === new_text) ? "" : base_text + " ") + new_text;
+         return ((['element', 'tagName'].includes(key) || base_text === new_text) ? "" : base_text + " ") + new_text;
       }
    }
 
@@ -160,7 +160,7 @@ class ObjectManage {
          if (Array.isArray(obj1)) {
             base.push(Object.assign({}, obj2));
          } else {
-            Object.assign(base, obj1, {new_value: obj2});
+            Object.assign(base, obj1, { new_value: obj2 });
          }
       }
 

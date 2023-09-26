@@ -3,7 +3,7 @@ import { a, li, span } from '/components/elements.js';
 import Div from '/components/elements/div.js';
 
 class DeskSidebarClass extends Div {
-   tag_name = "ul";
+   tagName = "ul";
    className = "menu";
 
    constructor(props) {

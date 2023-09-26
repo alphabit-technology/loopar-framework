@@ -9,14 +9,13 @@ export default class View extends BaseDocument {
    render(content=[]) {
       return super.render([
          ...this.meta.__DOCTYPE__.STRUCTURE.map(el => {
-            return Element(el.element,
-               {
-                  docRef: this,
-                  meta: {
-                     ...el,
-                  },
-               }
-            )
+            if (el.data.hidden) return null;
+            return Element(el.element, {
+               docRef: this,
+               meta: {
+                  ...el,
+               },
+            })
          }),
          content
       ]);

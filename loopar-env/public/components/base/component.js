@@ -1,9 +1,9 @@
 import { div, a, i, span, style } from "/components/elements.js";
 import { HTML } from "/components/base/html.js";
 
-import {loopar} from "/loopar.js";
-import {fileManager} from "../tools/file-manager.js";
-import {ErrorBoundary} from "../tools/error-boundary.js";
+import { loopar } from "/loopar.js";
+import { fileManager } from "../tools/file-manager.js";
+import { ErrorBoundary } from "../tools/error-boundary.js";
 
 export default class Component extends HTML {
    droppable = true;
@@ -17,7 +17,7 @@ export default class Component extends HTML {
       this.backGround(false);
 
       const backgroundColor = data.background_color;
-      const {color, alpha} = backgroundColor || {};
+      const { color, alpha } = backgroundColor || {};
 
       /*this.style = {
          ...this.style || {},
@@ -30,12 +30,14 @@ export default class Component extends HTML {
       return super.render([
          ErrorBoundary({}, [
             (this.props.has_title && this.props.designer) ? [
-               div({className: "element-title"}, [
-                  div({className: "btn-group element-options"}, [
-                     a({className: "btn btn-default btn-xs element-title-action", onClick: () => {
-                           loopar.document_form.editElement(this.props);
-                        }}, [
-                        i({className: "oi oi-pencil"})
+               div({ className: "element-title" }, [
+                  div({ className: "btn-group element-options" }, [
+                     a({
+                        className: "btn btn-default btn-xs element-title-action", onClick: () => {
+                           loopar.documentForm.editElement(this.props);
+                        }
+                     }, [
+                        i({ className: "oi oi-pencil" })
                      ]),
                      a({
                         className: "btn btn-default btn-xs element-title-action",
@@ -51,12 +53,12 @@ export default class Component extends HTML {
                            });
                         }
                      }, [
-                        i({className: "oi oi-trash"})
+                        i({ className: "oi oi-trash" })
                      ]),
                   ]),
-                  div({className: "btn-group title-description"}, [
-                     a({className: "btn btn-default btn-xs element-title-text"}, [
-                        span((this.props.element_title || this.props.element).toString().split(".")[0].toUpperCase())
+                  div({ className: "btn-group title-description" }, [
+                     a({ className: "btn btn-default btn-xs element-title-text" }, [
+                        span((this.props.elementTitle || this.props.element).toString().split(".")[0].toUpperCase())
                      ])
                   ])
                ])
@@ -80,16 +82,16 @@ export default class Component extends HTML {
 
    componentDidMount(prevProps, prevState, snapshot) {
       super.componentDidMount(prevProps, prevState, snapshot);
-      if(this.props.designer){
+      if (this.props.designer) {
          this.addClass("element designer");
-         if(this.droppable || this.props.droppable){
+         if (this.droppable || this.props.droppable) {
             (this.container || this).addClass("droppable");
-            (this.container || this).droppable_actions();
+            (this.container || this).droppableActions();
          }
 
-         if(this.props.draggable){
+         if (this.props.draggable) {
             this.addClass("draggable");
-            this.draggable_actions();
+            this.draggableActions();
          }
 
          this.addClass("draggable");
@@ -108,33 +110,33 @@ export default class Component extends HTML {
       }
    }
 
-   rerender(content){
-      this.setState({children: content});
+   rerender(content) {
+      this.setState({ children: content });
    }
 
-   getSrc(){
+   getSrc() {
       const data = this.props.meta.data;
       return fileManager.getMappedFiles(data.background_image, data.name);
    }
 
    backGround(image) {
-      if(this.props.meta && this.props.meta.data){
+      if (this.props.meta && this.props.meta.data) {
          let src = this.getSrc();
          const data = this.props.meta.data;
 
-         if(src && src.length > 0){
+         if (src && src.length > 0) {
             this.has_image = true;
             src = src[0];
             const imageUrl = src.src || "/uploads/empty-image.svg";
 
-            if(image){
+            if (image) {
                return {
                   src: imageUrl,
                   alt: data.label || "",
                   title: data.description || "",
 
                }
-            }else if(this.props.element !== "image"){
+            } else if (this.props.element !== "image") {
                this.style = {
                   ...this.style || {},
                   ...{
@@ -148,7 +150,7 @@ export default class Component extends HTML {
             return;
          }
       }
-      if(image){
+      if (image) {
          return {
             src: "/uploads/empty-image.svg",
          }

@@ -1,42 +1,28 @@
 'use strict';
-import { Capitalize } from './helper.js';
-import { loopar } from './loopar.js';
+import { Loopar, loopar } from './loopar.js';
 import { fileManage } from "./file-manage.js";
 import multer from "multer";
+import BaseController from './controller/base-controller.js';
+import path from "path";
 
 const coreInstallerController = 'installer-controller';
 
+
 export default class Router {
-   #routeStructure = ["host", "module", "document", "action"];
    controller = 'base-controller';
    debugger = false;
+   lastController = null;
 
    constructor(options) {
       Object.assign(this, options);
 
-      /*const storage = multer.diskStorage({
-         destination: function (req, file, cb) {
-            cb(null, path.join(loopar.path_root, "public", 'uploads/'));
-         },
-         filename: function (req, file, cb) {
-            cb(null, file.originalname);
-         }
-      });*/
-
       this.uploader = multer({ storage: multer.memoryStorage() }).any();
-
    }
 
-   get #pathname() {
-      return this.url ? this.url.pathname : null;
-   }
-
-   get #isAssetUrl() {
-      if (!this.#pathname) return false;
-
-      const url = this.#pathname.split("?");
-      const base_url = url[0].split("/");
-      const source = base_url[base_url.length - 1];
+   #isAssetUrl(url) {
+      url = url.split("?");
+      const baseUrl = url[0].split("/");
+      const source = baseUrl[baseUrl.length - 1];
 
       if (url[1]) return false;
       if (source.includes(".html")) return true;
@@ -62,24 +48,18 @@ export default class Router {
    };
 
    route() {
-      const loadHttp = (req, res, next) => {
-         this.data = req.body;
-
+      const loadHttp = async (req, res) => {
          if (req.files && req.files.length > 0) {
-            this.data.req_upload_files = req.files;
+            req.body.reqUploadFiles = req.files;
          }
-         this.method = req.method;
 
-         this.#makeWorkspace()
+         await this.#makeWorkspace({req, res});
       }
 
       this.server.use((req, res, next) => {
-         this.res = res;
-         this.req = req;
-         this.url = req._parsedUrl;
-         this.pathname = this.url.pathname;
+         loopar.session.req = req;
 
-         if (this.#isAssetUrl) {
+         if (this.#isAssetUrl(req._parsedUrl.pathname)) {
             next();
          } else {
             if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {
@@ -91,10 +71,10 @@ export default class Router {
                      //console.log('Error', err);
                      return res.status(500).json({ error: err.message });
                   }
-                  loadHttp(req, res, next);
+                  loadHttp(req, res);
                });
             } else {
-               loadHttp(req, res, next);
+               loadHttp(req, res);
             }
          }
       });
@@ -102,133 +82,151 @@ export default class Router {
       this.server.use(this.#custom404Middleware);
    }
 
-   #makeWorkspace() {
-      this.controller = "base-controller";
-      this.#routeStructure.forEach(prop => {
-         if (prop.toString().length > 0) this[prop] = null;
-      });
-      this.client = null;
+   async #makeWorkspace() {
+      const args = arguments[0];
+      const {req, res} = args;
+      const pathname = req._parsedUrl.pathname;
 
-      let url = this.pathname;
+      const context = pathname.split("/")[1];
+      const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
+      const routeStructure = {host:null, module:null, document:null, action:null};
 
-      const context = this.url.pathname.split("/")[1];
-      const workspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
-
-      if (workspace === "loopar") {
-         this.workspace = 'auth';
-         this.client = 'installer';
-      } else if (workspace === "api") {
-         url = "/desk" + this.pathname.split("api")[1];
-         this.workspace = 'desk';
-         this.apiRequest = true;
-      } else if (workspace === 'auth') {
-         url = "/auth" + this.pathname.split("auth")[1];
-         this.workspace = 'auth';
-      } else if (workspace === 'desk') {
-         url = this.pathname.split("desk")[1];
-         this.workspace = 'desk';
+      const controllerParams = {req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller", client: null,}
+      
+      if (reqWorkspace === "loopar") {
+         controllerParams.workspace = 'auth';
+         controllerParams.client = 'installer';
+      } else if (reqWorkspace === "api") {
+         controllerParams.url = "/desk" + pathname.split("api")[1];
+         controllerParams.workspace = 'desk';
+         controllerParams.apiRequest = true;
+      } else if (reqWorkspace === 'auth') {
+         controllerParams.url = "/auth" + pathname.split("auth")[1];
+         controllerParams.workspace = 'auth';
+      } else if (reqWorkspace === 'desk') {
+         controllerParams.url = pathname.split("desk")[1];
+         controllerParams.workspace = 'desk';
       } else {
-         url = "/web" + this.pathname;
-         this.workspace = 'web';
-         this.action ??= 'view';
+         controllerParams.url = "/web" + pathname;
+         controllerParams.workspace = 'web';
+         controllerParams.action ??= 'view';
       }
 
-      (url || "").split("/").forEach((prop, index) => {
-         this[this.#routeStructure[index]] = `${decodeURIComponent(this.#routeStructure[index] === 'document' ? Capitalize(prop) : prop || "")}`;
+      (controllerParams.url || "").split("/").forEach((seg, index) => {
+         const RTK = Object.keys(routeStructure)[index];
+         routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
-
+      
       /**Because user can not navigate in auth workspace if is logged in**/
-      if (this.workspace === "auth" && loopar.isLoggedIn() && this.action !== "logout") {
+      if (controllerParams.workspace === "auth" && loopar.isLoggedIn() && controllerParams.action !== "logout") {
          //return this.res.redirect('/desk');
       }
 
-      this.#makeController();
+      await this.#makeController({ ...routeStructure, ...controllerParams});
    }
 
-   #makeController() {
-      this.controller = "base-controller";
+   async #makeController(args) {
+      const { res, req } = args;
+
       /**
        * When workspace is desk and module view is called from sidebar
        * example: /desk/core or /desk/auth
        * */
-      if (!this.document) {
-         this.documentName = this.module; /*Because Module called is a documentName on Module Document*/
-         this.module = 'core'; /*because Module document is in core module*/
-         this.document = 'Module'; /*Because Module is a document*/
-         this.action = 'view';
+      if (!args.document) {
+         args.documentName = args.module; /*Because Module called is a documentName on Module Document*/
+         args.module = 'core'; /*because Module document is in core module*/
+         args.document = 'Module'; /*Because Module is a document*/
+         args.action = 'view';
       }
 
-      const res = this.res;
-
-      /**When database is not initialized */
       if (!loopar.databaseServerInitialized) {
-         this.controller = coreInstallerController;
+         /**System detected that Database Server is no Initialized or not Installer */
+         args.controller = coreInstallerController;
 
-         if (this.document !== 'Installer' || this.action !== 'connect') {
+         if (args.document !== 'Installer' || args.action !== 'connect') {
+            /**Forcer to redirect to: */
             return res.redirect('/loopar/installer/connect');
          } else {
-            this.module = "loopar";
-            this.document = "Installer";
-            this.action = "connect";
+            args.module = "loopar";
+            args.document = "Installer";
+            args.action = "connect";
          }
       } else if (!loopar.databaseInitialized || !loopar.frameworkInstalled) {
-         this.controller = coreInstallerController;
+         /**System not detected a Database */
+         args.controller = coreInstallerController;
 
-         if (this.document !== 'Installer' || this.action !== 'install') {
+         if (args.document !== 'Installer' || args.action !== 'install') {
+            /**Force to redirect to: */
             return res.redirect('/loopar/installer/install');
          } else {
-            console.log("installer");
-            this.module = "loopar";
-            this.document = "Installer";
-            this.appName = "loopar";
-            this.action = "install";
+            args.module = "loopar";
+            args.document = "Installer";
+            args.app_name = "loopar";
+            args.action = "install";
          }
       } else {
-         if (this.client === "installer") {
-            return this.res.redirect('/desk');
+         /**System detected that Database Server is Initialized and have Database */
+         if (args.client === "installer") {
+            return res.redirect('/desk');
          }
       }
 
-      this.method = this.req.method;
-      this.#importController();
+      args.method = req.method;
+
+      /**
+       * Because request method GET is not allowed in API
+       */
+      if(args.module === "method" && args.method === "GET") {
+         return this.#custom404Middleware(req, res);
+      }
+
+      await this.#importController(args);
    }
 
-   async #importController() {
-      /**TODO: Check controllers */
-      await this.#make();
+   async launchController(controller, args) {
+      loopar.lastController = controller;
 
-      const importerController = await fileManage.importFile(this.controllerPathFile);
-      const controller = new importerController.default({ ...this, ...this.req.query, router: this });
+      args.action = args.action && args.action.length > 0 ? args.action : controller.default_action;
+      controller.client = args.client || (["update", "create"].includes(args.action) ? "form" : args.action);
+      const action = `action${loopar.utils.Capitalize(args.action)}`;
 
-      this.action = this.action && this.action.length > 0 ? this.action : controller.default_action;
-      controller.client = this.client || (["update", "create"].includes(this.action) ? "form" : this.action);
-      global.currentController = controller;
-
-      const action = `action${Capitalize(this.action)}`;
-
-      const sendAction = () => {
-         controller[controller[action] && typeof controller[action] === "function" ? action : "notFound"](
-
-         );
+      const sendAction = async () => {
+         await controller[controller[action] && typeof controller[action] === "function" ? action : "notFound"]();
       }
 
-      if (this.controller === coreInstallerController || this.debugger || this.workspace === "web") {
-         sendAction();
+      if (args.controller === coreInstallerController || this.debugger || args.workspace === "web") {
+         await sendAction();
       } else {
          await this.temporaryLogin();
-         controller.isAuthenticated().then(authenticated => {
+         if (await controller.isAuthenticated()) {
+            await controller.isAuthorized() && await sendAction();
+         } else if (!controller.isLoginAction || (!args.existController && !args.apiRequest)) {
+            return await controller.notFound();
+         }
+
+         /*controller.isAuthenticated().then(authenticated => {
             if (!authenticated && !controller.isLoginAction) {
-               return controller.not_found();
+               return controller.notFound();
             }
             if (!this.existController && !this.apiRequest) {
-               return controller.not_found();
+               return controller.notFound();
             }
 
             authenticated && controller.isAuthorized().then(authorized => {
                authorized && sendAction();
             });
-         });
+         });*/
       }
+   }
+   async #importController(args) {
+      //const key = loopar.utils.hash(args.req._parsedUrl.pathname.toLowerCase());
+
+      await this.#make(args);
+      const { req } = args;
+      const props = { ...args, ...req.query, data: req.body };
+
+      const Controller = await fileManage.importClass(args.controllerPathFile, BaseController);
+      await this.launchController(new Controller(props), args);
    }
 
    async temporaryLogin() {
@@ -242,42 +240,45 @@ export default class Router {
       });
    }
 
-   async #make() {
-      await this.#setAppName();
-      await this.#setAppRoute();
-      await this.#setControllerName();
-      await this.#setModulePath();
-      await this.#setControllerPath();
+   async #make(args) {
+      await this.#setAppName(args);
+      await this.#setAppRoute(args);
+      await this.#setControllerName(args);
+      await this.#setModulePath(args);
+      await this.#setControllerPath(args);
 
-      this.controllerPathFile = loopar.makePath(this.controllerPath, `${this.controllerName}Controller.js`);
+      args.controllerPathFile = loopar.makePath(args.controllerPath, `${args.controllerName}Controller.js`);
+      args.existController = await fileManage.existFile(args.controllerPathFile) && await loopar.db._count("Document", { name: args.document });
+      args.controllerPathFile = args.existController ? args.controllerPathFile : `.${loopar.makePath('controller', args.controller)}.js`;
 
-      this.existController = await fileManage.existFile(this.controllerPathFile) && await loopar.db._count("Document", { name: this.document });
-      this.controllerPathFile = this.existController ? this.controllerPathFile : `./${loopar.makePath('controller', this.controller)}.js`;
+      /*args.controllerPathFile = loopar.makePath(args.controllerPath, `${args.controllerName}Controller.js`);
+      args.existController = await fileManage.existFile(args.controllerPathFile) && await loopar.db._count("Document", { name: args.document });
+      args.controllerPath = args.existController ? args.controllerPathFile :  `.${loopar.makePath('controller', args.controller)}.js`;*/
    }
 
-   async #setAppName() {
-      if (this.controller === coreInstallerController) {
-         this.appName = "loopar";
+   async #setAppName(args) {
+      if (args.controller === coreInstallerController) {
+         args.app_name = "loopar";
       } else {
-         const module = await loopar.db.getValue("Document", "module", this.document);
-         if (module) this.module = module;
-         this.appName = (await loopar.db.getValue("Module", "app_name", module));
+         const module = await loopar.db.getValue("Document", "module", args.document);
+         if (module) args.module = module;
+         args.app_name = (await loopar.db.getValue("Module", "app_name", module));
       }
    }
 
-   async #setAppRoute() {
-      this.appRoute = (this.controller === coreInstallerController ? '' : loopar.makePath("apps", this.appName || "loopar"));
+   async #setAppRoute(args) {
+      args.appRoute = (args.controller === coreInstallerController ? '' : loopar.makePath("apps", args.app_name || "loopar"));
    }
 
-   async #setControllerName() {
-      this.controllerName = this.controller === coreInstallerController ? 'coreInstaller' : this.document;
+   async #setControllerName(args) {
+      args.controllerName = args.controller === coreInstallerController ? 'Installer' : args.document;
    }
 
-   async #setModulePath() {
-      this.modulePath = loopar.makePath(this.appRoute, "modules", this.module);
+   async #setModulePath(args) {
+      args.modulePath = loopar.makePath(args.appRoute, "modules", args.module);
    }
 
-   async #setControllerPath() {
-      this.controllerPath = loopar.makePath(this.modulePath, this.controllerName);
+   async #setControllerPath(args) {
+      args.controllerPath = loopar.makePath(args.modulePath, args.controllerName);
    }
 }

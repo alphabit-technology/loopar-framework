@@ -1,12 +1,14 @@
 import { elementsDict } from "./global/element-definition.js";
-import { Capitalize } from "../public/tools/helper.js";
+import { Capitalize, camelCase } from "./global/helper.js";
 
 const defineTags = `a,abbr,address,area,article,aside,audio,b,base,bdi,bdo,blockquote,body,br,button,canvas,caption,cite,code,col,colgroup,data,datalist,dd,del,details,dfn,dialog,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,i,iframe,image,input,ins,kbd,label,legend,li,link,main,map,mark,meta,meter,nav,noscript,object,ol,optgroup,option,output,p,param,picture,pre,progress,q,rp,rt,ruby,s,samp,script,section,select,slot,small,source,span,strong,style,sub,summary,sup,svg,table,tbody,td,template,textarea,tfoot,th,thead,time,title,tr,track,u,ul,video,wbr`
 const defineComponents = Object.values(elementsDict)
    .filter(e => e.show_in_design !== false)
    .map((e) => e.element.toUpperCase());
 const defineConstComponents = defineComponents.join(",").toLowerCase()
-   .split(",").map((e) => Capitalize(e)).join(",");
+   .split(",").map((e) => {
+      return Capitalize(camelCase(e));
+   }).join(",");
 
 export default function elementGenerator() {
    return `
@@ -29,15 +31,14 @@ import DIALOG from "/components/common/dialog.js";
 import NOTIFY from "/components/common/notify.js";
 ${defineComponents.map((e) => `import ${e}_Comp from "/components/elements/${e.replaceAll("_", "-").toLowerCase()}.js";`).join("\n")}
 import {HTML} from "/components/base/html.js";
-import {element_manage} from "/components/element-manage.js";
 
 class Elements{
    constructor(options={}){
       this.props = options;
    }
 
-   tag(tag_name, content=null){
-      this.props.tag_name = tag_name;
+   tag(tagName, content=null){
+      this.props.tagName = tagName;
       return React.createElement(HTML, this.props, content);
    }
    
@@ -60,7 +61,7 @@ const getOptions = (options, content, e=null) => {
       options = {};
    }
    options = options || {};
-   options.tag_name = e;
+   options.tagName = e;
    if(e) options.element = e;
 
    return {options, content};
@@ -95,7 +96,6 @@ const [${defineConstComponents}] = Object.entries(components).map(([e, classInst
 });
 
 const Dialog = (options=null, content=null) => {
-   //options.id ??= element_manage.getUniqueKey();
    return React.createElement(DIALOG, options, content);
 }
 

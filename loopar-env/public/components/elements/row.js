@@ -1,8 +1,8 @@
-import {div} from "../elements.js";
+import { div } from "../elements.js";
 import Component from "../base/component.js";
 
 export default class Row extends Component {
-   block_component = true;
+   blockComponent = true;
    className = "row";
    constructor(props) {
       super(props);

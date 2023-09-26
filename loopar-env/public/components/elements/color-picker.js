@@ -1,9 +1,9 @@
-import {BaseInput} from "../base/base-input.js";
-import {input, style, div} from "/components/elements.js";
-import {element_manage} from "../element-manage.js";
+import { BaseInput } from "../base/base-input.js";
+import { input, style, div } from "/components/elements.js";
+import { elementManage } from "../element-manage.js";
 
 export default class ColorPicker extends BaseInput {
-   input_type = 'color';
+   inputType = 'color';
    initialColor = {}
    constructor(props) {
       super(props);
@@ -14,16 +14,16 @@ export default class ColorPicker extends BaseInput {
          ...this.state,
          color: this.initialColor.color,
          alpha: this.initialColor.alpha,
-         identifier: element_manage.getUniqueKey()
+         identifier: elementManage.getUniqueKey()
       }
    }
 
-   getInitialColor(){
+   getInitialColor() {
       const value = this.data.value;
 
-      if(value && typeof value === 'string' && element_manage.isJSON(value)){
+      if (value && typeof value === 'string' && elementManage.isJSON(value)) {
          return JSON.parse(value);
-      }else if(value && typeof value === 'object'){
+      } else if (value && typeof value === 'object') {
          return value;
       }
 
@@ -38,7 +38,7 @@ export default class ColorPicker extends BaseInput {
          return parseInt(color.slice(index, index + 2), 16);
       }
 
-      const key = 'c'+this.state.identifier;
+      const key = 'c' + this.state.identifier;
 
       const color = this.state.color;
 
@@ -117,10 +117,10 @@ export default class ColorPicker extends BaseInput {
                }
             }),
             div({
-               style: {width: "100%", borderRadius: 10, border: "var(--singleBorder)", display: "inline-grid"}
+               style: { width: "100%", borderRadius: 10, border: "var(--singleBorder)", display: "inline-grid" }
             }, [
                div({
-                  key: element_manage.getUniqueKey(),
+                  key: elementManage.getUniqueKey(),
                   style: {
                      position: "relative",
                      width: "100%",
@@ -149,8 +149,8 @@ export default class ColorPicker extends BaseInput {
 
       const value = this.data.value;
 
-      if(value && typeof value === 'string' && element_manage.isJSON(value)){
-         const {color, alpha} = JSON.parse(value);
+      if (value && typeof value === 'string' && elementManage.isJSON(value)) {
+         const { color, alpha } = JSON.parse(value);
          this.setColor(color, alpha)
       }
    }
@@ -163,25 +163,25 @@ export default class ColorPicker extends BaseInput {
       this.setColor(this.state.color, e.target.value);
    }
 
-   setColor(color, alpha){
-      this.setState({color, alpha});
-      this.initialColor = {color, alpha};
+   setColor(color, alpha) {
+      this.setState({ color, alpha });
+      this.initialColor = { color, alpha };
    }
 
-   val(){
+   val() {
       return {
          color: this.state.color,
          alpha: this.state.alpha
       }
    }
 
-   getRgbaColor(){
+   getRgbaColor() {
       const color = this.state.color;
       const alpha = this.state.alpha;
       return `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${alpha})`;
    }
 
-   componentDidMount(){
+   componentDidMount() {
       super.componentDidMount();
       this.input.addClass('select2-hidden-accessible');
    }

@@ -5,18 +5,18 @@ import {loopar} from "/loopar.js";
 
 export default class Select extends BaseInput {
    #model = null;
-   filtered_options = [];
+   filteredOptions = [];
    opened = false;
    inside = false;
-   position_setted = false;
-   title_fields = ["value"]
+   positionSetted = false;
+   titleFields = ["value"];
 
    constructor(props) {
       super(props);
 
       this.state = {
          ...this.state,
-         is_open: false,
+         isOpen: false,
          direction: 'below',
          valid: true,
          simpleInput: props.simpleInput || false,
@@ -28,20 +28,22 @@ export default class Select extends BaseInput {
    render(){
       const data = this.data;
 
-      this.assigned_value = data.value;
-      const {is_open, direction, valid, focus, rows=[]} = this.state;
+      this.assignedValue = data.value;
+      const {isOpen, direction, valid, focus, rows=[]} = this.state;
       const value = this.optionValue();
 
-      const base_class = 'select2-container';
-      const opened_class = is_open ? base_class + '--open' : '';
-      const focus_class = focus ? base_class + '--focus' : '';
+      const baseClass = 'select2-container';
+      const openedClass = isOpen ? baseClass + '--open' : '';
+      const focusClass = focus ? baseClass + '--focus' : '';
+
+      
 
       return super.render([
          div({
-            className: `select-2 select-${is_open ? 'opened' : 'closed'}`,
+            className: `select-2 select-${isOpen ? 'opened' : 'closed'}`,
          }, [
             span({
-               className: `select2 select2-${data.size} ${base_class} ${base_class}--default ${base_class}--${direction} ${focus_class} ${opened_class}`,
+               className: `select2 select2-${data.size} ${baseClass} ${baseClass}--default ${baseClass}--${direction} ${focusClass} ${openedClass}`,
                style: {width: '100%'},
             }, [
                span({
@@ -68,7 +70,7 @@ export default class Select extends BaseInput {
                      'aria-labelledby': 'select2-select2-data-remote-container',
                      //style: {maxHeight: 28, fonSize: 12}
                   },[
-                     span({className: 'select2-selection__rendered', role: 'textbox', 'aria-readonly': true}, [
+                     span({className: `select2-selection__rendered ${this.readOnly ? 'text-muted' : ''}`, role: 'textbox', 'aria-readonly': true}, [
                         value.value || value.option ? [
                            span({className: 'select2-selection__clear', onClick:(e)=> {
                               e.stopPropagation();
@@ -100,7 +102,7 @@ export default class Select extends BaseInput {
                      span({className: 'select2-search select2-search--dropdown'},
                         input({
                            className: "select2-search__field" ,
-                           ref: input_search => this.input_search = input_search,
+                           ref: inputSearch => this.inputSearch = inputSearch,
                            placeholder: 'Enter 1 or more characters to search',
                            onKeyUp: e => {
                               e.stopPropagation();
@@ -178,12 +180,13 @@ export default class Select extends BaseInput {
    }
 
    toggleClose() {
-      this.state.is_open ? this.close() : this.open();
+      this.state.isOpen ? this.close() : this.open();
    }
 
    open() {
-      this.position_setted = false;
-      this.setState({is_open: true});
+      if(this.readOnly) return;
+      this.positionSetted = false;
+      this.setState({isOpen: true});
 
       this.#search(false);
 
@@ -191,19 +194,19 @@ export default class Select extends BaseInput {
       this.setPosition();
 
       setTimeout(() => {
-         this.input_search?.node?.focus();
+         this.inputSearch?.node?.focus();
       }, 20);
    }
 
    close() {
-      this.setState({is_open: false});
+      this.setState({isOpen: false});
    }
 
    #search(delay = true) {
       if (this.isLocal) {
          const q = this.searchQuery.toLowerCase();
 
-         this.filtered_options = this.optionsSelect.filter(row => {
+         this.filteredOptions = this.optionsSelect.filter(row => {
             return (typeof row == "object" ? (`${row.option} ${row.value}`) : row).toLowerCase().includes(q);
          }).map(row => {
             return typeof row == "object" ? row : {name: row, value: row}
@@ -245,7 +248,10 @@ export default class Select extends BaseInput {
             return Object.keys(opts).map(key => ({option: key, value: opts[key]}));
          }
       }else if(typeof opts == 'string'){
-         return opts.split(/\r?\n/).map(item => ({option: item, value: item}));
+         return opts.split(/\r?\n/).map(item => {
+            const [option, value] = item.split(':');
+            return {option, value: value || option};
+         });
       }
 
       /*return typeof opts == 'object' && Array.isArray(opts) ? opts :
@@ -253,11 +259,11 @@ export default class Select extends BaseInput {
    }
 
    get searchQuery() {
-     return this.input_search?.node?.value || "";
+     return this.inputSearch?.node?.value || "";
    }
 
    focus() {
-      this.input_search?.node?.focus();
+      this.inputSearch?.node?.focus();
    }
 
    getServerData() {
@@ -265,8 +271,8 @@ export default class Select extends BaseInput {
          action: `/api/${this.model}/search`,
          params: {q: this.searchQuery},
          success: r => {
-            this.title_fields = r.title_fields;
-            this.filtered_options = r.rows;
+            this.titleFields = r.titleFields;
+            this.filteredOptions = r.rows;
             this.renderResult();
          },
          error: r => {
@@ -277,37 +283,39 @@ export default class Select extends BaseInput {
    }
 
    renderResult() {
-      this.setState({rows: this.filtered_options});
+      this.setState({rows: this.filteredOptions});
    }
 
-   optionValue(option = this.currentSSelection) {
+   optionValue(option = this.currentSelection) {
       const value = (data) => {
          if(data && typeof data == 'object') {
-            if(Array.isArray(this.title_fields)) {
-               const values = this.title_fields.map(item => data[item]);
+            if(Array.isArray(this.titleFields)) {
+               const values = this.titleFields.map(item => data[item]);
 
                return values.reduce((a, b) => {
                   return [...a, [...a.map(item => item.toLowerCase())].includes(b.toLowerCase()) ? '' : b];
                }, []).join(" ");
             } else {
-               return data[this.title_fields];
+               return data[this.titleFields];
             }
          }
       }
 
       return option && typeof option == "object" ? {
          option: option.option || option.name,
-         value: value(option),//option[this.title_fields] || option.value || option.option
-      } : {option: option || this.assigned_value, value: option || this.assigned_value};
+         value: value(option),//option[this.titleFields] || option.value || option.option
+      } : {option: option || this.assignedValue, value: option || this.assignedValue};
    }
 
    setOptionSelect(row) {
+     
       this.close();
-      this.assigned_value = row;
+      this.assignedValue = row;
       this.renderValue();
    }
 
    renderValue(trigger_change = true) {
+      if (this.readOnly) return;
       const value = this.optionValue();
       this.handleInputChange({target: {value: value.option || value.value}});
    }
@@ -320,7 +328,7 @@ export default class Select extends BaseInput {
     */
    val(val = null, {trigger_change = true} = {}) {
       if (val != null) {
-         this.assigned_value = val;
+         this.assignedValue = val;
          this.renderValue(trigger_change);
          return this;
       } else {
@@ -328,10 +336,10 @@ export default class Select extends BaseInput {
       }
    }
 
-   get currentSSelection() {
-      return Object.keys(this.filtered_options || {}) > 0 ?
-         this.filtered_options.filter(item => this.optionValue(item).option === this.optionValue(this.assigned_value).option)[0]
-         : this.assigned_value;
+   get currentSelection() {
+      return Object.keys(this.filteredOptions || {}) > 0 ?
+         this.filteredOptions.filter(item => this.optionValue(item).option === this.optionValue(this.assignedValue).option)[0]
+         : this.assignedValue;
    }
 
    setPosition() {
@@ -352,7 +360,7 @@ export default class Select extends BaseInput {
       this.setState({direction: position > windowHalf ? 'above' : 'below'});
 
 
-      this.position_setted = true;
+      this.positionSetted = true;
    }
 }
 

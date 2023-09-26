@@ -1,8 +1,8 @@
 import { BaseInput } from "./base-input.js";
-import { trueValue } from "../../tools/helper.js";
+import { loopar } from "/loopar.js";
 
 export class DefaultCheckbox extends BaseInput {
-   input_type = 'checkbox';
+   inputType = 'checkbox';
 
    constructor(props) {
       super(props);
@@ -14,7 +14,7 @@ export class DefaultCheckbox extends BaseInput {
 
    handleInputChange(event) {
       const data = this.data;
-      const current_value = trueValue(data.value);
+      const current_value = loopar.utils.trueValue(data.value);
       const value = current_value ? 0 : 1;
       event.target.value = value;
       data.value = value;
@@ -41,13 +41,13 @@ export class DefaultCheckbox extends BaseInput {
 
    val(val) {
       if (val != null) {
-         val = trueValue(val) ? 1 : 0;
+         val = loopar.utils.trueValue(val) ? 1 : 0;
          const data = this.data;
          data.value = val;
          this.setState({ data });
          this.onChange && this.onChange({ target: { checked: val } });
       } else {
-         return trueValue(this.data.value) ? 1 : 0;
+         return loopar.utils.trueValue(this.data.value) ? 1 : 0;
       }
    }
 }

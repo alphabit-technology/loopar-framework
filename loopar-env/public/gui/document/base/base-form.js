@@ -3,9 +3,10 @@ import BaseDocument from "./base-document.js";
 import { http } from '/router/http.js';
 
 export default class BaseForm extends BaseDocument {
-   tag_name = "form";
-   form_fields = {};
+   tagName = "form";
+   formFields = {};
    hasSidebar = true;
+   lastData = null;
 
    constructor(props) {
       super(props);
@@ -16,7 +17,12 @@ export default class BaseForm extends BaseDocument {
    }
 
    hydrate() {
-      loopar.root_app.updateDocument(this.props.meta.key, this.form_values, false);
+      loopar.rootApp.updateDocument(this.props.meta.key, this.formValues, false);
+   }
+
+   componentDidMount(prevProps, prevState) {
+      super.componentDidMount(prevProps, prevState);
+      this.lastData = JSON.stringify(this.formValues);
    }
 
    send(options = { action: this.props.meta.action }) {
@@ -24,9 +30,22 @@ export default class BaseForm extends BaseDocument {
       this.hydrate();
       this.validate();
 
-      this.#formData();
+      /*console.log({
+         isNew: this.props.meta.__IS_NEW__,
+         lastData: JSON.parse(this.lastData),
+         formValues: this.formValues,
+         test: (!this.props.meta.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.formValues))))
+      });*/
 
-      //return
+      if (!this.notRequireChanges && !this.props.meta.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.formValues)))) {
+         this.lastData = JSON.stringify(this.formValues);
+         loopar.notify("No changes to save", "warning");
+         return;
+      }
+
+
+      //this.#formData();
+
       return new Promise((resolve, reject) => {
          http.send({
             action: options.action,
@@ -34,8 +53,9 @@ export default class BaseForm extends BaseDocument {
             body: this.#formData(),
             success: r => {
                if (r && r.success) {
-                  if (loopar.root_app && loopar.root_app.refresh) {
-                     loopar.root_app.refresh().then(() => {
+                  this.lastData = JSON.stringify(this.formValues);
+                  if (loopar.rootApp && loopar.rootApp.refresh) {
+                     loopar.rootApp.refresh().then(() => {
                         loopar.notify(r.message);
                      });
                   } else {
@@ -58,15 +78,15 @@ export default class BaseForm extends BaseDocument {
 
    get params() {
       return {
-         documentName: this.props.meta.__documentName__,
+         documentName: this.props.meta.__DOCUMENT_NAME__,
       }
    }
 
    validate() {
-      const errors = Object.values(this.form_fields).filter(e => e.data.hidden !== 1).reduce((errors, field) => {
+      const errors = Object.values(this.formFields).filter(e => e.data.hidden !== 1).reduce((errors, field) => {
          if (field.element === FORM_TABLE) {
-            const table_errors = field?.validate();
-            return [...errors, ...table_errors];
+            const tableErrors = field?.validate();
+            return [...errors, ...tableErrors];
          } else {
             return [...errors, field?.validate()];
          }
@@ -81,25 +101,25 @@ export default class BaseForm extends BaseDocument {
       }
    }
 
-   get_field(name) {
-      return this.form_fields[name] || null;
+   getField(name) {
+      return this.formFields[name] || null;
    }
 
    getValue(name) {
-      const field = this.get_field(name);
+      const field = this.getField(name);
       return field ? field.val() : null;
    }
 
-   get form_values() {
-      return Object.entries(this.form_fields).reduce((obj, [key, input]) => {
-         if (input.group_element === FILE_INPUT) {
+   get formValues() {
+      return Object.entries(this.formFields).reduce((obj, [key, input]) => {
+         if (input.groupElement === FILE_INPUT) {
             const files = input.files;
-            const meta_files = [];
+            const metaFiles = [];
 
             for (let i = 0; i < files.length; i++) {
                const file = files[i];
                if (file instanceof File) {
-                  meta_files.push({
+                  metaFiles.push({
                      name: files[i].name,
                      size: files[i].size,
                      type: files[i].type,
@@ -108,7 +128,7 @@ export default class BaseForm extends BaseDocument {
                }
             }
 
-            obj[key] = meta_files.length > 0 ? JSON.stringify(meta_files) : input.val();
+            obj[key] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : input.val();
             return obj
          }
 
@@ -118,7 +138,7 @@ export default class BaseForm extends BaseDocument {
    }
 
    #formData() {
-      const [data, formData] = [this.form_values, new FormData()];
+      const [data, formData] = [this.formValues, new FormData()];
 
       for (const key in data) {
          if (data.hasOwnProperty(key)) {
@@ -130,8 +150,8 @@ export default class BaseForm extends BaseDocument {
       return formData;
    }
 
-   set_value(name, value) {
-      /*const field = this.get_field(name);
+   setValue(name, value) {
+      /*const field = this.getField(name);
       field && field.val(value);*/
    }
 }

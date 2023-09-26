@@ -1,26 +1,28 @@
 import {loopar} from "./loopar.js";
+
 export class Session {
+   req = null;
    constructor(){}
 
    async set(key, value){
-      loopar.server.req.session[key] = value;
+      this.req.session[key] = value;
 
       return new Promise(resolve => {
-         loopar.server.req.session.save(err =>{
+         this.req.session.save(err =>{
             err && loopar.throw(err);
             resolve();
          });
       });
    }
 
-   get(key){
-      return loopar.server.req.session[key];
+   get(key, or=null){
+      return this.req.session[key] || or;
    }
 
    async delete(key){
-      delete loopar.server.req.session[key];
+      delete this.req.session[key];
       return new Promise(resolve => {
-         loopar.server.req.session.save(err =>{
+         this.req.session.save(err =>{
             err && loopar.throw(err);
             resolve();
          });
@@ -28,30 +30,30 @@ export class Session {
    }
 
    destroy(resolve){
-      loopar.server.req.session.destroy(err =>{
+      this.req.session.destroy(err =>{
          err && loopar.throw(err);
          resolve();
       });
    }
 
    getID(resolve){
-      resolve(loopar.server.req.sessionID);
+      resolve(this.req.sessionID);
    }
 
    getCookie(resolve){
-      resolve(loopar.server.req.session.cookie);
+      resolve(this.req.session.cookie);
    }
 
    setCookie(cookie, resolve){
-      loopar.server.req.session.cookie = cookie;
-      loopar.server.req.session.save(err =>{
+      this.req.session.cookie = cookie;
+      this.req.session.save(err =>{
          err && loopar.throw(err);
          resolve();
       });
    }
 
    regenerate(resolve){
-      loopar.server.req.session.regenerate(err =>{
+      this.req.session.regenerate(err =>{
          err && loopar.throw(err);
          resolve();
       });

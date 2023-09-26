@@ -1,21 +1,18 @@
 'use strict';
 
 import mysql from 'mysql';
-import ObjectManage from "../core/ObjectManage.js";
-import { UPPERCASE } from '../core/helper.js';
 import { loopar } from "../core/loopar.js";
+import e from 'express';
 
 const ENGINE = 'ENGINE=INNODB';
 
-export default class DataBase extends ObjectManage {
+export default class DataBase {
    #connection = null;
    tablePrefix = 'tbl';
    transaction = false;
    transactions = [];
 
-   constructor() {
-      super();
-   }
+   constructor() { }
 
    get dbConfig() {
       return env.dbConfig;
@@ -33,7 +30,7 @@ export default class DataBase extends ObjectManage {
       const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
       const type = field.element === 'input' ? field.data.format : field.element;
-      const default_value = field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '';
+      const defaultValue = field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '';
 
       const dataType = (type) => {
          if (field.element === ID) {
@@ -48,7 +45,8 @@ export default class DataBase extends ObjectManage {
          return [...new Set(types)].join(' ');
       }
 
-      return UPPERCASE(`${dataType(this.debugText(type && type.toString().length > 0 ? type : field.element))} ${default_value}`);
+      const fieldType = dataType(type && type.toString().length > 0 ? type : field.element);
+      return `${loopar.utils.UPPERCASE(fieldType)} ${defaultValue}`;
    }
 
    debugText(text) {
@@ -94,35 +92,39 @@ export default class DataBase extends ObjectManage {
       this.transaction = false;
       const connection = this.connection;
 
+      const execute = query => {
+         return new Promise(resolve => {
+            connection.query(query, (err, rows, fields) => {
+               if (err) {
+                  connection.rollback(() => {
+                     this.throw(e);
+                  });
+               } else {
+                  resolve();
+               }
+            });
+         });
+      }
+
       return new Promise(resolve => {
          connection.beginTransaction(async err => {
             if (err) {
                this.throw(err);
             }
 
-            const promises_transaction = this.transactions.map(query => {
-               return new Promise(resolve => {
-                  connection.query(query, (err, rows, fields) => {
-                     if (err) {
-                        connection.rollback(() => {
-                           this.throw(err);
-                        });
-                     } else {
-                        resolve();
-                     }
-                  });
-               });
-            });
+            for(const query of this.transactions) {
+               await execute(query);
+            }
 
-            await Promise.all(promises_transaction);
-
-            connection.commit(error => {
-               if (error) {
+            this.transactions = [];
+            connection.commit(err => {
+               if (err) {
                   connection.rollback(() => {
-                     this.throw(error);
+                     this.throw(err);
                   });
+               } else {
+                  resolve();
                }
-               resolve();
             });
          });
       });
@@ -173,57 +175,101 @@ export default class DataBase extends ObjectManage {
       if (['and', 'AND', '&&'].includes(operand)) return 'AND';
       if (['or', 'OR', '||'].includes(operand)) return 'OR';
 
-      return 'null';
+      return null;
    }
-
-   makeCondition(__CONDITIONS__ = null) {
-      const con = this.connection;
-
-      const makeCondition = (__CONDITIONS__) => {
-         return Object.entries(__CONDITIONS__ || {}).map(([operand, definition]) => {
-            if (['AND', 'OR'].includes(this.getOperand(operand))) {
-               return `${this.getOperand(operand)} ${makeCondition(definition)}`;
-            } else {
-               const [sub_operand, field, value] = [this.getOperand(operand), Object.keys(definition)[0], Object.values(definition)[0]];
-
-               if (sub_operand) {
-                  if (field === 'CONCAT') {
-                     return `CONCAT(${definition.CONCAT.map(field => con.escapeId(field)).join(',')}) ${sub_operand} ${con.escape(definition.value)}`;
-
-                  } else if (sub_operand === 'IN' || sub_operand === 'NOT IN') {
-                     return `${field} ${sub_operand} (${value.map(v => con.escape(v)).join(',')})`;
-
-                  } else if (sub_operand === 'BETWEEN' || sub_operand === 'NOT BETWEEN') {
-                     return value.map(v => con.escape(v)).join(sub_operand);
-
-                  } else if (sub_operand === 'LIKE' || sub_operand === 'NOT LIKE') {
-                     return `${field} ${sub_operand} ${con.escape(`%${value}%`)}`;
-                  } else {
-                     return `AND ${field} ${sub_operand} ${con.escape(value)}`;
-                  }
-               }
+   
+   example() {
+      const filter = {
+         "=": {
+            from_document: this.__DOCTYPE__.name,
+            from_id: 8
+         },
+         "AND": {
+            "=": {
+               from_document: this.__DOCTYPE__.name,
+               from_id: 8
+            },
+            "OR": {
+               "BETWEEN": {
+                  to_document: ["a", "z"]
+               },
+               "IN": {
+                  to_document: ["a", "z"]
+               },
+               "LIKE": [
+                  ["to_document", "from_id"], "TEST"
+               ]
             }
-         }).join(' ').replace(/\s+/g, ' ').split('AND').filter(v => v !== '' && v !== " ").join('AND');
+         }
       }
 
-      const condition = makeCondition(__CONDITIONS__);
+      return "WHERE(`from_document` = 'Menu' AND `from_id` = 8) AND ((`from_document` = 'Menu' AND `from_id` = 8) OR (to_document BETWEEN 'a' AND 'z' AND to_document IN('a', 'z') AND CONCAT(`to_document`, `from_id`) LIKE '%TEST%'))"
+   }
 
-      return condition.length > 0 ? `WHERE ${condition}` : '';
+   WHERE(__CONDITIONS__ = null) {
+      const con = this.connection;
+
+      const WHERE = (__CONDITIONS__) => {
+         return Object.entries(__CONDITIONS__ || {}).reduce((acc, [operand, DEF]) => {
+            operand = this.getOperand(operand);
+            if (['AND', 'OR'].includes(operand)) {
+               const W = WHERE(DEF);
+               return [...acc, acc.length && W.length ? operand : null, ...W].filter(e => e);
+            } else {
+               if (["IN", "NOT IN", "BETWEEN", "NOT BETWEEN", "IS", "IS NOT", "LIKE", "NOT LIKE"].includes(operand)) {
+                  const [FIELD, VALUE] = Object.entries(DEF)[0];
+
+                  if(["IN", "NOT IN"].includes(operand)) {
+                     return [...acc, `${FIELD} ${operand} (${VALUE.map(v => con.escape(v)).join(',')})`];
+                  } else if(["BETWEEN", "NOT BETWEEN"].includes(operand)) {
+                     return [...acc, `${FIELD} ${operand} ${VALUE.map(v => con.escape(v)).join(' AND ')}`];
+                  } else if(["LIKE", "NOT LIKE"].includes(operand)) {
+                     if(Array.isArray(DEF)) {
+                        const field = Array.isArray(DEF[0]) ? `CONCAT(${DEF[0].map(f => con.escapeId(f)).join(',')})` : con.escapeId(DEF[0]);
+                        return [...acc, `${field} ${operand} ${con.escape(`%${DEF[1]}%`)}`];
+                     }else{
+                        return [...acc, `${FIELD} ${operand} ${con.escape(`%${VALUE}%`)}`];
+                     }
+                  } else if(["IS", "IS NOT"].includes(operand)) {
+                     return [...acc, `${FIELD} ${operand} ${con.escape(VALUE)}`];
+                  }
+               } else {
+                     const def = `${Object.entries(DEF).reduce((acc, [key, value]) => {
+                        return [...acc, `${con.escapeId(key)} = ${con.escape(value)}`];
+                     }, []).join(' AND ')}`;
+
+                  return def.length > 0 ? [...acc, `(${def})`] : acc;// [...acc, def.length > 0 ? `(${def})` : []];
+               }
+            }
+         }, [])
+      }
+      const query = WHERE(__CONDITIONS__);
+      return [query.length ? 'AND' : null, ...query].filter(e => e).join(' ');
    }
 
    makePagination() {
       return this.pagination || {
          page: 1,
-         page_size: 5,
-         total_pages: 4,
-         total_records: 1,
-         sort_by: "id",
-         sort_order: "asc"
+         pageSize: 5,
+         totalPages: 4,
+         totalRecords: 1,
+         sortBy: "id",
+         sortOrder: "asc"
       };
    }
 
    setPage(page) {
       this.pagination ? this.pagination.page = page : this.makePagination();
+   }
+
+   getLastId(document) {
+      return new Promise((resolve, reject) => {
+         this.execute(`SELECT MAX(id) as id FROM ${this.tableName(document)}`, false).then(result => {
+            resolve(result[0].id);
+         }).catch(err => {
+            reject(err);
+         });
+      });
    }
 
    isJson(str) {
@@ -241,11 +287,11 @@ export default class DataBase extends ObjectManage {
       return connection.escape(value);
    }
 
-   async insertRow(document, data = {}, is_single = false) {
+   async insertRow(document, data = {}, isSingle = false) {
       return new Promise(async (resolve, reject) => {
          const con = this.connection;
 
-         if (is_single) {
+         if (isSingle) {
             const fields = ['name', 'document', 'field', 'value'];
 
             const values = Object.entries(data).reduce((acc, [field, value]) => {
@@ -281,7 +327,41 @@ export default class DataBase extends ObjectManage {
       }).join(',');
    }
 
-   async updateRow(document, data = {}, name, is_single = false) {
+   async setValue(document, field, value, documentName, {distinctToId = null, ifNotFound = "throw"}={}) {
+      return await this.#setValueTo(document, field, value, documentName, {distinctToId, ifNotFound});
+   }
+
+   async #setValueTo(document, field, value, documentName, {distinctToId = null, ifNotFound = "throw"}={}) {
+      const connection = this.connection;
+
+      const condition = {
+         ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
+      };
+
+      if(distinctToId) {
+         condition.AND = {
+            '!=': { id: distinctToId }
+         }
+      }
+
+      const where = this.WHERE(condition);
+
+      const query = `
+         UPDATE ${this.tableName(document)} 
+         SET ${connection.escapeId(field)}=${connection.escape(value)} 
+         WHERE 1=1 ${where}
+      `;
+
+      return new Promise((resolve, reject) => {
+         this.execute(query).then(result => {
+            resolve(result);
+         }).catch(err => {
+            reject(err);
+         });
+      });
+   }
+
+   async updateRow(document, data = {}, name, isSingle = false) {
       const connection = this.connection;
       const query = `UPDATE ${this.tableName(document)} SET ${this.mergeData(data)} WHERE \`name\`=${connection.escape(name)}`;
 
@@ -294,8 +374,15 @@ export default class DataBase extends ObjectManage {
       });
    }
 
-   async deleteRow(document, name) {
-      const query = `DELETE FROM ${this.tableName(document)} WHERE \`name\` = '${name}'`;
+   async deleteRow(document, name, sofDelete = true) {
+      const deletedName = `${name}-${loopar.utils.randomString(20)}`;
+      let query = `DELETE FROM ${this.tableName(document)} WHERE \`name\` = '${name}'`;
+      if(sofDelete) {
+         query = `
+         UPDATE ${this.tableName(document)} 
+         SET __document_status__ = 'Deleted', name='${deletedName}'
+         WHERE \`name\` = '${name}'`;
+      }
 
       return new Promise((resolve, reject) => {
          this.execute(query).then(result => {
@@ -367,8 +454,8 @@ export default class DataBase extends ObjectManage {
       return [idStructure, ...columns];
    }
 
-   makeColumns(fields, db_fields = {}) {
-      db_fields = Object.values(db_fields).reduce((acc, field) => {
+   makeColumns(fields, dbFields = {}) {
+      dbFields = Object.values(dbFields).reduce((acc, field) => {
          acc[field.Field.toLowerCase()] = field;
 
          return acc;
@@ -376,8 +463,8 @@ export default class DataBase extends ObjectManage {
 
       return fields.reduce((acc, field) => {
          if (fieldIsWritable(field)) {
-            if (field.data.name !== 'name' || !db_fields["name"]) {
-               const pre = Object.keys(db_fields).length > 0 ? db_fields[field.data.name] ? 'MODIFY' : 'ADD' : '';
+            if (field.data.name !== 'name' || !dbFields["name"]) {
+               const pre = Object.keys(dbFields).length > 0 ? dbFields[field.data.name] ? 'MODIFY' : 'ADD' : '';
 
                const column = `${pre} ${field.data.name} ${this.datatype(field)}`
 
@@ -385,7 +472,7 @@ export default class DataBase extends ObjectManage {
             }
          }
 
-         return [...acc, ...this.makeColumns(field.elements || [], db_fields)];
+         return [...acc, ...this.makeColumns(field.elements || [], dbFields)];
       }, [])
    }
 
@@ -402,19 +489,19 @@ export default class DataBase extends ObjectManage {
 
    async alterTableQueryBuild(document, fields = {}, check_if_exists = true) {
       const TABLE = this.tableName(document);
-      const [exist, has_pk] = check_if_exists ? [await this.count(document), await this.hasPk(document)] : [false, false];
+      const [exist, hasPk] = check_if_exists ? [await this.count(document), await this.hasPk(document)] : [false, false];
 
       return new Promise(resolve => {
          if (exist) {
             this.execute(`SHOW COLUMNS FROM ${TABLE}`, false).then(columns => {
-               const db_fields = columns.reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
+               const dbFields = columns.reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
 
-               const alter_columns = [
-                  ...this.makeColumns(fields, db_fields),
-                  ...(!has_pk ? [`ADD PRIMARY KEY (\`id\`)`] : [])
+               const alterColumns = [
+                  ...this.makeColumns(fields, dbFields),
+                  ...(!hasPk ? [`ADD PRIMARY KEY (\`id\`)`] : [])
                ];
 
-               this.query = `ALTER TABLE ${TABLE} ${alter_columns.join(',')} ;`;
+               this.query = `ALTER TABLE ${TABLE} ${alterColumns.join(',')} ;`;
 
                resolve(this.query);
             });
@@ -428,56 +515,71 @@ export default class DataBase extends ObjectManage {
       });
    }
 
-   async getValue(document, field, document_name, distinct_to_id = null, if_not_found = "throw") {
+   async getValue(document, field, documentName, {distinctToId = null, ifNotFound = "throw", includeDeleted = false}={}) {
 
       try {
          const condition = {
-            ...(typeof document_name === 'object' ? document_name : { '=': { name: document_name } }),
-            ...(distinct_to_id ? { '!=': { id: distinct_to_id } } : {})
+            ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
          };
 
-         const result = await this.getDoc(document, condition, [field]);
+         if(distinctToId) {
+            condition.AND = {
+               '!=': { id: distinctToId }
+            }
+         }
+
+         const result = await this.getDoc(document, condition, [field], {includeDeleted});
 
          return result ? typeof field === "object" ? result : result[field] : null;
       } catch (e) {
-         if (if_not_found === "throw") {
-            throw e;
-         }
-         return if_not_found;
+         if (ifNotFound === "throw") throw e;
+         
+         return ifNotFound;
       }
    }
 
-   async getDoc(document, document_name, fields = ['*'], is_single = false) {
-      return await this.getRow(document, document_name, fields, is_single);
+   async getDoc(document, documentName, fields = ['*'], {isSingle = false, includeDeleted = false}={}) {
+      return await this.getRow(document, documentName, fields, {isSingle, includeDeleted});
    }
 
-   async getRow(table, id, fields = ['*'], is_single = false) {
+   async getRow(table, id, fields = ['*'], {isSingle = false, includeDeleted = false}={}) {
       this.setPage(1);
-      const row = await this.getList(table, fields, typeof id == 'object' ? id : { '=': { 'name': id } }, is_single) || [];
+      const row = await this.getList(table, fields, typeof id == 'object' ? id : {
+         '=': {
+            'name': id
+         }
+      }, {isSingle, includeDeleted}) || [];
 
       return row[0] || null;
    }
 
-   async getList(document, fields = ['*'], condition = null, is_single = false) {
+   async getList(document, fields = ['*'], condition = null, {isSingle = false, all = false, includeDeleted=false} = {}) {
       return new Promise((resolve, reject) => {
-         if (is_single) {
-            const single_table = this.tableName('Document Single Values');
-            this.execute(`SELECT field, value from ${single_table} WHERE \`document\` = '${document}'`, false).then(result => {
-               const single_values = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
+         if (isSingle) {
+            const singleTable = this.tableName('Document Single Values');
+            this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false).then(result => {
+               const singleValues = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
 
-               resolve([single_values]);
+               resolve([singleValues]);
             }).catch(err => {
                reject(err);
             });
          } else {
-            const table_name = this.tableName(document, false);
+            const tableName = this.tableName(document, false);
             fields = this.#makeFields(fields);
-            condition = this.makeCondition(condition);
-            const pagination = this.makePagination();
-            const [PAGE, PAGE_SIZE] = [pagination.page, pagination.page_size];
-            const OFFSET = (PAGE - 1) * PAGE_SIZE;
+            condition = this.WHERE(condition);
+            const sofDelete = includeDeleted ? "WHERE 1=1" : "WHERE `__document_status__` <> 'Deleted'";
+            let query = `SELECT ${fields} FROM ${tableName} ${sofDelete} ${condition}`;
 
-            this.execute(`SELECT ${fields} FROM ${table_name} ${condition} LIMIT ${PAGE_SIZE} OFFSET ${OFFSET};`, false).then(data => {
+            if(!all){
+               const pagination = this.makePagination();
+               const [PAGE, PAGE_SIZE] = [pagination.page, pagination.pageSize];
+               const OFFSET = (PAGE - 1) * PAGE_SIZE;
+
+               query += ` LIMIT ${PAGE_SIZE} OFFSET ${OFFSET}`;
+            }
+
+            this.execute(query, false).then(data => {
                resolve(data);
             }).catch(error => {
                reject(error);
@@ -486,29 +588,8 @@ export default class DataBase extends ObjectManage {
       });
    }
 
-   async getAll(document, fields = ['*'], condition = null, is_single = false) {
-      return new Promise((resolve, reject) => {
-         if (is_single) {
-            const single_table = this.tableName('Document Single Values');
-            this.execute(`SELECT field, value from ${single_table} WHERE \`document\` = '${document}'`, false).then(result => {
-               const single_values = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
-
-               resolve([single_values]);
-            }).catch(err => {
-               reject(err);
-            });
-         } else {
-            const table_name = this.tableName(document, false);
-            fields = this.#makeFields(fields);
-            condition = this.makeCondition(condition);
-
-            this.execute(`SELECT ${fields} FROM ${table_name} ${condition};`, false).then(data => {
-               resolve(data);
-            }).catch(error => {
-               reject(error);
-            });
-         }
-      });
+   async getAll(document, fields = ['*'], condition = null, {isSingle = false}={}) {
+      return await this.getList(document, fields, condition, {isSingle, all: true});
    }
 
    #makeFields(fields = ['*']) {
@@ -518,7 +599,7 @@ export default class DataBase extends ObjectManage {
    async hasPk(document) {
       const table = this.tableName(document, true);
       return new Promise(async resolve => {
-         this.execute(`SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`TABLE_NAME\` = ${table}`, false).then(res => {
+         this.execute(`SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`table_name\` = ${table}`, false).then(res => {
             resolve(res[0].count);
          });
       });
@@ -535,16 +616,26 @@ export default class DataBase extends ObjectManage {
 
    async _count(document, params = { field_name: 'name', field_value: null }, condition = null) {
       if (!params) return 0;
-      const cn = this.connection;
-      const c = this.makeCondition(condition || {});
       const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
       return new Promise(async resolve => {
-         const WHERE = param.field_value ?
-            `WHERE ${cn.escapeId(param.field_name)}=${cn.escape(param.field_value)} ${c.replace('WHERE', 'AND')}` :
-            c;
+         const c = {
+            "=": {
+               __document_status__: "Active",
+            },
+            AND: condition
+         };
 
-         this.execute(`SELECT COUNT(*) as count FROM ${this.tableName(document)} ${WHERE}`, false).then(async res => {
+         if(param.field_value) {
+            c.AND = {
+               "=": {
+                  [param.field_name]: param.field_value
+               },
+               AND: condition
+            }
+         }
+
+         this.execute(`SELECT COUNT(*) as count FROM ${this.tableName(document)} WHERE 1=1 ${this.WHERE(c) }`, false).then(async res => {
             resolve(res[0].count);
          });
       });

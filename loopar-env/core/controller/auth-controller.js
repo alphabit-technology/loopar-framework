@@ -61,7 +61,7 @@ export default class AuthController {
    }
 
    get isFreeAction() {
-      return !this.free_actions || this.free_actions.includes(this.action);
+      return !this.freeActions || this.freeActions.includes(this.action);
    }
 
    get isLoginAction() {
@@ -69,7 +69,7 @@ export default class AuthController {
    }
 
    get isEnableAction() {
-      return !this.actions_enabled || this.actions_enabled.includes(this.action);
+      return !this.actionsEnabled || this.actionsEnabled.includes(this.action);
    }
 
    isAuthorized() {

@@ -1,6 +1,6 @@
-import {div} from "/components/elements.js";
+import { div } from "/components/elements.js";
 import Component from "/components/base/component.js";
-import {HTML} from "/components/base/html.js";
+import { HTML } from "/components/base/html.js";
 
 export default class BaseDocument extends HTML {
 	customActions = {};
@@ -9,7 +9,7 @@ export default class BaseDocument extends HTML {
 
 		this.state = {
 			...this.state,
-			sidebar_open: false,
+			sidebarOpen: false,
 			design: false,
 			preview: false,
 		}
@@ -21,7 +21,8 @@ export default class BaseDocument extends HTML {
 
 	setCustomAction(name, action) {
 		this.customActions[name] = action;
+		this.setState({});
 	}
 
-	setCustomActions(){}
+	setCustomActions() { }
 }

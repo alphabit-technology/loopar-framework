@@ -1,26 +1,20 @@
 'use strict';
 import sqlite3 from 'sqlite3';
-import fs from 'fs';
 
 
 import mysql from 'mysql';
-import ObjectManage from "../core/ObjectManage.js";
-//import {element_definition} from '../core/global/element-definition.js';
-import { UPPERCASE } from '../core/helper.js';
 import { loopar } from "../core/loopar.js";
 import { fileManage } from "../core/file-manage.js";
 
 const ENGINE = 'ENGINE=INNODB';
 
-export default class DataBaseSqlLite extends ObjectManage {
+export default class DataBaseSqlLite {
     #connection = null;
     table_prefix = 'tbl';
     transaction = false;
     transactions = [];
 
-    constructor() {
-        super();
-    }
+    constructor() { }
 
     get db_config() {
         return env.db_config;
@@ -57,7 +51,7 @@ export default class DataBaseSqlLite extends ObjectManage {
             return [...new Set(types)].join(' ');
         }
 
-        return UPPERCASE(`${data_type(this.debug_text(type && type.toString().length > 0 ? type : field.element))} ${default_value}`);
+        return loopar.utils.UPPERCASE(`${data_type(this.debug_text(type && type.toString().length > 0 ? type : field.element))} ${default_value}`);
     }
 
     debug_text(text) {
@@ -463,11 +457,11 @@ export default class DataBaseSqlLite extends ObjectManage {
         });
     }
 
-    async get_value(document, field, document_name, distinct_to_id = null, if_not_found = "throw") {
+    async get_value(document, field, documentName, distinct_to_id = null, if_not_found = "throw") {
 
         try {
             const condition = {
-                ...(typeof document_name === 'object' ? document_name : { '=': { name: document_name } }),
+                ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
                 ...(distinct_to_id ? { '!=': { id: distinct_to_id } } : {})
             };
 
@@ -482,8 +476,8 @@ export default class DataBaseSqlLite extends ObjectManage {
         }
     }
 
-    async get_doc(document, document_name, fields = ['*'], is_single = false) {
-        return await this.get_row(document, document_name, fields, is_single);
+    async get_doc(document, documentName, fields = ['*'], is_single = false) {
+        return await this.get_row(document, documentName, fields, is_single);
     }
 
     async get_row(table, id, fields = ['*'], is_single = false) {
