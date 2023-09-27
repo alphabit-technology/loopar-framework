@@ -3,7 +3,7 @@
 
 import { access } from 'fs'
 import DataBase from '../database/database.js';
-import DataBaseSqlLite from '../database/database-sqlite.js';
+//import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { documentManage } from './document/document-manage.js';
 import path from "path";
