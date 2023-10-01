@@ -280,36 +280,36 @@ export default class CoreInstaller {
 
    async installData() {
       const moduleRoute = loopar.makePath('apps', this.app_name);
-      const appData = await fileManage.getConfigFile('installer', moduleRoute);
+      const installerData = await fileManage.getConfigFile('installer', moduleRoute);
 
-      for (const [doc_name, records] of Object.entries(appData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
-         for (const document of Object.values(records.documents).sort(item => item.id - item.id)) {
+      for (const [doc_name, records] of Object.entries(installerData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
+         for (const document of Object.values(records.documents).sort((a, b) => a.id - b.id)) {
             if (document.__document_status === "Deleted") continue;
             
             if (doc_name === "Document") {
                const doctype = await this.getDoctypeData(this.app_name, document.module, document.name);
-               await this.insertRecord(doc_name, doctype, "loopar/modules/core");
+               await this.insertRecord(doc_name, doctype, "loopar", "core");
             } else {
-               await this.insertRecord(doc_name, document, "loopar/modules/core");
+               await this.insertRecord(doc_name, document);
             }
          }
       }
 
       if (this.app_name === "loopar" && loopar.installing) {
-         const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password }
+         const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password };
 
-         await this.insertRecord('User', userData);
+         await this.insertRecord('User', userData, "loopar", "auth");
       }
    }
 
-   async insertRecord(table, data, moduleRoute = null) {
-      if (await loopar.db.getValue(table, 'name', data.name)) {
-         console.log(`Updating ${table} ${data.name}`);
-         const toUpdateDoc = await loopar.getDocument(table, data.name, data, moduleRoute);
+   async insertRecord(Document, data, appName, module) {
+      if (await loopar.db.getValue(Document, 'name', data.name, {ifNotFound: false})) {
+         console.log(`Updating ${Document} ${data.name}, APP: ${appName}, MODULE: ${module}`);
+         const toUpdateDoc = await loopar.getDocument(Document, data.name, data, {app: appName, module});
          toUpdateDoc.save({ validate: false });
       } else {
-         console.log(`Inserting ${table} ${data.name}`);
-         const document = await loopar.newDocument(table, data, moduleRoute);
+         console.log(`Inserting ${Document} ${data.name}`);
+         const document = await loopar.newDocument(Document, data, {app: appName, module});
          await document.save({ validate: false });
       }
    }

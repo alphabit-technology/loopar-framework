@@ -7,10 +7,10 @@ class DocumentManage {
    }
 
    async getDocument(DOCTYPE, documentName, data = null) {
-      const database_data = await loopar.db.getDoc(DOCTYPE.name, documentName, ['*'], {isSingle: DOCTYPE.is_single});
+      const databaseData = await loopar.db.getDoc(DOCTYPE.name, documentName, ['*'], {isSingle: DOCTYPE.is_single});
 
-      if (database_data) {
-         data = Object.assign(database_data, data || {});
+      if (databaseData) {
+         data = Object.assign(databaseData, data || {});
          return await this.newDocument(DOCTYPE, data, documentName);
       } else {
          loopar.throw({ code: 404, message: `${DOCTYPE.name} ${documentName} not found` });
@@ -20,12 +20,14 @@ class DocumentManage {
    async newDocument(DOCTYPE, data = {}, documentName) {
       const DOCUMENT = await this.#importDocument(DOCTYPE);
 
+      console.log("New document: ", DOCUMENT);
       const instance = await new DOCUMENT({
          __DOCTYPE__: DOCTYPE,
          __DOCUMENT_NAME__: documentName,
          __DOCUMENT__: data,
          __IS_NEW__: !documentName,
-         __APP__: DOCTYPE.app_name,
+         __APP__: DOCTYPE.__APP__,
+         __MODULE__: DOCTYPE.__MODULE__,
       });
 
       await instance.__init__();
@@ -42,12 +44,12 @@ class DocumentManage {
 
    async #appRoute(doctype) {
       const app_name = await this.#appName(doctype);
-      doctype.app_name = app_name;
+      doctype.__APP__ = app_name;
       return loopar.makePath("apps", app_name || "loopar");
    }
 
    async #appName(doctype) {
-      return doctype.app_name || await loopar.db.getValue("Module", "app_name", doctype.module);
+      return doctype.__APP__ || await loopar.db.getValue("Module", "app_name", doctype.module);
    }
 
    #documentName(document) {

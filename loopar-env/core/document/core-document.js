@@ -28,6 +28,7 @@ export default class CoreDocument {
    }
 
    async setApp() {
+      if(this.__APP__ && loopar.installing) return;
       if (this.__DOCTYPE__.name === "App") {
          /**
           * If is an Document type App, the app name is the same as the document name
@@ -46,7 +47,7 @@ export default class CoreDocument {
          /**
           * If not is a Document type Document, any document can belong to a certaing app based on the DOCTYPE module
           */
-         this.__APP__ ??= this.app_name || await loopar.db.getValue("Module", "app_name", this.__DOCTYPE__.module);
+         this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__DOCTYPE__.module);
       }
    }
 

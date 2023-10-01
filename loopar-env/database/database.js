@@ -26,11 +26,15 @@ export default class DataBase {
       this.#connection = new mysql.createConnection(this.dbConfig);
    }
 
+   dbFielTypeCanHaveDefaultValue(fieldType) {
+      return ['varchar', 'text', 'int', 'bigint', 'tinyint', 'smallint', 'mediumint', 'float', 'double', 'decimal', 'date', 'datetime', 'timestamp', 'time', 'year'].includes(fieldType);
+   }
+      
    datatype(field) {
       const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
       const type = field.element === 'input' ? field.data.format : field.element;
-      const defaultValue = field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '';
+      const defaultValue = this.dbFielTypeCanHaveDefaultValue(type) ? field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '' : '';
 
       const dataType = (type) => {
          if (field.element === ID) {

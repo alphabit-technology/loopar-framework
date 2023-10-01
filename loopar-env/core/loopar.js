@@ -224,15 +224,19 @@ export class Loopar {
       }, []);
    }
 
-   async #GET_DOCTYPE(document, type = 'Document', fieldDocStructure, moduleRoute = null) {
+   async #GET_DOCTYPE(document, type = 'Document', {app=null, module=null}={}) {
       const fields = this.baseDocumentFields;
-      let DOCTYPE = null;
 
-      if (moduleRoute) {
-         DOCTYPE = fileManage.getConfigFile(document, loopar.makePath("apps", moduleRoute, document));
+      const DOCTYPE = app ?
+         fileManage.getConfigFile(document, loopar.makePath("apps", app, "modules", module, document)) : 
+         await loopar.db.getDoc(type, document, ["doc_structure", ...fields]);
+      /**let DOCTYPE = null;
+
+      if (app) {
+         DOCTYPE = fileManage.getConfigFile(document, loopar.makePath("apps", app, document));
       } else {
-         DOCTYPE = await loopar.db.getDoc(type, document, [fieldDocStructure, ...fields]);
-      }
+         DOCTYPE = await loopar.db.getDoc(type, document, ["doc_structure", ...fields]);
+      }*/
 
       if (!DOCTYPE) {
          this.throw({
@@ -241,7 +245,8 @@ export class Loopar {
          });
       }
 
-      moduleRoute && (DOCTYPE.app_name = moduleRoute.split('/')[0]);
+      app && (DOCTYPE.__APP__ = app);
+      module && (DOCTYPE.__MODULE__ = module);
 
       return DOCTYPE;
    }
@@ -254,8 +259,8 @@ export class Loopar {
     * @param {*} moduleRoute Path to app root folder 
     * @returns 
     */
-   async getDocument(document, documentName, data = null, moduleRoute) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', moduleRoute);
+   async getDocument(document, documentName, data = null, {app=null, module=null}={}) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', {app, module});
 
       return await documentManage.getDocument(DOCTYPE, documentName, data);
    }
@@ -268,9 +273,8 @@ export class Loopar {
     * @param {*} documentName 
     * @returns 
     */
-   async newDocument(document, data = {}, moduleRoute, documentName = null) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', 'doc_structure', moduleRoute);
-
+   async newDocument(document, data = {}, {app=null, module=null, documentName=null}={}) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', {app, module});
       return await documentManage.newDocument(DOCTYPE, data, documentName);
    }
 
@@ -280,7 +284,7 @@ export class Loopar {
       await doc.delete({ updateInstaller, sofDelete, force, updateHistory });
    }
 
-   async getForm(formName, data = {}) {
+   /*async getForm(formName, data = {}) {
       const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
 
       return documentManage.getForm(DOCTYPE, data);
@@ -290,7 +294,7 @@ export class Loopar {
       const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
 
       return await documentManage.newForm(DOCTYPE, data);
-   }
+   }*/
 
    exist(path) {
       return new Promise(res => {
