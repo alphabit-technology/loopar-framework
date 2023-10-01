@@ -94,4 +94,4 @@ ___
 ### License
 > GNU / General Public License (see [license.txt](license.txt))
 
-> The Loopar code is licensed under the GNU General Public License (v3).
+> The Loopar code is licensed under the GNU General Public License (v3)

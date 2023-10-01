@@ -40,7 +40,7 @@ export class Loopar {
 
    gitAppOptions(app) {
       return {
-         baseDir: app ? this.makePath(this.pathRoot, "apps", app) : this.pathRoot(this.pathRoot, "apps"),
+         baseDir: app ? this.makePath(this.pathRoot, "apps", app) : this.makePath(this.pathRoot, "apps"),
          binary: 'git',
          maxConcurrentProcesses: 6,
          trimmed: false,
