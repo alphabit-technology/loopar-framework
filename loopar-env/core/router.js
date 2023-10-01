@@ -1,9 +1,8 @@
 'use strict';
-import { Loopar, loopar } from './loopar.js';
+import { loopar } from './loopar.js';
 import { fileManage } from "./file-manage.js";
 import multer from "multer";
 import BaseController from './controller/base-controller.js';
-import path from "path";
 
 const coreInstallerController = 'installer-controller';
 
@@ -89,8 +88,7 @@ export default class Router {
 
       const context = pathname.split("/")[1];
       const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
-      const routeStructure = {host:null, module:null, document:null, action:null};
-
+      const routeStructure = { host: null, module: null, document: null, action:null};
       const controllerParams = {req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller", client: null,}
       
       if (reqWorkspace === "loopar") {
@@ -116,6 +114,10 @@ export default class Router {
          const RTK = Object.keys(routeStructure)[index];
          routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
+
+      if (reqWorkspace === "web" && routeStructure.document === "Undefined") {
+         routeStructure.document = "Home";
+      }
       
       /**Because user can not navigate in auth workspace if is logged in**/
       if (controllerParams.workspace === "auth" && loopar.isLoggedIn() && controllerParams.action !== "logout") {
