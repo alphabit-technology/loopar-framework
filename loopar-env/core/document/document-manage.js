@@ -20,7 +20,6 @@ class DocumentManage {
    async newDocument(DOCTYPE, data = {}, documentName) {
       const DOCUMENT = await this.#importDocument(DOCTYPE);
 
-      console.log("New document: ", DOCUMENT);
       const instance = await new DOCUMENT({
          __DOCTYPE__: DOCTYPE,
          __DOCUMENT_NAME__: documentName,

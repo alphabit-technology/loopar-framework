@@ -296,8 +296,7 @@ export default class CoreInstaller {
       }
 
       if (this.app_name === "loopar" && loopar.installing) {
-         const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password };
-
+         const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password, __document_status__: "Active" };
          await this.insertRecord('User', userData, "loopar", "auth");
       }
    }

@@ -34,7 +34,7 @@ export default class DataBase {
       const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
       const type = field.element === 'input' ? field.data.format : field.element;
-      const defaultValue = this.dbFielTypeCanHaveDefaultValue(type) ? field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '' : '';
+      const defaultValue = this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) && field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '';
 
       const dataType = (type) => {
          if (field.element === ID) {
