@@ -455,9 +455,26 @@ export default class CoreDocument {
       }, {});
    }
 
-   async rawValues() {
+   /*async rawValues() {
       return Object.values(this.#fields).reduce(async (acc, cur) => {
          return { ...await acc, [cur.name]: cur.value }
+      }, {});
+   }*/
+
+   async rawValues() {
+      const value = async (field) => {
+         if (field.name === this.fieldDocStructure) {
+            return field.value ? JSON.stringify(field.value.filter(field => (field.data || []).name !== ID)) : "[]";
+         } else if (field.element === FORM_TABLE) {
+            return await this.getChildRawValues(field.options);
+         } else if (field.element === PASSWORD) {
+            return field.value && field.value.length > 0 ? this.protectedPassword : "";
+         } else {
+            return field.stringifyValue;
+         }
+      }
+      return Object.values(this.#fields).reduce(async (acc, cur) => {
+         return { ...await acc, [cur.name]: await value(cur) }
       }, {});
    }
 
@@ -470,6 +487,14 @@ export default class CoreDocument {
             }
          }
       })
+   }
+
+   async getChildRawValues(field) {
+      return await loopar.db.getAll(field, ["*"], {
+         "=": {
+            document_parent: this.__DOCTYPE__.name,
+            document_parent_name: this.__DOCUMENT_NAME__
+      }})
    }
 
    get stringifyValues() {
