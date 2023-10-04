@@ -200,6 +200,8 @@ export default class CoreDocument {
          const updateChild = async () => {
             const childValuesReq = this.childValuesReq;
 
+            console.log("Update Child", childValuesReq)
+
             if (Object.keys(childValuesReq).length) {
                for (const [key, value] of Object.entries(childValuesReq)) {
                   await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE document_parent = '${this.__DOCTYPE__.name}' AND document_parent_name = '${this.__DOCUMENT_NAME__}'`)
@@ -520,9 +522,10 @@ export default class CoreDocument {
    }
 
    get childValuesReq() {
+      //console.log("Child Values Req", Object.values(this.#fields).filter(e => e.element===FORM_TABLE).map(e => e.value))
       return Object.values(this.#fields)
          .filter(field => field.name !== ID && field.element === FORM_TABLE)
-         .reduce((acc, cur) => ({ ...acc, [cur.options]: cur.stringifyValue }), {});
+         .reduce((acc, cur) => ({ ...acc, [cur.options]: cur.value }), {});
    }
 
    get formattedValues() {
