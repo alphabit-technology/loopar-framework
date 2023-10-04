@@ -209,7 +209,7 @@ export default class CoreInstaller {
       return this.formConnectStructure.find(e => e.identifier === "form_connect").elements.map(e => e.data.name);
    }
 
-   async getDoctypeData(app, module, document) {
+   async getDocumentData(app, module, document) {
       const moduleRoute = loopar.makePath('apps', app);
       const documentRoot = loopar.makePath(moduleRoute, "modules", module, document);
 
@@ -236,7 +236,8 @@ export default class CoreInstaller {
    }
 
    async unInstall() {
-      loopar.installing = true;
+      //loopar.installing = true;
+      loopar.installingApp = this.app_name;
       if(this.app_name === 'loopar'){
          loopar.throw("You can't uninstall Loopar");
       }
@@ -245,7 +246,6 @@ export default class CoreInstaller {
       const appData = await fileManage.getConfigFile('installer', moduleRoute);
 
       for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].doctypeId - a[1].doctypeId)) {
-         console.warn("Uninstalling", doc_name, this.app_name);
          for (const document of Object.values(records.documents).sort((a, b) => b.id - a.id)) {
             if (document.__document_status__ === "Deleted") continue;
             console.warn("Uninstalling", doc_name, document.name);
@@ -254,14 +254,16 @@ export default class CoreInstaller {
          }
       }
 
-      loopar.installing = false;
+      //loopar.installing = false;
+      loopar.installingApp = null;
 
       return `App ${this.app_name} uninstalled successfully!`;
    }
 
    async install() {
       console.warn("Installing " + this.app_name);
-      loopar.installing = true;
+      //loopar.installing = true;
+      loopar.installingApp = this.app_name;
 
       if (this.app_name === 'loopar') {
          if (!this.checkIfAppExists()) {
@@ -273,24 +275,33 @@ export default class CoreInstaller {
       }
       await this.installData();
 
-      loopar.installing = false;
+      //loopar.installing = false;
+      loopar.installingApp = null;
       await loopar.server.exposeClientAppFiles(this.app_name);
       return "App installed successfully!";
+   }
+
+   getAppFromData(data, modu){
+      const modules = data.Module.documents;
+      return Object.values(modules).find(e => e.name === modu).app_name;
    }
 
    async installData() {
       const moduleRoute = loopar.makePath('apps', this.app_name);
       const installerData = await fileManage.getConfigFile('installer', moduleRoute);
 
-      for (const [doc_name, records] of Object.entries(installerData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
+      for (const [doctype, records] of Object.entries(installerData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
          for (const document of Object.values(records.documents).sort((a, b) => a.id - b.id)) {
             if (document.__document_status === "Deleted") continue;
             
-            if (doc_name === "Document") {
-               const doctype = await this.getDoctypeData(this.app_name, document.module, document.name);
-               await this.insertRecord(doc_name, doctype, "loopar", "core");
+            if (doctype === "Document") {
+               const data = await this.getDocumentData(this.app_name, document.module, document.name);
+               const app = this.getAppFromData(installerData, document.module);
+               data.__APP__ = app;
+
+               await this.insertRecord(doctype, data, this.app_name, document.module);
             } else {
-               await this.insertRecord(doc_name, document);
+               await this.insertRecord(doctype, document);
             }
          }
       }
@@ -301,14 +312,14 @@ export default class CoreInstaller {
       }
    }
 
-   async insertRecord(Document, data, appName, module) {
+   async insertRecord(Document, data, app = null, module = null) {
       if (await loopar.db.getValue(Document, 'name', data.name, {ifNotFound: false})) {
-         console.log(`Updating ${Document} ${data.name}, APP: ${appName}, MODULE: ${module}`);
-         const toUpdateDoc = await loopar.getDocument(Document, data.name, data, {app: appName, module});
+         console.log("Updating.............", Document, data.name);
+         const toUpdateDoc = await loopar.getDocument(Document, data.name, data, {app, module});
          toUpdateDoc.save({ validate: false });
       } else {
-         console.log(`Inserting ${Document} ${data.name}`);
-         const document = await loopar.newDocument(Document, data, {app: appName, module});
+         console.log("Inserting.........", Document, data.name);
+         const document = await loopar.newDocument(Document, data, {app, module});
          await document.save({ validate: false });
       }
    }
@@ -339,11 +350,11 @@ export default class CoreInstaller {
    }
 
    async update() {
-      loopar.installing = true;
+      loopar.installingApp = this.app_name;
 
       await this.installData();
 
-      loopar.installing = false;
+      loopar.installingApp = null;
       return true;
    }
 

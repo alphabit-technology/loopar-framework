@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 import crypto from "crypto-js";
 
 export class Loopar {
-   installing = false;
+   #installingApp = false;
    modulesGroup = []
    pathRoot = process.env.PWD;
    pathFramework = process.argv[1];
@@ -32,6 +32,10 @@ export class Loopar {
          this.throw(`The app ${appName} does not have a valid git repository`);
       }
    }
+
+   set installingApp(app) {this.#installingApp = app}
+   get installingApp() {return this.#installingApp}
+   get installing() {return !!this.#installingApp}
 
    gitRepositoryIsValid(repository) {
       const regex = new RegExp(/^(((https?\:\/\/)(((([a-zA-Z0-9][a-zA-Z0-9\-\_]{1,252})\.){1,8}[a-zA-Z]{2,63})\/))|((ssh\:\/\/)?git\@)(((([a-zA-Z0-9][a-zA-Z0-9\-\_]{1,252})\.){1,8}[a-zA-Z]{2,63})(\:)))([a-zA-Z0-9][a-zA-Z0-9\_\-]{1,36})(\/)([a-zA-Z0-9][a-zA-Z0-9\_\-]{1,36})((\.git)?)$/);
@@ -224,19 +228,17 @@ export class Loopar {
       }, []);
    }
 
-   async #GET_DOCTYPE(document, type = 'Document', {app=null, module=null}={}) {
-      const fields = this.baseDocumentFields;
+   async #GET_DOCTYPE(document, {app=null, module=null}={}) {
+      let {appName, moduleName} = {appName: app, moduleName: module};
 
-      const DOCTYPE = app ?
-         fileManage.getConfigFile(document, loopar.makePath("apps", app, "modules", module, document)) : 
-         await loopar.db.getDoc(type, document, ["doc_structure", ...fields]);
-      /**let DOCTYPE = null;
+      if(["Document", "Module", "Module Group", "App"].includes(document)) {
+         appName = "loopar";
+         moduleName = "core";
+      }
 
-      if (app) {
-         DOCTYPE = fileManage.getConfigFile(document, loopar.makePath("apps", app, document));
-      } else {
-         DOCTYPE = await loopar.db.getDoc(type, document, ["doc_structure", ...fields]);
-      }*/
+      const DOCTYPE = (appName && moduleName) ?
+         fileManage.getConfigFile(document, loopar.makePath("apps", appName, "modules", moduleName, document)) : 
+         await loopar.db.getDoc("Document", document, ["doc_structure", ...this.baseDocumentFields]);
 
       if (!DOCTYPE) {
          this.throw({
@@ -245,8 +247,8 @@ export class Loopar {
          });
       }
 
-      app && (DOCTYPE.__APP__ = app);
-      module && (DOCTYPE.__MODULE__ = module);
+      appName && (DOCTYPE.__APP__ = appName);
+      moduleName && (DOCTYPE.__MODULE__ = moduleName);
 
       return DOCTYPE;
    }
@@ -260,9 +262,9 @@ export class Loopar {
     * @returns 
     */
    async getDocument(document, documentName, data = null, {app=null, module=null}={}) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', {app, module});
+      const DOCTYPE = await this.#GET_DOCTYPE(document, {app, module});
 
-      return await documentManage.getDocument(DOCTYPE, documentName, data);
+      return await documentManage.getDocument(DOCTYPE, documentName, data, app);
    }
 
    /**
@@ -273,8 +275,8 @@ export class Loopar {
     * @param {*} documentName 
     * @returns 
     */
-   async newDocument(document, data = {}, {app=null, module=null, documentName=null}={}) {
-      const DOCTYPE = await this.#GET_DOCTYPE(document, 'Document', {app, module});
+   async newDocument(document, data = {}, {app, module, documentName=null}={}) {
+      const DOCTYPE = await this.#GET_DOCTYPE(document, {app, module});
       return await documentManage.newDocument(DOCTYPE, data, documentName);
    }
 
@@ -327,7 +329,7 @@ export class Loopar {
    }*/
 
    throw(error) {
-      this.installing = false;
+      this.#installingApp = null;
       const errorType = NOT_IMPLEMENTED_ERROR;
       if (typeof error === 'string') {
          error = {
