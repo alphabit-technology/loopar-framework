@@ -415,7 +415,7 @@ export class Loopar {
       }
 
       return new Promise(async (resolve, reject) => {
-         this.installing = true;
+         this.installingApp = appName;
 
          const installerRoute = this.makePath('apps', appName, 'installer.js');
 
@@ -427,10 +427,10 @@ export class Loopar {
 
          return Installer.unInstall().then(async r => {
             await this.makeConfig();
-            this.installing = false;
+            this.installingApp = null;
             resolve(r);
          }).catch((error) => {
-            this.installing = false;
+            this.installingApp = null;
             reject(error);
          });
       });
