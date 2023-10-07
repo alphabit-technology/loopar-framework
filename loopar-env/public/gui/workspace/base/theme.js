@@ -8,6 +8,7 @@ export default class Theme extends HTML {
    componentDidMount() {
       super.componentDidMount();
       this.toggleDropdown();
+      this.binDataTarget();
    }
 
    toggleDropdown() {
@@ -21,6 +22,21 @@ export default class Theme extends HTML {
                dropdown.classList.remove("show");
             }
          });
+      });
+   }
+
+   binDataTarget() {
+      document.addEventListener("click", (e) => {
+         const closest = e.target.closest("[data-target]");
+
+         if (closest) {
+            const target = document.querySelector(closest.dataset.target);
+            target.classList.toggle("show");
+
+            if (closest.hasAttribute('aria-expanded')) {
+               closest.setAttribute('aria-expanded', closest.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+            }
+         }
       });
    }
 }

@@ -43,7 +43,10 @@ export default class DeskWorkspace extends BaseWorkspace {
                         ])
                      ])
                   ]),
-                  div({id: "dropdown-aside", className: `dropdown-aside collapse ${mobileMenuUser ? "show": ""}`, style: {}}, [
+                  div({
+                     id: "dropdown-aside", 
+                     className: `dropdown-aside collapse ${mobileMenuUser ? "show": ""}`, style: {}
+                  }, [
                      div({className: "pb-3"}, [
                         a({className: "dropdown-item", href: "/auth/user/profile"}, [
                            span({className: "dropdown-icon oi oi-person"}),
