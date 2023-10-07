@@ -239,7 +239,7 @@ export default class DataBase {
                   }
                } else {
                      const def = `${Object.entries(DEF).reduce((acc, [key, value]) => {
-                        return [...acc, `${con.escapeId(key)} = ${con.escape(value)}`];
+                        return [...acc, `${con.escapeId(key)} ${operand} ${con.escape(value)}`];
                      }, []).join(' AND ')}`;
 
                   return def.length > 0 ? [...acc, `(${def})`] : acc;// [...acc, def.length > 0 ? `(${def})` : []];
@@ -572,6 +572,7 @@ export default class DataBase {
             const tableName = this.tableName(document, false);
             fields = this.#makeFields(fields);
             condition = this.WHERE(condition);
+
             const sofDelete = includeDeleted ? "WHERE 1=1" : "WHERE `__document_status__` <> 'Deleted'";
             let query = `SELECT ${fields} FROM ${tableName} ${sofDelete} ${condition}`;
 
