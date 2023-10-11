@@ -35,10 +35,10 @@ html(lang='en')
             window.toggleTheme = (toggle = true) => {
                 const skin = localStorage.getItem('skin') || 'dark';
                 const theme = toggle ? (skin === 'dark' ? 'default' : 'dark') : skin;
-                const theme_style = theme === 'dark' ? '-dark' : '';
+                const themeStyle = theme === 'dark' ? '-dark' : '';
 
                 const style = document.getElementById("theme-style");
-                style.setAttribute("href", `/assets/plugins/bootstrap/css/theme${theme_style}.min.css`);
+                style.setAttribute("href", `/assets/plugins/bootstrap/css/theme${themeStyle}.min.css`);
                 window.theme = theme;
                 localStorage.setItem('skin', theme);
             }

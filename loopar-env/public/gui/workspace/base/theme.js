@@ -31,11 +31,21 @@ export default class Theme extends HTML {
 
          if (closest) {
             const target = document.querySelector(closest.dataset.target);
+            const closests = document.querySelectorAll("[data-target='" + closest.dataset.target + "']");
+
             target.classList.toggle("show");
 
-            if (closest.hasAttribute('aria-expanded')) {
+            //console.log(closests, target.classList.contains("show"))
+
+            closests.forEach((closest) => {
+               if (closest.hasAttribute('aria-expanded')) {
+                  closest.setAttribute('aria-expanded', target.classList.contains("show") ? 'true' : 'false');
+               }
+            });
+
+            /*if (closest.hasAttribute('aria-expanded')) {
                closest.setAttribute('aria-expanded', closest.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
-            }
+            }*/
          }
       });
    }

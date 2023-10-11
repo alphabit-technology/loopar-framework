@@ -208,3 +208,15 @@
 .form-group {
     z-index: 1;
 }
+
+.hamburger-inner.custom {
+    background-color: var(--dark);
+}
+
+.hamburger-inner.custom::before {
+    background-color: var(--dark);
+}
+
+.hamburger-inner.custom::after {
+    background-color: var(--dark);
+}

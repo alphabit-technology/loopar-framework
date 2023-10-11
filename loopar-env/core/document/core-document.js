@@ -200,8 +200,6 @@ export default class CoreDocument {
          const updateChild = async () => {
             const childValuesReq = this.childValuesReq;
 
-            console.log("Update Child", childValuesReq)
-
             if (Object.keys(childValuesReq).length) {
                for (const [key, value] of Object.entries(childValuesReq)) {
                   await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE document_parent = '${this.__DOCTYPE__.name}' AND document_parent_name = '${this.__DOCUMENT_NAME__}'`)
