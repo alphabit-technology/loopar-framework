@@ -100,9 +100,9 @@ export default class DeskWorkspace extends BaseWorkspace {
       ]);
    }
 
-   toggleMenu(){
+   toggleMenu() {
       const menu = this.state.menu;
-      this.setState({menu: !menu, showBackdrop: !menu, collapseMenu: false});
+      this.setState({ menu: !menu, showBackdrop: !menu, collapseMenu: false });
    }
 
    bodyToggleMenu(){

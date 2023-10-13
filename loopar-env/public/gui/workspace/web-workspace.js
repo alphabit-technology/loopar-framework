@@ -48,13 +48,14 @@ export default class WebWorkspace extends BaseWorkspace {
          ),*/
          div({className: "bg-light", style: coverStyle }),
          div({ 
-            className: "page-sidebar d-lg-none collapse", id: "page-sidebar", 
-            style: {top: 0, zIndex: 99999999999999, opacity: 1}
+            className: "page-sidebar sidebar-toggler d-lg-none collapse", "data-sidebar": "page-sidebar", 
+            style: {top: 0, zIndex: 99999999999999, opacity: 0.9}
          }, [
             div({ className: "sidebar-content", style: { height: "calc(100vh - 90px)" } }, [
                button({
                   className: `btn btn-subtle-secondary hamburger-squeeze ---hamburger-light ml-auto mt-2 mr-2`,
-                  type: "button", "data-toggle": "collapse", "data-target": "#page-sidebar",
+                  type: "button", 
+                  "data-toggle": "collapse", "data-attr": "data-sidebar", "data-target": "page-sidebar",
                   "aria-controls": "navbarNavDropdown", "aria-expanded": "true", "aria-label": "Toggle navigation",
                   style: { float: "right", position: "relative", zIndex: 99999999999999}
                }, [
@@ -68,8 +69,10 @@ export default class WebWorkspace extends BaseWorkspace {
                         const active = item.menu_link === loopar.currentPageName;
                         return li({ className: `menu-item ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self }, [
                            a({
-                              className: "menu-link py-2", href: "#", onClick: () => {
+                              className: "menu-link py-2", href: "#",
+                              onClick: (e) => {
                                  this.navigate(item.menu_link);
+                                 this.toggleSidebar(e);
                               }
                            }, item.menu_link)
                         ]);
@@ -119,7 +122,9 @@ export default class WebWorkspace extends BaseWorkspace {
                   ]),
                   button({
                      className: `navbar-btn  btn btn-subtle-secondary hamburger-squeeze ---hamburger-light ml-auto order-lg-2 d-lg-none`,
-                     type: "button", "data-toggle": "collapse", "data-target": "#page-sidebar",
+                     type: "button",
+                     "data-toggle": "collapse", "data-attr": "data-sidebar", "data-target": "page-sidebar",
+                     //"data-toggle": "collapse", "data-target": "#page-sidebar",
                      "aria-controls": "navbarNavDropdown", "aria-expanded": "false", "aria-label": "Toggle navigation"
                   }, [
                      span({ className: "hamburger-box" }, [
@@ -135,7 +140,9 @@ export default class WebWorkspace extends BaseWorkspace {
                         const active = item.menu_link === loopar.currentPageName;
                         return li({ className: `nav-item mr-lg-2 ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self }, [
                            a({
-                              className: "nav-link py-2 text-dark", href: "#", onClick: () => {
+                              className: "nav-link py-2 text-dark", 
+                              href: "#", 
+                              onClick: (e) => {
                                  this.navigate(item.menu_link);
                               }
                            }, item.menu_link)

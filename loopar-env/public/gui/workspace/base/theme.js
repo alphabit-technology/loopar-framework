@@ -28,24 +28,37 @@ export default class Theme extends HTML {
    binDataTarget() {
       document.addEventListener("click", (e) => {
          const closest = e.target.closest("[data-target]");
+         const dataset = closest?.dataset || {};
 
          if (closest) {
-            const target = document.querySelector(closest.dataset.target);
-            const closests = document.querySelectorAll("[data-target='" + closest.dataset.target + "']");
+            const target = document.querySelector(`[${dataset.attr}="${dataset.target}"]`);//closest.dataset.target);
+            
+            const dispatchers = document.querySelectorAll("[data-target='" + dataset.target + "']");
 
             target.classList.toggle("show");
 
-            //console.log(closests, target.classList.contains("show"))
-
-            closests.forEach((closest) => {
+            dispatchers.forEach((closest) => {
                if (closest.hasAttribute('aria-expanded')) {
                   closest.setAttribute('aria-expanded', target.classList.contains("show") ? 'true' : 'false');
                }
             });
+         }
+      });
+   }
 
-            /*if (closest.hasAttribute('aria-expanded')) {
-               closest.setAttribute('aria-expanded', closest.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
-            }*/
+   toggleMenu() {
+      const menu = this.state.menu;
+      this.setState({ menu: !menu, showBackdrop: !menu, collapseMenu: false });
+   }
+
+   toggleSidebar(e){
+      const sidebar = e.target.closest("[data-sidebar]");
+      const dispatchers = document.querySelectorAll(`[data-target="${sidebar.dataset.sidebar}"]`);
+      sidebar.classList.toggle("show");
+
+      dispatchers.forEach((closest) => {
+         if (closest.hasAttribute('aria-expanded')) {
+            closest.setAttribute('aria-expanded', sidebar.classList.contains("show") ? 'true' : 'false');
          }
       });
    }
