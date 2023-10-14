@@ -296,7 +296,6 @@ export default class CoreInstaller {
             
             if (doctype === "Document") {
                const data = await this.getDocumentData(this.app_name, document.module, document.name);
-               console.log("Inserting Document", document.name, data);
                const app = this.getAppFromData(installerData, document.module);
                data.__APP__ = app;
 
@@ -314,7 +313,7 @@ export default class CoreInstaller {
    }
 
    async insertRecord(Document, data, app = null, module = null) {
-      if (await loopar.db.getValue(Document, 'name', data.name, {ifNotFound: false, includeDeleted: true})) {
+      if (await loopar.db.getValue(Document, 'name', data.name, {ifNotFound: false})) {
          console.log("Updating.............", Document, data.name);
          const toUpdateDoc = await loopar.getDocument(Document, data.name, data, {app, module});
          toUpdateDoc.save({ validate: false });
