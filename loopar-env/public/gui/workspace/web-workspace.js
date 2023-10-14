@@ -88,7 +88,7 @@ export default class WebWorkspace extends BaseWorkspace {
                   image({ src: logo, alt: "Logo", className: "img-fluid", width: logoWidth })
                ]),
                div({ className: "ml-auto order-lg-1" }, [
-                  StripeComponent({
+                  /*StripeComponent({
                      buttonClassName: "navbar-btn btn btn-subtle-success ml-auto order-lg-2 mr-1",
                      meta: {
                         data: {
@@ -108,9 +108,19 @@ export default class WebWorkspace extends BaseWorkspace {
                            }
                         }
                      }
-                  }),
-                  user ? a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/desk", redirect: true }, "Desk") :
+                  }),*/
+                  webApp.stripe_link_donation ?
+                  a({
+                     className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2 mr-1",
+                     href: webApp.stripe_link_donation,
+                  }, [
+                     "Donate",
+                  ]) : null,
+                  //https://buy.stripe.com/test_bIY9CnaHu4ee7dK7ss
+                  webApp.login_button ? [ 
+                     user ? a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/desk", redirect: true }, "Desk") :
                      a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/auth/login/login", redirect: true }, "Login"),
+                  ] : null,
                   a({
                      className: "navbar-btn btn btn-subtle-secondary ml-auto order-lg-2", 
                      onClick: () => {

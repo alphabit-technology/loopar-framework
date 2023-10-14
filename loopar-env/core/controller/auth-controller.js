@@ -21,7 +21,7 @@ export default class AuthController {
 
    isAuthenticated() {
       return new Promise(async resolve => {
-         const execute_action = (method, message, url) => {
+         const executeAction = (method, message, url) => {
             if (method === AJAX) {
                loopar.throw(message);
             } else {
@@ -34,29 +34,30 @@ export default class AuthController {
             const user = loopar.getUser(this.req.session.user.name);
 
             if (user && user.name !== 'Administrator' && user.disabled) {
-               execute_action(this.req.method, 'Not permitted', '/auth/login/login');
+               executeAction(this.req.method, 'Not permitted', '/auth/login/login');
                resolve(false);
                return;
             }
 
             if (this.isLoginAction) {
-               execute_action(this.method, 'You are already logged in, refresh this page', '/core/desk/view');
+               executeAction(this.method, 'You are already logged in, refresh this page', '/core/desk/view');
                resolve(false);
             } else if (this.isEnableAction) {
                resolve(true);
             } else {
-               execute_action(this.method, 'Action not valid in Desk App', '/core/desk/view');
+               executeAction(this.method, 'Action not valid in Desk App', '/core/desk/view');
                resolve(false);
             }
          } else if (this.isLoginAction && (this.isFreeAction || this.isEnableAction)) {
             resolve(true);
          } else if (this.free_access && this.workspace !== 'desk') {
             resolve(true);
-         } else {
-            execute_action(this.method, 'Your session has ended, please log in again.', '/auth/login/login');
+         } else if(this.isFreeAction) {
+            resolve(true);
+         }else{
+            executeAction(this.method, 'Your session has ended, please log in again.', '/auth/login/login');
             resolve(false);
          }
-
       });
    }
 

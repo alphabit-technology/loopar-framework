@@ -17,7 +17,7 @@ export default class CoreDocument {
       return this.#fields;
    }
 
-   onLoad() {
+   async onLoad() {
 
    }
 
@@ -64,7 +64,7 @@ export default class CoreDocument {
       }
 
       await this.setApp();
-      this.onLoad();
+      await this.onLoad();
    }
 
    async getConnectedDocuments() {
