@@ -296,6 +296,7 @@ export default class CoreInstaller {
             
             if (doctype === "Document") {
                const data = await this.getDocumentData(this.app_name, document.module, document.name);
+               console.log("Inserting Document", document.name, data);
                const app = this.getAppFromData(installerData, document.module);
                data.__APP__ = app;
 
