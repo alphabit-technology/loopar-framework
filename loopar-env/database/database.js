@@ -488,6 +488,7 @@ export default class DataBase {
 
    async makeTable(name, fields) {
       const tableQuery = await this.alterTableQueryBuild(name, fields, !loopar.installing);
+      console.log("Make table query", tableQuery);
       await this.execute(tableQuery, false);
    }
 
