@@ -487,14 +487,13 @@ export default class DataBase {
    }
 
    async makeTable(name, fields) {
-      const tableQuery = await this.alterTableQueryBuild(name, fields, !loopar.installing);
-      console.log("Make table query", tableQuery);
+      const tableQuery = await this.alterTableQueryBuild(name, fields, (loopar.databaseInitialized && loopar.frameworkInstalled));
       await this.execute(tableQuery, false);
    }
 
-   async alterTableQueryBuild(document, fields = {}, check_if_exists = true) {
+   async alterTableQueryBuild(document, fields = {}, checkIfExists = true) {
       const TABLE = this.tableName(document);
-      const [exist, hasPk] = check_if_exists ? [await this.count(document), await this.hasPk(document)] : [false, false];
+      const [exist, hasPk] = checkIfExists ? [await this.count(document), await this.hasPk(document)] : [false, false];
 
       return new Promise(resolve => {
          if (exist) {
