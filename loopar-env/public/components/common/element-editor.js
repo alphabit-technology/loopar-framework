@@ -18,6 +18,11 @@ export class ElementEditorClass extends DivClass {
    }
 
    get dataElements() {
+      console.log(this.connectedElement);
+      return [...this.#dataElements(), ...(this.connectedElement || {}).dataElements || []];
+   }
+
+   #dataElements() {
       const previewProps = {}
       const animationDuration = this.state.data.aos_animation_duration || 2000;
 
@@ -80,24 +85,6 @@ export class ElementEditorClass extends DivClass {
                },
                action: { element: INPUT },
                options: { element: TEXTAREA },
-
-               file_info1: Divider({
-                  style: {
-                     marginTop: 10,
-                     marginBottom: 0,
-                     color: 'red'
-                  },
-                  label: "For File Input Only"
-               }),
-               accept: { element: INPUT },
-               multiple: { element: SWITCH },
-               file_info2: Divider({
-                  style: {
-                     marginTop: 0,
-                     marginBottom: 0,
-                  },
-                  label: ""
-               }),
                not_validate_type: { element: SWITCH },
                required: { element: SWITCH },
                unique: { element: SWITCH },

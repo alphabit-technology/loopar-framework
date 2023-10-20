@@ -109,13 +109,13 @@ export default class WebWorkspace extends BaseWorkspace {
                         }
                      }
                   }),*/
-                  webApp.stripe_link_donation ?
+                  /*webApp.stripe_link_donation ?
                   a({
                      className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2 mr-1",
                      href: webApp.stripe_link_donation,
                   }, [
                      "Donate",
-                  ]) : null,
+                  ]) : null,*/
                   //https://buy.stripe.com/test_bIY9CnaHu4ee7dK7ss
                   webApp.login_button ? [ 
                      user ? a({ className: "navbar-btn btn btn-subtle-success ml-auto order-lg-2", href: "/desk", redirect: true }, "Desk") :

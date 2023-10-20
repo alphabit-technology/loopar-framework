@@ -34,7 +34,7 @@ export default class Component extends HTML {
                   div({ className: "btn-group element-options" }, [
                      a({
                         className: "btn btn-default btn-xs element-title-action", onClick: () => {
-                           loopar.documentForm.editElement(this.props);
+                           loopar.documentForm.editElement(this);
                         }
                      }, [
                         i({ className: "oi oi-pencil" })

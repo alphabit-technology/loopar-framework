@@ -34,6 +34,7 @@ export const elementsDefinition = {
       //{element: "link", icon: "fa fa-link"},
       //{element: "list", icon: "fa fa-list"},
       { element: "stripe", icon: "fab fa-stripe" },
+      { element: "stripe_embebed", icon: "fab fa-stripe" },
       { element: "gallery", icon: "fa fa-images" },
    ],
    [FORM_ELEMENT]: [

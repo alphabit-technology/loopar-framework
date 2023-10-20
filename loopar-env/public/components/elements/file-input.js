@@ -259,4 +259,16 @@ export default class FileInput extends BaseInput {
    get mappedFiles() {
       return this.state.previews;
    }
+
+   get dataElements() {
+      return [
+         {
+            group: 'custom',
+            elements: {
+               accept: { element: INPUT },
+               multiple: { element: SWITCH },
+            }
+         }
+      ]
+   }
 }

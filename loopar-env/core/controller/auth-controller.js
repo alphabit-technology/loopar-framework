@@ -52,9 +52,9 @@ export default class AuthController {
             resolve(true);
          } else if (this.free_access && this.workspace !== 'desk') {
             resolve(true);
-         } else if(this.isFreeAction) {
+         }/* else if(this.isFreeAction) {
             resolve(true);
-         }else{
+         }*/else{
             executeAction(this.method, 'Your session has ended, please log in again.', '/auth/login/login');
             resolve(false);
          }

@@ -228,7 +228,7 @@ export default class CoreInstaller {
       const installerRoute = loopar.makePath('apps', this.app_name, 'installer.js');
 
       if (fileManage.existFileSync(installerRoute)) {
-         const InstallerModel = await fileManage.import_file(installerRoute);
+         const InstallerModel = await fileManage.importFile(installerRoute);
          new InstallerModel.default(this).install();
       } else {
          loopar.throw(`App ${this.app_name} not provide a installer model`);
