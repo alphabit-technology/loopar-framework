@@ -2,9 +2,11 @@ import Router from '/router/router.js';
 import { UiManage } from "./components/uui.js";
 import { http } from "/router/http.js";
 import * as Helpers from "/helper.js";
+import { scriptManager } from './components/script-manager.js';
 
 class Loopar extends Router {
    ui = new UiManage();
+   scriptManager = scriptManager;
    currentPageName = "";
    rootApp = null;
    workspace = WORKSPACE || "";
