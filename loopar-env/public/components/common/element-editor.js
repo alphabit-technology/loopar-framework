@@ -18,7 +18,6 @@ export class ElementEditorClass extends DivClass {
    }
 
    get dataElements() {
-      console.log(this.connectedElement);
       return [...this.#dataElements(), ...(this.connectedElement || {}).dataElements || []];
    }
 

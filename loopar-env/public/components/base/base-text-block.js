@@ -1,6 +1,15 @@
 import Component from "./component.js";
 export default class BaseTextBlock extends Component {
    defaultDescription = "I'm a awesome Text Block widget, you can customize in edit button in design mode.";
+   defaultElemtents = [
+      {
+         element: "h1",
+         data: {
+            text: "I'm a awesome Text Block widget, you can customize in edit button in design mode."
+         }
+      }
+   ]
+
    constructor(props) {
       super(props);
    }
@@ -18,5 +27,16 @@ export default class BaseTextBlock extends Component {
             }, true);
          }
       }, 100);
+   }
+
+   get elements() {
+      const meta = this.meta || {};
+
+      console.log("get elements", meta.elements);
+      if(meta.elements) return super.elements;
+
+      return (meta?.elements || []).map(el => {
+         return this.makeElement(el);
+      });
    }
 }

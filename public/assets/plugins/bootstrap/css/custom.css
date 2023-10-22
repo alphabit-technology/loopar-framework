@@ -223,6 +223,22 @@
 
 
 .page-inner.page-inner-fill{
-    min-height: 700px;
+    /*height: unset;*/
+    /*min-height: 768px;*/
     margin-right: unset;
+}
+
+@media screen and (max-height: 768px) {
+    .page-inner.page-inner-fill{
+        min-height: 768px;
+        /*min-height: 100vh;*/
+    }
+}
+
+@media screen and (min-height: 768px) {
+    .page-inner.page-inner-fill1{
+        /*min-height: 768px;*/
+        height: 100dvh;
+        /*min-height: 100vh;*/
+    }
 }
