@@ -18,13 +18,14 @@ class DeskGUIClass extends React.Component {
 
    get meta() {
       return this.docRef.props.meta;
-   }
+   } 
 
    render() {
       const { sidebarOpen } = this.state;
+      console.log("render desk gui")
       return [
          div({ className: `page has-sidebar has-sidebar-open ${sidebarOpen ? " has-sidebar-expand-xl has-sidebar-open" : ""}` }, [
-            div({ className: `page-inner page-inner-fill`, style: { marginRight: "unset" } }, [
+            div({ className: `page-inner page-inner-fill`}, [
                div({ className: 'message' }, [
                   (this.docRef.hasHeader) ? div({ className: 'message-header', style: { width: "200%" } }, [
                      Header({

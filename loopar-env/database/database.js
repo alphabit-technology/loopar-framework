@@ -23,7 +23,10 @@ export default class DataBase {
    }
 
    async initialize() {
-      this.#connection = new mysql.createConnection(this.dbConfig);
+      this.pool  = mysql.createPool(
+         this.dbConfig
+      );
+      //this.#connection = new mysql.createConnection(this.dbConfig);
    }
 
    dbFielTypeCanHaveDefaultValue(fieldType) {
@@ -62,7 +65,10 @@ export default class DataBase {
    }
 
    get connection() {
-      return this.#connection;
+      return this.pool.getConnection(function(err, connection) {
+         if (err) throw err; // not connected!
+         return connection;
+      });
    }
 
    start() {
@@ -141,9 +147,9 @@ export default class DataBase {
       loopar.throw(error);
    }
 
-   execute(query = this.query, in_transaction = true) {
+   execute(query = this.query, inTransaction = true) {
       return new Promise(async (resolve, reject) => {
-         if (this.transaction && in_transaction) {
+         if (this.transaction && inTransaction) {
             this.transactions.push(query);
             resolve();
          } else {
