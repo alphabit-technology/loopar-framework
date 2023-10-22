@@ -18,6 +18,7 @@ export class ElementEditorClass extends DivClass {
    }
 
    get dataElements() {
+      
       return [...this.#dataElements(), ...(this.connectedElement || {}).dataElements || []];
    }
 
