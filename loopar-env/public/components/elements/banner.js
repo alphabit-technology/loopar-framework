@@ -12,7 +12,6 @@ export default class Banner extends BaseTextBlock {
    }
 
    render(){
-      console.log("render banner");
       const {label, description, action, color_overlay={}} = this.props.meta.data;
       const children = this.props.children;
       const {color, alpha} = color_overlay;

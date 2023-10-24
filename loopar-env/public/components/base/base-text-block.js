@@ -29,14 +29,13 @@ export default class BaseTextBlock extends Component {
       }, 100);
    }
 
-   get elements() {
+   /*get elements() {
       const meta = this.meta || {};
 
-      console.log("get elements", meta.elements);
       if(meta.elements) return super.elements;
 
       return (meta?.elements || []).map(el => {
          return this.makeElement(el);
       });
-   }
+   }*/
 }
