@@ -1,7 +1,6 @@
 import { div, span, button, ul, li, a, image, section, hr, h5, p, aside, header, nav, h6 } from "/components/elements.js";
 import BaseWorkspace from "./base/base-workspace.js";
 import { loopar } from "../../loopar.js";
-import { StripeComponent } from "../../components/elements/stripe.js";
 import { fileManager } from "../../components/tools/file-manager.js";
 
 export default class WebWorkspace extends BaseWorkspace {

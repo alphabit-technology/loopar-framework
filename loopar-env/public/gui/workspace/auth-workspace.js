@@ -39,7 +39,6 @@ export default class AuthWorkspace extends BaseWorkspace {
 
    componentDidMount(){
       super.componentDidMount();
-      AOS.init();
       particlesJS.load('announcement', '/assets/particles/particles.json')
    }
 }
