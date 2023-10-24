@@ -23,10 +23,22 @@ export default class DataBase {
    }
 
    async initialize() {
-      this.pool  = mysql.createPool(
+      /*this.pool  = mysql.createPool(
          this.dbConfig
       );
-      //this.#connection = new mysql.createConnection(this.dbConfig);
+
+      this.pool.end();
+
+      this.pool.on('connection', function (connection) {
+         connection.on('error', function (err) {
+            console.error(new Date(), 'MySQL error', err.code);
+         });
+         connection.on('close', function (err) {
+            console.error(new Date(), 'MySQL close', err);
+         });
+      });*/
+
+      this.#connection = new mysql.createConnection(this.dbConfig);
    }
 
    dbFielTypeCanHaveDefaultValue(fieldType) {
@@ -64,11 +76,14 @@ export default class DataBase {
       return new mysql.createConnection({ ...this.dbConfig, ...{ database: 'information_schema' } });
    }
 
-   get connection() {
-      return this.pool.getConnection(function(err, connection) {
-         if (err) throw err; // not connected!
-         return connection;
-      });
+   connection() {
+      return this.#connection || new mysql.createConnection(this.dbConfig);
+      /*return new Promise(resolve => {
+         this.pool.getConnection((err, connection) => {
+            if (err) throw err; // not connected!
+            resolve(connection);
+         });
+      });*/
    }
 
    start() {
@@ -100,7 +115,7 @@ export default class DataBase {
 
    async endTransaction() {
       this.transaction = false;
-      const connection = this.connection;
+      const connection = await this.connection();
 
       const execute = query => {
          return new Promise(resolve => {
@@ -154,7 +169,7 @@ export default class DataBase {
             resolve();
          } else {
             try {
-               const connection = this.connection;
+               const connection = await this.connection();
 
                connection.query(query, (err, result) => {
                   err ? reject(err) : resolve(result);
@@ -216,8 +231,8 @@ export default class DataBase {
       return "WHERE(`from_document` = 'Menu' AND `from_id` = 8) AND ((`from_document` = 'Menu' AND `from_id` = 8) OR (to_document BETWEEN 'a' AND 'z' AND to_document IN('a', 'z') AND CONCAT(`to_document`, `from_id`) LIKE '%TEST%'))"
    }
 
-   WHERE(__CONDITIONS__ = null) {
-      const con = this.connection;
+   async WHERE(__CONDITIONS__ = null) {
+      const con = await this.connection();
 
       const WHERE = (__CONDITIONS__) => {
          return Object.entries(__CONDITIONS__ || {}).reduce((acc, [operand, DEF]) => {
@@ -292,14 +307,14 @@ export default class DataBase {
    }
 
    async #escape(value, connection = null) {
-      connection = connection || this.connection;
+      connection = connection || await this.connection();
 
       return connection.escape(value);
    }
 
    async insertRow(document, data = {}, isSingle = false) {
       return new Promise(async (resolve, reject) => {
-         const con = this.connection;
+         const con = await this.connection();
 
          if (isSingle) {
             const fields = ['name', 'document', 'field', 'value'];
@@ -310,7 +325,7 @@ export default class DataBase {
                return acc;
             }, []);
 
-            const singleTable = this.tableName('Document Single Values');
+            const singleTable = await this.tableName('Document Single Values');
 
             const onDuplicateKey = fields.map(field => `${field} = VALUES(${field})`).join(',');
 
@@ -318,7 +333,7 @@ export default class DataBase {
 
             this.execute(query, false).then(resolve).catch(reject);
          } else {
-            con.query(`INSERT INTO ${this.tableName(document)} SET ?`, data, function (error, results) {
+            con.query(`INSERT INTO ${await this.tableName(document)} SET ?`, data, function (error, results) {
                if (error) {
                   reject(error);
                } else {
@@ -329,8 +344,8 @@ export default class DataBase {
       });
    }
 
-   mergeData(data) {
-      const connection = this.connection;
+   async mergeData(data) {
+      const connection = await this.connection();
 
       return Object.keys(data).map(x => {
          return `${connection.escapeId(x)}=${connection.escape(data[x])}`
@@ -342,7 +357,7 @@ export default class DataBase {
    }
 
    async #setValueTo(document, field, value, documentName, {distinctToId = null, ifNotFound = "throw"}={}) {
-      const connection = this.connection;
+      const connection = await this.connection();
 
       const condition = {
          ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
@@ -354,10 +369,10 @@ export default class DataBase {
          }
       }
 
-      const where = this.WHERE(condition);
+      const where = await this.WHERE(condition);
 
       const query = `
-         UPDATE ${this.tableName(document)} 
+         UPDATE ${await this.tableName(document)}
          SET ${connection.escapeId(field)}=${connection.escape(value)} 
          WHERE 1=1 ${where}
       `;
@@ -372,8 +387,9 @@ export default class DataBase {
    }
 
    async updateRow(document, data = {}, name, isSingle = false) {
-      const connection = this.connection;
-      const query = `UPDATE ${this.tableName(document)} SET ${this.mergeData(data)} WHERE \`name\`=${connection.escape(name)}`;
+      const connection = await this.connection();
+      data = await this.mergeData(data);
+      const query = `UPDATE ${await this.tableName(document)} SET ${data} WHERE \`name\`=${connection.escape(name)}`;
 
       return new Promise((resolve, reject) => {
          this.execute(query).then(result => {
@@ -386,10 +402,10 @@ export default class DataBase {
 
    async deleteRow(document, name, sofDelete = true) {
       const deletedName = `${name}-${loopar.utils.randomString(20)}`;
-      let query = `DELETE FROM ${this.tableName(document)} WHERE \`name\` = '${name}'`;
+      let query = `DELETE FROM ${await this.tableName(document)} WHERE \`name\` = '${name}'`;
       if(sofDelete) {
          query = `
-         UPDATE ${this.tableName(document)} 
+         UPDATE ${await this.tableName(document)}
          SET __document_status__ = 'Deleted', name='${deletedName}'
          WHERE \`name\` = '${name}'`;
       }
@@ -486,10 +502,10 @@ export default class DataBase {
       }, [])
    }
 
-   tableName(document, like_param = false) {
-      const connection = this.connection;
+   async tableName(document, likeParam = false) {
+      const connection = await this.connection();
       const table = `${this.tablePrefix}${document}`;
-      return like_param ? connection.escape(table) : connection.escapeId(table);
+      return likeParam ? connection.escape(table) : connection.escapeId(table);
    }
 
    async makeTable(name, fields) {
@@ -498,7 +514,7 @@ export default class DataBase {
    }
 
    async alterTableQueryBuild(document, fields = {}, checkIfExists = true) {
-      const TABLE = this.tableName(document);
+      const TABLE = await this.tableName(document);
       const [exist, hasPk] = checkIfExists ? [await this.count(document), await this.hasPk(document)] : [false, false];
 
       return new Promise(resolve => {
@@ -526,7 +542,6 @@ export default class DataBase {
    }
 
    async getValue(document, field, documentName, {distinctToId = null, ifNotFound = "throw", includeDeleted = false}={}) {
-
       try {
          const condition = {
             ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
@@ -564,20 +579,22 @@ export default class DataBase {
    }
 
    async getList(document, fields = ['*'], condition = null, {isSingle = false, all = false, includeDeleted=false} = {}) {
-      return new Promise((resolve, reject) => {
+      //return new Promise(async (resolve, reject) => {
          if (isSingle) {
-            const singleTable = this.tableName('Document Single Values');
-            this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false).then(result => {
+            const singleTable = await this.tableName('Document Single Values');
+            const result = await this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false);
+            return [result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {})];
+            /*this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false).then(result => {
                const singleValues = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
 
                resolve([singleValues]);
             }).catch(err => {
                reject(err);
-            });
+            });*/
          } else {
-            const tableName = this.tableName(document, false);
-            fields = this.#makeFields(fields);
-            condition = this.WHERE(condition);
+            const tableName = await this.tableName(document, false);
+            fields = await this.makeFields(fields);
+            condition = await this.WHERE(condition);
 
             const sofDelete = includeDeleted ? "WHERE 1=1" : "WHERE `__document_status__` <> 'Deleted'";
             let query = `SELECT ${fields} FROM ${tableName} ${sofDelete} ${condition}`;
@@ -590,25 +607,30 @@ export default class DataBase {
                query += ` LIMIT ${PAGE_SIZE} OFFSET ${OFFSET}`;
             }
 
-            this.execute(query, false).then(data => {
+            return await this.execute(query, false);
+            //console.log("r", r)
+
+            //return r;
+            /*this.execute(query, false).then(data => {
                resolve(data);
             }).catch(error => {
                reject(error);
-            });
+            });*/
          }
-      });
+      //});
    }
 
    async getAll(document, fields = ['*'], condition = null, {isSingle = false}={}) {
       return await this.getList(document, fields, condition, {isSingle, all: true});
    }
 
-   #makeFields(fields = ['*']) {
-      return fields.map(field => field === '*' ? field : this.connection.escapeId(field)).join(',');
+   async makeFields(fields = ['*']) {
+      const connection = await this.connection();
+      return fields.map(field => field === '*' ? field : connection.escapeId(field)).join(',');
    }
 
    async hasPk(document) {
-      const table = this.tableName(document, true);
+      const table = await this.tableName(document, true);
       return new Promise(async resolve => {
          this.execute(`SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`table_name\` = ${table}`, false).then(res => {
             resolve(res[0].count);
@@ -617,7 +639,7 @@ export default class DataBase {
    }
 
    async count(document) {
-      const table = this.tableName(document, true);
+      const table = await this.tableName(document, true);
       return new Promise(async resolve => {
          this.execute(`SELECT COUNT(table_name) as count FROM INFORMATION_SCHEMA.TABLES WHERE \`table_name\` = ${table}`, false).then(res => {
             resolve(res[0].count);
@@ -646,17 +668,20 @@ export default class DataBase {
             }
          }
 
-         this.execute(`SELECT COUNT(*) as count FROM ${this.tableName(document)} WHERE 1=1 ${this.WHERE(c) }`, false).then(async res => {
+         const WHERE = await this.WHERE(c)
+
+         this.execute(`SELECT COUNT(*) as count FROM ${await this.tableName(document)} WHERE 1=1 ${ WHERE }`, false).then(async res => {
             resolve(res[0].count);
          });
       });
    }
 
    async testDatabase() {
+      const connection = await this.connection();
       return new Promise(resolve => {
-         if (this.connection.state === 'authenticated') return resolve(true);
+         if (connection.state === 'authenticated') return resolve(true);
 
-         this.connection.connect(err => {
+         connection.connect(err => {
             err && console.log(err);
 
             return resolve(!err);
@@ -676,17 +701,22 @@ export default class DataBase {
       });
    }
 
-   testFramework() {
-      const tables_test = ['Document', 'Module', 'Module Group'].map(table => this.tableName(table, true));
+   async testFramework() {
+      const tablesTest = [];
+      for(const table of ['Document', 'Module', 'Module Group']){
+         tablesTest.push(await this.tableName(table, true))
+      }
+      //
+      //const tables_test = ['Document', 'Module', 'Module Group'].map(table => this.tableName(table, true));
 
       const q = `
 SELECT COUNT(table_name) as count
 FROM INFORMATION_SCHEMA.TABLES 
-WHERE \`table_name\` in (${tables_test.join(',')}) AND \`table_schema\` = '${this.database}'`;
+WHERE \`table_name\` in (${tablesTest.join(',')}) AND \`table_schema\` = '${this.database}'`;
 
       return new Promise(async resolve => {
          this.execute(q, false).then(res => {
-            return resolve(res[0].count === tables_test.length);
+            return resolve(res[0].count === tablesTest.length);
          });
       });
    }

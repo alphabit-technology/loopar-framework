@@ -165,6 +165,7 @@ export default class Select extends BaseInput {
 
    componentDidMount(){
       super.componentDidMount();
+      loopar.scriptManager.loadStylesheet("/assets/plugins/bootstrap/css/select2");
 
       this.input.addClass('select2-hidden-accessible');
       //this.label.addClass('control-label hide');

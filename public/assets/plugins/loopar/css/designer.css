@@ -253,13 +253,13 @@
     text-align: center;
 }
 
-.btn-app {
+.btn-app-container .btn-app {
     border-radius: 3px !important;
     background-color: var(--light) !important;
     border: 1px solid #42425da9 !important;
     color: var(--dark) !important;
     font-size: 12px !important;
-    height: 60px;
+    height: 100%;
     margin: 0 0 3% 3% !important;
     min-width: 29% !important;
     padding: 15px 5px !important;
@@ -267,7 +267,7 @@
     text-align: center !important;
     width: 100% !important;
 }
-.btn-app i{
+.btn-app-container .btn-app i{
     display: block;
     font-size: large;
 }

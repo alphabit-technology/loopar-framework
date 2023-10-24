@@ -61,17 +61,15 @@ export class Loopar {
    }
 
    async initialize() {
-      console.log('Initializing Loopar...');
-      
+      console.log('......Initializing Loopar.......');
       this.utils = Helpers;
       await this.GlobalEnvironment();
-      
       await this.#loadConfig();
       this.db = new DataBase();
+      
       //this.db = new DataBaseSqlLite();
       await this.db.initialize();
       await this.makeConfig();
-      
    }
 
    async #loadConfig(data = null) {
@@ -96,7 +94,6 @@ export class Loopar {
 
       const writeModules = async (data) => {
          this.db.pagination = null;
-
          const groupList = await this.db.getList('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
 
          for (const g of groupList) {
@@ -145,18 +142,18 @@ export class Loopar {
       data.databaseInitialized = data.databaseServerInitialized && await this.db.testDatabase();
       data.frameworkInstalled = data.databaseInitialized && await this.db.testFramework();
 
+
       if (data.frameworkInstalled) {
          data.baseDocumentFields = this.#makeDoctypeFields(
             JSON.parse(await this.db.getValue('Document', 'doc_structure', 'Document')) || []
          ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
 
          await writeModules(data);
+         
          this.defaultWebApp = await this.db.getValue('App', 'name', { '=': { default_app: 1 } });
       } else {
          await writeFile(data);
       }
-
-      //
    }
 
    async #writeDefaultSSettings() {

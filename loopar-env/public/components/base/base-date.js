@@ -1,4 +1,5 @@
 import {BaseInput} from "./base-input.js";
+import {loopar} from "/loopar.js";
 
 export default class BaseDate extends BaseInput {
    constructor(props) {
@@ -8,14 +9,20 @@ export default class BaseDate extends BaseInput {
    componentDidMount() {
       super.componentDidMount();
 
-      this.dtsel = new dtsel.DTS(this.input.node, {
-         direction: 'BOTTOM',
-         showTime: this.type === 'datetime' || this.type === 'time',
-         showDate: this.type !== 'time',
-         onUpdateInput: (e) => {
-            e.preventDefault();
-            this.handleInputChange({target: {value: e.value}});
-         }
+      loopar.scriptManager.loadStylesheet("/assets/plugins/datetime/css/dt");
+
+      loopar.scriptManager.loadScript("/assets/plugins/datetime/js/dt", () => {
+         this.dtsel = new dtsel.DTS(this.input.node, {
+            direction: 'BOTTOM',
+            showTime: this.type === 'datetime' || this.type === 'time',
+            showDate: this.type !== 'time',
+            onUpdateInput: (e) => {
+               e.preventDefault();
+               this.handleInputChange({target: {value: e.value}});
+            }
+         });
+
+         this.setState({})
       });
    }
 
@@ -24,7 +31,7 @@ export default class BaseDate extends BaseInput {
 
       const formattedValue = dayjs(this.props.meta.data.value).format(this.props.format);
 
-      if (prevProps.meta.data.value !== formattedValue){
+      if (prevProps.meta.data.value !== formattedValue && this.dtsel){
          this.props.meta.data.value = formattedValue;
          this.dtsel.inputElem.value = formattedValue;
 

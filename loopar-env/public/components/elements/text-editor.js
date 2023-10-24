@@ -1,3 +1,4 @@
+import { loopar } from "/loopar.js";
 import {BaseInput} from "/components/base/base-input.js";
 import {div} from "/components/elements.js";
 
@@ -37,7 +38,13 @@ export default class TextEditor extends BaseInput {
 
    componentDidMount() {
       super.componentDidMount();
+      loopar.scriptManager.loadStylesheet("/assets/plugins/quill/quill.snow");  
+      loopar.scriptManager.loadScript("/assets/plugins/quill/quill.min", () => {
+         this.initEditor();
+      });
+   }
 
+   initEditor(){
       this.input.addClass('d-none');
       this.label.addClass('d-none');
 
@@ -49,7 +56,7 @@ export default class TextEditor extends BaseInput {
       });
 
       this.editor.on('text-change', (delta, oldDelta, source) => {
-         this.handleInputChange({ target: { value: this.editor.getContents()}});
+         this.handleInputChange({ target: { value: this.editor.getContents() } });
       });
 
       this.editor.setContents(JSON.parse(this.data.value || "{}"));

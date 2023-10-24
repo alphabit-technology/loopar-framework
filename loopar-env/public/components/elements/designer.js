@@ -281,6 +281,7 @@ export default class Designer extends Component {
 
    componentDidMount() {
       super.componentDidMount();
+      loopar.scriptManager.loadStylesheet("/assets/plugins/loopar/css/designer");
       if (this.props.fieldDesigner) loopar.Designer = this;
    }
 
