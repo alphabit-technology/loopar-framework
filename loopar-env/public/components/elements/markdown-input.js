@@ -40,9 +40,9 @@ export default class MarkdownInput extends BaseInput {
 
    val(value) {
       if (!value) {
-         return this.editor.value();
+         return this.editor?.value();
       } else {
-         this.editor.value(value);
+         this.editor?.value(value);
       }
    }
 }

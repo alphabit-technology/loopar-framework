@@ -37,7 +37,7 @@ class ScriptManager {
           script.src = src + ".js";
           script.async = options.async;
           script.onload = () => {
-            this.scripts[src].callbacks.forEach((callback, index) => {
+            this.scripts[src].callbacks.forEach((callback) => {
               callback();
             });
 

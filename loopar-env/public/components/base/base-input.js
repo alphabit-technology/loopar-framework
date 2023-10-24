@@ -102,7 +102,9 @@ export class BaseInput extends Div {
          }, data.label),
          elements({
             key: data.id,
-            ref: input => this.input = input,
+            ref: input => {
+               this.input ??= input
+            },
             value: (this.inputType === "file" ? [] : data.value),
             type: [CHECKBOX, SWITCH, PASSWORD].includes(this.props.element) ? this.inputType : (data.format || this.inputType),
             name: data.name || data.id,

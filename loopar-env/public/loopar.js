@@ -148,11 +148,11 @@ class Loopar extends Router {
    }
 
    require(src, callback, options = { async: true}) {
-      return this.scriptManager.loadScript(src, callback, options);
+      this.scriptManager.loadScript(src, callback, options);
    }
 
    includeCSS(src, callback) {
-      return this.scriptManager.loadStylesheet(src, callback);
+      this.scriptManager.loadStylesheet(src, callback);
    }
 }
 
