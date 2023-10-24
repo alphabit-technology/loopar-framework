@@ -17,13 +17,12 @@ export default class Markdown extends BaseInput {
 
    componentDidMount() {
       super.componentDidMount();
-      loopar.scriptManager.loadStylesheet("/assets/plugins/simplemde/css/simplemde.min");
-      loopar.scriptManager.loadScript("/assets/plugins/simplemde/js/simplemde.min", () => {
-         const data = this.props.meta.data;
-         //this.label.removeClass('d-block');
-         this.label.addClass('d-none');
-         this.input.addClass('d-none');
+      this.label.addClass('d-none');
+      this.input.addClass('d-none');
 
+      loopar.includeCSS("/assets/plugins/simplemde/css/simplemde.min");
+      loopar.require("/assets/plugins/simplemde/js/simplemde.min", () => {
+         const data = this.props.meta.data;
          this.css({ 'display': 'block' });
 
          if (this.props.designer) {

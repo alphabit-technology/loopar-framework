@@ -18,8 +18,8 @@ export default class MarkdownInput extends BaseInput {
 
    componentDidMount() {
       super.componentDidMount();
-      loopar.scriptManager.loadStylesheet("/assets/plugins/simplemde/css/simplemde.min.css");
-      loopar.scriptManager.loadScript("/assets/plugins/simplemde/js/simplemde.min.js", () => {
+      loopar.includeCSS("/assets/plugins/simplemde/css/simplemde.min");
+      loopar.require("/assets/plugins/simplemde/js/simplemde.min", () => {
          const data = this.data;
          this.input.addClass('d-none');
 

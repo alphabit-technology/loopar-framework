@@ -3,13 +3,6 @@ class ScriptManager {
         this.scripts = [];
     }
 
-    /*
-    const documentHeader = document.querySelector("head");
-      const script = document.createElement("script");
-      script.src = "https://js.stripe.com/v3/pricing-table.js";
-      script.async = true;
-      documentHeader.appendChild(script);*/
-
     loadStylesheet(href, callback) {
       return new Promise((resolve, reject) => {
         const existingLink = document.querySelector(`link[href="${href}.css"]`);
@@ -34,7 +27,7 @@ class ScriptManager {
       });
     }
 
-    loadScript(src, callback) {
+    loadScript(src, callback, options = { async: true}) {
       return new Promise((resolve, reject) => {
         const existingScript = document.querySelector(`script[src="${src}.js"]`);
         this.scripts[src] = this.scripts[src] || {loaded: false, callbacks: []};
@@ -42,7 +35,7 @@ class ScriptManager {
         const makeScript = () => {
           const script = document.createElement('script');
           script.src = src + ".js";
-          script.async = true;
+          script.async = options.async;
           script.onload = () => {
             this.scripts[src].callbacks.forEach((callback, index) => {
               callback();

@@ -146,6 +146,14 @@ class Loopar extends Router {
 
       return this.#loadedMeta[Document + action];
    }
+
+   require(src, callback, options = { async: true}) {
+      return this.scriptManager.loadScript(src, callback, options);
+   }
+
+   includeCSS(src, callback) {
+      return this.scriptManager.loadStylesheet(src, callback);
+   }
 }
 
 const loopar = new Loopar();

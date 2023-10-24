@@ -1,4 +1,5 @@
 import Component from "../base/component.js";
+import {loopar} from "/loopar.js";
 
 export default class StripeEmbebedClass extends Component {
    constructor(props) {
@@ -27,12 +28,10 @@ export default class StripeEmbebedClass extends Component {
 
    componentDidMount() {
       super.componentDidMount();
-      
-      const documentHeader = document.querySelector("head");
-      const script = document.createElement("script");
-      script.src = "https://js.stripe.com/v3/pricing-table.js";
-      script.async = true;
-      documentHeader.appendChild(script);
+
+      loopar.require("https://js.stripe.com/v3/pricing-table", () => {
+         this.loadStripe();
+      });
    }
 
    get dataElements() {

@@ -22,7 +22,6 @@ class DeskGUIClass extends React.Component {
 
    render() {
       const { sidebarOpen } = this.state;
-      console.log("render desk gui")
       return [
          div({ className: `page has-sidebar has-sidebar-open ${sidebarOpen ? " has-sidebar-expand-xl has-sidebar-open" : ""}` }, [
             div({ className: `page-inner page-inner-fill`}, [

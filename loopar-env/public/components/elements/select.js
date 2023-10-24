@@ -35,9 +35,7 @@ export default class Select extends BaseInput {
       const baseClass = 'select2-container';
       const openedClass = isOpen ? baseClass + '--open' : '';
       const focusClass = focus ? baseClass + '--focus' : '';
-
       
-
       return super.render([
          div({
             className: `select-2 select-${isOpen ? 'opened' : 'closed'}`,
@@ -165,19 +163,18 @@ export default class Select extends BaseInput {
 
    componentDidMount(){
       super.componentDidMount();
-      loopar.scriptManager.loadStylesheet("/assets/plugins/bootstrap/css/select2");
-
-      this.input.addClass('select2-hidden-accessible');
-      //this.label.addClass('control-label hide');
-
-      if(this.state.simpleInput){
+      if (this.state.simpleInput) {
          this.input.hide();
          this.label.hide();
       }
 
-      if(this.state.withoutLabel){
-         this.label.addClass('select2-hidden-accessible');
-      }
+      loopar.includeCSS("/assets/plugins/bootstrap/css/select2", () => {
+         this.input.addClass('select2-hidden-accessible');
+
+         if(this.state.withoutLabel){
+            this.label.addClass('select2-hidden-accessible');
+         }
+      });
    }
 
    toggleClose() {
