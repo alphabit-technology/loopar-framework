@@ -222,7 +222,7 @@ export default class CoreDocument {
             }
          }
 
-         if(!loopar.installer) await updateChild();
+         if(!loopar.installing) await updateChild();
 
          /*const updateConnections = async () => {
             if(["Document History"].includes(this.__DOCTYPE__.name)) return;
