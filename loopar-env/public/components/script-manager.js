@@ -55,11 +55,11 @@ class ScriptManager {
           if(this.scripts[src].loaded){
             callback && callback();
           }else{
-            this.scripts[src].callbacks.push(callback);
+            callback && this.scripts[src].callbacks.push(callback);
           }
           resolve();
         }else{
-          this.scripts[src].callbacks.push(callback);
+          callback && this.scripts[src].callbacks.push(callback);
           makeScript();
         }
       });

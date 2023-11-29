@@ -94,12 +94,28 @@ class FileManager {
       return span({className: TYPE.icon + " fa-2x" + " text-" + TYPE.color});
    }
 
+   isURL(str) {
+      var regex = /^(https?:\/\/)?([\w-]+\.)+([a-z]{2,})(\/\S*)?$/;
+      return regex.test(str);
+   }
+
    getMappedFiles(files = []) {
       /*if(files instanceof FileList){
          return files;
       }*/
+
       if (typeof files === "string" && !elementManage.isJSON(files)) {
-         files = [files]
+         if(this.isURL(files)){
+            files = [{
+               name: files,
+               src: files,
+               type: "image",
+               extention: "png",
+               previewSrc: files
+            }]
+         }else{
+            files = [files];
+         }
       }
 
       if (files instanceof File) {

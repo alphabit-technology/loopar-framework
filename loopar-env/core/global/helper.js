@@ -192,6 +192,32 @@ function fieldList (fields){
    }, []);
 }
 
+function rgba(hex, alpha = 1){
+   let base = typeof hex == "object" ? hex : isJSON(hex) ? JSONparse(hex) : hex || {};
+   hex = base.color || hex;
+   alpha = base.alpha || alpha;
+
+   try {
+      const hexRegex = /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+      if (!hexRegex.test(hex)) {
+         throw new Error("Formato hexadecimal de color incorrecto");
+      }
+      hex = hex.replace(/^#/, '');
+
+      const bigint = parseInt(hex, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+
+      const a = alpha || 1;
+
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+   } catch (error) {
+      return null;
+   }
+   
+}
+
 export {
    Capitalize,
    UPPERCASE,
@@ -209,5 +235,6 @@ export {
    camelCase,
    nullValue,
    isJSON,
-   fieldList
+   fieldList,
+   rgba
 }

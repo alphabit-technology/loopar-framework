@@ -12,7 +12,7 @@ export default class Element extends HTML {
 
    render(content = null) {
       return super.render([
-         this.options.has_title ? elementTitle(this) : null,
+         this.options.hasTitle ? elementTitle(this) : null,
          content || this.state.children || this.props.children || [],
          h1(this.data.description || "Test")
       ]);

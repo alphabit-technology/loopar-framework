@@ -4,6 +4,7 @@ import GlobalContext from "/components/global-context.js";
 import { loopar } from "/loopar.js";
 import { elementManage } from "../element-manage.js";
 import { Modal } from "/components/common/dialog.js";
+import { fileManager } from "../tools/file-manager.js";
 
 export default class Designer extends Component {
    blockComponent = true;
@@ -20,7 +21,8 @@ export default class Designer extends Component {
          meta: props.meta,
          collapsed: false,
          IAGenerator: false,
-         IAOperation: false
+         IAOperation: false,
+         initialized: false
       }
    }
 
@@ -41,7 +43,7 @@ export default class Designer extends Component {
                            onClick: (e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              this.props.docRef.toggleDesign("designer");
+                              this.props.docRef?.toggleDesign("designer");
                            }
                         }, [
                            i({ className: "oi oi-brush mr-2" }),
@@ -159,7 +161,7 @@ export default class Designer extends Component {
          const elements = evaluateResponse(r.message, "[", "]");
 
          if (elementManage.isJSON(elements)) {
-            this.#elements = JSON.parse(elements);
+            this.makeElements(JSON.parse(elements));
          } else {
             this.setState({
                IAOperation: false
@@ -186,9 +188,11 @@ export default class Designer extends Component {
       return super.render([
          div({ className: "card-header pb-1" }, [
             this.header()
-            ///h4({className: "card-title"}, data.label),
          ]),
-         div({ style: { marginBottom: "-20px" } }, [
+         div({
+            className: this.props.designer ? `p-2` : "",
+            style: { marginBottom: "-20px" }
+         }, [
             Tabs({
                meta: { data: { name: this.props.meta.data.name + "_designer_tab" } },
                style: { paddingBottom: 0 },
@@ -198,7 +202,8 @@ export default class Designer extends Component {
                {
                   data: {
                      label: h6([span({ className: "oi oi-brush mr-2" }), "Designer"]),
-                     name: this.props.meta.data.name + "_designer-tab"
+                     name: this.props.meta.data.name + "_designer-tab",
+                     key: this.props.meta.data.name + "_designer-tab"
                   },
                   content: [
                      div({
@@ -211,8 +216,7 @@ export default class Designer extends Component {
                            style: { ...(this.state.collapsed ? { display: "none" } : {}) },
                            ref: self => this.container = self
                         }, [
-                           this.elements,
-                           this.getDesignElements()
+                           this.elements
                         ])
                      ])
                   ]
@@ -220,7 +224,8 @@ export default class Designer extends Component {
                {
                   data: {
                      label: h6([span({ className: "fa fa-code mr-2" }), "Model"]),
-                     name: this.props.meta.data.name + "_model-tab"
+                     name: this.props.meta.data.name + "_model-tab",
+                     key: this.props.meta.data.name + "_model-tab"
                   },
                   content: [
                      div({ className: "form-control bg-light", style: { minHeight: 520, padding: 0 } },
@@ -240,14 +245,12 @@ export default class Designer extends Component {
       ]);
    }
 
-   getDesignElements() {
+   get elements() {
       const makeElements = (elements) => {
          return elements.map(el => {
-            return super.makeElement(el, {
-               //key: elementManage.getUniqueKey(),
-               draggable: true,
+            return this.getDesignElement(el, {
                designer: true,
-               has_title: true,
+               hasTitle: true,
                designerRef: this,
                meta: {
                   ...el,
@@ -255,20 +258,7 @@ export default class Designer extends Component {
                ref: self => {
                   if (self) self.parentComponent = this;
                }
-            })//
-            /*return Element(el.element, {
-               key: elementManage.getUniqueKey(),
-               draggable: true,
-               designer: true,
-               has_title: true,
-               designerRef: this,
-               meta: {
-                  ...el,
-               },
-               ref: self => {
-                  if (self) self.parentComponent = this;
-               }
-            })*/
+            })
          });
       }
 
@@ -281,53 +271,70 @@ export default class Designer extends Component {
 
    componentDidMount() {
       super.componentDidMount();
-      loopar.scriptManager.loadStylesheet("/assets/plugins/loopar/css/designer");
-      if (this.props.fieldDesigner) loopar.Designer = this;
+      if (this.props.fieldDesigner){
+         loopar.Designer = this;
+      }else{
+         return;
+      }
+
+      /*loopar.scriptManager.loadStylesheet("/assets/plugins/loopar/css/designer").then(() => {
+         this.setState({initialized:true})
+      });*/
+      
+      const fixElements = elementManage.fixElements(JSON.parse(this.data.value || "[]"));
+
+      if(this.data.value !== JSON.stringify(fixElements)){
+         setTimeout(() => {
+            //const value = JSON.stringify(fixElements);// elementManage.fixElements(fixElements));
+            this.meta.data.value = JSON.stringify(fixElements) //value;
+            this.props.docRef.hydrate();
+         }, 100);
+      }
    }
 
-   updateElements(target, elements, current = null) {
+   updateElements(target, elements, current = null, callback) {
       const currentElements = JSON.parse(this.state.meta.data.value || "[]");
-      const targetName = target.meta.data.name;
-      const currentName = current ? current.meta.data.name : null;
-      const lastParentName = current ? current.parentComponent.meta.data.name : null;
-      const selfName = this.state.meta.data.name;
+      const targetKey = target.meta.data.key;
+      const currentKey = current ? current.meta.data.key : null;
+      const lastParentKey = current ? current.parentComponent.meta.data.key : null;
+      const selfKey = this.state.meta.data.key;
 
       /**Search target in structure and set elements in target*/
       const setElementsInTarget = (structure) => {
          return structure.map(el => {
-            el.elements = el.data.name === targetName ? elements : setElementsInTarget(el.elements || []);
+            el.elements = el.data.key === targetKey ? elements : setElementsInTarget(el.elements || []);
             return el;
          });
       }
 
       /**Search target in structure and set elements in target, if target is self set directly in self*/
-      let newElements = targetName === selfName ? elements : setElementsInTarget(currentElements, selfName);
+      let newElements = targetKey === selfKey ? elements : setElementsInTarget(currentElements, selfKey);
 
       /**Search current in structure and delete current in last parent*/
       const deleteCurrentOnLastParent = (structure, parent) => {
-         if (lastParentName === parent) {
-            return structure.filter(e => e.data.name !== currentName);
+         if (lastParentKey === parent) {
+            return structure.filter(e => e.data.key !== currentKey);
          }
 
          return structure.map(el => {
-            el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.name);
+            el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
             return el;
          });
       }
 
-      if (current && lastParentName !== targetName) {
-         newElements = deleteCurrentOnLastParent(newElements, selfName);
+      if (current && lastParentKey !== targetKey) {
+         newElements = deleteCurrentOnLastParent(newElements, selfKey);
       }
 
-      this.#elements = newElements;
+      this.makeElements(newElements, callback);
    }
 
-   findElementByName(name, elements = this.#elements, keep) {
+   findElement(field, value, elements = this.#elements) {
       for (let i = 0; i < elements.length; i++) {
-         if (elements[i].data.name === name && elements[i].data.name !== keep) {
+         if (elements[i].data[field] === value) {
             return elements[i];
          } else if (elements[i].elements) {
-            const found = this.findElementByName(name, elements[i].elements, keep);
+            const found = this.findElement(field, value, elements[i].elements);
             if (found) {
                return found;
             }
@@ -337,36 +344,17 @@ export default class Designer extends Component {
    }
 
    get #elements() {
-      return JSON.parse(this.state.meta.data.value || "[]");
+      return JSON.parse(this.meta.data.value || "[]");
    }
 
-   fixElements(elements) {
-      return elements.map(el => {
-         if (!el.data) {
-            const names = elementManage.elementName(el.element);
-            el.data = {
-               name: names.name,
-               label: loopar.utils.Capitalize(names.label.replaceAll('_', ' ')),
-               id: names.id
-            }
-         }
-         if (el.elements) {
-            el.elements = this.fixElements(el.elements);
-         }
-         return el;
-      });
-   }
-
-   set #elements(elements) {
-      const data = this.state.meta.data;
-      data.value = JSON.stringify(this.fixElements(elements));
-      this.state.meta.data = data;
-
+   makeElements(elements, callback) {
+      const data = this.meta.data;
+      data.value = JSON.stringify(elementManage.fixElements(elements));
+      //data.background_image && (data.background_image = JSON.parse(fileManager.getMappedFiles(data.background_image)));
+      this.meta.data = data;
       this.props.docRef.hydrate();
 
-      setTimeout(() => {
-         this.setState({ meta: this.state.meta, IAOperation: false });
-      }, 100);
+      this.setState({ meta: this.meta, IAOperation: false }, callback);
    }
 
    get elementsDict() {
@@ -376,7 +364,7 @@ export default class Designer extends Component {
    deleteElement(element) {
       const removeElement = (elements = this.#elements) => {
          return elements.filter(el => {
-            if (el.data.name === element) {
+            if (el.data.key === element) {
                return false;
             } else if (el.elements) {
                el.elements = removeElement(el.elements);
@@ -386,30 +374,42 @@ export default class Designer extends Component {
          });
       }
 
-      this.#elements = removeElement();
+      this.makeElements(removeElement());
       this.props.docRef.toggleDesign("designer");
    }
 
-   updateElement(name, data, merge = true) {
+   updateElement(key, data, merge = true) {
       const selfElements = this.#elements;
-      const exist = this.findElementByName(data.name, selfElements, name);
 
-      if (exist) {
-         loopar.throw("Duplicate field", `The field with the name:${data.name} already exists, your current field will keep the name:${name} please check your fields and try again.`);
-         return false;
+      if (data.name) {
+         const exist = this.findElement("name", data.name, selfElements);
+
+         if (exist && exist.data.key !== key){
+            loopar.throw("Duplicate field", `The field with the name:${data.name} already exists, your current field will keep the name:${name} please check your fields and try again.`);
+            return false;
+         }
       }
 
       const updateElement = (structure) => {
          return structure.map(el => {
-            if (el.data.name === name) {
-               el.data = merge ? { ...el.data, ...data } : data;//{...el.data, ...data};
+            if (el.data.key === key) {
+               el.data = merge ? Object.assign({}, el.data, data) : data;
+               el.data.key ??= elementManage.getUniqueKey();
             } else {
                el.elements = updateElement(el.elements || []);
             }
 
+            if(el.data.background_image){
+               el.data.background_image = JSON.stringify(fileManager.getMappedFiles(el.data.background_image));
+            }
+
             /**Purify Data */
             el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
-               if (![null, undefined, "", "0", "false", false].includes(value)) {
+               if(key === "background_color" && JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'){
+                  return obj;
+               }
+
+               if (![null, undefined, "", "0", "false", false, '{"color":"#000000","alpha":0.5}'].includes(value)) {
                   obj[key] = value;
                }
                return obj;
@@ -420,7 +420,7 @@ export default class Designer extends Component {
          });
       }
 
-      this.#elements = updateElement(selfElements);
+      this.makeElements(updateElement(selfElements));
       return true;
    }
 
@@ -433,7 +433,8 @@ export default class Designer extends Component {
       const [names, duplicates] = [new Set(), new Set()];
 
       const traverseElements = (el) => {
-         if (names.has(el.data.name)) {
+         if (el.data.name && names.has(el.data.name)) {
+            console.log("duplicate", el.data.name)
             duplicates.add(el.data.name);
          } else {
             names.add(el.data.name);

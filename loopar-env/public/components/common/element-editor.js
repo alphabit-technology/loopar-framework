@@ -4,9 +4,11 @@ import DivClass from "/components/elements/div.js";
 import { loopar } from "/loopar.js";
 import { elementManage } from "/components/element-manage.js";
 import { Divider } from "/components/gui/divider.js";
+import { elementsDict } from "/element-definition.js";
 
 export class ElementEditorClass extends DivClass {
    formFields = [];
+   hiddenElements = {};
 
    constructor(props) {
       super(props);
@@ -17,21 +19,33 @@ export class ElementEditorClass extends DivClass {
       }
    }
 
-   get dataElements() {
-      
-      return [...this.#dataElements(), ...(this.connectedElement || {}).dataElements || []];
+   metaFields() {
+      const genericMetaFields = this.getMetaFields();
+      const selfMetaFields = this.connectedElement?.metaFields || [];
+
+      const mergedObj = {};
+
+      genericMetaFields.concat(selfMetaFields).forEach(item => {
+         const group = item.group;
+         if (!mergedObj[group]) {
+            mergedObj[group] = { elements: {} };
+         }
+
+         const elements = item.elements;
+         for (const key in elements) {
+            mergedObj[group].elements[key] = elements[key];
+         }
+      });
+
+      return Object.keys(mergedObj).map(group => ({
+         group,
+         elements: mergedObj[group].elements,
+      }));
    }
 
-   #dataElements() {
+   getMetaFields() {
       const previewProps = {}
       const animationDuration = this.state.data.aos_animation_duration || 2000;
-
-      /*if (this.state.data.aos) {
-         previewProps['data-aos'] = this.state.data.aos;
-         previewProps['data-aos-duration'] = animationDuration;
-         previewProps['data-aos-delay'] = this.state.data.aos_animation_delay;
-         previewProps['data-aos-easing'] = this.state.data.aos_easing;
-      }*/
 
       return [
          {
@@ -40,67 +54,27 @@ export class ElementEditorClass extends DivClass {
                //tag: {element: INPUT},
                label: { element: INPUT },
                name: { element: INPUT },
-               description: { element: TEXTAREA },
-               format: {
-                  element: SELECT,
-                  data: {
-                     options: [
-                        { option: 'data', value: 'Data' },
-                        { option: 'text', value: 'Text' },
-                        { option: 'email', value: 'Email' },
-                        { option: 'decimal', value: 'Decimal' },
-                        { option: 'percent', value: 'Percent' },
-                        { option: 'currency', value: 'Currency' },
-                        { option: 'int', value: 'Int' },
-                        { option: 'long_int', value: 'Long Int' },
-                        { option: 'password', value: 'Password' },
-                        { option: 'read_only', value: 'Read Only' }
-                     ],
-                     selected: 'data'
-                  }
-               },
-               size: {
-                  element: SELECT,
-                  data: {
-                     options: [
-                        { option: 'sm', value: 'Small' },
-                        { option: 'md', value: 'Medium' },
-                        { option: 'lg', value: 'Large' }
-                     ],
-                     selected: 'md'
-                  }
-               },
-               type: {
-                  element: SELECT,
-                  data: {
-                     options: [
-                        { option: 'default', value: 'Default' },
-                        { option: 'primary', value: 'Primary' },
-                        { option: 'success', value: 'Success' },
-                        { option: 'info', value: 'Info' },
-                        { option: 'link', value: 'link' },
-                     ],
-                     selected: 'default'
-                  }
-               },
-               action: { element: INPUT },
-               options: { element: TEXTAREA },
-               not_validate_type: { element: SWITCH },
-               required: { element: SWITCH },
-               unique: { element: SWITCH },
-               set_only_time: { element: SWITCH },
-               readonly: { element: SWITCH },
-               in_list_view: { element: SWITCH },
-               searchable: { element: SWITCH },
             }
          },
          {
-            group: 'design',
+            group: 'general',
             elements: {
+               id: {
+                  element: INPUT,
+                  data: {
+                     description: "Is a unique identifier for element"//. You can use variables like {{name}} or {{email}} to show user data.",
+                  }
+               },
+               text: {
+                  element: TEXTAREA,
+                  data: {
+                     description: "Is a value for inner text of element"//. You can use variables like {{name}} or {{email}} to show user data.",
+                  }
+               },
                background_color: { element: COLOR_PICKER },
                background_image: {
                   element: IMAGE_INPUT,
-                  height: 200,
+                  height: 200
                },
                background_size: {
                   element: SELECT,
@@ -109,22 +83,52 @@ export class ElementEditorClass extends DivClass {
                         { option: 'cover', value: 'Cover' },
                         { option: 'contain', value: 'Contain' },
                         { option: 'auto', value: 'Auto' },
-                     ],
+                        ],
                      selected: 'cover'
                   }
                },
-               color_overlay: { element: COLOR_PICKER },
+               color_overlay: {
+                  element: COLOR_PICKER,
+               },
                //background_color: {element: COLOR_PICKER},
-
+               text_align: {
+                  element: SELECT,
+                  data: {
+                     options: [
+                        { option: 'left', value: 'Left' },
+                        { option: 'center', value: 'Center' },
+                        { option: 'right', value: 'Right' },
+                        ],
+                     selected: 'left'
+                  }
+               },
+               size: {
+                  element: SELECT,
+                  data: {
+                     options: [
+                        { option: 'xs', value: 'Extra Small' },
+                        { option: 'sm', value: 'Small' },
+                        { option: 'md', value: 'Medium' },
+                        { option: 'lg', value: 'Large' },
+                        { option: 'xl', value: 'Extra Large' },
+                        ],
+                     selected: 'md'
+                  }
+               },
                class: { element: TEXTAREA },
-               style: { element: TEXTAREA },
+               style: {
+                  element: TEXTAREA,
+                  data:{
+                     description: "You can use raw css code here",
+                  }
+               },
                hidden: { element: SWITCH },
                disabled: { element: SWITCH },
                collapsed: { element: SWITCH }
             }
          },
          {
-            group: 'Animation',
+            group: 'animation',
             elements: {
                info: label({
                   style: { paddingTop: 10 },
@@ -133,34 +137,7 @@ export class ElementEditorClass extends DivClass {
                animation: {
                   element: "select",
                   data: {
-                     options: {
-                        "fade-up": 'Fade Up',
-                        "fade-down": 'Fade Down',
-                        "fade-left": 'Fade Left',
-                        "fade-right": 'Fade Right',
-                        "fade-up-right": 'Fade Up Right',
-                        "fade-up-left": 'Fade Up Left',
-                        "fade-down-right": 'Fade Down Right',
-                        "fade-down-left": 'Fade Down Left',
-                        "flip-up": 'Flip Up',
-                        "flip-down": 'Flip Down',
-                        "flip-left": 'Flip Left',
-                        "flip-right": 'Flip Right',
-                        "slide-up": 'Slide Up',
-                        "slide-down": 'Slide Down',
-                        "slide-left": 'Slide Left',
-                        "slide-right": 'Slide Right',
-                        "zoom-in": 'Zoom In',
-                        "zoom-in-up": 'Zoom In Up',
-                        "zoom-in-down": 'Zoom In Down',
-                        "zoom-in-left": 'Zoom In Left',
-                        "zoom-in-right": 'Zoom In Right',
-                        "zoom-out": 'Zoom Out',
-                        "zoom-out-up": 'Zoom Out Up',
-                        "zoom-out-down": 'Zoom Out Down',
-                        "zoom-out-left": 'Zoom Out Left',
-                        "zoom-out-right": 'Zoom Out Right',
-                     }
+                     options: loopar.animations(),
                   }
                },
                animation_duration: { element: INPUT, data: { format: 'number' } },
@@ -252,12 +229,11 @@ export class ElementEditorClass extends DivClass {
       if (!connectedElement) return null;
       this.formFields = [];
       const meta = connectedElement.meta || {};
-      meta.id ??= elementManage.getUniqueKey();
       const data = meta.data || {};
-      const DI = []//this.optionsDisabled(connectedElement.element); //disabled inputs
+      const dontHaveMetaElements = connectedElement.dontHaveMetaElements || [];
 
-      const dataElements = this.dataElements.map(({ group, elements }) => {
-         if(group === 'form') {
+      const metaFields = this.metaFields().map(({ group, elements }) => {
+         if(group === 'form' && elementsDict[connectedElement.element].def.isWritable) {
             elements['divider_default'] = Divider({
                style: {
                   marginTop: 10,
@@ -271,7 +247,8 @@ export class ElementEditorClass extends DivClass {
                element: connectedElement.element,
                data: {
                   ...connectedElement.meta.data,
-                  key: connectedElement.meta.id + "_default",
+                  //id: connectedElement.meta.data.id + "_default",
+                  key: connectedElement.identifier + "_default",
                   label: "Default",
                   name: "default_vaule",
                   hidden: 0
@@ -296,28 +273,40 @@ export class ElementEditorClass extends DivClass {
             bodyStyle: { padding: 0 },
             style: { top: 25, width: "100%" },
          }, [
-            ...dataElements.map(({ group, elements }) => {
+            ...metaFields.map(({ group, elements }) => {
                return {
-                  data: { label: loopar.utils.Capitalize(group), name: group + "_tab" },
+                  data: {
+                     label: loopar.utils.Capitalize(group),
+                     name: group + "_tab",
+                     key: group + "_tab",
+                  },
                   content: [
                      Object.entries(elements).map(([field, props]) => {
+                        if (dontHaveMetaElements.includes(field)) return null;
                         if (!props.element) {
                            return props;
                         }
-                        const hide = DI.length > 0 && DI.includes(field) && DI[0] !== 'all' || (DI[0] === 'all' && !DI.includes(field));
-                        return hide ? null : Element(props.element, {
-                           key: meta.id + "_" + field,
+
+                        return Element(props.element, {
+                           key: connectedElement.identifier + "_" + field,
                            style: props.style || {},
-                           ref: self => this.formFields[field] = self,
+                           ref: self => {
+                              if(self) this.formFields[field] = self
+                           },
                            meta: {
                               data: Object.assign({}, props.data || {}, {
                                  name: field,
-                                 value: data[field] || '',
-                                 test_field: 'test'
+                                 value: data[field] || (props.data || {}).value
                               }),
                            },
                            onChange: () => {
-                              this.saveData();
+                              if(props.element === IMAGE_INPUT || props.element === COLOR_PICKER){
+                                 setTimeout(() => {
+                                    this.saveData();
+                                 }, 100);
+                              }else{
+                                 this.saveData();
+                              }
                            }
                         })
                      })
@@ -325,18 +314,6 @@ export class ElementEditorClass extends DivClass {
                }
             }),
          ]),
-         /*...Object.entries(this.dataElements).map(([field, props]) => {
-               const hide = DI.length > 0 && DI.includes(field) && DI[0] !== 'all' || (DI[0] === 'all' && !DI.includes(field));
-               return hide ? null : Element(props.element, {
-                  ref: self => this.formFields[field] = self,
-                  meta: {
-                     data: Object.assign({}, props.data || {}, {name: field, value: data[field] || '', test_field: 'test'}),
-                  },
-                  onChange: () => {
-                     this.saveData();
-                  }
-               });
-         }).filter(e => e !== null),*/
          hr()
       ]);
    }
@@ -344,15 +321,30 @@ export class ElementEditorClass extends DivClass {
    componentDidUpdate() {
       super.componentDidUpdate();
       Object.entries(this.formFields).forEach(([fieldName, field]) => {
-         field && field.removeClass("form-group").addClass("my-1");
+         if(field){
+            field.removeClass("form-group").addClass("my-1");
+         }
       });
    }
 
+   saveData() {
+      const data = this.getData();
+      if (loopar.Designer.updateElement(this.connectedElement.meta.data.key, data, false)) {
+         this.connectedElement.meta.data = data;
+      }
+
+      this.setState({ data });
+   }
+
    getData() {
-      return Object.entries(this.formFields).reduce((acc, [key, field]) => {
+      const data = Object.entries(this.formFields).reduce((acc, [key, field]) => {
          acc[key] = (field && field.isWritable) ? (field.mappedFiles || field.val()) : null;
          return acc;
       }, {});
+      //data.id = this.connectedElement.meta.data.id || elementManage.getUniqueKey();
+      data.key = this.connectedElement.identifier;
+
+      return data;
    }
 
    editElement(element) {
@@ -363,51 +355,10 @@ export class ElementEditorClass extends DivClass {
       return this.state.connectedElement;
    }
 
-   saveData() {
-      setTimeout(() => {
-         const data = this.getData();
+   editinImage(newData){
+      const currentData = this.connectedElement.meta.data;
 
-         if (loopar.Designer.updateElement(this.connectedElement.meta.data.name, data, false)) {
-            this.state.connectedElement.meta.data = data;
-         }
-
-         this.setState({ data });
-      }, 100);
-   }
-
-   optionsDisabled(element) {
-      /**
-       * Describe which inputs are disabled for each element
-       */
-      //const inputs = ['droppable', 'collapsed', 'type', 'action', 'options', 'background_image', 'background_color', 'accept', 'multiple']
-      const inputType_format = 'droppable,collapsed,type,action,options,accept,multiple,background_image,background_size,background_color,color_overlay,animation,animation_duration,animation,animation_delay'.split(',');
-      const inputs_type_element = [...inputType_format, 'format', 'action', 'size', 'options'];
-      const html = 'required,in_list_view,collapsed,label,description,format,datatype,options,type,size,action,no_validate_type,unique,accept,multiple,size,in_list_view,required,unique,not_validate_type,readonly,searchable,set_only_time'.split(',');
-      const button = html.concat(inputType_format).filter(item => !['label', 'size', 'type', 'action'].includes(item));
-      const markdown = ['all', 'style', 'class'];
-      const file_input = [...inputs_type_element, ...'in_list_view,required,unique,not_validate_type,readonly,searchable,set_only_time,description'.split(',')];
-
-      return {
-         [INPUT]: inputType_format,
-         [TEXTAREA]: inputType_format,
-         [PASSWORD]: inputType_format,
-         [DATE]: inputs_type_element,
-         [DATE_TIME]: inputs_type_element,
-         [TIME]: inputs_type_element,
-         [CHECKBOX]: inputs_type_element,
-         [SWITCH]: inputs_type_element,
-         [SELECT]: inputs_type_element.filter(field => !['options'].includes(field)),
-         [FILE_INPUT]: file_input,
-         [IMAGE_INPUT]: file_input,
-         //[TABLE]: inputs_type_element,
-         [FORM_TABLE]: [...inputs_type_element.filter(field => !['options'].includes(field)), ...'in_list_view,required,unique,not_validate_type,readonly,searchable,set_only_time'.split(',')],
-         [COL]: html.filter(field => !['size'].includes(field)),
-         [ROW]: html,
-         [CARD]: html.filter(field => !['collapsed', 'label'].includes(field)),
-         [BUTTON]: button,
-         [MARKDOWN]: markdown,
-
-      }[element.split('.')[0]] || [];
+      return (currentData.background_image !== newData.background_image)
    }
 }
 

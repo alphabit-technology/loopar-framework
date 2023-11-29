@@ -43,18 +43,19 @@ export class DesignElementClass extends HTML {
    }
 
    get elementToCreate() {/*Return element to set in drag*/
-      const element_name = elementManage.elementName(this.toElement);
+      const elementName = elementManage.elementName(this.toElement);
 
       return {
          element: this.toElement,
          data: {
-            name: element_name.name,
-            id: element_name.id,
-            label: element_name.label,
+            name: elementName.name,
+            id: elementName.id,
+            label: elementName.label,
+            key: elementName.id
          },
-         key: element_name.id,
+         //key: elementName.id,
          designer: true,
-         has_title: true,
+         hasTitle: true,
       }
    }
 }

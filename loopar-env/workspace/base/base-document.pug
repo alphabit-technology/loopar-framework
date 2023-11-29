@@ -44,5 +44,13 @@ html(lang='en')
             }
 
             window.toggleTheme(false);
+
+            getTheme = () => {
+                return window.theme === 'dark' ? 'dark' : 'light';
+            }
+
+            getInverseTheme = () => {
+                return getTheme() === 'dark' ? 'light' : 'dark';
+            }
     include unsupported-browsers
     block content

@@ -7,7 +7,7 @@ const varcharLen = '(255)';
 const [text, long_text, varchar, decimal, int, mediumint, longint, date, date_time, time] =
    ['text', 'longtext', 'varchar', 'decimal', 'int', 'mediumint', 'longint', 'date', 'datetime', 'time'];
 
-const [LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT] = ['layout', 'design', 'form'];
+const [LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML] = ['layout', 'design', 'form', 'html'];
 
 export const elementsDefinition = {
    [LAYOUT_ELEMENT]: [
@@ -20,22 +20,27 @@ export const elementsDefinition = {
       //{element: "table", icon: "fa fa-table"},
       { element: "banner", icon: "fa fa-image" },
       { element: "banner_image", icon: "fa fa-image" },
-      { element: "tabs", icon: "fa fa-window-maximize" }
+      { element: "tabs", icon: "fa fa-window-maximize" },
+      { element: "tab", icon: "fa fa-window-maximize", show_in_design: false },
+      { element: "generic", icon: "fa fa-code" },
    ],
    [DESIGN_ELEMENT]: [
       { element: "image", icon: "fa fa-image" },
+      { element: "slider", icon: "fa fa-sliders-h" },
+      { element: "carrusel", icon: "fa fa-images" },
+      { element: "gallery", icon: "fa fa-images" },
       { element: "text_block", icon: "fa fa-font" },
       { element: "text_block_icon", icon: "fa fa-font" },
       { element: "button", icon: "fa fa-hand-pointer" },
       //{element: "icon", icon: "fa fa-hand-pointer"},
       { element: "markdown", icon: "fa fa-text-height" },
       { element: "title", icon: "fa fa-heading" },
-      //{element: "subtitle", icon: "fa fa-heading"},
+      { element: "subtitle", icon: "fa fa-heading" },
+      { element: "paragraph", icon: "fa fa-paragraph" },
       //{element: "link", icon: "fa fa-link"},
       //{element: "list", icon: "fa fa-list"},
       { element: "stripe", icon: "fab fa-stripe" },
       { element: "stripe_embebed", icon: "fab fa-stripe" },
-      { element: "gallery", icon: "fa fa-images" },
    ],
    [FORM_ELEMENT]: [
       { element: "input", icon: "fa fa-italic", type: [varchar, varcharLen] },
@@ -64,8 +69,8 @@ export const elementsDefinition = {
 
 export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
    value.forEach(element => {
-      const props = { props: (element.props || []).concat(commonProps) };
-      acc[element.element] = { ...element, ...props, ...{ group: key, is_writable: key === FORM_ELEMENT } };
+      //const props = { props: (element.props || []).concat(commonProps) };
+      acc[element.element] = {def: {...element, ...{ group: key, isWritable: key === FORM_ELEMENT } }};
    });
 
    return acc;
@@ -89,7 +94,7 @@ export const elementsNames = Object.freeze(Object.values(elementsDefinition).red
 }, []));
 
 export const elementsNameByType = (type) => {
-   return elementsNames.filter(element => elementsDict[element].type.includes(type));
+   return elementsNames.filter(element => elementsDict[element].def.type.includes(type));
 }
 
 class DataInterface {
@@ -303,11 +308,11 @@ export const dataInterface = (element) => {
 }
 
 global.ELEMENT_DEFINITION = function (element, or = null) {
-   return (elementsDict[element] || elementsDict[or]) || new Error('Element ' + element + ' not found');
+   return (elementsDict[element] || elementsDict[or]).def || new Error('Element ' + element + ' not found');
 }
 
 global.fieldIsWritable = (field) => {
-   return elementsDict[field.element]?.is_writable;
+   return elementsDict[field.element]?.def?.isWritable;
 }
 export const GlobalEnvironment = () => {
    global.VALIDATION_ERROR = { code: 400, title: 'Validation error' };

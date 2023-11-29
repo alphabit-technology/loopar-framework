@@ -1,7 +1,7 @@
 import Div from "/components/elements/div.js";
 import { elements } from "/components/elements.js";
 import { dataInterface } from "/element-definition.js";
-import { label } from "/components/elements.js";
+import { label, small } from "/components/elements.js";
 import { elementManage } from "../element-manage.js";
 import { loopar } from "/loopar.js";
 
@@ -13,7 +13,7 @@ export class BaseInput extends Div {
    isWritable = true;
    droppable = false;
    names = null;
-
+   dontHaveMetaElements = ["text"];
    constructor(props) {
       super(props);
       this.handleInputChange = this.handleInputChange.bind(this);
@@ -41,11 +41,11 @@ export class BaseInput extends Div {
    componentDidUpdate(prevProps, prevState, snapshot) {
       super.componentDidUpdate(prevProps, prevState, snapshot);
       if (prevProps.meta !== this.props.meta) {
-         this.setState({
+         /*this.setState({
             meta: this.props.meta
          }, () => {
             !this.props.designer && this.props.docRef && this.validate();
-         });
+         });*/
       }
 
       if (this.state.withoutLabel && this.label && this.label.node && ![CHECKBOX, SWITCH].includes(this.props.element)) this.label.node.style.setProperty("display", "none", "important");
@@ -53,18 +53,15 @@ export class BaseInput extends Div {
 
    handleInputChange(event) {
       const value = event.target.value;
-      try {
-         const data = this.data;
-         data.value = value;
-         this.state.meta.data = data;
-         this.setState({ meta: this.state.meta });
-
+      const data = this.data;
+      data.value = value;
+      this.state.meta.data = data;
+      
+      this.setState({ meta: this.state.meta })//, () => {
          this.props.onChange && this.props.onChange(event);
          this.onChange && this.onChange(event);
          this.validate();
-      } catch (e) {
-         console.log("Error on handleInputChange", e)
-      }
+      //});
    }
 
    get meta() {
@@ -76,7 +73,7 @@ export class BaseInput extends Div {
       const data = this.meta.data || {};
 
       //data.id ??= names.id;
-      data.id = this.names.id;
+      data.id ??= this.names.id;
       data.name ??= this.names.name;
       data.label ??= loopar.utils.Capitalize(data.name.replaceAll('_', ' '));
 
@@ -118,16 +115,20 @@ export class BaseInput extends Div {
             ...([CHECKBOX, SWITCH].includes(this.inputType) ? { checked: loopar.utils.trueValue(data.value) } : {}),
             ...(this.inputTagName === "textarea" ? { rows: data.rows || 5 } : {}),
             ...(this.inputType === "file" ? { multiple: this.state.multiple, accept: this.state.accept } : {}),
+            ...(data.format === "number" ? { min: data.min, max: data.max } : {}),
 
-         }).tag(readOnly ? "div" : this.inputTagName, readOnly ? data.value : null)
+         }).tag(readOnly ? "div" : this.inputTagName, readOnly ? data.value : null),
       ]
    }
 
    render(content = []) {
       const structure = this.getStructure();
+      const data = this.data;
+
       return super.render([
          ...([SWITCH, CHECKBOX].includes(this.props.element) ? structure.reverse() : structure),
-         ...content
+         ...content,
+         data.description ? small({ className: "form-text text-muted" }, data.description) : null
       ]);
    }
 
@@ -186,4 +187,60 @@ export class BaseInput extends Div {
    /*focus() {
       this.input?.focus();
    }*/
+
+   get metaFields(){
+      return [
+         {
+            group: 'form',
+            elements: {
+               //tag: {element: INPUT},
+               label: { element: INPUT },
+               name: { element: INPUT },
+               description: { element: TEXTAREA },
+               placeholder: { element: TEXTAREA },
+               format: {
+                  element: SELECT,
+                  data: {
+                     options: [
+                        { option: 'data', value: 'Data' },
+                        { option: 'text', value: 'Text' },
+                        { option: 'email', value: 'Email' },
+                        { option: 'decimal', value: 'Decimal' },
+                        { option: 'percent', value: 'Percent' },
+                        { option: 'currency', value: 'Currency' },
+                        { option: 'int', value: 'Int' },
+                        { option: 'long_int', value: 'Long Int' },
+                        { option: 'password', value: 'Password' },
+                        { option: 'read_only', value: 'Read Only' }
+                     ],
+                     selected: 'data'
+                  }
+               },
+               type: {
+                  element: SELECT,
+                  data: {
+                     options: [
+                        { option: 'default', value: 'Default' },
+                        { option: 'primary', value: 'Primary' },
+                        { option: 'success', value: 'Success' },
+                        { option: 'info', value: 'Info' },
+                        { option: 'link', value: 'link' },
+                     ],
+                     selected: 'default',
+                     description: "Valid for not preformated inputs"
+                  }
+               },
+               //action: { element: INPUT },
+               
+               not_validate_type: { element: SWITCH },
+               required: { element: SWITCH },
+               unique: { element: SWITCH },
+               set_only_time: { element: SWITCH },
+               readonly: { element: SWITCH },
+               in_list_view: { element: SWITCH },
+               searchable: { element: SWITCH },
+            }
+         },
+      ]
+   }
 }

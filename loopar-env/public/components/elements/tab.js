@@ -9,10 +9,11 @@ export default class Tab
    }
 
    remove() {
-      this.parent_component.removeTab(this.data.name);
+      this.props.parentElement.removeTab(this.props.meta.data.key);
    }
 
-   setData(data){
-      this.parent_component.updateTab(this.data.name, data);
+   setData(data) {
+      super.setData(data);
+      this.props.parentElement.updateTab(this.props.meta.data.key, data);
    }
 }

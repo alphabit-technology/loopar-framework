@@ -74,11 +74,6 @@ export default class BaseWorkspace extends Theme {
       this.onResize(this.resize.bind(this));
    }
 
-   componentDidMount() {
-      super.componentDidMount();
-      loopar.rootApp = this;
-   }
-
    /**
     * document: [{
     *    module: Component (imported),
@@ -137,6 +132,38 @@ export default class BaseWorkspace extends Theme {
       });
    }
 
+   componentDidUpdate(prevProps, prevState, snapshot) {
+      super.componentDidUpdate(prevProps, prevState, snapshot);
+      const documents = this.state.documents || {};
+      const activeDocument = Object.values(documents).find(document => document.active);
+      const meta = activeDocument?.meta;
+      const doctype = meta?.__DOCTYPE__;
+
+      if(!doctype) return;
+
+      const action = ['update', 'create'].includes(meta.action) ? 'form' : meta.action;
+      const resources = (doctype?.resources?.rows || []).filter(resource => resource.apply_on === 'all' || resource.apply_on === action);
+
+      if (resources.length && this.state.resourcesLoaded !== doctype.id) {
+         const arrayResources = Object.values(resources).map(resource => {
+            if (resource.type === "CSS") {
+               return loopar.includeCSS(resource.path);
+            } else if (resource.type === "JS") {
+               return loopar.require(resource.path);
+            }
+         });
+
+         Promise.all(arrayResources).then(() => {
+            this.setState({ resourcesLoaded: doctype.id  });
+         });
+      }
+   }
+
+   componentDidMount() {
+      super.componentDidMount();
+      loopar.rootApp = this;
+   }
+
    mergeDocument() {
       const updateValue = (structure, document) => {
          return structure.map(el => {
@@ -167,7 +194,7 @@ export default class BaseWorkspace extends Theme {
       });
    }
 
-   updateDocument(key, document, hydrate = true) {
+   updateDocument(key, document, hydrate = true, callback) {
       this.state.documents[key] && (this.state.documents[key].meta.__DOCUMENT__ = document);
       //this.setState({documents: this.state.documents});
    }
@@ -261,7 +288,6 @@ export default class BaseWorkspace extends Theme {
          ])
       ]
    }
-
 
    progress(to) {
       let progress = this.stateProgress + (this.increment * 0.1);

@@ -18,7 +18,9 @@ export default class WebWorkspace extends BaseWorkspace {
       const user = data.user;
       const logo = fileManager.getImage(webApp, "logo");
       const logoWidth = parseInt(webApp.logoWidth || 50);
-      const theme = window.theme// === "dark" ? "light" : "dark";
+      const theme = window.getTheme()// === "dark" ? "light" : "dark";
+
+      console.log("WebWorkspace", theme);
 
       const coverStyle = {
          position: webApp.fixed ? "fixed" : "unset",
@@ -26,14 +28,19 @@ export default class WebWorkspace extends BaseWorkspace {
          width: "100%",
          height: 90,
          zIndex: "9999999",
+         backgroundColor: loopar.utils.rgba(theme === 'dark' ? '#191927' : '#222230', webApp.opacity),// : `rgba(52, 108, 176, ${webApp.opacity || 1})`
+         
          //backgroundColor: theme === 'dark' ? 'var(--light)' : 'var(--primary)',// webApp.opacity ? "var(--light)" : "transparent",
-         opacity: webApp.opacity || 1,
+         //opacity: webApp.opacity || 1,
       };
 
       const menuStyle = {
          position: webApp.fixed ? "fixed" : "unset",
          width: "100%",
+         height: 90,
          zIndex: "9999999",
+         backgroundColor: loopar.utils.rgba(theme === 'dark' ? '#191927' : '#222230', webApp.opacity)
+         //color: 'var(--dark)',
       };
 
       const { menu, collapseMenu, mobileMenuUser, width } = this.state;
@@ -45,7 +52,7 @@ export default class WebWorkspace extends BaseWorkspace {
          /*div({className: "toast-bottom-left", id: "toast-container", style: {position: "fixed", bottom: "0px", left: "0px", right: "0px", zIndex: 999999}},
             this.notifies,
          ),*/
-         div({className: "bg-light", style: coverStyle }),
+         //div({className: "", style: coverStyle }),
          div({ 
             className: "page-sidebar sidebar-toggler d-lg-none collapse", "data-sidebar": "page-sidebar", 
             style: {top: 0, zIndex: 99999999999999, opacity: 0.9}
@@ -127,7 +134,7 @@ export default class WebWorkspace extends BaseWorkspace {
                         this.setState({});
                      }
                   }, [
-                     span({ className: `oi oi-${window.theme === "dark" ? "sun" : "moon"} text-dark` })
+                     span({ className: `oi oi-${window.theme === "dark" ? "sun" : "moon"} text-${theme}` })
                   ]),
                   button({
                      className: `navbar-btn  btn btn-subtle-secondary hamburger-squeeze ---hamburger-light ml-auto order-lg-2 d-lg-none`,
@@ -149,7 +156,7 @@ export default class WebWorkspace extends BaseWorkspace {
                         const active = item.menu_link === loopar.currentPageName;
                         return li({ className: `nav-item mr-lg-2 ${active ? "active" : ""}`, ref: self => this[item.menu_link] = self }, [
                            a({
-                              className: "nav-link py-2 text-dark", 
+                              className: `nav-link py-2 text-${theme}`,
                               href: "#", 
                               onClick: (e) => {
                                  this.navigate(item.menu_link);
@@ -162,7 +169,10 @@ export default class WebWorkspace extends BaseWorkspace {
             ])
          ]),
          ...super.documents,
-         section({ className: "py-5 bg-black", ref: footer => this.footer = footer }, [
+         section({
+             className: "py-5 bg-black", ref: footer => this.footer = footer,
+            style: { position: "sticky", top: "100vh"}
+         }, [
             webApp.has_footer ? div({ className: "container" }, [
                React.createElement("div", this.innerHtml(marked.parse(webApp.footer || ""))),
             ]) : null,

@@ -48,7 +48,7 @@ export default class DataBase {
    datatype(field) {
       const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
-      const type = field.element === 'input' ? field.data.format : field.element;
+      const type = field.element === INPUT ? field.data.format : field.element;
       const defaultValue = this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) && field.data.default_value ? `DEFAULT '${field.data.default_value}'` : '';
 
       const dataType = (type) => {
@@ -491,7 +491,6 @@ export default class DataBase {
          if (fieldIsWritable(field)) {
             if (field.data.name !== 'name' || !dbFields["name"]) {
                const pre = Object.keys(dbFields).length > 0 ? dbFields[field.data.name] ? 'MODIFY' : 'ADD' : '';
-
                const column = `${pre} ${field.data.name} ${this.datatype(field)}`
 
                acc.push(column);

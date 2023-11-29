@@ -3,8 +3,8 @@ import { Capitalize, camelCase } from "./global/helper.js";
 
 const defineTags = `a,abbr,address,area,article,aside,audio,b,base,bdi,bdo,blockquote,body,br,button,canvas,caption,cite,code,col,colgroup,data,datalist,dd,del,details,dfn,dialog,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,i,iframe,image,input,ins,kbd,label,legend,li,link,main,map,mark,meta,meter,nav,noscript,object,ol,optgroup,option,output,p,param,picture,pre,progress,q,rp,rt,ruby,s,samp,script,section,select,slot,small,source,span,strong,style,sub,summary,sup,svg,table,tbody,td,template,textarea,tfoot,th,thead,time,title,tr,track,u,ul,video,wbr`
 const defineComponents = Object.values(elementsDict)
-   .filter(e => e.show_in_design !== false)
-   .map((e) => e.element.toUpperCase());
+   .filter(e => e.def.show_in_design !== false)
+   .map((e) => e.def.element.toUpperCase());
 const defineConstComponents = defineComponents.join(",").toLowerCase()
    .split(",").map((e) => {
       return Capitalize(camelCase(e));
@@ -31,6 +31,7 @@ import DIALOG from "/components/common/dialog.js";
 import NOTIFY from "/components/common/notify.js";
 ${defineComponents.map((e) => `import ${e}_Comp from "/components/elements/${e.replaceAll("_", "-").toLowerCase()}.js";`).join("\n")}
 import {HTML} from "/components/base/html.js";
+//import { elementManage } from "/components/element-manage.js";
 
 class Elements{
    constructor(options={}){
@@ -73,9 +74,8 @@ Object.entries(components).forEach(([element, classInstance]) => {
       [element]: {
          value: function (content=null) {
             this.props.element = element;
-            this.props = {...this.props, ...elementsDict[element]};
+            this.props = {...this.props, def: elementsDict[element].def};
             this.props.meta ??= {};
-            this.props.meta.is_writable = elementsDict[element].is_writable;
             return React.createElement(classInstance, this.props, content);
          }
       }
@@ -86,10 +86,9 @@ Object.entries(components).forEach(([element, classInstance]) => {
 /**Define Components**/
 const [${defineConstComponents}] = Object.entries(components).map(([e, classInstance]) => {
    return (options=null, content = null) => {
-      const opts = getOptions(options, content, e);
-      opts.options = {...opts.options, ...elementsDict[e]};
+      const opts = getOptions(options, content);
+      opts.options = {...opts.options, def: elementsDict[e].def};
       opts.options.meta ??= {};
-      opts.options.meta.is_writable = elementsDict[e].is_writable;
 
       return React.createElement(classInstance, opts.options, opts.content);
    }
@@ -124,9 +123,13 @@ export const elements = (element) => {
 }
 
 export const Element = (e, props, content) => {
-   props = {...props, ...elementsDict[e]}
+   const elDict = elementsDict[e];
+   if(!elDict){
+      return React.createElement(e, props, content);
+   }
+
+   props = {...props, ...elDict};
    props.meta ??= {};
-   props.meta.is_writable = elementsDict[e].is_writable;
 
    return React.createElement(components[e], {...props, element: e}, content);
 }

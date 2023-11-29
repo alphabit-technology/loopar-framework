@@ -260,7 +260,7 @@ export default class FileInput extends BaseInput {
       return this.state.previews;
    }
 
-   get dataElements() {
+   get metaFields() {
       return [
          {
             group: 'custom',

@@ -1,25 +1,25 @@
-import { div, button, span, Image } from "../elements.js";
+import {div, button, span, Banner, Image} from "../elements.js";
 import { loopar } from "/loopar.js";
 import { elementManage } from "../element-manage.js";
 import BaseCarrusel from "../base/base-carrusel.js";
 
 export default class Slider extends BaseCarrusel {
-   className = "slider";
    defaultElements = [
       {
-         element: "image",
+         element: "banner",
          data: {
+            text: "Slide 1",
             color_overlay: "rgba(0,0,0,0.3)",
             background_image: "https://fastly.picsum.photos/id/174/800/600.jpg?hmac=cfaSWlI7126OpICaFPhVjWRVaaGrLtpZ7Ly9SksvbTM",
             key: elementManage.uuid(),
          }
       },
       {
-         element: "image",
+         element: "banner",
          data: {
+            text: "Slide 2",
             color_overlay: "rgba(0,0,0,0.3)",
             background_image: "https://img.freepik.com/free-photo/digital-painting-mountain-with-colorful-tree-foreground_1340-25699.jpg",
-            key: elementManage.uuid(),
          }
       }
    ];
@@ -33,7 +33,7 @@ export default class Slider extends BaseCarrusel {
       const sliderCount = this.sliderCount();
 
       const newSlide = {
-         element: "image",
+         element: "banner",
          data: {
             key: `slider_${id}`,
             label: `Slide ${(sliderCount + 1)}`,
@@ -49,44 +49,47 @@ export default class Slider extends BaseCarrusel {
 
    /*render() {
       const elementsDict = this.elementsDict || [];
-      const forceParent = this.data.use_for_all_slides;
+      const {currentIndex, prevIndex} = this.state;
+      const animation = this.getTransition();
+
+      const sliders = [
+         elementsDict[prevIndex],
+         elementsDict[currentIndex],
+      ]
 
       return super.render([
-         ...elementsDict.map((element, index) => {
-            if (index != this.state.currentIndex) return null;
+         ...sliders.map((element, index) => {
 
-            const key = element.data.key;
+            const key = element.data.key; 
             const data = {
-               //...(index > 0 ? { animation: forceParent? this.data.transition : element.data.animation || this.data.transition } : {}),
                ...element.data,
-               animation: forceParent ? this.data.transition : element.data.animation || this.data.transition,
+               animation: index == 0 ? null : animation,
+               delay: 300,
                ...{
-                  key: key,
-                  //label: element.data.label || `Slide ${index + 1}`,
-               } 
-            }
-            return Image({
-               meta: {
-                  data,
-                  elements: element.elements,
-                  //key: tabKey
+                  key: key
                },
-               //draggable: false,
-               key: key,
-               ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
-               ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
-               ...(this.props.designer && {
-                  hasTitle: true, designer: true
-               } || {}),
-               ref: tab => {
-                  if (tab) {
-                     if (this.props.designer) {
-                        tab.parentComponent = this;
+               static_content: this.data.static_content,
+               background_color: this.data.color_overlay,
+            }
+
+            return [
+               this.getElement(element, {
+                  className: index == 0 ? "position-absolute hide-time" : "show-time",
+                  meta: {
+                     data,
+                     elements: element.elements,
+                     key: key
+                  },
+                  ref: tab => {
+                     if (tab) {
+                        if (this.props.designer) {
+                           tab.parentComponent = this;
+                        }
+                        this["slider" + index] = tab;
                      }
-                     this["slider" + index] = tab;
                   }
-               }
-            }, element.content)
+               }),
+            ]
          })
       ]);
    }*/

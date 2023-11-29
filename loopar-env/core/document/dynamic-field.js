@@ -61,6 +61,8 @@ export default class DynamicField {
          }
       }*/
 
+      //if (this.name === 'doc_structure') console.log(JSON.stringify(value, null, 3))
+
       return typeof value == 'object' ? JSON.stringify(value) : value;
    }
 

@@ -1,43 +1,55 @@
-import {image, div, h1, h3, p} from "../elements.js";
-import BaseTextBlock from "../base/base-text-block.js";
+import {Div} from "../elements.js";
+import Preassembled from "../base/preassembled.js";
 
-export default class Banner extends BaseTextBlock {
-   className = "position-relative pb-5 bg-light";
-   defaultDescription = "This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.";
+export default class Banner extends Preassembled {
+   className = "position-relative pb-5 d-block text-gray";
    style = {
-      height: "100vh"
+      height: "100vh",
+      width: "100%",
    };
+   droppable = true;
+   
    constructor(props){
       super(props);
    }
 
-   render(){
-      const {label, description, action, color_overlay={}} = this.props.meta.data;
-      const children = this.props.children;
-      const {color, alpha} = color_overlay;
-
-      return super.render([
-         div({
-            className: "sticker",
-            style: {
-               backgroundColor: color || "rgba(0,0,0,0.5)",
-               opacity: alpha || 0.5
+   defaultElements = [
+      {
+         element: "div",
+         data: {
+            class: "container position-relative",
+            style: "top: 30%;"
+         },
+         elements: [
+            {
+               element: "title",
+               data: {
+                  text: this.data?.label || "Banner Title...",
+                  size: "xl",
+                  text_align: "center"
+               }
+            },
+            {
+               element: "subtitle",
+               data: {
+                  text: this.data?.text || "Subtitle...",
+                  text_align: "center"
+               }
             }
-         }),
-         div({className: "container position-relative", style: {
-            top: "30%",
-            //backgroundColor: "rgba(255,255,255,0.5)", test to see if this works
-         }}, [
-            h1({ className: "display-4 enable-responsive-font-size mb-4 text-center"}, label),
-            h3({ className: "text-muted font-size-xl enable-responsive-font-size  text-center"}, [
-               description,
-               children
-            ]),
-         ])
-      ])
-   }
+         ]
+      }
+   ]
 
-   componentDidUpdate(prevProps, prevState, snapshot) {
-      super.componentDidUpdate(prevProps, prevState, snapshot);
+   render(){
+      return super.render([
+         Div({
+            className: "sticker",
+            meta: {
+               data: {
+                  background_color: this.data.background_color,
+               }
+            }
+         })
+      ])
    }
 }

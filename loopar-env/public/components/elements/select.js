@@ -77,7 +77,7 @@ export default class Select extends BaseInput {
                            }}, '×'),
                            div(value.value || value.option)
                         ]:
-                        span({className: 'select2-selection__placeholder'}, data.label || 'Select an option'),
+                        span({className: 'select2-selection__placeholder'}, data.placeholder || data.label || 'Select an option'),
                      ]),
                      span({className: 'select2-selection__arrow', role: 'presentation'}, [
                         b({role: 'presentation'}),
@@ -359,6 +359,19 @@ export default class Select extends BaseInput {
 
 
       this.positionSetted = true;
+   }
+
+   get metaFields(){
+      const data = super.metaFields[0];
+      
+      data.elements.options = {
+         element: TEXTAREA,
+         data: {
+            description: "For simple select insert the options separated by enter. For Document Select insert the Document Name",
+         }
+      };
+      
+      return [data];
    }
 }
 

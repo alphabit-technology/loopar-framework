@@ -9,25 +9,25 @@ export default class Section extends Component {
       super(props);
    }
 
-   getSrc() {
+   /*getSrc() {
       const designer = this.props.designer;
       const background = this.props.meta.data.background_image;
       const background_image = Array.isArray(background) ? background[0] : background;// //fileManager.get(background);
       const src = typeof background_image === 'object' ? background_image.src : background_image;
       return this.props.src || src
-   }
+   }*/
 
    render(content = null) {
-      const data = this.props.meta.data || {};
+      //const data = this.props.meta.data || {};
 
-      if (data.background_image) {
+      /*if (data.background_image) {
          this.style = {
             backgroundImage: `url(${this.getSrc() || ""}`,
             backgroundSize: data.background_size || "cover",
             backgroundPosition: data.background_position || "center",
             backgroundRepeat: data.background_repeat || "no-repeat",
          }
-      }
+      }*/
 
       return super.render([
          /*div({
@@ -40,7 +40,7 @@ export default class Section extends Component {
          ])*/
          div({ className: "container position-relative" }, [
             div({
-               className: "element row align-items-center justify-content-between",
+               className: "element align-items-center justify-content-between element sub-element",
                ref: self => this.container = self,
                Component: this
             }, [

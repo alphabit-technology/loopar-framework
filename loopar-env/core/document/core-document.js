@@ -43,7 +43,7 @@ export default class CoreDocument {
           * If is a Document type Document, the app name is the same as the module name
           */
          if(this.name === "Document"){
-            this.__APP__ = "loppar";
+            this.__APP__ = "loopar";
          }else{
             this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.module);
          }
@@ -56,7 +56,6 @@ export default class CoreDocument {
 
    async __init__() {
       await this.#makeFields(JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]));
-
       this.__DOCTYPE__.STRUCTURE = JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
 
       if (this.__DOCUMENT__ && this.__DOCUMENT__[this.fieldDocStructure]) {
@@ -125,6 +124,9 @@ export default class CoreDocument {
                (Array.isArray(val) && val.length > 0) ? value : this.__DOCUMENT__[fieldName]
             );
          } else {
+            if(fieldName === "doc_structure"){
+               //console.log("doc_structure", value, this.__DOCUMENT__[fieldName])
+            }
             this.#fields[fieldName] = new DynamicField(field, value || this.__DOCUMENT__[fieldName]);
          }
 
@@ -187,6 +189,7 @@ export default class CoreDocument {
             this.__DOCUMENT_NAME__ = this.name;
          } else {
             const data = this.valuesToSetDataBase;
+            //console.log({data})
             if (Object.keys(data).length) {
                await loopar.db.updateRow(
                   this.__DOCTYPE__.name,
@@ -198,18 +201,19 @@ export default class CoreDocument {
          }
 
          const updateChild = async () => {
+            const ID = await this.__ID__();
             const childValuesReq = this.childValuesReq;
 
             if (Object.keys(childValuesReq).length) {
                for (const [key, value] of Object.entries(childValuesReq)) {
-                  await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE document_parent = '${this.__DOCTYPE__.name}' AND document_parent_name = '${this.__DOCUMENT_NAME__}'`)
+                  await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__DOCTYPE__.id}' AND parent_id = '${ID}'`, false);
 
                   let rows = typeof value === 'string' ? JSON.parse(value) : value;
                   rows = Array.isArray(rows) ? rows : [];
 
                   for (const row of (rows || [])) {
-                     row.document_parent = this.__DOCTYPE__.name;
-                     row.document_parent_name = this.__DOCUMENT_NAME__;
+                     row.parent_document = this.__DOCTYPE__.id;
+                     row.parent_id = ID;
 
                      const document = await loopar.newDocument(key, row);
                      await document.save();
@@ -482,8 +486,8 @@ export default class CoreDocument {
       return await loopar.getList(field, {
          filters: {
             "=": {
-               document_parent: this.__DOCTYPE__.name,
-               document_parent_name: this.__DOCUMENT_NAME__
+               parent_document: this.__DOCTYPE__.id,
+               parent_id: await this.__ID__()
             }
          }
       })
@@ -492,8 +496,8 @@ export default class CoreDocument {
    async getChildRawValues(field) {
       return await loopar.db.getAll(field, ["*"], {
          "=": {
-            document_parent: this.__DOCTYPE__.name,
-            document_parent_name: this.__DOCUMENT_NAME__
+            parent_document: this.__DOCTYPE__.id,
+            parent_id: await this.__ID__()
       }})
    }
 

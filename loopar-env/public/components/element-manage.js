@@ -46,6 +46,25 @@ export default class ElementManage {
       }
       return true;
    }
+
+   fixElements(elements) {
+      return elements.map(el => {
+         el.data ??= {};
+
+         if (!el.data.name || !el.data.id || !el.data.label || !el.data.key) {
+            const names = elementManage.elementName(el.element);
+            //el.data.name ??= names.name;
+            el.data.key ??= elementManage.getUniqueKey();
+            //el.data.id ??= names.id;
+            el.data.label ??= loopar.utils.Capitalize(names.label.replaceAll('_', ' '));
+         }
+
+         if (el.elements) {
+            el.elements = this.fixElements(el.elements);
+         }
+         return el;
+      });
+   }
 }
 
 export const elementManage = new ElementManage();

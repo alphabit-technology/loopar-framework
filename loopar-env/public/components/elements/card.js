@@ -5,6 +5,7 @@ import Component from "../base/component.js";
 export default class Card extends Component {
    blockComponent = true;
    className = "card card-fluid";
+   dontHaveMetaElements = ["text"]
 
    constructor(props) {
       super(props);

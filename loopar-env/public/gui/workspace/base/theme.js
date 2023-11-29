@@ -9,7 +9,26 @@ export default class Theme extends HTML {
       super.componentDidMount();
       this.toggleDropdown();
       this.binDataTarget();
+      //this.initPageScroll();
    }
+
+   /*initPageScroll() {
+      const scrollPosition = localStorage.getItem("scrollPosition" + this.getPageName()) || 0;
+      window.scrollTo(0, scrollPosition);
+      window.addEventListener("beforeunload", this.handleBeforeUnload);
+   }
+
+   componentWillUnmount() {
+      window.removeEventListener("beforeunload", this.handleBeforeUnload);
+   }
+
+   getPageName(){
+      return this.meta.web_app.__DOCUMENT__.name;
+   }
+
+   handleBeforeUnload = () => {
+      localStorage.setItem("scrollPosition" + this.getPageName() , window.scrollY || window.pageYOffset);
+   };*/
 
    toggleDropdown() {
       document.addEventListener("click", (e) => {

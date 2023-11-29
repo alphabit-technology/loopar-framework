@@ -1,9 +1,32 @@
 script.
    const WORKSPACE = '#{W}';
+   const meta = !{meta};
+   const action = ['update', 'create'].includes(meta.action) ? 'form' : meta.action;
+   const resources = (meta.__DOCTYPE__?.resources?.rows || []).filter(r => r.apply_on === 'all' || r.apply_on === action);
+
+   function loadCSS(url) {
+        return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet'; 
+            link.href = url;
+            link.onload = resolve;
+            link.onerror = reject;
+
+            document.head.appendChild(link);
+        });
+    }
    Promise.all([
        import(`/components/element-manage.js`),
        import(`/gui/workspace/${WORKSPACE}-workspace.js`),
        import('#{client_importer}'),
+       ...resources.map(r => {
+            if (r.type.toLowerCase() === 'js') {
+                return import(r.path + '.js');
+            } else if (r.type.toLowerCase() === 'css') {
+                return loadCSS(r.path + '.css');
+            }
+            return Promise.resolve();
+        })
    ]).then(([elementManage, workspace, app_imported]) => {
         new elementManage.default().initialize().then(() => {
             const domContainer = document.querySelector("#app-root");
@@ -14,12 +37,11 @@ script.
                     documents: {
                         "!{key}": {
                             module: app_imported,
-                            meta: {...!{meta}, key: '#{key}'},
+                            meta: {...meta, key: '#{key}'},
                             active: true
                         }
                     }
                 })
             );
         });
-       
    });

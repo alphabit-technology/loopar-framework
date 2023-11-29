@@ -129,7 +129,7 @@ class FileBrowserClass extends React.Component {
             div({ className: "col-12" }, [
                div({ className: "row align-items-center" }, [
                   div({ className: "col-md-6 col-12" }, [
-                     this.props.has_title ? div({ className: "page-title" }, [
+                     this.props.hasTitle ? div({ className: "page-title" }, [
                         h4({}, "File Manager"),
                         //this.breadcrumbs()
                      ]) :
@@ -161,7 +161,7 @@ class FileBrowserClass extends React.Component {
                               ]
                            }),
                         ]),
-                     this.props.has_title ? this.breadcrumbs() : null
+                     this.props.hasTitle ? this.breadcrumbs() : null
                      //this.breadcrumbs()
                   ]),
                   div({ className: "col-md-6 col-12" }, [

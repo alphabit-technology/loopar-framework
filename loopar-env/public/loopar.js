@@ -11,7 +11,7 @@ class Loopar extends Router {
    rootApp = null;
    workspace = WORKSPACE || "";
    #colors = JSON.parse(localStorage.getItem('colors') || "{}");
-   baseColors = ['pink', 'purple', 'indigo', 'blue', 'cyan', 'teal', 'green', 'orange', 'red'];
+   baseColors = 'red,blue,green,yellow,orange,purple,pink,teal,cyan,gray,gray-dark,primary,secondary,success,danger,warning,info,light,dark'.split(',');
    sidebarOption = "preview";
    #loadedMeta = {};
 
@@ -148,11 +148,92 @@ class Loopar extends Router {
    }
 
    require(src, callback, options = { async: true}) {
-      this.scriptManager.loadScript(src, callback, options);
+      return new Promise(resolve => {
+         this.scriptManager.loadScript(src, () => {
+            callback && callback();
+            resolve();
+         }, options);
+      });
+      //this.scriptManager.loadScript(src, callback, options);
    }
 
    includeCSS(src, callback) {
-      this.scriptManager.loadStylesheet(src, callback);
+      return new Promise(resolve => {
+         this.scriptManager.loadStylesheet(src, () => {
+            callback && callback();
+            resolve();
+         });
+      });
+      //this.scriptManager.loadStylesheet(src, callback);
+   }
+
+   #reserses = {
+      "top": "bottom",
+      "bottom": "top",
+      "left": "right",
+      "right": "left",
+      "up": "down",
+      "down": "up",
+      "in": "out",
+      "out": "in",
+   }
+
+   animations(notContains) {
+      const animations = {
+         "random": "Random",
+         "fade-up": "Fade Up",
+         "fade-down": "Fade Down",
+         "fade-left": "Fade Left",
+         "fade-right": "Fade Right",
+         "fade-up-right": "Fade Up Right",
+         "fade-up-left": "Fade Up Left",
+         "fade-down-right": "Fade Down Right",
+         "fade-down-left": "Fade Down Left",
+         "flip-up": "Flip Up",
+         "flip-down": "Flip Down",
+         "flip-left": "Flip Left",
+         "flip-right": "Flip Right",
+         "slide-up": "Slide Up",
+         "slide-down": "Slide Down",
+         "slide-left": "Slide Left",
+         "slide-right": "Slide Right",
+         "zoom-in": "Zoom In",
+         "zoom-in-up": "Zoom In Up",
+         "zoom-in-down": "Zoom In Down",
+         "zoom-in-left": "Zoom In Left",
+         "zoom-in-right": "Zoom In Right",
+         "zoom-out": "Zoom Out",
+         "zoom-out-up": "Zoom Out Up",
+         "zoom-out-down": "Zoom Out Down",
+         "zoom-out-left": "Zoom Out Left",
+         "zoom-out-right": "Zoom Out Right",
+      }
+
+      if(notContains){
+         return Object.keys(animations).filter(a => !a.includes(notContains)).reduce(
+            (obj, key) => {
+               obj[key] = animations[key];
+               return obj;
+            },
+            {}
+         );   //.map(a => ({value: a, label: animations[a]}));
+      }
+
+      return animations;
+   }
+
+   reverseAnimation(animation){
+      return !animation ? null : animation.split("-").map(a => this.#reserses[a] || a).join("-");
+   }
+
+   getAnimation(animation, notContains){
+      if (!animation) return null;
+      if (animation === "random") {
+         const transitions = Object.keys(this.animations(notContains)).filter(animation => animation !== "random");
+         return transitions[Math.floor(Math.random() * transitions.length)];
+      }else{
+         return animation;
+      }
    }
 }
 

@@ -1,20 +1,19 @@
-import Div from "/components/elements/div.js";
-import {h1, p} from "../elements.js";
+import BaseText from "../base/base-text.js";
+import {h2} from "../elements.js";
 
-export default class Title extends Div {
+export default class Title extends BaseText {
    droppable = false;
-   defaultDescription = "This a user-friendly, simple and responsive Text Block.";
+   draggable = true
    constructor(props){
       super(props);
    }
 
    render(){
-      const data = this.props.meta.data || {};
-      const [label="Text Block", description=this.defaultDescription] =[data.label, data.description];
-
+      const data = this.data;
       return super.render([
-         h1({className: "h1 mb-0"}, label),
-         p({className: "text-muted font-size-lg mb-4"}, description)
+         h2({
+            className: `display-${this.getSize()} enable-responsive-font-size mb-4 ${this.getAlign()}`
+         }, this.getText())
       ]);
    }
 }

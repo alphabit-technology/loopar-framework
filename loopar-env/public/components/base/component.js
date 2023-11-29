@@ -13,23 +13,11 @@ export default class Component extends HTML {
    }
 
    render(content) {
-      const data = this.props.meta?.data || {};
-      this.backGround(false);
-
-      const backgroundColor = data.background_color;
-      const { color, alpha } = backgroundColor || {};
-
-      /*this.style = {
-         ...this.style || {},
-         backgroundColor: color || "transparent",
-         opacity: alpha || 1
-      }*/
-
-      //if(color) this.className = this.className + " " + data.name;
+      (!this.dontHaveBackground && !this.dontHaveContainer) && this.backGround(false);
 
       return super.render([
-         ErrorBoundary({}, [
-            (this.props.has_title && this.props.designer) ? [
+         ErrorBoundary(this.props, [
+            (this.props.hasTitle && this.props.designer) ? [
                div({ className: "element-title" }, [
                   div({ className: "btn-group element-options" }, [
                      a({
@@ -48,7 +36,7 @@ export default class Component extends HTML {
                               message: `Are you sure you want to delete this element?`,
                               open: true,
                               ok: () => {
-                                 this.props.designerRef.deleteElement(this.props.meta.data.name);
+                                 this.props.designerRef.deleteElement(this.props.meta.data.key);
                               },
                            });
                         }
@@ -64,18 +52,6 @@ export default class Component extends HTML {
                ])
             ] : null,
             content || this.props.children,
-            /*(color && this.props.element !== COLOR_PICKER && !this.has_image) ? div({
-               className: "background-color",
-               style: {
-                  backgroundColor: color,
-                  opacity: alpha || 0,
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%"
-               }
-            }) : null,*/
          ])
       ])
    }
@@ -89,22 +65,25 @@ export default class Component extends HTML {
             (this.container || this).droppableActions();
          }
 
-         if (this.props.draggable) {
+         /*if (this.props.draggable) {
             this.addClass("draggable");
             this.draggableActions();
-         }
+         }*/
 
+         this.draggableActions();
          this.addClass("draggable");
       }
 
-      if (this.props.has_title) {
+      if (this.props.hasTitle) {
          this.setAttrs({
             onMouseOut: (e) => {
-               this.removeClass("hover");
+               //this.removeClass("hover");
+               this.node?.classList.remove("hover");
             },
             onMouseOver: (e) => {
                e.stopPropagation();
-               this.addClass("hover");
+               this.node?.classList.add("hover");
+               //this.addClass("hover");
             }
          });
       }
@@ -115,52 +94,114 @@ export default class Component extends HTML {
    }
 
    getSrc() {
-      const data = this.props.meta.data;
-      return fileManager.getMappedFiles(data.background_image, data.name);
+      const data = this.props.meta?.data;
+      if (data) {
+         return fileManager.getMappedFiles(data.background_image || this.props.src, data.name);
+      }
+      return [];
    }
 
    backGround(image) {
-      if (this.props.meta && this.props.meta.data) {
-         let src = this.getSrc();
-         const data = this.props.meta.data;
+      const data = this.props.meta?.data;
 
-         if (src && src.length > 0) {
-            this.has_image = true;
-            src = src[0];
-            const imageUrl = src.src || "/uploads/empty-image.svg";
+      if(image && (!data || !data.background_image || data.background_image === '[]')) {
+         return {
+            src: "/uploads/empty-image.svg",
+         };
+      }
 
-            if (image) {
-               return {
-                  src: imageUrl,
-                  alt: data.label || "",
-                  title: data.description || "",
+      if (data) {
+         if (data.background_image && data.background_image !== '[]') {
+            const src = this.getSrc();
+            if (src && src.length > 0) {
+               const imageUrl = src[0].src || "/uploads/empty-image.svg";
 
-               }
-            } else if (this.props.element !== "image") {
-               this.style = {
-                  ...this.style || {},
-                  ...{
+               if (image) {
+                  return {
+                     src: imageUrl,
+                     alt: data.label || "",
+                     title: data.description || "",
+                  };
+               } else if (this.props.element !== "image") {
+                  this.style = {
+                     ...this.style || {},
+                     ...{
                      backgroundImage: `url('${imageUrl}')`,
                      backgroundSize: data.background_size || "cover",
                      backgroundPosition: data.background_position || "center",
-                     backgroundRepeat: data.background_repeat || "no-repeat"
-                  }
+                     backgroundRepeat: data.background_repeat || "no-repeat",
+                     },
+                  };
                }
             }
-            return;
+         }else if (this.style && this.style.backgroundImage) {
+            delete this.style.backgroundImage;
          }
+
+         if (data?.background_color) {
+            const color = loopar.utils.rgba(data.background_color);
+
+            if (color) {
+               this.style = {
+                  ...this.style || {},
+                  backgroundColor: color,
+               };
+            } else if (this.style?.backgroundColor) {
+               delete this.style.backgroundColor;
+            }
+         } else if (this.style?.backgroundColor) {
+            delete this.style.backgroundColor;
+         }
+
+      } else if (this.style) {
+         this.style.backgroundImage && (delete this.style.backgroundImage);
+         this.style.backgroundColor && (delete this.style.backgroundColor);
       }
-      if (image) {
-         return {
-            src: "/uploads/empty-image.svg",
-         }
+   }
+
+
+   getSize(size=this.meta.data.size) {
+      return {
+         xm: 5,
+         sm: 4,
+         md: 3,
+         lg: 2,
+         xl: 1
+      }[size] || 5;
+   }
+
+   getAlign(align=this.meta.data.text_align) {
+      return {
+         left: "text-left",
+         center: "text-center",
+         right: "text-right"
+      }[align] || "text-left";
+   }
+
+   set(key, value, onChange = true){
+      const meta = this.props.meta;
+      let data = meta.data;
+
+      if(typeof key == "object"){
+         Object.assign(data, key);
+      }else{
+         data[key] = value;
       }
 
-      this.style = {
-         ...this.style || {},
-         ...{
-            backgroundImage: "unset"
-         }
+      if(this.props.designerRef) {
+         this.props.designerRef.updateElement(data.key, data);
+      }else{
+         meta.data = data;
+         this.setState({meta})
       }
+
+      if(!onChange) return;
+
+      this.onChange && this.onChange();
+      this.props.onChange && this.props.onChange();
+   }
+
+   componentDidUpdate(prevProps, prevState, snapshot) {
+      super.componentDidUpdate(prevProps, prevState, snapshot);
    }
 }

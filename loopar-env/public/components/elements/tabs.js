@@ -21,62 +21,81 @@ export default class Tabs extends Component {
    addTab() {
       const elements = this.elementsDict;
       const [name, label] = [`tab_${elementManage.uuid()}`, `Tab ${elements.length + 1}`];
+      
+      const tab = [{
+         element: "tab",
+         data: { 
+            name,
+            id: name, 
+            label,
+            droppable: true, 
+            draggable: false, 
+            key: name 
+         },
+      }];
 
-      elements.push({
-         data: { name, id: name, label, droppable: true, draggable: false }
+      this.setElements(tab, () => {
+         this.selectTab(name);
       });
-
-      this.set_elements(elements);
-      this.selectLastTab();
    }
 
    selectLastTab() {
       const elements = this.elementsDict;
-      this.selectTab(elements[elements.length - 1]?.data?.name);
+      this.selectTab(elements[elements.length - 1]?.data?.key);
    }
 
    selectFirstTab() {
       const elements = this.elementsDict;
-      this.selectTab(elements[0]?.data?.name);
+      this.selectTab(elements[0]?.data?.key);
    }
 
-   removeTab(name) {
-      this.set_elements(this.elementsDict.filter(element => element.data.name !== name));
-      this.selectLastTab();
+   /*removeTab(key) {
+      console.log("removing tab", key)
+      this.setElements(this.elementsDict.filter(element => element.data.key !== key), false, () => {
+         this.selectLastTab();
+      });
+   }*/
+
+   selectTab(key) {
+      !this.props.notManageSelectedStatus && localStorage.setItem(this.props.meta.data.key, key);
+
+      this.setState(prevState => {
+         if (prevState.active !== key) {
+            return { active: key };
+         }
+      }, () => {
+         this[key] && this.props.designer && loopar.sidebarOption !== "preview" && loopar.documentForm.editElement(this[key]);
+      });
    }
 
-   selectTab(name) {
-      !this.props.notManageSelectedStatus && localStorage.setItem(this.props.meta.data.name, name);
-      this.setState({ active: name });
-
-      setTimeout(() => {
-         this[name] && this.props.designer && loopar.sidebarOption !== "preview" && loopar.document_form.editElement(this[name].props);
-      }, 50);
-   }
-
-   updateTab(name, data) {
+   updateTab(key, data) {
       const elements = this.elementsDict.map((element) => {
-         if (element.data.name === name) {
+         if (element.data.key === key) {
             element.data = data;
          }
 
          return element;
       });
 
-      this.set_elements(elements);
+      this.setElements(elements, null, false);
    }
 
-   set_elements(elements) {
-      super.set_elements(elements);
-      loopar.Designer.updateElements(this, this.elementsDict);
-   }
+   /*setElements(elements, callback) {
+      super.setElements([], () => {
+         callback && callback();
+      });
+   }*/
 
    currentTab() {
-      return this.props.notManageSelectedStatus ? null : localStorage.getItem(this.props.meta.data.name);
+      return this.props.notManageSelectedStatus ? null : localStorage.getItem(this.props.meta.data.key);
    }
 
    componentDidMount() {
       super.componentDidMount();
+
+      if (JSON.stringify(elementManage.fixElements(super.elementsDict)) !== JSON.stringify(super.elementsDict)){
+         this.setElements(elementManage.fixElements(super.elementsDict));
+      }
 
       if (this.elementsDict.length === 0 && this.props.designer) {
          this.addTab();
@@ -87,21 +106,31 @@ export default class Tabs extends Component {
 
    componentDidUpdate(prevProps, prevState, snapshot) {
       super.componentDidUpdate(prevProps, prevState, snapshot);
+
+      const currentTab = this.currentTab();
+      if(currentTab && !this.checkIfTabExists(currentTab)){
+         //this.selectFirstTab();
+      }
    }
 
-   checkIfTabExists(name) {
-      return this.elementsDict.some(element => element.data.name === name);
+   checkIfTabExists(key) {
+      return this.elementsDict.some(element => element.data.key === key);
    }
 
    get elementsDict() {
-      return this.props.children || super.elementsDict;
+      return this.props.designer ? super.elementsDict : this.props.children || super.elementsDict;
+      /*return super.elementsDict;
+      return this.props.children || super.elementsDict;*/
    }
 
    render() {
-      const elementsDict = this.elementsDict;
+      const elementsDict = this.elementsDict || [];
       const bodyStyle = this.props.bodyStyle || {};
+
       return super.render([
-         div({ className: 'card-header', style: { ...(this.props.headerStyle || {}) } }, [
+         div({ 
+            className: 'card-header', style: { ...(this.props.headerStyle || {}) } 
+         }, [
             this.props.meta.data.label ? h4({ className: "card-title" }, this.props.meta.data.label) : null,
             ul({ className: "nav nav-tabs card-header-tabs" }, [
                elementsDict.map(element => {
@@ -109,10 +138,10 @@ export default class Tabs extends Component {
                      className: "nav-item"
                   }, [
                      a({
-                        className: "nav-link" + (element.data.name === this.state.active ? " active" : ""),
+                        className: "nav-link" + (element.data.key === this.state.active ? " active" : ""),
                         onClick: (e) => {
                            e.preventDefault();
-                           this.selectTab(element.data.name);
+                           this.selectTab(element.data.key);
                         },
                         "data-toggle": "tab"
                      }, element.data.label)
@@ -138,29 +167,31 @@ export default class Tabs extends Component {
             div({
                className: "tab-content"
             }, [
-               ...elementsDict.map(element => {
+               ...elementsDict.map((element, index) => {
+                  const tabKey = element.data.key// || this.props.meta.key + index;
                   return Tab({
                      element: "tab",
-                     className: "sub-element tab-pane fade" + (element.data.name === this.state.active ? " show active" : ""),
+                     className: "sub-element tab-pane fade" + (element.data.key === this.state.active ? " show active" : ""),
                      style: {
-                        display: element.data.name === this.state.active ? "block" : "none"
+                        display: element.data.key === this.state.active ? "block" : "none"
                      },
                      meta: {
                         data: element.data,
                         elements: element.elements,
+                        key: tabKey
                      },
                      draggable: false,
-                     key: element.data.name,
+                     key: tabKey,
                      elementTitle: element.data.label,
-                     designerRef: this.props.designerRef,
+                     //designerRef: this.props.designerRef,
                      ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
                      ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
                      ...(this.props.designer && {
-                        has_title: true, draggable: true, designer: true
+                        hasTitle: true, draggable: true, designer: true
                      } || {}),
                      ref: tab => {
                         if (tab) {
-                           this[element.data.name] = tab;
+                           this[tabKey] = tab;
                            if (this.props.designer) {
                               tab.parentComponent = this;
                            }
@@ -179,13 +210,13 @@ class TabClass extends Component {
       super(props);
    }
 
-   remove() {
-      this.props.parent_element.removeTab(this.props.meta.data.name);
-   }
+   /*remove() {
+      this.props.parentElement.removeTab(this.props.meta.data.key);
+   }*/
 
    setData(data) {
       super.setData(data);
-      this.props.parent_element.updateTab(this.props.meta.data.name, data);
+      this.props.parentElement.updateTab(this.props.meta.data.key, data);
    }
 }
 

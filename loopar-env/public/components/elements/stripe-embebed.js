@@ -29,12 +29,10 @@ export default class StripeEmbebedClass extends Component {
    componentDidMount() {
       super.componentDidMount();
 
-      loopar.require("https://js.stripe.com/v3/pricing-table", () => {
-         this.loadStripe();
-      });
+      loopar.require("https://js.stripe.com/v3/pricing-table");
    }
 
-   get dataElements() {
+   get metaFields() {
       return [
          {
             group: 'custom',

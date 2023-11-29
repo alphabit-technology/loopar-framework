@@ -55,12 +55,14 @@ export class HTML extends React.Component {
 
    tagDontHaveChild(tag) {
       /**List Elements that don't have children */
-      const single_tags = "input,textarea,img,switch,checkbox,hr,br,checkbox,script,link,meta,base,area,basefont,frame,embed,source,track,wbr,image".split(",");
+      const singleTags = "input,textarea,img,switch,checkbox,hr,br,checkbox,script,link,meta,base,area,basefont,frame,embed,source,track,wbr,image".split(",");
 
-      return single_tags.includes(tag);
+      return singleTags.includes(tag);
    }
 
    render(content = null) {
+      //if(this.dontHaveContainer) return null;
+
       const props = Object.assign({}, this.props);
       const meta = props.meta || {};
       const data = meta.data || {};
@@ -85,11 +87,13 @@ export class HTML extends React.Component {
       }
 
       const tag = this.tagName || this.props.tagName || "div";
-      const className = this.getClassName;
+      const className = this.dontHaveContainer ? "" : this.getClassName;
       if (className && className.length > 0) props.className = className;
+      
       const animations = {}
-      if (data.animation && !props.designer) {
-         animations["data-aos"] = data.animation;
+      if (data.animation && !props.designer && !this.dontHaveContainer) {
+         this.animation = loopar.getAnimation(data.animation);
+         animations["data-aos"] = this.animation;
 
          if (data.animation_delay) {
             animations["data-aos-delay"] = data.animation_delay;
@@ -104,6 +108,26 @@ export class HTML extends React.Component {
 
       const action = props?.meta?.data?.action;
 
+      const callAction = {};
+
+      if (action){
+         if(props.docRef && typeof props.docRef[action] == "function") {
+            callAction.onClick = () => props.docRef[action]();
+         }else{
+            callAction.onClick = (e) => {
+               if (props.onClick) {
+                  props.onClick(e);
+               }
+   
+               if (props.navigate) {
+                  loopar.navigate(props.navigate);
+               }
+
+               loopar.navigate(action);
+            }
+         }
+      }
+
       const component = [
          (tag === "image" ? "img" : tag),
          {
@@ -115,7 +139,7 @@ export class HTML extends React.Component {
             }, {}),
             ...{ style: this.getStyle },
             ...this.state.attrs,
-            ...((action && props.docRef && typeof props.docRef[action] == "function") ? { onClick: () => props.docRef[action]() } : {}),
+            ...callAction,
             ...animations,
             ...this.attrs
          }
@@ -144,42 +168,41 @@ export class HTML extends React.Component {
       }
    }
 
-   get identifier() {
-      return this.meta.identifier || this.data.name;
+   get element() {
+      return this.meta.element || this.props.element;
    }
 
    get elements() {
-      return (this.meta?.elements || []).map(el => {
-         return this.makeElement(el);
+      return this.elementsDict.map(el => {
+         return this.getElement(el);
       });
    }
 
-   makeElement(el, props = {}) {
-      if (!el.data) {
-         const names = elementManage.elementName(this.props.element);
-         el.data = {
-            name: names.name,
-            label: names.label,
-            id: names.id
-         }
+   get elementsDict() {
+      return this.meta.elements || [];
+   }
+
+   getElement(el, props = {}) {
+      if(this.props.designer) return this.getDesignElement(el, props);
+
+      el.data ??= {};
+      if (el.data.hidden && !this.props.designer) return null;
+
+      if(this.data.static_content){
+         el.data.animation = loopar.reverseAnimation(this.animation);
+         //console.log("static_content", this.data.static_content, this.animation)
       }
 
-      if (el.data.hidden && !this.props.designer) return null;
+      this.props.docRef && (props.docRef = this.props.docRef);
+      this.props.docRef?.readOnly && (props.readOnly = true);
 
       return Element(el.element, {
          ...{
-            key: 'element' + el.data.name,
-            ...(el.element === "tabs" && this.props.designerRef ? { key: elementManage.getUniqueKey() } : {}),
-            ...(this.props.docRef ? { docRef: this.props.docRef } : {}),
-            ...(this.props.designerRef ? { designerRef: this.props.designerRef } : {}),
-            ...(this.props.designer && {
-               has_title: true, draggable: true, designer: true
-            } || {}),
-            ...(this.props.docRef && this.props.docRef.readOnly && { readOnly: true } || {}),
+            key: 'element' + el.data.key,
             ref: self => {
                if (self) {
                   /*For inputs and other elements that have a name and have */
-                  if (this.props.docRef && el.data.name && !this.props.designer) {
+                  if (this.props.docRef && el.data.name) {
                      if (self.isWritable) {
                         /*For inputs elements*/
                         this.props.docRef.formFields[el.data.name] = self;
@@ -187,10 +210,6 @@ export class HTML extends React.Component {
                         /*For other elements*/
                         this.props.docRef[el.data.name] = self;
                      }
-                  }
-
-                  if (this.props.designer) {
-                     self.parentComponent = this;
                   }
                }
             },
@@ -201,12 +220,43 @@ export class HTML extends React.Component {
       });
    }
 
+   getDesignElement(el, props = {}) {
+      if (!el.data) {
+         const names = elementManage.elementName(this.props.element);
+         el.data = {
+            name: names.name,
+            label: names.label,
+            id: names.id,
+         }
+      }
+
+      el.data.key ??= elementManage.getUniqueKey();
+      const selfProps = this.props;
+
+      const newProps = {...{
+         key: 'element' + el.data.key,
+         designer: selfProps.designer,
+         designerRef: selfProps.designerRef,
+         readOnly: selfProps.readOnly,
+         hasTitle: true,
+         dragabble: true,
+         ref: self => {
+            self && (self.parentComponent = this)
+         },
+         meta: {
+            ...el,
+         },
+      }, ...props}
+
+      return Element(el.element, newProps);
+   }
+
    addChild(child, merge = false) {
-      this.setState({ children: child }, merge);
+      this.setState({ children: child }, null, merge);
    }
 
    text(text) {
-      this.setState({ children: text }, false);
+      this.setState({ children: text }, null, false);
    }
 
    on(event, callback) {
@@ -238,16 +288,11 @@ export class HTML extends React.Component {
       this.addClass("no-display");
    }
 
-   get element() {
-      return this.meta.element || this.props.element;
-   }
-
    get getClassName() {
-      const props = this.props;
       const selfClassName = this.className || '';
       const propsClassName = this.props.className || '';
       const stateClassName = (this.$state || {}).className || '';
-      const dataClassName = ((this.props.meta?.data || {}).class || null);
+      const dataClassName = this.dontHaveContainer ? null  : ((this.props.meta?.data || {}).class || null);
       this.lastSettedClass ??= (dataClassName || "");
 
       const classes = `${selfClassName} ${stateClassName} ${propsClassName}`.split(' ');
@@ -267,18 +312,18 @@ export class HTML extends React.Component {
       return this.getClassName.includes(className);
    }
 
-   toggleClass(class_name) {
-      if (this.getClassName.includes(class_name)) {
-         this.removeClass(class_name);
+   toggleClass(className) {
+      if (this.getClassName.includes(className)) {
+         this.removeClass(className);
       } else {
-         this.addClass(class_name);
+         this.addClass(className);
       }
       return this;
    }
 
-   replaceClass(class_name, new_class_name) {
-      const new_class = this.getClassName.replace(class_name, new_class_name);
-      this.setState({ className: new_class });
+   replaceClass(className, newClassName) {
+      const newClass = this.getClassName.replace(className, newClassName);
+      this.setState({ className: newClass });
       return this;
    }
 
@@ -293,57 +338,57 @@ export class HTML extends React.Component {
    }
 
    setState(state, callback, merge = false) {
-      const last_state = this.state || {};
-      const new_state = merge ? this.mergeAttributes(last_state, state) : state;
+      const lastState = this.state || {};
+      const newState = merge ? this.mergeAttributes(lastState, state) : state;
 
-      super.setState(new_state, typeof callback === "function" ? callback : undefined);
+      super.setState(newState, typeof callback === "function" ? callback : undefined);
    }
 
    setAttrs(attr, value) {
-      const current_attrs = this.state.attrs || {};
+      const currentAttrs = this.state.attrs || {};
 
       if (typeof attr === "object") {
-         this.setState({ attrs: { ...current_attrs, ...attr } }, null, true);
+         this.setState({ attrs: { ...currentAttrs, ...attr } }, null, true);
       } else {
-         this.setState({ attrs: { ...current_attrs, [attr]: value } }, null, true);
+         this.setState({ attrs: { ...currentAttrs, [attr]: value } }, null, true);
       }
    }
 
-   hasClass(class_name) {
-      return this.getClassName.includes(class_name);
+   hasClass(className) {
+      return this.getClassName.includes(className);
    }
-   addClass(class_name) {
-      if (this.hasClass(class_name)) return this;
-      const where_is_class = (this.state || {}).className ? "state" : "props";
+   addClass(className, render = true) {
+      if (this.hasClass(className)) return this;
+      const whereIsClass = (this.state || {}).className ? "state" : "props";
 
-      const current_class = (this.getClassName + " " + class_name).split(" ").filter(c => c !== "" && c.length > 0)//.join(" ");
-      const class_name_list = Array.from(new Set(current_class)).join(" ");
+      const currentClass = (this.getClassName + " " + className).split(" ").filter(c => c !== "" && c.length > 0)//.join(" ");
+      const classNamelist = Array.from(new Set(currentClass)).join(" ");
 
-      if (where_is_class === "props") {
-         this.className = class_name_list;
-         this.setState({});
+      if (whereIsClass === "props") {
+         this.className = classNamelist;
+         render && this.setState({});
       } else {
-         this.setState({ className: class_name_list });
+         render && this.setState({ className: classNamelist });
       }
 
       return this;
    }
 
-   removeClass(className) {
+   removeClass(className, render = true) {
       if (!this.hasClass(className)) return this;
-      const current_class = this.getClassName.split(" ");
-      const where_is_class = (this.$state || {}).className ? "state" : "props";
+      const currentClass = this.getClassName.split(" ");
+      const whereIsClass = (this.$state || {}).className ? "state" : "props";
 
       className.split(" ").map(c => {
-         const index = current_class.indexOf(c);
-         index > -1 && current_class.splice(index, 1);
+         const index = currentClass.indexOf(c);
+         index > -1 && currentClass.splice(index, 1);
       });
 
-      if (where_is_class === "props") {
-         this.className = current_class.join(" ");
-         this.setState({});
+      if (whereIsClass === "props") {
+         this.className = currentClass.join(" ");
+         render && this.setState({});
       } else {
-         this.setState({ className: current_class.join(" ") });
+         render && this.setState({ className: currentClass.join(" ") });
       }
 
       return this;
@@ -356,6 +401,7 @@ export class HTML extends React.Component {
    }
 
    componentDidUpdate(prevProps, prevState, snapshot) {
+      this.prevProps = prevProps;
       this.onUpdate && this.onUpdate(prevProps, prevState, snapshot);
    }
 
@@ -500,7 +546,7 @@ export class HTML extends React.Component {
 
             if (elementToDrag.parentComponent !== self) {
                elements = elements.filter(e => {
-                  return e.data.name !== elementToDrag.meta.data.name;
+                  return e.data.key !== elementToDrag.meta.data.key;
                });
                elements.push(element);
             }
@@ -516,27 +562,27 @@ export class HTML extends React.Component {
       DragAndDropUtils.lastElementTargetSibling = null;
    }
 
-   sortElements(elements, moved_element, target_element, type, direction = vertical_direction) {
+   sortElements(elements, movedElement, targetElement, type, direction = vertical_direction) {
       /**before moving the element, we need to check if the target element is in the elements array*/
-      const target_in_elements = elements.some(element => {
-         return element.data.name === target_element.data.name;
+      const targetInElements = elements.some(element => {
+         return element.data.key === targetElement.data.key;
       });
 
-      if (target_in_elements && target_element.data.name !== moved_element.data.name) {
+      if (targetInElements && targetElement.data.key !== movedElement.data.key) {
          elements = elements.filter(element => {
-            return element.data.name !== moved_element.data.name;
+            return element.data.key !== movedElement.data.key;
          });
       }
 
       /**if the target element is in the elements array, we need to move the element to the target element position*/
-      if (moved_element && target_element && target_element.data.name !== moved_element.data.name && target_in_elements) {
+      if (movedElement && targetElement && targetElement.data.key !== movedElement.data.key && targetInElements) {
          return elements.reduce((acc, element) => {
             const data = element.data;
 
             /**if the element is the target element, we need to add the moved element before or after the target element*/
-            if (data.name === target_element.data.name) {
-               acc = direction === UP ? [...acc, moved_element, element] : [...acc, element, moved_element];
-            } else if (data.name !== moved_element.data.name) {
+            if (data.key === targetElement.data.key) {
+               acc = direction === UP ? [...acc, movedElement, element] : [...acc, element, movedElement];
+            } else if (data.key !== movedElement.data.key) {
                acc = [...acc, element];
             }
 
@@ -558,16 +604,28 @@ export class HTML extends React.Component {
       return (this.parentComponent || this).options.app;
    }
 
-   setElements(elements) {
-      const meta = this.meta;
-      meta.elements = elements;
-      this.setState({ meta });
+   setElements(elements, callback, merge = true) {
+      const newElements = (merge ? [...this.elementsDict, ...elements] : elements);
+
+      function removeDuplicates(array) {
+         const seen = new Set();
+         return array.filter(obj => {
+            const value = obj.data.key;
+            if (!seen.has(value)) {
+               seen.add(value);
+               return true;
+            }
+            return false;
+         });
+      }
+
+      loopar.Designer.updateElements(this, removeDuplicates(newElements), null, callback);
    }
 
-   addElement(element = null) {
+   addElement(element = null, callback) {
       if (!element) return;
 
-      this.setElements([...this.elementsDict, element], element);
+      this.setElements([...this.elementsDict, [element]], callback);
    }
 
    /**Parent component is the component that contains the current element, only for Block Elements ej: Card*/
@@ -581,26 +639,22 @@ export class HTML extends React.Component {
 
    /**Parent element is the element that contains the current element for all Elements*/
    remove() {
-      if (this.parent_element) {
-         const currentElements = this.parent_element.elementsDict;
+      if (this.parentElement) {
+         const currentElements = this.parentElement.elementsDict;
          currentElements.findIndex((element) => {
-            if (element.data.name === this.data.name) {
+            if (element.data.key === this.data.key) {
                currentElements.splice(currentElements.indexOf(element), 1);
                return true;
             }
          });
 
-         this.parent_element.setElements(currentElements);
+         this.parentElement.setElements(currentElements);
       }
 
       setTimeout(() => {
          //trigger && this.onRemove && this.onRemove();
          loopar.documentForm && loopar.documentForm.makeDocStructure();
-      }, 0);
-   }
-
-   get elementsDict() {
-      return this.meta.elements || [];
+         }, 0);
    }
 
    overAnimations() {
@@ -614,5 +668,10 @@ export class HTML extends React.Component {
       });
 
       return this;
+   }
+
+   get identifier(){
+      const { key, id, name } = this.meta?.data || {};
+      return key ?? id ?? name ?? elementManage.getUniqueKey();
    }
 }

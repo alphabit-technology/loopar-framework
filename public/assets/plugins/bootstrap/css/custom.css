@@ -242,3 +242,35 @@
         /*min-height: 100vh;*/
     }
 }
+
+.app {
+    min-height: 100vh;
+}
+
+ .hide-time {
+     animation: hideTime 3s ease-in-out;
+ }
+
+ @keyframes hideTime {
+     0% {
+         opacity: 0.8;
+     }
+
+     100% {
+         opacity: 0.3;
+     }
+ }
+
+ .show-time {
+     animation: showTime 1s ease-in-out;
+ }
+
+  @keyframes showTime {
+      0% {
+          opacity: 0.5;
+      }
+
+      100% {
+          opacity: 1;
+      }
+  }

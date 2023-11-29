@@ -63,7 +63,7 @@ class BaseTable extends Div {
             ...elements.map(el => {
                return [{ ...el }, ...els(el.elements || [])];
             })
-         ].flat()//.filter(e => e.is_writable);
+         ].flat()//.filter(e => e.isWritable);
       }
 
       return els(meta.__DOCTYPE__?.STRUCTURE || []);
@@ -333,9 +333,9 @@ class BaseTable extends Div {
       });
    }
 
-   fieldIsWritable(field) {
-      return elementsDict[field.element]?.is_writable;
-   }
+   /*fieldIsWritable(field) {
+      return elementsDict[field.element]?.def?.isWritable;
+   }*/
 
    getTableRender(_columns, rows) {
       const columns = _columns.filter(c => !this.hiddenColumns.includes(c.data.name))
@@ -397,7 +397,7 @@ class BaseTable extends Div {
                               return td({ className: "col-checker align-middle", ...celProps }, column.data.value(row));
                            }
 
-                           if (this.isEditable && this.fieldIsWritable(column)) {
+                           if (this.isEditable && fieldIsWritable(column)) {
                               const props = { ...column };
                               props.data ??= {};
                               props.data.value = row[column.data.name];
@@ -534,7 +534,7 @@ class BaseTable extends Div {
 
    render() {
       const columns = this.getColumns().filter(col => col.data.hidden !== 1 && col.data.in_list_view !== 0);
-      const searchFields = this.baseColumns().filter(col => this.fieldIsWritable(col) && [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) && (col.data.searchable || col.data.name === 'name'));
+      const searchFields = this.baseColumns().filter(col => fieldIsWritable(col) && [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) && (col.data.searchable || col.data.name === 'name'));
       const rows = Array.isArray(this.rows) ? this.rows : [];
       this.conciliateSelectedRows();
       const selectedRowsCount = this.selectedRows.length;
@@ -556,7 +556,7 @@ class BaseTable extends Div {
                         const celProps = c.rowsProps ?? {};
 
                         if (c.data.name !== "selector_all") {
-                           if (this.fieldIsWritable(c)) {
+                           if (fieldIsWritable(c)) {
                               const meta = { ...{ simpleInput: false, withoutLabel: true }, ...c };
                               //const meta = {};
 
@@ -705,6 +705,19 @@ export default class FormTable extends BaseTable {
             }
          }))
       }, []);
+   }
+
+   get metaFields() {
+      return [
+         {
+            group: "form",
+            elements: {
+               options: {
+                  element: TEXTAREA
+               }
+            }
+         }
+      ]
    }
 }
 

@@ -158,9 +158,9 @@ export default class ${name}${_EXTENDS} {
    }
 
    async setConfigFile(fileName, data, path = null) {
-      const dir_path = path || `config`;
+      const dirPath = path || `config`;
 
-      await this.makeFile(dir_path, fileName, JSON.stringify(data, null, 2), 'json');
+      await this.makeFile(dirPath, fileName, JSON.stringify(data, null, 2), 'json');
    }
 }
 

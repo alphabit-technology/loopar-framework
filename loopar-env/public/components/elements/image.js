@@ -1,17 +1,22 @@
-import {image, div} from "../elements.js";
+import {image, Div} from "../elements.js";
 import Component from "../base/component.js";
-
+import { loopar } from "../../loopar.js";
 
 export default class Image extends Component {
-   style= {
-      position: "relative",
-      width: "100%",
-      backgroundColor: "var(--secondary)",
-      paddingTop: "56.25%",
-      overflow: "hidden"
+   style = {
+      //position: "relative",
+      //width: "100%",
+      top: 0,//, left: 0, right: 0, bottom: 0,
+      //backgroundColor: "var(--secondary)",
+      paddingTop: "60%",
+      //overflow: "hidden"
    }
+   //className = "image";
 
-   insideBackGround = true;
+   //insideBackGround = true;
+
+   //dontHaveContainer = true;
+   //dontHaveBackground = true;
 
    constructor(props){
       super(props);
@@ -32,30 +37,41 @@ export default class Image extends Component {
    }
 
    render(){
-      const {color_overlay={}} = this.props.meta.data;
-      const {color, alpha} = color_overlay;
+      const data = this.props.meta?.data || {};
+      const color = loopar.utils.rgba(data.color_overlay);
+
+      //this.className = this.className +  " " + data.class || "position-relative w-100 h-100";
+      
 
       return super.render([
-          image({
-             style: {
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: this.props.meta.data.background_size || "cover",
-             },
-             ...this.backGround(true),
-          }),
-         div({
+         image({
             style: {
                position: "absolute",
                top: 0, left: 0, right: 0, bottom: 0,
+               width: "100%",
+               height: "100%",
+               objectFit: data.background_size || "cover",
+               borderRadius: "0.25rem",
+            },
+            ...this.backGround(true),
+         }),
+         Div({
+            style: {
+               position: "absolute",
+               width: "100%",
+               height: "100%",
+               top: 0, left: 0, right: 0, bottom: 0,
                borderRadius: "0.25rem",
                overflow: "hidden",
-               backgroundColor: color || "rgba(0,0,0,0.5)",
-               opacity: alpha || 0
-            }
+               ...(color ? {backgroundColor: color} : {}),
+               borderRadius: 0
+            },
+            className: data.class
          })
       ]);
+   }
+
+   componentDidUpdate(prevProps, prevState, snapshot) {
+      super.componentDidUpdate(prevProps, prevState, snapshot);
    }
 }

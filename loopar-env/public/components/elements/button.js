@@ -11,6 +11,7 @@ const buttons = {
 
 export default class Button extends Div {
    className = "btn";
+   droppable = false;
    constructor(props) {
       if (!props.designer) {
          props.tagName = "button";
@@ -52,7 +53,7 @@ export default class Button extends Div {
       }
 
       if (this.designer) {
-         this.has_title = false;
+         this.hasTitle = false;
          super.tag('div');
       } else {
          super.tag('a');
@@ -74,13 +75,27 @@ export default class Button extends Div {
 
       return this;*/
    }
+
+   get metaFields() {
+      return {
+         group: "form",
+         elements: {
+            action: {
+               element: INPUT,
+               data: {
+                  description: "if you define url, button will be link; if you define simple action like save, print..., button will be call action function in your view",
+               }
+            }
+         }
+      }
+   }
 }
 
 Object.keys(buttons).forEach(button => {
    Object.defineProperties(Button.prototype, {
       [button]: {
          value: function (props) {
-            return this.set_type(button);
+            return this.setType(button);
          }
       }
    });

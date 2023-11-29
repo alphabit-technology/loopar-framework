@@ -1,19 +1,119 @@
-import { div } from "../elements.js";
+import { div, span, button } from "../elements.js";
 import Component from "../base/component.js";
+import { elementManage } from "../element-manage.js";
+import { loopar } from "/loopar.js";
 
 export default class Row extends Component {
    blockComponent = true;
    className = "row";
+   dontHaveMetaElements = ["label", "text"];
+
    constructor(props) {
       super(props);
    }
 
+   setLayout(layout){
+      const meta = this.props.meta;
+
+      this.props.designerRef.updateElement(meta.data.key, {
+         layout: JSON.stringify(layout),
+      }, true);
+   }
+
+   getLayout(){
+      const meta = this.props.meta;
+      return meta.data.layout ? JSON.parse(meta.data.layout) : [];
+   }
+
+   getColumnsSelector(){
+      const sizes = [[100], [50,50], [66,33], [33,67], [25,25,25,25], [25,75], [75,25], [40,60], [60,40], [20,20,20,20,20,20], [20,40,40], [40,20,40]];
+      const buttonsCount = sizes.length
+      const bottonSize = 100 / sizes.length;
+
+      return sizes.map((layout, layoutIndex) => {
+         return div({
+            className: `progress ${layoutIndex < buttonsCount - 1 ? "mr-1" : ""}`,
+            style: {
+               width: bottonSize + "%",
+               borderRadius: 0,
+               backgroundColor: 'transparent'
+            },
+            onClick: (e) => {
+               e.stopPropagation();
+               e.preventDefault();
+
+               this.setLayout(layout);
+            }
+         }, [
+            layout.map((size, index) => {
+               return div({
+                  className: `progress-bar`,
+                  style: {
+                     width: size + "%", border: "unset",
+                     backgroundColor: `rgba(255,${Math.abs(150 - (index * 50))},0,${(index + 1) / layout.length})`
+                  }
+               })
+            })
+         ])
+      })
+   }
    render(content) {
       return super.render([
+         this.props.designer && div({
+            className: "row-layout-selector",
+            style: {
+               position: "absolute",
+               bottom: 0,
+               left: 0,
+               width: "100%",
+               display: "none",
+               zIndex: 99
+            }
+         }, [
+            this.getColumnsSelector(),
+         ]),
          this.props.children,
          content,
          this.elements
       ]);
+   }
+
+   get elements(){
+      const columns = (this.meta?.elements || []).filter(el => el.element === COL);
+      const layout = this.getLayout();
+
+      if(this.props.designer && columns.length < layout.length){
+         const pending = layout.length - columns.length;
+         const newColumns = [];
+
+         for(let i = 0; i < pending; i++){
+            newColumns.push({
+               element: COL,
+               data: {
+                  key: elementManage.getUniqueKey(),
+               }
+            });
+         }
+
+         this.setElements(newColumns);
+         return;
+      }
+
+      let layoutIndexUsed = 0;
+      return (this.meta?.elements || []).map(el => {
+         let className = "";
+         if(el.element === COL){
+            if (layoutIndexUsed < layout.length) {
+               className = `col-12 col-md-${(Math.round((layout[layoutIndexUsed] / 100) * 12))} `;
+               layoutIndexUsed++;
+            }else{
+               ["xm", "sm", "md", "lg", "xl"].forEach(size => {
+                  el.data[size] && (className += `col-${size}-${el.data[size]} `);
+               });
+            }
+         }
+         return this.getElement(el, {className, ...(this.props.designer ? {key: elementManage.getUniqueKey()} : {})});
+      });
    }
 
    componentDidMount() {
@@ -24,5 +124,19 @@ export default class Row extends Component {
       }else{
          //this.addClass("position-relative pb-5 bg-light");
       }*/
+   }
+
+   get metaFields() {
+      return {
+         group: "custom",
+         elements: {
+            layout: {
+               element: INPUT,
+               data: {
+                  disabled: true
+               }
+            },
+         }
+      }
    }
 }

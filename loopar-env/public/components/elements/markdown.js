@@ -33,7 +33,7 @@ export default class Markdown extends BaseInput {
             this.editor.value(data.value);
 
             this.editor.codemirror.on('change', () => {
-               this.props.designerRef && this.props.designerRef.updateElement(this.props.meta.data.name, { value: this.editor.value() });
+               this.props.designerRef && this.props.designerRef.updateElement(this.props.meta.data.id, { value: this.editor.value() });
             });
          } else {
             Object.values(this.node.getElementsByTagName("a")).forEach(a => {
