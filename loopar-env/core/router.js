@@ -199,7 +199,7 @@ export default class Router {
       if (args.controller === coreInstallerController || this.debugger || args.workspace === "web") {
          await sendAction();
       } else {
-         await this.temporaryLogin();
+         //await this.temporaryLogin();
          if (await controller.isAuthenticated()) {
             await controller.isAuthorized() && await sendAction();
          } else if (!controller.isLoginAction || (!args.existController && !args.apiRequest)) {
