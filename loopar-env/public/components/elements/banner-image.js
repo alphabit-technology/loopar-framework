@@ -3,7 +3,7 @@ import Preassembled from "../base/preassembled.js";
 
 export default class BannerImage extends Preassembled {
    blockComponent = true;
-   className = "py-5";
+   className = "py-5 h-100";
    defaultDescription = "This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.";
    /*style = {
       height: "80vh"
@@ -19,7 +19,7 @@ export default class BannerImage extends Preassembled {
             {
                element: "image",
                data: {
-                  class: "img-fluid img-float-md-6 mb-5 mb-md-0",
+                  class: "img-fluid mb-5 mb-md-0",
                   src: "https://picsum.photos/800/600",
                   alt: ""
                }
@@ -88,10 +88,8 @@ export default class BannerImage extends Preassembled {
    }
 
    render(){
-      const {label, description, action} = this.data;
-
       return super.render([
-         div({className: "container container-fluid-xl"}, [
+         div({ className: `h-100`}, [
             div({
                Component: this,
                ref: el => this.container = el,
@@ -126,5 +124,21 @@ export default class BannerImage extends Preassembled {
             ])
          ])
       ]);
+   }
+
+   get metaFields(){
+      return [
+         {
+            group: "general",
+            elements: {
+               full_height: {
+                  element: SWITCH,
+                  data: {
+                     description: "If enabled the slider will have the height of the screen.",
+                  }
+               },
+            }
+         }
+      ]
    }
 }

@@ -39,6 +39,13 @@ export default class Image extends Component {
    render(){
       const data = this.props.meta?.data || {};
       const color = loopar.utils.rgba(data.color_overlay);
+      const aspect_ratio = data.aspect_ratio || "4:3";
+
+      this.style = {
+         ...this.style,
+         paddingTop: loopar.utils.aspectRatio(aspect_ratio) + "%",
+         backgroundColor: color,
+      }
 
       //this.className = this.className +  " " + data.class || "position-relative w-100 h-100";
       
@@ -55,7 +62,7 @@ export default class Image extends Component {
             },
             ...this.backGround(true),
          }),
-         Div({
+         /*Div({
             style: {
                position: "absolute",
                width: "100%",
@@ -67,11 +74,35 @@ export default class Image extends Component {
                borderRadius: 0
             },
             className: data.class
-         })
+         })*/
       ]);
    }
 
    componentDidUpdate(prevProps, prevState, snapshot) {
       super.componentDidUpdate(prevProps, prevState, snapshot);
+   }
+
+   get metaFields(){
+      return [
+         {
+            group: "custom",
+            elements: {
+               aspect_ratio: {
+                  element: SELECT,
+                  data: {
+                     options: [
+                        {option: "1:1", value: "1:1"},
+                        { option: "4:3", value: "4:3"},
+                        { option: "16:9", value: "16:9"},
+                        { option: "21:9", value: "21:9"},
+                        { option: "3:4", value: "3:4"},
+                        { option: "9:16", value: "9:16"},
+                        { option: "9:21", value: "9:21"},
+                     ]
+                  }
+               },
+            }
+         }
+      ]
    }
 }

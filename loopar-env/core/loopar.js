@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { access } from 'fs'
+import { access, fstat } from 'fs'
 import DataBase from '../database/database.js';
 //import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
@@ -12,9 +12,11 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import { simpleGit, CleanOptions } from 'simple-git';
 import elementGenerator from "./element-generator.js";
+import appSourceGenerator from "./apps-source-importer-generator.js";
 import { Session } from "./session.js";
 import dayjs from "dayjs";
 import crypto from "crypto-js";
+import fs from "fs";
 
 export class Loopar {
    #installingApp = false;
@@ -70,6 +72,59 @@ export class Loopar {
       //this.db = new DataBaseSqlLite();
       await this.db.initialize();
       await this.makeConfig();
+      await this.copyAppFilesToSrc();
+   }
+
+   eachApps(fn){
+      fs.readdirSync(this.makePath(this.pathRoot, "apps")).forEach(app => {
+         if (fs.lstatSync(this.makePath(this.pathRoot, "apps", app)).isDirectory()) {
+            fn(app);
+         }
+      });
+   }
+
+   async copyAppFilesToSrc(){
+
+      if (await fileManage.existFolder(this.makePath("src", "__apps-source__"))){
+         await fileManage.deleteFolder("src", "__apps-source__");
+      }
+
+      await fileManage.makeFolder("src", "__apps-source__");
+      const basePath = this.pathRoot;
+
+      //fs.readdirSync(this.makePath(this.pathRoot, "apps")).forEach(app => {
+         this.eachApps(app => {
+            const modules = fs.readdirSync(`${basePath}/apps/${app}/modules`);
+            modules.forEach(module => {
+               const documents = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}`);
+               documents.forEach(document => {
+                  const clientFiles = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}/${document}/client`);
+
+                  clientFiles.forEach(clientFile => {
+                     if(clientFile.split(".")[1] !== "jsx") return;
+                     
+                     const source = this.makePath(this.pathRoot, "apps", app, "modules", module, document, "client", clientFile);
+                     const destiny = this.makePath(this.pathRoot, "src", "__apps-source__", clientFile);
+                  
+                     fs.readFile(source, (err, data) => {
+                        if (err) {
+                           console.error('Err on read file:', err);
+                           return;
+                        }
+
+                        fs.writeFile(destiny, data, (err) => {
+                           if (err) {
+                              console.error('Err on write file:', err);
+                              return;
+                           }
+                        });
+                     });
+                     
+                  });
+               });
+            });
+         });
+      //});
    }
 
    async #loadConfig(data = null) {
@@ -85,6 +140,8 @@ export class Loopar {
       await fileManage.makeFolder('public/uploads', "thumbnails");
       await fileManage.makeFolder('public/js', 'components');
       await fileManage.makeFile('public/js/components', 'elements', elementGenerator(), 'js', true);
+      await fileManage.makeFile('public/js/components', 'elements', elementGenerator(), 'jsx', true);
+      await fileManage.makeFile('apps', 'app-source-loader', appSourceGenerator(this.pathRoot), 'jsx', true);
 
       const writeFile = async (data) => {
          await fileManage.setConfigFile('loopar.config', data);
@@ -113,11 +170,11 @@ export class Loopar {
             for (const m of moduleList) {
                const module = { link: m.name, icon: m.icon, description: m.description, routes: [] };
 
-               const route_list = await this.db.getList("Document", ['name', 'is_single'], {
+               const routeList = await this.db.getList("Document", ['name', 'is_single'], {
                   '=': { module: m.name }
                });
 
-               module.routes = route_list.map(route => {
+               module.routes = routeList.map(route => {
                   return { link: route.is_single ? 'update' : route.name, description: route.name }
                });
 
@@ -451,6 +508,11 @@ export class Loopar {
       const joinedPath = path.join(...pathArray);
 
       return loopar.utils.decamelize(joinedPath, { separator: '-' });
+   }
+
+   async getSettings() {
+      this.systemSettings ??= await this.db.getDoc("System Settings");
+      return this.systemSettings;
    }
 }
 

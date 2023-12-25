@@ -7,6 +7,14 @@ import { loopar } from "./loopar.js";
 import Router from "./router.js";
 import path from "path";
 
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+import { createServer as createViteServer } from 'vite'
+
 class Server extends Router {
    express = express;
    server = new express();
@@ -16,6 +24,12 @@ class Server extends Router {
 
    async initialize() {
       await loopar.initialize();
+      this.vite = await createViteServer({
+         server: { middlewareMode: true },
+         appType: 'custom'
+      });
+
+      this.server.use(this.vite.middlewares);
 
       await this.#exposePublicDirectories();
       this.#initializeSession();
@@ -27,6 +41,7 @@ class Server extends Router {
       const session_config = env.serverConfig.session;
       session_config.maxAge = session_config.maxAge * 1000 * 60 * 60 * 24;
 
+      this.server.set('view engine', 'pug');
       this.server.use(cookieParser());
       this.server.use(this.express.json());
       this.server.use(this.express.urlencoded({ extended: true }));
@@ -34,15 +49,21 @@ class Server extends Router {
    }
 
    async #exposePublicDirectories() {
-      const public_dirs = [
-         'src', 'public', "public/js", 'node_modules/loopar-env/core/global', 'node_modules/loopar-env/public', 'node_modules/dayjs',
-         'node_modules/mime-types'
+      const publicDirs = [
+         /*'src',
+         'public', "public/js",
+         'node_modules/loopar-env/core/global',
+         'node_modules/loopar-env/public',
+         'node_modules/dayjs',
+         'node_modules/mime-types',
+         'node_modules/twig',*/
       ];
-      public_dirs.forEach(dir => {
+      publicDirs.forEach(dir => {
          this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
       });
 
-      await this.exposeClientAppFiles();
+      this.server.use(express.static(path.join(__dirname, '..', 'dist')));
+      //await this.exposeClientAppFiles();
    }
 
    async exposeClientAppFiles(appName) {

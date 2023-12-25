@@ -62,6 +62,13 @@ function decamelize(text, { separator = '-', preserveConsecutiveUppercase = fals
       .toLowerCase();
 }
 
+function kebabToPascal(kebabString) {
+   return kebabString
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+}
+
 /**
  *
  * @param {*} text as string
@@ -215,7 +222,11 @@ function rgba(hex, alpha = 1){
    } catch (error) {
       return null;
    }
-   
+}
+ 
+function aspectRatio(ratio){
+   const [width, height] = ratio.split(":");
+   return (height / width) * 100;
 }
 
 export {
@@ -236,5 +247,7 @@ export {
    nullValue,
    isJSON,
    fieldList,
-   rgba
+   rgba,
+   aspectRatio,
+   kebabToPascal
 }

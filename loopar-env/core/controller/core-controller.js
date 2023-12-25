@@ -4,7 +4,22 @@ import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar-env";
 import { fileManage } from "../file-manage.js";
+//import fs from "fs";
+//import path from "path";
+import pug from "pug";
 
+/**Vite */
+//import { globby } from 'globby';
+//import cors from 'cors';
+//import bodyParser from 'body-parser';
+//import { resolve } from 'path';
+/**
+ * Vite
+ */
+
+/*import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+*/
 export default class CoreController extends AuthController {
    error = {};
    defaultImporterFiles = ['index', 'form'];
@@ -13,7 +28,7 @@ export default class CoreController extends AuthController {
 
    constructor(props) {
       super(props);
-      this.exposeClientFiles();
+      //this.exposeClientFiles();
    }
 
    hasData() {
@@ -31,9 +46,13 @@ export default class CoreController extends AuthController {
    async clientImporter() {
       const document = this.document.replaceAll(/\s+/g, '-').toLowerCase();
       const client = this.client || this.workspace;
-      const route = loopar.makePath(this.controllerPath, 'client', `${document}-${client}.js`).toLowerCase();
-      const _route = await fileManage.existFile(route) ? `/${document}-${client}.js` : `/gui/document/${client}-context.js`;
-      return loopar.makePath(_route);
+      const route = loopar.makePath(this.controllerPath, 'client', `${document}-${client}.jsx`).toLowerCase();
+      this.moduleRoute = route;
+      const exist = await fileManage.existFile(route)// ? `${document}-${client}` : `/gui/document/${client}-context`;
+      return {
+         server: exist ? route : `/gui/document/${client}-context`,
+         client: exist ? `${document}-${client}` : `@${client}-context`
+      };
    }
 
    getCodeError(code) {
@@ -148,7 +167,7 @@ export default class CoreController extends AuthController {
          WORKSPACE.web_app = await this.#webApp();
       }
 
-      this.res.render(loopar.makePath(loopar.pathFramework, "workspace", workspace) + this.engineTemplate, {
+      /*this.res.render(loopar.makePath(loopar.pathFramework, "workspace", workspace) + this.engineTemplate, {
          ...response,
          document: loopar.utils.lowercase(this.document),
          client_importer: client_importer,
@@ -156,7 +175,68 @@ export default class CoreController extends AuthController {
          workspace: JSON.stringify(WORKSPACE),
          W: workspace,
          key: this.getKey()
-      });
+      });*/
+
+      this.#send({
+         ...response,
+         document: loopar.utils.lowercase(this.document),
+         client_importer: client_importer,
+         action: this.action,
+         workspace: JSON.stringify(WORKSPACE),
+         W: workspace,
+         key: this.getKey()
+      }, workspace);
+   }
+
+   /*async #sendWebpack(response, workspace) {
+      const appHtml = ReactDOMServer.renderToString(
+         React.createElement(App, { initialData: response })
+      );
+         this.res.send(`
+         <!DOCTYPE html>
+         <html>
+            <head>
+            <title>Mi App React</title>
+            </head>
+            <body>
+            <div id="root">${appHtml}</div>
+            <script src="bundle.client.js"></script> <!-- Asegúrate de que el nombre coincida con tu salida de Webpack -->
+            </body>
+         </html>
+      `);
+   }*/
+
+   async #send(response, workspace) {
+      const url = this.req.originalUrl;
+      const templateRote = loopar.makePath(loopar.pathFramework, "template", workspace) + this.engineTemplate
+      const vite = loopar.server.vite;
+      const app = loopar.server.server;
+
+      try {
+         const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, {__META__: JSON.stringify(response)}));
+
+         global.File = class SimulatedFile {
+            constructor(buffer, fileName, options = {}) {
+               this.buffer = Buffer.from(buffer);
+               this.name = fileName || options.filename || 'untitled.txt';
+               this.size = this.buffer.length;
+               this.type = options.contentType || 'application/octet-stream';
+            }
+         }
+         global.theme = 'dark';
+         global.getTheme = () => {};
+         
+         const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
+         const appHtml = await renderPage(url, response, "server")
+         const html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
+
+         this.res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+         // If an error is caught, let Vite fix the stack trace so it maps back
+         // to your actual source code.
+         console.log(['Err on to try send error', e]);
+         vite.ssrFixStacktrace(e);
+      }
    }
 
    getKey(route = this.dictUrl) {
@@ -173,7 +253,7 @@ export default class CoreController extends AuthController {
    }
 
    async #webApp() {
-      const exist = await loopar.db._count("App", loopar.defaultEebApp);
+      const exist = await loopar.db._count("App", loopar.defaultWebApp);
       if (exist) {
          const app = await loopar.getDocument("App", loopar.defaultWebApp);
          return await app.__data__();

@@ -1,4 +1,4 @@
-import { loopar } from '/loopar.js';
+import { loopar } from '@loopar/loopar.js';
 
 class HTTP {
    #jsonParams = {};

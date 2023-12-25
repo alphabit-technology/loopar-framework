@@ -112,9 +112,10 @@ export default class BaseCarrusel extends Preassembled {
             this.className = `${this.className || ""} vh-100`;
             //this.style.height = (this.props.designer && loopar.designer) ? "calc(100vh + 60px)" : "100vh";
         } else {
-            this.style.paddingTop = "60%"
+            this.style.paddingTop = "60%";
         }
-        
+
+        //this.extraClassName = "vh-100"
         return super.render([
             div({
                 Component: this,

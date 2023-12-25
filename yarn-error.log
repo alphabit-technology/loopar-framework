@@ -1,0 +1,98 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/bin/yarn add vite-plugin-pug-transformer
+
+PATH: 
+  /home/aramirez/.vscode-server/bin/1a5daa3a0231a0fbba4f14db7ec463cf99d7768e/bin/remote-cli:/home/aramirez/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/ProgramData/DockerDesktop/version-bin:/mnt/c/Program Files/MySQL/MySQL Shell 8.0/bin/:/mnt/c/Users/alfre/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/alfre/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/alfre/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/alfre/AppData/Local/JetBrains/Toolbox/scripts:/mnt/c/Users/alfre/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/alfre/AppData/Roaming/npm:/mnt/c/Users/alfre/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/alfre/AppData/Local/Programs/Microsoft VS Code/bin:/snap/bin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  18.7.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  Error: EACCES: permission denied, mkdir '/home/aramirez/loopar-pro/node_modules/@babel/code-frame/node_modules/escape-string-regexp'
+
+npm manifest: 
+  {
+    "name": "loopar_framework",
+    "version": "1.0.8",
+    "description": "Loopar Framework",
+    "type": "module",
+    "scripts1": {
+      "stop": "server.close()",
+      "dev": "set NODE_ENV=development && node node_modules/loopar-env && npx babel --watch src --out-dir . --presets react-app/prod",
+      "prod": "set NODE_ENV=production&& node server.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build && babel dist --out-dir dist-babel --extensions \".mjs,.js\"",
+      "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+      "preview": "vite preview",
+      "start": "node node_modules/loopar-env"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "@babel/core": "^7.23.5",
+      "@babel/preset-react": "^7.23.3",
+      "@fortawesome/fontawesome-free": "^6.1.2",
+      "axios": "^1.0.4",
+      "body-parser": "^1.19.0",
+      "browserify": "^17.0.0",
+      "cookie-parser": "^1.4.6",
+      "crypto-js": "^4.1.1",
+      "dayjs": "^1.11.7",
+      "decamelize": "^6.0.0",
+      "ejs": "^3.1.6",
+      "express": "^4.18.2",
+      "express-session": "^1.17.3",
+      "file-type": "^18.5.0",
+      "hamljs": "^0.6.2",
+      "jade": "^1.9.2",
+      "json-2-csv": "^3.17.1",
+      "jsonfn": "^0.31.0",
+      "loopar-env": "file:loopar-env",
+      "mime": "^3.0.0",
+      "mime-types": "^2.1.35",
+      "multer": "^1.4.5-lts.1",
+      "openai": "^3.3.0",
+      "pm2": "^5.3.0",
+      "pug": "^3.0.2",
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "react-router": "^5.2.1",
+      "react-router-dom": "^5.3.0",
+      "serialize-javascript": "^6.0.0",
+      "sha1": "^1.1.1",
+      "sharp": "^0.32.1",
+      "sqlite3": "^5.1.6",
+      "stripe": "^12.9.0",
+      "twig": "^1.17.1",
+      "validator": "^13.7.0",
+      "vite-plugin-express": "^1.0.3",
+      "vite-plugin-pug": "^0.3.2"
+    },
+    "devDependencies": {
+      "@types/react": "^18.2.37",
+      "@types/react-dom": "^18.2.15",
+      "@vitejs/plugin-react": "^4.2.0",
+      "babel": "^6.23.0",
+      "eslint": "^8.53.0",
+      "eslint-plugin-react": "^7.33.2",
+      "eslint-plugin-react-hooks": "^4.6.0",
+      "eslint-plugin-react-refresh": "^0.4.4",
+      "mysql": "^2.18.1",
+      "vite": "^5.0.5"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

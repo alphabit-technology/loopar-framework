@@ -1,0 +1,38 @@
+script(type='text/javascript' src='https://unpkg.com/flatted@3.2.5/min.js')
+script(type='text/javascript' src='@tools/humanize.min')
+block footer-scripts
+
+script.
+   const [DOWN, UP] = ['down', 'up'];
+
+   var vertical_direction = DOWN;
+   var last_y = 0;
+
+   document.addEventListener('mousemove', e => {
+      if (last_y < e.clientY) {
+         vertical_direction = DOWN;
+      } else {
+         vertical_direction = UP;
+      }
+
+      last_y = e.clientY;
+   });
+
+   implement = (target, source) => {
+      if(!source.prototype.ref_class) {
+         Object.defineProperties(source.prototype, {
+            ref_class: {
+               get: function () {
+                  return target;
+               }
+            }
+         })
+      }
+
+      for (let key of Reflect.ownKeys(source.prototype)) {
+         if (key !== "constructor" && key !== "prototype" && key !== "name") {
+            let desc = Object.getOwnPropertyDescriptor(source.prototype, key);
+            Object.defineProperty(target.prototype, key, desc);
+         }
+      }
+   }

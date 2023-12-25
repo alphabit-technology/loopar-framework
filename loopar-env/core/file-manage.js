@@ -93,10 +93,20 @@ class FileManage {
    }
 
    async makeFolder(destiny, name) {
-      const folder_path = loopar.makePath(loopar.pathRoot, destiny, name);
+      const folderPath = loopar.makePath(loopar.pathRoot, destiny, name);
 
       return new Promise((resolve, reject) => {
-         mkdir(folder_path, { recursive: true }, (err) => {
+         mkdir(folderPath, { recursive: true }, (err) => {
+            err ? reject(err) : resolve(true);
+         });
+      });
+   }
+
+   async deleteFolder(destiny, name) {
+      const folderPath = loopar.makePath(loopar.pathRoot, destiny, name);
+
+      return new Promise((resolve, reject) => {
+         fs.rmdir(folderPath, { recursive: true }, (err) => {
             err ? reject(err) : resolve(true);
          });
       });

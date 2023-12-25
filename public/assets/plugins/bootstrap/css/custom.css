@@ -274,3 +274,7 @@
           opacity: 1;
       }
   }
+
+  .CodeMirror {
+      z-index: unset !important;
+  }

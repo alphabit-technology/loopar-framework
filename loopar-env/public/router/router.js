@@ -1,7 +1,7 @@
-import { http } from '/router/http.js';
+import { http } from '@loopar/router/http.js';
 
 export default class Router {
-   #route = window.location;
+   #route = global.location;
    routeHistory = [];
    routeOptions = null;
    currentRoute = null;
@@ -51,8 +51,8 @@ export default class Router {
    }
 
    pushState(url) {
-      if (window.location.pathname !== url) {
-         window.location.hash = '';
+      if (global.location.pathname !== url) {
+         global.location.hash = '';
 
          history.pushState(null, null, url);
       }
@@ -62,7 +62,7 @@ export default class Router {
 
    getSubPathString(route) {
       if (!route) {
-         route = window.location.hash || (window.location.pathname + window.location.search);
+         route = global.location.hash || (global.location.pathname + global.location.search);
       }
       return this.stripPrefix(route);
    }
@@ -96,7 +96,7 @@ export default class Router {
    }
 
    change() {
-      this.#route = window.location;
+      this.#route = global.location;
       return this.loadDocument();
    }
 
@@ -121,7 +121,7 @@ export default class Router {
       });
    }
 
-   /*current_page(route = window.location) {
+   /*current_page(route = global.location) {
       if (!this.route.pathname) this.route = route;
       const ROUTE = this.route;
 
@@ -134,7 +134,7 @@ export default class Router {
    }*/
 
    #bindEvents() {
-      window.addEventListener('popstate', (e) => {
+      global.addEventListener && global.addEventListener('popstate', (e) => {
          e.preventDefault();
 
          this.sendRoute();

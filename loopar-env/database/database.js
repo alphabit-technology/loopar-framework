@@ -312,6 +312,12 @@ export default class DataBase {
       return connection.escape(value);
    }
 
+   async #escapeId(value, connection = null) {
+      connection = connection || await this.connection();
+
+      return connection.escapeId(value);
+   }
+
    async insertRow(document, data = {}, isSingle = false) {
       return new Promise(async (resolve, reject) => {
          const con = await this.connection();
@@ -540,6 +546,18 @@ export default class DataBase {
       });
    }
 
+   async #getDbValue(document, field, documentName) {
+      const where = typeof documentName === 'object' ? `WHERE 1=1 ${await this.WHERE(documentName)}` : `WHERE \`name\` = ${await this.#escape(documentName)}`;
+
+      return new Promise(async (resolve, reject) => {
+         this.execute(`SELECT ${await this.#escapeId(field)} FROM ${await this.tableName(document)} ${where}`, false).then(async result => {
+            resolve((result[0] || {})[field]);
+         }).catch(err => {
+            reject(err);
+         });
+      });
+   }
+
    async getValue(document, field, documentName, {distinctToId = null, ifNotFound = "throw", includeDeleted = false}={}) {
       try {
          const condition = {
@@ -563,7 +581,8 @@ export default class DataBase {
    }
 
    async getDoc(document, documentName, fields = ['*'], {isSingle = false, includeDeleted = false}={}) {
-      return await this.getRow(document, documentName, fields, {isSingle, includeDeleted});
+      const doctypeIsSingle = await this.#getDbValue("Document", 'is_single', document, {includeDeleted});
+      return await this.getRow(document, documentName, fields, {isSingle: doctypeIsSingle, includeDeleted});
    }
 
    async getRow(table, id, fields = ['*'], {isSingle = false, includeDeleted = false}={}) {

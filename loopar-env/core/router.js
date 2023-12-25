@@ -19,6 +19,9 @@ export default class Router {
    }
 
    #isAssetUrl(url) {
+      url = Array.isArray(url) ? url[0] : url;
+      if(url.includes("@") || url.includes("jsx")) return true;
+
       url = url.split("?");
       const baseUrl = url[0].split("/");
       const source = baseUrl[baseUrl.length - 1];
@@ -36,14 +39,14 @@ export default class Router {
 
    #custom404Middleware = (req, res, next) => {
       res.status(404).send(`
-            <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
-               <h1 style="font-size: 100px; margin: 0;">404</h1>
-               <h3 style="font-size: 30px; margin: 0;">Source not found</h3>
-               <span style="font-size: 20px; margin: 0;">${req.url}</span>
-               <hr style="width: 50%; margin: 20px 0;"/>
-               <span style="font-size: 20px; margin: 0;">Loopar</span>
-            </div>
-         `);
+         <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
+            <h1 style="font-size: 100px; margin: 0;">404</h1>
+            <h3 style="font-size: 30px; margin: 0;">Source not found</h3>
+            <span style="font-size: 20px; margin: 0;">${req.url}</span>
+            <hr style="width: 50%; margin: 20px 0;"/>
+            <span style="font-size: 20px; margin: 0;">Loopar</span>
+         </div>
+      `);
    };
 
    route() {
@@ -56,8 +59,9 @@ export default class Router {
       }
 
       this.server.use((req, res, next) => {
+         //console.log("req.url", req.url)
          loopar.session.req = req;
-
+         
          if (this.#isAssetUrl(req._parsedUrl.pathname)) {
             next();
          } else {
@@ -84,7 +88,7 @@ export default class Router {
    async #makeWorkspace() {
       const args = arguments[0];
       const {req, res} = args;
-      const pathname = req._parsedUrl.pathname;
+      const pathname = req._parsedUrl.pathname.replace('web/', '');
 
       const context = pathname.split("/")[1];
       const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
@@ -118,10 +122,24 @@ export default class Router {
       if (reqWorkspace === "web" && routeStructure.document === "Undefined") {
          routeStructure.document = "Home";
       }
+
+      //console.log({reqWorkspace, routeStructure})
       
       /**Because user can not navigate in auth workspace if is logged in**/
       if (controllerParams.workspace === "auth" && loopar.isLoggedIn() && controllerParams.action !== "logout") {
          //return this.res.redirect('/desk');
+      }
+
+      if(reqWorkspace === "web") {
+         const settings = await loopar.getSettings();
+         const doctypeAppId = await loopar.db.getValue("Document", "id", {"=": {name: "App"}});
+         const webApp = await loopar.db.getValue("App", "id", settings.active_web_app);
+
+         const menu = await loopar.db.getDoc("Menu Item", {
+            "=": { parent_document: doctypeAppId, parent_id: webApp, link: routeStructure.document}
+         });
+
+         menu && (routeStructure.document = menu.page);
       }
 
       await this.#makeController({ ...routeStructure, ...controllerParams});
@@ -199,7 +217,7 @@ export default class Router {
       if (args.controller === coreInstallerController || this.debugger || args.workspace === "web") {
          await sendAction();
       } else {
-         //await this.temporaryLogin();
+         await this.temporaryLogin();
          if (await controller.isAuthenticated()) {
             await controller.isAuthorized() && await sendAction();
          } else if (!controller.isLoginAction || (!args.existController && !args.apiRequest)) {

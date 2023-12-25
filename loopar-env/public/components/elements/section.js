@@ -3,7 +3,7 @@ import Component from "../base/component.js";
 
 export default class Section extends Component {
    blockComponent = true;
-   className = "section position-relative py-5 bg-light";
+   className = "section position-relative py-5 bg-light h-100";
 
    constructor(props) {
       super(props);
@@ -38,9 +38,9 @@ export default class Section extends Component {
                content || this.last_state().children,
                ...this.elements
          ])*/
-         div({ className: "container position-relative" }, [
+         div({ className: "container position-relative h-100" }, [
             div({
-               className: "element align-items-center justify-content-between element sub-element",
+               className: "element align-items-center justify-content-between element sub-element h-100",
                ref: self => this.container = self,
                Component: this
             }, [

@@ -1,10 +1,10 @@
 import { elementsDict } from "./global/element-definition.js";
 import { Capitalize, camelCase } from "./global/helper.js";
 
-const defineTags = `a,abbr,address,area,article,aside,audio,b,base,bdi,bdo,blockquote,body,br,button,canvas,caption,cite,code,col,colgroup,data,datalist,dd,del,details,dfn,dialog,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,i,iframe,image,input,ins,kbd,label,legend,li,link,main,map,mark,meta,meter,nav,noscript,object,ol,optgroup,option,output,p,param,picture,pre,progress,q,rp,rt,ruby,s,samp,script,section,select,slot,small,source,span,strong,style,sub,summary,sup,svg,table,tbody,td,template,textarea,tfoot,th,thead,time,title,tr,track,u,ul,video,wbr`
 const defineComponents = Object.values(elementsDict)
    .filter(e => e.def.show_in_design !== false)
    .map((e) => e.def.element.toUpperCase());
+
 const defineConstComponents = defineComponents.join(",").toLowerCase()
    .split(",").map((e) => {
       return Capitalize(camelCase(e));
@@ -21,17 +21,20 @@ export default function elementGenerator() {
 * @description Elements is a library that allows you to create elements in a simple way.
 * @version 1.0.0
 * @license MIT
-* @author @qubitcore
+* @author @alphabit
 * @see {@link}
 **/
 
 'use strict';
-import {elementsDict} from "/element-definition.js";
-import DIALOG from "/components/common/dialog.js";
-import NOTIFY from "/components/common/notify.js";
-${defineComponents.map((e) => `import ${e}_Comp from "/components/elements/${e.replaceAll("_", "-").toLowerCase()}.js";`).join("\n")}
-import {HTML} from "/components/base/html.js";
-//import { elementManage } from "/components/element-manage.js";
+import React from "react";
+import {elementsDict} from "@global/element-definition";
+//import DIALOG from "@dialog";
+const DIALOG = await import("./dialog.jsx");
+//import NOTIFY from "@notify";
+const NOTIFY = await import("./notify.jsx");
+${defineComponents.map((e) => `const ${e}_Comp = await import("./${e.replaceAll("_", "-").toLowerCase()}.jsx");`).join("\n")}
+const HTML = await import("./base-component.jsx");
+//import { elementManage } from "/@tools/element-manage.";
 
 class Elements{
    constructor(options={}){
@@ -53,7 +56,7 @@ class Elements{
 }
    
 const components = {${defineComponents.reduce((a, e, key) => {
-      return a + `   [${e}]: ${defineComponents[key]}_Comp,\n`
+      return a + `   [${e}]: ${defineComponents[key]}_Comp.default,\n`
    }, "\n")}}
 
 const getOptions = (options, content, e=null) => {
@@ -103,26 +106,15 @@ const Notify = (options=null, content=null) => {
 }
 /**Define Components**/
 
-/**Define Tags**/
-const[${defineTags}] = ['${defineTags.replaceAll(',', "','")}'].map((e) => {
-   return (options=null, content = null) => {
-      const opts = getOptions(options, content, e);
-
-      return React.createElement(HTML, opts.options, opts.content);
-   }
-});
-/**Define Tags**/
-
 export {
-   ${defineConstComponents},Dialog,Notify,
-   ${defineTags}
+   ${defineConstComponents},Dialog,Notify
 }
 
 export const elements = (element) => {
    return new Elements(element);
 }
 
-export const Element = (e, props, content) => {
+export default (e, props, content) => {
    const elDict = elementsDict[e];
    if(!elDict){
       return React.createElement(e, props, content);

@@ -22,7 +22,7 @@ export default class Row extends Component {
 
    getLayout(){
       const meta = this.props.meta;
-      return meta.data.layout ? JSON.parse(meta.data.layout) : [];
+      return (meta.data.layout && loopar.utils.isJSON(meta.data.layout)) ? JSON.parse(meta.data.layout) : [];
    }
 
    getColumnsSelector(){
@@ -58,6 +58,29 @@ export default class Row extends Component {
       })
    }
    render(content) {
+      const data = this.props.meta?.data || {};
+      const {horizontal_alignment, vertical_alignment, row_height} = data;
+
+      const verticalAligments = {
+         top: "start",
+         center: "center",
+         bottom: "end",
+      }
+
+      const horizontalAligment = `align-items-${horizontal_alignment || "left"}`;
+      const verticalAligment = `align-items-${verticalAligments[vertical_alignment] || "start"}`;
+
+      if(row_height && row_height !== "auto"){
+         this.style = {
+            ...this.style,
+            minHeight: row_height + "vh",
+         }
+      }
+      //const rowHeight = row_height && row_height !== "auto" ? `vh-${row_height}` : "";
+      //this.addClass(horizontalAligment + " " + verticalAligment, false);
+
+      this.extraClassName = horizontalAligment + " " + verticalAligment;
+
       return super.render([
          this.props.designer && div({
             className: "row-layout-selector",
@@ -112,12 +135,13 @@ export default class Row extends Component {
                });
             }
          }
-         return this.getElement(el, {className, ...(this.props.designer ? {key: elementManage.getUniqueKey()} : {})});
+         return this.getElement(el, {className})//, ...(this.props.designer ? {key: elementManage.getUniqueKey()} : {})});
       });
    }
 
    componentDidMount() {
       super.componentDidMount();
+
 
       /*if(this.options.designer){
          this.container.droppable_actions();
@@ -134,6 +158,45 @@ export default class Row extends Component {
                element: INPUT,
                data: {
                   disabled: true
+               }
+            },
+            horizontal_alignment: {
+               element: SELECT,
+               data: {
+                  options: [
+                     { option: "left", value: "left" },
+                     { option: "center", value: "center" },
+                     { option: "right", value: "right" },
+                  ]
+               }
+            },
+            vertical_alignment: {
+               element: SELECT,
+               data: {
+                  options: [
+                     { option: "top", value: "top" },
+                     { option: "center", value: "center" },
+                     { option: "bottom", value: "bottom" },
+                  ]
+               }
+            },
+            row_height: {
+               element: SELECT,
+               data: {
+                  options: [
+                     { option: "auto", value: "auto" },
+                     { option: "100", value: "100%" },
+                     { option: "75", value: "75%" },
+                     { option: "50", value: "50%" },
+                     { option: "25", value: "25%" },
+                  ],
+                  description: "Define the height of the row based on the screen height.",
+               }
+            },
+            full_height: {
+               element: SWITCH,
+               data: {
+                  description: "If enabled the slider will have the height of the screen.",
                }
             },
          }

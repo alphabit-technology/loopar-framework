@@ -1,4 +1,4 @@
-import {BaseInput} from "../base/base-input.js";
+import BaseInput from '@base-input';
 
 export default class Input extends BaseInput {
    constructor(props) {

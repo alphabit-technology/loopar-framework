@@ -3,7 +3,7 @@ class ScriptManager {
         this.scripts = [];
     }
 
-    loadStylesheet(href, callback) {
+    loadStylesheet(href, { callback, options = { defer: true, position: "before", target: null } } = {}) {
       return new Promise((resolve, reject) => {
         const existingLink = document.querySelector(`link[href="${href}.css"]`);
         if (existingLink) {
@@ -15,6 +15,7 @@ class ScriptManager {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = href+".css";
+        link.defer = options.defer;
         link.onload = () => {
           resolve();
           callback && callback();
@@ -23,7 +24,17 @@ class ScriptManager {
           reject();
         }
 
-        document.head.insertBefore(link, document.head.firstChild);
+        if(options.target){
+          const target = document.head.querySelector(options.target);
+
+          if(options.position === "before"){
+            target.parentNode.insertBefore(link, target);
+          }else{
+            target.parentNode.insertBefore(link, target.nextSibling);
+          }
+        }else{
+          document.head.insertBefore(link, document.head.firstChild);
+        }
       });
     }
 
