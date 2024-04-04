@@ -8,10 +8,8 @@ node_modules
 # testing
 coverage
 
-# next.js
-.next/
-out/
-build
+# loopar.js
+.apps/
 
 # misc
 .DS_Store
@@ -29,8 +27,24 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+#config
+config
+
 # turbo
 .turbo
 
 .contentlayer
 .env
+
+# ides
+.idea
+.env.dist
+
+#uploads
+public/uploads
+
+#components
+public/js/components
+
+#database
+database

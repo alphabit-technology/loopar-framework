@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+      --background: 0 0% 100%;
+      --foreground: 212.2 47.4% 11.2%;
+  
+      --muted: 200 40% 96.1%;
+      --muted-foreground: 205.4 16.3% 46.9%;
+  
+      --popover: 0 0% 100%;
+      --popover-foreground: 212.2 47.4% 11.2%;
+  
+      --border: 204.3 31.8% 91.4%;
+      --input: 204.3 31.8% 91.4%;
+  
+      --card: 0 0% 100%;
+      --card-foreground: 212.2 47.4% 11.2%;
+  
+      --primary: 212.2 47.4% 11.2%;
+      --primary-foreground: 200 40% 98%;
+
+      --primeblue: 210 100% 50%;
+      --primeblue-foreground: 0 0% 100%;
+  
+      --secondary: 200 40% 96.1%;
+      --secondary-foreground: 212.2 47.4% 11.2%;
+  
+      --accent: 200 40% 96.1%;
+      --accent-foreground: 212.2 47.4% 11.2%;
+  
+      --destructive: 0 100% 50%;
+      --destructive-foreground: 200 40% 98%;
+      --ring: 205 20.2% 65.1%;
+  
+      --radius: 0.5rem;
+
+      --success: 160 70% 40%;
+      --success-foreground: 0 0% 100%;
+
+      --warning: 40 100% 40%;
+      --warning-foreground: 0 0% 100%;
+
+      --danger: 0 70% 40%;
+      --danger-foreground: 0 0% 100%;
+
+      --info: 200 40% 70%;
+      --info-foreground: 0 0% 100%;
+
+      --error: 0 100% 40%;
+      --error-foreground: 0 0% 100%;
+    }
+
+    .dark {
+      --background: 206 28% 7%;
+      --foreground: 203 31% 91%;
+  
+      --muted: 213 47% 11%;
+      --muted-foreground: 205.4 16.3% 56.9%;
+  
+      --accent: 206 34% 17%;
+      --accent-foreground: 200 40% 98%;
+  
+      --popover: 214 71% 4%;
+      --popover-foreground: 205 20.2% 65.1%;
+  
+      --border: 206 34% 17%;
+      --input: 206 34% 17%;
+  
+      --card: 215 25% 12%;
+      --card-foreground: 203 31% 91%;
+  
+      --primary: 200 40% 98%;
+      --primary-foreground: 212.2 47.4% 1.2%;
+  
+      --secondary: 212.2 47.4% 11.2%;
+      --secondary-foreground: 200 40% 98%;
+  
+      --destructive: 0 63% 31%;
+      --destructive-foreground: 200 40% 98%;
+  
+      --ring: 206 34% 17%;
+  
+      --radius: 0.5rem;
+    }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

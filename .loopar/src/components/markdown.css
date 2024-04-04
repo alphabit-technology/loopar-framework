@@ -1,0 +1,40 @@
+.CodeMirror-code {
+  z-index: 0 !important;
+}
+
+.dark .CodeMirror-cursors .CodeMirror-cursor {
+  border: 1px solid white !important;
+}
+
+.dark .cm-string {
+  color: hsl(var(--info)) !important;
+}
+
+.dark .CodeMirror.cm-s-easymde.CodeMirror-wrap {
+  background: hsl(var(--background)) !important;
+  color: var(--slate-1) !important;
+}
+
+.dark .editor-preview-full.editor-preview.editor-preview-active {
+  background-color: hsl(var(--background)) !important;
+  color: var(--slate-1) !important;
+  z-index: 1 !important;
+}
+
+.dark button.active {
+  background: var(--slate-10) !important;
+  color: var(--slate-1) !important;
+}
+
+.dark button:hover {
+  background: var(--slate-11) !important;
+  color: var(--slate-1) !important;
+}
+
+.side-by-side {
+  display: none !important;
+}
+
+.fullscreen {
+  display: none !important;
+}

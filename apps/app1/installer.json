@@ -1,0 +1,229 @@
+{
+  "App": {
+    "App1": {
+      "deleted_at": null,
+      "type": "Desk App",
+      "menu": "undefined",
+      "logo": "undefined",
+      "logo_width": "undefined",
+      "default_app": "0",
+      "has_footer": "0",
+      "has_copyright": "0",
+      "footer": "",
+      "copyright": "",
+      "fixed": "1",
+      "opacity": "0",
+      "menu_items": {
+        "__DOCTYPE__": {
+          "doc_structure": "[{\"element\":\"id\",\"is_writable\":true,\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"hidden\":1,\"in_list_view\":1},\"elements\":[]},{\"element\":\"input\",\"is_writable\":true,\"data\":{\"name\":\"name\",\"label\":\"Name\",\"type\":\"text\",\"required\":1,\"in_list_view\":1,\"set_only_time\":1,\"unique\":1,\"id\":\"input339_el5561128133\"},\"elements\":[]},{\"element\":\"row\",\"data\":{\"name\":\"row1_el68059727519\",\"id\":\"row20_el74198279416\",\"label\":\"Row1\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col1_el109499672148\",\"id\":\"col41_el728905163266\",\"label\":\"Col1\"},\"elements\":[{\"element\":\"select\",\"is_writable\":true,\"data\":{\"name\":\"menu_link\",\"id\":\"select146_el292406485166\",\"label\":\"Menu Link\",\"options\":\"Document\",\"required\":1,\"in_list_view\":1},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"name\":\"col651_el50020111152\",\"id\":\"col42_el728335875431\",\"label\":\"Col651\"},\"elements\":[{\"element\":\"input\",\"is_writable\":true,\"data\":{\"name\":\"description\",\"id\":\"input334_el1621604437\",\"label\":\"Description\",\"required\":1,\"in_list_view\":1},\"elements\":[]}]}]},{\"element\":\"row\",\"data\":{\"name\":\"row33_el687443337500\",\"id\":\"row21_el146992447937\",\"label\":\"Row33\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col96_el79149827367\",\"id\":\"col43_el177368948609\",\"label\":\"Col96\"},\"elements\":[{\"element\":\"input\",\"is_writable\":true,\"data\":{\"name\":\"document_parent\",\"id\":\"input336_el36531377246\",\"label\":\"Document Parent\",\"hidden\":1},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"name\":\"col131_el7446029241\",\"id\":\"col44_el217375041008\",\"label\":\"Col131\"},\"elements\":[{\"element\":\"input\",\"is_writable\":true,\"data\":{\"name\":\"document_parent_name\",\"id\":\"input338_el71356327106\",\"label\":\"Dcoument Parent Name\",\"hidden\":1},\"elements\":[]}]}]},{\"element\":\"date_time\",\"is_writable\":true,\"data\":{\"name\":\"deleted_at\",\"label\":\"Deleted At\",\"hidden\":1,\"id\":\"date_time95_el145559974942\"},\"elements\":[]}]",
+          "id": 17,
+          "name": "Menu Item",
+          "module": "developer",
+          "default_list_view": null,
+          "type": "Document",
+          "is_single": 0,
+          "is_static": 0,
+          "search_fields": "name",
+          "title_fields": "name",
+          "deleted_at": null,
+          "app_name": "loopar",
+          "STRUCTURE": [
+            {
+              "element": "input",
+              "is_writable": true,
+              "data": {
+                "name": "name",
+                "label": "Name",
+                "type": "text",
+                "required": 1,
+                "in_list_view": 1,
+                "set_only_time": 1,
+                "unique": 1,
+                "id": "input339_el5561128133"
+              },
+              "elements": []
+            },
+            {
+              "element": "row",
+              "data": {
+                "name": "row1_el68059727519",
+                "id": "row20_el74198279416",
+                "label": "Row1"
+              },
+              "elements": [
+                {
+                  "element": "col",
+                  "data": {
+                    "name": "col1_el109499672148",
+                    "id": "col41_el728905163266",
+                    "label": "Col1"
+                  },
+                  "elements": [
+                    {
+                      "element": "select",
+                      "is_writable": true,
+                      "data": {
+                        "name": "menu_link",
+                        "id": "select146_el292406485166",
+                        "label": "Menu Link",
+                        "options": "Document",
+                        "required": 1,
+                        "in_list_view": 1
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "element": "col",
+                  "data": {
+                    "name": "col651_el50020111152",
+                    "id": "col42_el728335875431",
+                    "label": "Col651"
+                  },
+                  "elements": [
+                    {
+                      "element": "input",
+                      "is_writable": true,
+                      "data": {
+                        "name": "description",
+                        "id": "input334_el1621604437",
+                        "label": "Description",
+                        "required": 1,
+                        "in_list_view": 1
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "element": "row",
+              "data": {
+                "name": "row33_el687443337500",
+                "id": "row21_el146992447937",
+                "label": "Row33"
+              },
+              "elements": [
+                {
+                  "element": "col",
+                  "data": {
+                    "name": "col96_el79149827367",
+                    "id": "col43_el177368948609",
+                    "label": "Col96"
+                  },
+                  "elements": [
+                    {
+                      "element": "input",
+                      "is_writable": true,
+                      "data": {
+                        "name": "document_parent",
+                        "id": "input336_el36531377246",
+                        "label": "Document Parent",
+                        "hidden": 1
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "element": "col",
+                  "data": {
+                    "name": "col131_el7446029241",
+                    "id": "col44_el217375041008",
+                    "label": "Col131"
+                  },
+                  "elements": [
+                    {
+                      "element": "input",
+                      "is_writable": true,
+                      "data": {
+                        "name": "document_parent_name",
+                        "id": "input338_el71356327106",
+                        "label": "Dcoument Parent Name",
+                        "hidden": 1
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "element": "date_time",
+              "is_writable": true,
+              "data": {
+                "name": "deleted_at",
+                "label": "Deleted At",
+                "hidden": 1,
+                "id": "date_time95_el145559974942"
+              },
+              "elements": []
+            }
+          ]
+        },
+        "__DOCUMENT_NAME__": null,
+        "__DOCUMENT__": {
+          "deleted_at": null
+        },
+        "__IS_NEW__": true,
+        "labels": [
+          "Name",
+          "Menu Link",
+          "Description"
+        ],
+        "fields": [
+          "name",
+          "menu_link",
+          "description"
+        ],
+        "rows": [],
+        "pagination": {
+          "page": 1,
+          "page_size": 10,
+          "total_pages": 0,
+          "total_records": 0,
+          "sort_by": "id",
+          "sort_order": "asc"
+        },
+        "q": null
+      },
+      "git_repo": "undefined",
+      "repository": "undefined",
+      "github_user": "undefined",
+      "github_pass": "",
+      "name": "App1",
+      "description": "App1",
+      "version": "1.0.1",
+      "autor": "loopar",
+      "info": "App1"
+    }
+  },
+  "Module": {
+    "module-app1": {
+      "name": "Module App1",
+      "description": "Module App1",
+      "app_name": "App1",
+      "module_group": "modules",
+      "icon": "fa fa-list",
+      "in_sidebar": "1",
+      "deleted_at": null
+    }
+  },
+  "Document": {
+    "Document App1": {
+      "id": 26,
+      "name": "Document App1",
+      "module": "Module App1",
+      "default_list_view": "List",
+      "type": "Document",
+      "is_single": 0,
+      "is_static": 0,
+      "doc_structure": "[{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"type\":\"text\",\"required\":1,\"unique\":1,\"set_only_time\":1,\"in_list_view\":1,\"searchable\":1,\"background_color\":{\"color\":\"#000000\",\"alpha\":0.5},\"background_image\":[],\"color_overlay\":{\"color\":\"#000000\",\"alpha\":0.5}},\"elements\":[]},{\"element\":\"row\",\"data\":{\"name\":\"row1_el1097466302007\",\"id\":\"row1_el1097466302007\",\"label\":\"Row1\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col1_el464942889592\",\"id\":\"col1_el464942889592\",\"label\":\"Col1\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Input6\",\"name\":\"input6_el103433800727\",\"required\":1,\"in_list_view\":1,\"searchable\":1,\"background_color\":{\"color\":\"#000000\",\"alpha\":0.5},\"background_image\":[],\"color_overlay\":{\"color\":\"#000000\",\"alpha\":0.5}},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"name\":\"col2_el673292448230\",\"id\":\"col2_el673292448230\",\"label\":\"Col2\"},\"elements\":[{\"element\":\"date\",\"data\":{\"name\":\"date1_el199634136182\",\"id\":\"date1_el199634136182\",\"label\":\"Date1\"},\"elements\":[]}]}]},{\"element\":\"row\",\"data\":{\"name\":\"row2_el73157761021\",\"id\":\"row2_el73157761021\",\"label\":\"Row2\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col3_el857686001722\",\"id\":\"col3_el857686001722\",\"label\":\"Col3\"},\"elements\":[{\"element\":\"select\",\"data\":{\"label\":\"Select8\",\"name\":\"select8_el112604918687\",\"options\":\"Option1\\nOption2\\nOption3\",\"background_color\":{\"color\":\"#000000\",\"alpha\":0.5},\"background_image\":[],\"color_overlay\":{\"color\":\"#000000\",\"alpha\":0.5}},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"name\":\"col4_el657483809620\",\"id\":\"col4_el657483809620\",\"label\":\"Col4\"},\"elements\":[{\"element\":\"select\",\"data\":{\"label\":\"Select10\",\"name\":\"select10_el295933885687\",\"options\":\"Module\",\"required\":1,\"in_list_view\":1,\"searchable\":1,\"background_color\":{\"color\":\"#000000\",\"alpha\":0.5},\"background_image\":[],\"color_overlay\":{\"color\":\"#000000\",\"alpha\":0.5}},\"elements\":[]}]}]},{\"element\":\"row\",\"data\":{\"name\":\"row3_el109405204044\",\"id\":\"row3_el109405204044\",\"label\":\"Row3\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col5_el990880089884\",\"id\":\"col5_el990880089884\",\"label\":\"Col5\"},\"elements\":[{\"element\":\"form_table\",\"data\":{\"label\":\"Form_table1\",\"name\":\"form_table1_el406773505170\",\"options\":\"Menu Item\",\"background_color\":{\"color\":\"#000000\",\"alpha\":0.5},\"background_image\":[],\"color_overlay\":{\"color\":\"#000000\",\"alpha\":0.5}},\"elements\":[]}]}]},{\"element\":\"date_time\",\"data\":{\"name\":\"deleted_at\",\"label\":\"Deleted At\",\"hidden\":1},\"elements\":[]}]",
+      "search_fields": "name",
+      "title_fields": "name",
+      "deleted_at": null
+    }
+  }
+}
