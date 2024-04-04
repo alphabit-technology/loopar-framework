@@ -50,4 +50,4 @@ public/js/components
 database
 
 #apps
-apps
+apps/*
