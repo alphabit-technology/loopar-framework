@@ -30,6 +30,12 @@ config
 # turbo
 .turbo
 
+#vscode
+.vscode
+
+#dist
+dist
+
 .contentlayer
 .env
 
