@@ -3,7 +3,6 @@ import { loopar } from './loopar.js';
 import { fileManage } from "./file-manage.js";
 import multer from "multer";
 import BaseController from './controller/base-controller.js';
-//import { send } from 'vite';
 
 const coreInstallerController = 'installer-controller';
 
@@ -52,6 +51,7 @@ export default class Router {
 
   route() {
     const loadHttp = async (req, res) => {
+      loopar.res = res;
       if (req.files && req.files.length > 0) {
         req.body.reqUploadFiles = req.files;
       }
@@ -130,10 +130,23 @@ export default class Router {
     }
 
     if (reqWorkspace === "web" && loopar.frameworkInstalled && loopar.databaseServerInitialized && loopar.databaseInitialized) {
-      //console.log(["On web workspace"])
       const settings = await loopar.getSettings();
       const doctypeAppId = await loopar.db.getValue("Document", "id", { "=": { name: "App" } });
       const webApp = await loopar.db.getValue("App", "id", settings.active_web_app);
+      loopar.activeWebApp = webApp;
+
+      if(!webApp) {
+        Object.assign(routeStructure, {
+          module: "core",
+          document: "Error",
+          action: "view",
+          code: 404,
+          title: "Web App not found",
+          description: "You don\'t have Install the Web App, please install it first and set as default"
+        });
+
+        return await this.#makeController({ ...routeStructure, ...controllerParams });
+      }
 
       const menu = await loopar.db.getDoc("Menu Item", {
         "=": { parent_document: doctypeAppId, parent_id: webApp, link: routeStructure.document }
@@ -254,7 +267,6 @@ export default class Router {
   }
 
   async launchController(controller, args) {
-    console.log('Launch Controller', args)
     loopar.lastController = controller;
 
     args.action = args.action && args.action.length > 0 ? args.action : controller.default_action;
@@ -263,7 +275,6 @@ export default class Router {
     action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
 
     await this.temporaryLogin();
-    console.log(["WorkSpace", args.workspace])
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || (await controller.isAuthenticated())) {
       this.launchAction(controller, action, args.res, args.req);
     } else {

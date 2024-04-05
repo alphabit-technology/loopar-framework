@@ -106,7 +106,7 @@ export default class CoreController extends AuthController {
     if (workspace === "desk") {
       WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
     } else if (workspace === "web") {
-      WORKSPACE.web_app = loopar.transactionError ? {} : await this.#webApp();
+      WORKSPACE.web_app = loopar.completedTransaction ? {} : await this.#webApp();
     }
     
     return await this.#send({
@@ -167,11 +167,11 @@ export default class CoreController extends AuthController {
       const app = await loopar.getDocument("App", settings.active_web_app);
       return await app.__data__();
     } else {
-      loopar.throw({
+      /*loopar.throw({
         type: 'error',
         title: 'Error',
         message: 'You don\'t have Install the Web App, please install it first and set as default'
-      });
+      });*/
       return {}
     }
   }

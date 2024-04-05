@@ -274,7 +274,7 @@ export class Loopar {
     GlobalEnvironment();
 
     process.on('uncaughtException', err => {
-      console.error(['LOOPAR: uncaughtException', err]);
+      //console.error(['LOOPAR: uncaughtException', err]);
 
       const httpError = getHttpError(err);
 
@@ -293,13 +293,26 @@ export class Loopar {
       if(this.lastController && !this.lastController.completedTransaction){
         this.lastController.completedTransaction = true;
         this.lastController.sendError(error).then(response => {
+          console.log(["On send Error", response])
           this.server.sendResponse(res, req, response);
         });
       }else if(res){
         this.lastController = null;
         this.server.sendResponse(res, req, error);
       }else{
-        console.error(['uncaughtException.....', err]);
+        try {
+          this.res.status(500).send(`
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
+              <h1 style="font-size: 100px; margin: 0;">500</h1>
+              <h3 style="font-size: 30px; margin: 0;">Internal Sever Error</h3>
+              <span style="font-size: 20px; margin: 0;">${err.stack}</span>
+              <hr style="width: 50%; margin: 20px 0;"/>
+              <span style="font-size: 20px; margin: 0;">Loopar</span>
+            </div>
+        `);
+        } catch (e) {
+          console.error(['LOOPAR: Internal Server Error', e]);
+        }
       }
     });
 
@@ -538,7 +551,7 @@ export class Loopar {
   }
 
   async getSettings() {
-    this.systemSettings ??= await this.db.getDoc("System Settings", {isSingle: true});
+    this.systemSettings ??= await this.db.getDoc("System Settings", null, ["*"], {isSingle: 1});
     return this.systemSettings;
   }
 }
