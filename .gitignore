@@ -8,9 +8,6 @@ node_modules
 # testing
 coverage
 
-# loopar.js
-.apps/
-
 # misc
 .DS_Store
 *.pem
@@ -50,4 +47,4 @@ public/js/components
 database
 
 #apps
-apps/*
+apps

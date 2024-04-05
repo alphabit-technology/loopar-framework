@@ -538,7 +538,7 @@ export class Loopar {
   }
 
   async getSettings() {
-    this.systemSettings ??= await this.db.getDoc("System Settings");
+    this.systemSettings ??= await this.db.getDoc("System Settings", {isSingle: true});
     return this.systemSettings;
   }
 }

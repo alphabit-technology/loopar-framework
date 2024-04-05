@@ -129,7 +129,8 @@ export default class Router {
       //return this.res.redirect('/desk');
     }
 
-    if (reqWorkspace === "web") {
+    if (reqWorkspace === "web" && loopar.frameworkInstalled && loopar.databaseServerInitialized && loopar.databaseInitialized) {
+      //console.log(["On web workspace"])
       const settings = await loopar.getSettings();
       const doctypeAppId = await loopar.db.getValue("Document", "id", { "=": { name: "App" } });
       const webApp = await loopar.db.getValue("App", "id", settings.active_web_app);
@@ -215,7 +216,7 @@ export default class Router {
           res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
           return res.send(response);
-        }else{
+        } else {
           return res.send(response.message);
         }
       } else if (response === undefined) {
@@ -242,9 +243,9 @@ export default class Router {
 
   async launchAction(controller, action, res, req) {
     //try {
-      const response = await controller[action]();
+    const response = await controller[action]();
 
-      this.sendResponse(res, req,response);
+    this.sendResponse(res, req, response);
     /*} catch (e) {
       console.log(["Launch Action Error", e])
       res.status(500);
@@ -253,6 +254,7 @@ export default class Router {
   }
 
   async launchController(controller, args) {
+    console.log('Launch Controller', args)
     loopar.lastController = controller;
 
     args.action = args.action && args.action.length > 0 ? args.action : controller.default_action;
@@ -261,9 +263,10 @@ export default class Router {
     action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
 
     await this.temporaryLogin();
+    console.log(["WorkSpace", args.workspace])
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || (await controller.isAuthenticated())) {
       this.launchAction(controller, action, args.res, args.req);
-    }else{
+    } else {
       this.launchAction(controller, "notFound", args.res, args.req);
     }
   }
