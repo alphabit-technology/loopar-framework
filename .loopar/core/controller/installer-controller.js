@@ -18,11 +18,11 @@ export default class InstallerController extends BaseController {
       Object.assign(model, this.data);
 
       if (await model.connect()) {
-        this.res.redirect('/desk');
+        return this.redirect('/desk');
       }
     } else {
       const response = await model.__dataConnect__();
-      await this.render(response);
+      return await this.render(response);
     }
   }
 

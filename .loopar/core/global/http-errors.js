@@ -368,7 +368,4 @@ export function getHttpError(err) {
   httpError.description = err.message || httpError.description;
   httpError.title = httpError.code;
 
-  //console.log(["HTTTP Errot", err])
-  return httpError;
-  //return httpErrors[code] || httpErrors["500 Internal Server Error"];
-}
+  return httpError;}

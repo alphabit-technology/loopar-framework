@@ -112,8 +112,6 @@ export default class FormContext extends BaseForm{
     const meta = this.props.meta;
     const { STRUCTURE } = meta.__DOCTYPE__;
 
-    //console.log(["FORM CONTEXT", STRUCTURE])
-
     return super.render(
       <FormWrapper meta={meta} docRef={this}>
         <DeskGUI docRef={this}>

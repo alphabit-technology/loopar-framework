@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { access, fstat } from 'fs'
+import { access } from 'fs'
 import DataBase from '../database/database.js';
 //import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
@@ -16,7 +16,6 @@ import dayjs from "dayjs";
 import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
-import { type } from 'os';
 
 export class Loopar {
   #installingApp = false;
@@ -86,7 +85,6 @@ export class Loopar {
     };
 
     for (const [element, classes] of Object.entries(this.tailwindClasses)) {
-      console.log(["make tailwind", classes])
       colector += `<div className="${filterSpecialChars(classes)}"/>`;
     }
 
@@ -274,7 +272,7 @@ export class Loopar {
     GlobalEnvironment();
 
     process.on('uncaughtException', err => {
-      //console.error(['LOOPAR: uncaughtException', err]);
+      console.error(['LOOPAR: uncaughtException', err]);
 
       const httpError = getHttpError(err);
 
@@ -383,6 +381,10 @@ export class Loopar {
   async newDocument(document, data = {}, { app, module, documentName = null } = {}) {
     const DOCTYPE = await this.#GET_DOCTYPE(document, { app, module });
     return await documentManage.newDocument(DOCTYPE, data, documentName);
+  }
+
+  async getErrDocument(){
+    return await this.newDocument("Error", {}, { app: "loopar", module: "core" });
   }
 
   async deleteDocument(document, documentName, { updateInstaller = true, sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {

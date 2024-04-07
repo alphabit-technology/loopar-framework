@@ -15,8 +15,6 @@ export default class View extends BaseDocument {
     const meta = this.props.meta;
     const {STRUCTURE} = meta.__DOCTYPE__;
 
-
-    console.log(['STRUCTURE', meta]);
     return super.render(
       <DeskGUI
         docRef={this}

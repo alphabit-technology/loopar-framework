@@ -166,7 +166,6 @@ export default class Router {
      * example: /desk/core or /desk/auth
      * */
     if (!args.document) {
-
       args.documentName = args.module; /*Because Module called is a documentName on Module Document*/
       args.module = 'core'; /*because Module document is in core module*/
       args.document = 'Module'; /*Because Module is a document*/
@@ -220,7 +219,6 @@ export default class Router {
   sendResponse(res, req, response) {
     try {
       if (response instanceof Error) {
-        console.log(["Response Error", req.method])
         res.status(500);
         if (req.method === "POST") {
           res.setHeader('Content-Type', 'application/json');
@@ -233,17 +231,14 @@ export default class Router {
           return res.send(response.message);
         }
       } else if (response === undefined) {
-        console.log(["Response Undefined"])
         //return this.#custom404Middleware(req, res);
       } else if (response instanceof Object) {
-        //console.log(["Response Object", response])
         if (response.status) res.status(response.status);
         if (response.headers) res.set(response.headers);
         if (response.body) return res.send(response.body);
 
         return res.send(response);
       } else {
-        //console.log(["Response String", response])
         res.status(200);
         res.setHeader('Content-Type', 'content-type: text/html; charset=utf-8');
 
@@ -255,15 +250,8 @@ export default class Router {
   }
 
   async launchAction(controller, action, res, req) {
-    //try {
     const response = await controller[action]();
-
     this.sendResponse(res, req, response);
-    /*} catch (e) {
-      console.log(["Launch Action Error", e])
-      res.status(500);
-      this.sendResponse(res, req, 'Internal Server Error: ' + e.message)
-    }*/
   }
 
   async launchController(controller, args) {
@@ -274,11 +262,15 @@ export default class Router {
     let action = `action${loopar.utils.Capitalize(args.action)}`;
     action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
 
-    await this.temporaryLogin();
-    if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || (await controller.isAuthenticated())) {
+    //await this.temporaryLogin();
+    if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" ) {
       this.launchAction(controller, action, args.res, args.req);
-    } else {
-      this.launchAction(controller, "notFound", args.res, args.req);
+    } else if(await controller.isAuthenticated()) {
+      if(controller[action] && typeof controller[action] === "function") {
+        this.launchAction(controller, action, args.res, args.req);
+      }else{
+        this.launchAction(controller, "notFound", args.res, args.req);
+      }
     }
   }
 

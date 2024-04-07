@@ -33,8 +33,6 @@ export default class BaseCarrusel extends Preassembled {
 
     !designerMode && items.unshift(elementsDict[prevIndex]);
 
-    console.log(["bsase carrusel", items, this.context]);
-  
     return (
       <div
        className={`relative w-full h-full ${designerMode ? "pt-3" : ""}`}

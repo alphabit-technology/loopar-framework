@@ -84,7 +84,8 @@ export default class BaseForm extends BaseDocument {
     const fields = this.__FIELDS__;
     const errors = [];
     Object.entries(this.Form.watch()).reduce((obj, [key, value]) => {
-      const field = fields.find(f => f.data.name === key);
+      const field = fields.find(f => f.data?.name === key);
+      if (!field) return obj;
 
       field.value = value;
       
@@ -173,7 +174,9 @@ export default class BaseForm extends BaseDocument {
   get formValues() {
     const fields = this.__FIELDS__;
     return Object.entries(this.Form.watch()).reduce((obj, [name, value]) => {
-      const field = fields.find(f => f.data.name === name);
+      const field = fields.find(f => f.data?.name === name);
+
+      if (!field) return obj;
 
       if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
         const files = Array.isArray(value) ? value : [];

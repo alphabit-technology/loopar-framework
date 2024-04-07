@@ -16,6 +16,7 @@ export default class CoreInstaller {
       {
         element: "card",
         data: {
+          name: "form_install",
           label: "Your Company Data",
           icon: "fa fa-building",
           color: "primary"
@@ -289,6 +290,7 @@ export default class CoreInstaller {
 
     //loopar.installing = false;
     loopar.installingApp = null;
+    await loopar.initialize();
     await loopar.server.exposeClientAppFiles(this.app_name);
     return "App installed successfully!";
   }

@@ -20,8 +20,7 @@ class FileManage {
 
   async existFile(fileRoute) {
     const isRelative = fileRoute.startsWith("./");
-    isRelative && console.log("existFIle", path.resolve(fileRoute))
-    return new Promise(resolve => {
+      return new Promise(resolve => {
       access(isRelative ? path.resolve(fileRoute) : path.resolve(loopar.makePath(loopar.pathRoot, fileRoute)), (err) => {
         return resolve(!err);
       });

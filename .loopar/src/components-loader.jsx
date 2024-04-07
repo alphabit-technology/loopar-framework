@@ -9,7 +9,6 @@ const extractElements = (elements, environment) => {
     
     const element = typeof el === "string" ? { element: el } : el;
 
-    !element.element && console.log(["Estract element",element])
     const def = elementsDict[element.element]?.def || {};
 
     if((environment !== "server" || !def.clientOnly)){

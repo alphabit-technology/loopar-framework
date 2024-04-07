@@ -61,7 +61,7 @@ export default class CoreController extends AuthController {
     this.controllerPath = loopar.makePath("apps/loopar/modules/core/error");
     this.document = "Error";
     this.client = "view";
-    const document = await loopar.newDocument("Error");
+    const document = await loopar.getErrDocument();
     document.__DOCUMENT__ = error;
 
     return await this.render(document);

@@ -347,7 +347,6 @@ export default class ElementEditorClass extends DivComponent {
     const data = this.formValues;
     typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
 
-    console.log(["Element Editor", data]);
     const dontHaveMetaElements = connectedElement.dontHaveMetaElements || [];
 
     const metaFields = this.metaFields().map(({ group, elements }) => {

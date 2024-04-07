@@ -145,9 +145,6 @@ export default class DataBaseSqlLite {
             } else {
                 try {
                     const connection = this.connection;
-
-                    console.log(["**********execute query**********", query, "**********execute query**********"])
-
                     connection.all(query, [], function (err, result) {
                         err ? reject(err) : resolve(result);
                     });

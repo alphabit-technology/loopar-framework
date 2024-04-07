@@ -138,8 +138,6 @@ class DataInterface {
 
   validatorRules() {
     var type = (this.element === INPUT ? this.data.format || this.element : this.element) || 'text';
-
-    //console.log(["on get type", this.data])
     type = type.charAt(0).toUpperCase() + type.slice(1);
 
     if (this['is' + type]) {
@@ -272,8 +270,6 @@ class DataInterface {
 
   validatorRequired() {
     const required = [true, 'true', 1, '1'].includes(this.data.required);
-
-    //console.log(["validate field", this.data.name, this.value])
     return {
       valid: !required || !(typeof this.value == "undefined" || (["null", "undefined"].includes(this.value) || (this.value || "").toString().length === 0)),
       message: `${this.__label()} is required`

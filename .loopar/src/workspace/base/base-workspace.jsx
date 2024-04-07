@@ -214,7 +214,7 @@ export default class BaseWorkspace extends React.Component {
   mergeDocument() {
     const updateValue = (structure, document) => {
       return structure.map((el) => {
-        if (Object.keys(document).includes(el.data.name)) {
+        if (Object.keys(document).includes(el.data?.name)) {
           const value = document[el.data.name];
 
           if (el.element === FORM_TABLE) {

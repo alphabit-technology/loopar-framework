@@ -36,7 +36,6 @@ export default class BaseSlider extends Preassembled {
 
     if (!elementsDict.length) return [];
 
-    console.log("elementsDict", elementsDict);
     const sliders = [elementsDict[prevIndex], elementsDict[currentIndex]];
 
     return [
