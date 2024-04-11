@@ -86,10 +86,10 @@ export default class DataBase {
       default_value = 'CURRENT_TIMESTAMP';
     }*/
 
-    if([DATE, DATETIME, TIME].includes(field.element)) {
+    if ([DATE, DATE_TIME, TIME].includes(field.element)) {
       if(field.element === DATE) {
         defaultValue = loopar.utils.formatDate(defaultValue, 'YYYY-MM-DD');
-      } else if(field.element === DATETIME) {
+      } else if(field.element === DATE_TIME) {
         defaultValue = loopar.utils.formatDateTime(defaultValue, 'YYYY-MM-DD HH:mm:ss');
       }else{
         defaultValue = loopar.utils.formatTime(defaultValue, 'HH:mm:ss');
