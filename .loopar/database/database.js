@@ -79,6 +79,7 @@ export default class DataBase {
 
     const defaultValue = this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) ? DEFAULT : '';
 
+    console.log([field.data.name, type, defaultValue])
     const dataType = (type) => {
       if (field.element === ID) {
         return 'INT(11) AUTO_INCREMENT';
