@@ -74,12 +74,11 @@ export default class DataBase {
     const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
     const type = field.element === INPUT ? field.data.format : field.element;
-    const DEFAULT = this.isValidDefaultValue(field.data.default_value, type) ? field.data.default_value : null;
-    //const DEFAULT = (field.data.default_value && field.data.default_value.length > 0) ? `DEFAULT '${field.data.default_value}'` : '';
+    const dbType = (ELEMENT_DEFINITION(type, INPUT).type || [])[0];
+    const hasDefault = field.data.default_value && this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) && this.isValidDefaultValue(field.data.default_value, dbType);
 
-    const defaultValue = this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) ? DEFAULT : '';
+    const DEFAULT = hasDefault ? `DEFAULT '${field.data.default_value}'` : '';
 
-    console.log([field.data.name, type, defaultValue])
     const dataType = (type) => {
       if (field.element === ID) {
         return 'INT(11) AUTO_INCREMENT';
@@ -94,7 +93,7 @@ export default class DataBase {
     }
 
     const fieldType = dataType(type && type.toString().length > 0 ? type : field.element);
-    return `${loopar.utils.UPPERCASE(fieldType)} ${defaultValue}`;
+    return `${loopar.utils.UPPERCASE(fieldType)} ${DEFAULT}`;
   }
 
   debugText(text) {
