@@ -529,11 +529,11 @@ export default class CoreDocument {
   get valuesToSetDataBase() {
     const formatedValue = (element, value) => {
       if(element === DATE){
-        return dayjs(value).format("YYYY-MM-DD") === "Invalid date" ? null : dayjs(value).format("YYYY-MM-DD");
+        return dayjs(value).format("YYYY-MM-DD") == "Invalid Date" ? null : dayjs(value).format("YYYY-MM-DD");
       }
 
       if(element === DATE_TIME || element === TIME){
-        return dayjs(value).format("YYYY-MM-DD HH:mm:ss") === "Invalid date" ? null : dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+        return dayjs(value).format("YYYY-MM-DD HH:mm:ss") == "Invalid Date" ? null : dayjs(value).format("YYYY-MM-DD HH:mm:ss");
       }
 
       return value;
