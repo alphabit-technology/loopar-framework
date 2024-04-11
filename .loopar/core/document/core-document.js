@@ -532,7 +532,7 @@ export default class CoreDocument {
         return dayjs(value).format("YYYY-MM-DD");
       }
 
-      if(element === DATETIME || element === TIME){
+      if(element === DATE_TIME || element === TIME){
         return dayjs(value).format("YYYY-MM-DD HH:mm:ss");
       }
 
