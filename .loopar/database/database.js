@@ -3,6 +3,7 @@
 import mysql from 'mysql';
 import { loopar } from "../core/loopar.js";
 import e from 'express';
+import { defaultMaxListeners } from 'events';
 
 const ENGINE = 'ENGINE=INNODB';
 
@@ -70,6 +71,8 @@ export default class DataBase {
     }
   }
 
+
+
   datatype(field) {
     const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
@@ -77,7 +80,23 @@ export default class DataBase {
     const dbType = (ELEMENT_DEFINITION(type, INPUT).type || [])[0];
     const hasDefault = field.data.default_value && this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) && this.isValidDefaultValue(field.data.default_value, dbType);
 
-    const DEFAULT = hasDefault ? `DEFAULT '${field.data.default_value}'` : '';
+    let defaultValue = field.data.default_value;
+
+    /*if([DATE, DATETIME, TIME].includes(type) && default_value === 'CURRENT_TIMESTAMP') {
+      default_value = 'CURRENT_TIMESTAMP';
+    }*/
+
+    if([DATE, DATETIME, TIME].includes(field.element)) {
+      if(field.element === DATE) {
+        defaultValue = loopar.utils.formatDate(defaultValue, 'YYYY-MM-DD');
+      } else if(field.element === DATETIME) {
+        defaultValue = loopar.utils.formatDateTime(defaultValue, 'YYYY-MM-DD HH:mm:ss');
+      }else{
+        defaultValue = loopar.utils.formatTime(defaultValue, 'HH:mm:ss');
+      }
+    }
+
+    const DEFAULT = hasDefault ? `DEFAULT '${defaultValue}'` : '';
 
     const dataType = (type) => {
       if (field.element === ID) {
@@ -461,12 +480,12 @@ export default class DataBase {
   }
 
   fixFields(columns, is_new = false) {
-    let exist_column = false;
+    let existColumn = false;
 
     const fixFields = (fields = columns, field_data = {}) => {
       return fields.map(field => {
         if (field.data.name === field_data.data.name) {
-          exist_column = true;
+          existColumn = true;
           Object.assign(field.data, field_data.data);
         }
 
@@ -508,7 +527,7 @@ export default class DataBase {
 
     columns = fixFields(columns, nameStructure);
 
-    if (!exist_column) {
+    if (!existColumn) {
       columns = [nameStructure, ...columns];
     }
 
@@ -571,7 +590,6 @@ export default class DataBase {
         const columns = [...this.makeColumns(fields), `PRIMARY KEY (\`id\`)`];
 
         this.query = `CREATE TABLE IF NOT EXISTS ${TABLE} (${columns.join(',')}) ${ENGINE};`;
-
         resolve(this.query);
       }
     });
