@@ -45,11 +45,37 @@ export default class DataBase {
     return ['varchar', 'text', 'int', 'bigint', 'tinyint', 'smallint', 'mediumint', 'float', 'double', 'decimal', 'date', 'datetime', 'timestamp', 'time', 'year'].includes(fieldType);
   }
 
+  isValidDefaultValue(value, type) {
+    if (value === null) return true;
+
+    switch (type) {
+      case 'int':
+      case 'bigint':
+      case 'tinyint':
+      case 'smallint':
+      case 'mediumint':
+        return !isNaN(value);
+      case 'float':
+      case 'double':
+      case 'decimal':
+        return !isNaN(value);
+      case 'date':
+      case 'datetime':
+      case 'timestamp':
+      case 'time':
+      case 'year':
+        return !isNaN(Date.parse(value));
+      default:
+        return true;
+    }
+  }
+
   datatype(field) {
     const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
     const type = field.element === INPUT ? field.data.format : field.element;
-    const DEFAULT = (field.data.default_value && field.data.default_value.length > 0) ? `DEFAULT '${field.data.default_value}'` : '';
+    const DEFAULT = this.isValidDefaultValue(field.data.default_value, type) ? field.data.default_value : null;
+    //const DEFAULT = (field.data.default_value && field.data.default_value.length > 0) ? `DEFAULT '${field.data.default_value}'` : '';
 
     const defaultValue = this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) ? DEFAULT : '';
 
