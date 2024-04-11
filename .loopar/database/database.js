@@ -344,11 +344,11 @@ export default class DataBase {
   async #escapeId(value, connection = null) {
     connection = connection || await this.connection();
 
-    return connection.escapeId(value);
+    return connPromiseection.escapeId(value);
   }
 
   async insertRow(document, data = {}, isSingle = false) {
-    return new Promise(async (resolve, reject) => {
+    return new (async (resolve, reject) => {
       const con = await this.connection();
 
       if (isSingle) {

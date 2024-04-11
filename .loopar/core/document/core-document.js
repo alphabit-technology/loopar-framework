@@ -527,6 +527,17 @@ export default class CoreDocument {
   }
 
   get valuesToSetDataBase() {
+    const formatedValue = (element, value) => {
+      if(element === DATE){
+        return dayjs(value).format("YYYY-MM-DD");
+      }
+
+      if(element === DATETIME || element === TIME){
+        return dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+      }
+
+      return value;
+    }
     return Object.values(this.#fields).filter(field => {
       if (field.name === ID) return false;
 
@@ -537,7 +548,7 @@ export default class CoreDocument {
       }
 
       return true;
-    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
+    }).reduce((acc, cur) => ({ ...acc, [cur.name]: formatedValue(cur.element, cur.stringifyValue)}), {});
   }
 
   get childValuesReq() {
