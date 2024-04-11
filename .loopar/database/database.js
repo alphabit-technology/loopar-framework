@@ -77,7 +77,7 @@ export default class DataBase {
     const dbType = (ELEMENT_DEFINITION(type, INPUT).type || [])[0];
     const hasDefault = field.data.default_value && this.dbFielTypeCanHaveDefaultValue((ELEMENT_DEFINITION(type, INPUT).type || [])[0]) && this.isValidDefaultValue(field.data.default_value, dbType);
 
-    const DEFAULT = hasDefault ? `DEFAULT '${field.data.default_value}'` : '';
+    const DEFAULT = ''// hasDefault ? `DEFAULT '${field.data.default_value}'` : '';
 
     const dataType = (type) => {
       if (field.element === ID) {
