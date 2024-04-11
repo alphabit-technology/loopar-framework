@@ -49,7 +49,7 @@ export const elementsDefinition = {
     { element: "password", icon: "Asterisk", type: [varchar, varcharLen] },
     { element: "date", icon: "Calendar", type: [date, ''], format: 'YYYY-MM-DD' },
     { element: "date_time", icon: "CalendarClock", type: [date_time, ''], format: 'YYYY-MM-DD HH:mm:ss' },
-    { element: "time", icon: "Clock10", type: [time, '6'], format: 'HH:mm:ss' },
+    { element: "time", icon: "Clock10", type: [time, ''], format: 'HH:mm:ss' },
     { element: "currency", icon: "Currency", type: [decimal, '(18,6)'], show_in_design: false },
     { element: "integer", icon: "fa-duotone fa-input-numeric", type: [int, '(11)'], show_in_design: false },
     { element: "decimal", icon: "fa fa-00", type: [decimal, '(18,6)'], show_in_design: false },

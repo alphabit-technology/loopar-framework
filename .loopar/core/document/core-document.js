@@ -528,16 +528,17 @@ export default class CoreDocument {
 
   get valuesToSetDataBase() {
     const formatedValue = (element, value) => {
-      if(element === DATE){
-        return dayjs(value).format("YYYY-MM-DD") == "Invalid Date" ? null : dayjs(value).format("YYYY-MM-DD");
-      }
+      if([DATE, DATE_TIME, TIME].includes(element)){
+        if(!value) return null;
+        let date = element === DATE ? dayjs(value).format("YYYY-MM-DD") : dayjs(value).format("YYYY-MM-DD HH:mm:ss");
 
-      if(element === DATE_TIME || element === TIME){
-        return dayjs(value).format("YYYY-MM-DD HH:mm:ss") == "Invalid Date" ? null : dayjs(value).format("YYYY-MM-DD HH:mm:ss");
+        console.log(["Formated Value", value, date])
+        return date == "Invalid Date" ? null : date;
       }
 
       return value;
     }
+
     return Object.values(this.#fields).filter(field => {
       if (field.name === ID) return false;
 
