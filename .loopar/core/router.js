@@ -266,6 +266,7 @@ export default class Router {
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" ) {
       this.launchAction(controller, action, args.res, args.req);
     } else if(await controller.isAuthenticated()) {
+      console.log(["***************", action])
       if(controller[action] && typeof controller[action] === "function") {
         this.launchAction(controller, action, args.res, args.req);
       }else{
