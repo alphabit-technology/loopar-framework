@@ -263,6 +263,7 @@ export default class Router {
     action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
 
     //await this.temporaryLogin();
+    console.log(["***************", args.workspace])
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" ) {
       this.launchAction(controller, action, args.res, args.req);
     } else if(await controller.isAuthenticated()) {
