@@ -92,6 +92,7 @@ export default class Router {
     const pathname = req._parsedUrl.pathname//.replace('web/', '');
 
     const context = pathname.split("/")[1];
+    console.log(["Context", context])
     const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
     const routeStructure = { host: null, module: null, document: null, action: null };
     const controllerParams = { req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller", client: null, }
