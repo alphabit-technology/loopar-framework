@@ -2,8 +2,6 @@
 
 import mysql from 'mysql';
 import { loopar } from "../core/loopar.js";
-import e from 'express';
-import { defaultMaxListeners } from 'events';
 
 const ENGINE = 'ENGINE=INNODB';
 

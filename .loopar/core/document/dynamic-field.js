@@ -42,10 +42,8 @@ export default class DynamicField {
    get stringifyValue() {
       const value = this.#value;
       if ([DATE, TIME, DATE_TIME].includes(this.element)) {
-         if (value == null || typeof value == "undefined" || value === "" || value === "Invalid Date")
-            return null;
-
-         return dayjs(value).format(this.format);
+        const fn = this.element === DATE ? 'getDate' : this.element === DATE_TIME ? 'getDateTime' : 'getTime';
+        return loopar.dateUtils[fn](value, 'DB');
       }
 
       if (this.element === FORM_TABLE) {

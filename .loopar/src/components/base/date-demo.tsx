@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, MouseEvent } from 'react';
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import loopar from "$loopar";
+import dayjs from "dayjs";
 
 /*interface MarkPosition {
   x: number;
@@ -11,9 +13,19 @@ interface PropsInterface {
   value: string
 }
 
+const getTime = (time: string) => {
+  if(typeof time == "object") return dayjs(time).format("HH:mm");
+
+  const date = new Date();
+  const [hours, minutes] = time.split(":").map((value) => parseInt(value));
+  date.setHours(hours);
+  date.setMinutes(minutes);
+  return loopar.utils.formatTime(date);
+}
+
 const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
   const { handleChange, value } = props;
-  const [hours, minutes] = value.split(":").map((value) => parseInt(value));
+  const [hours, minutes] = getTime(value).split(":").map((value) => parseInt(value));
 
   const [AmPm, setAmPm] = useState<string>(hours > 12 ? "PM" : "AM");
   const [selectorType, setSelectorType] = useState<string | null>(null);
@@ -66,11 +78,11 @@ const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
 
       if (selectorType === "Minutes") {
         const minutes = Math.round(degrees / 6) % 60;
-        setSelectedMinute(minutes);
+        setSelectedMinute(isNaN(minutes) ? 0 : minutes);
         setTimeHandler(`${selectedHour}:${minutes}`);
       } else if (selectorType === "Hours") {
         const hours = Math.round(degrees / 30) % 12 || 12;
-        setHour(hours);
+        setHour(isNaN(hours) ? 0 : hours);
       }
     }
   };

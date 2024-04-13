@@ -22,12 +22,15 @@ import {
 import { CalendarIcon } from "lucide-react";
 
 export default class DatePicker extends BaseInput {
+ 
   render(){
     const data = this.data;
     
     return this.renderInput(field => {
+      const fieldDate = new Date(field.value);
+
       const setDateHandler = (value) => {
-        const newDate = dayjs(value);
+        const newDate = dayjs(new Date(value));
         const [year, month, day] = [newDate.year(), newDate.month() + 1, newDate.date()];
 
         const date = dayjs(field.value).toDate();
@@ -52,7 +55,7 @@ export default class DatePicker extends BaseInput {
                   )}
                 >
                   {field.value ? (
-                    format(dayjs(field.value).isValid() ? field.value : new Date(), "PPP HH:mm:ss a")
+                    format(dayjs(fieldDate).isValid() ? fieldDate : new Date(), "PPP HH:mm:ss a")
                   ) : (
                     <span>Pick a date</span>
                   )}
@@ -63,7 +66,7 @@ export default class DatePicker extends BaseInput {
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={field.value}
+                selected={fieldDate}
                 onSelect={setDateHandler}
                 disabled={(date) =>
                   date > new Date() || date < new Date("1900-01-01")

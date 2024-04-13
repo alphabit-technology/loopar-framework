@@ -2,7 +2,6 @@
 
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
-import { json } from 'stream/consumers';
 
 export default class CoreDocument {
   #fields = {};
@@ -120,6 +119,7 @@ export default class CoreDocument {
     if (!this.#fields[fieldName]) {
       if (field.element === FORM_TABLE) {
         const val = loopar.utils.isJSON(value) ? JSON.parse(value) : value;
+
         this.#fields[fieldName] = new DynamicField(
           field,
           (Array.isArray(val) && val.length > 0) ? value : this.__DOCUMENT__[fieldName]
@@ -128,6 +128,7 @@ export default class CoreDocument {
         if (fieldName === "doc_structure") {
           //console.log("doc_structure", value, this.__DOCUMENT__[fieldName])
         }
+
         this.#fields[fieldName] = new DynamicField(field, value || this.__DOCUMENT__[fieldName]);
       }
 
@@ -523,22 +524,10 @@ export default class CoreDocument {
   get stringifyValues() {
     return Object.values(this.#fields)
       .filter(field => field.name !== ID && field.element !== FORM_TABLE)
-      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
+      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue}), {});
   }
 
   get valuesToSetDataBase() {
-    const formatedValue = (element, value) => {
-      if([DATE, DATE_TIME, TIME].includes(element)){
-        if(!value) return null;
-        let date = element === DATE ? dayjs(value).format("YYYY-MM-DD") : dayjs(value).format("YYYY-MM-DD HH:mm:ss");
-
-        console.log(["Formated Value", value, date])
-        return date == "Invalid Date" ? null : date;
-      }
-
-      return value;
-    }
-
     return Object.values(this.#fields).filter(field => {
       if (field.name === ID) return false;
 
@@ -549,7 +538,7 @@ export default class CoreDocument {
       }
 
       return true;
-    }).reduce((acc, cur) => ({ ...acc, [cur.name]: formatedValue(cur.element, cur.stringifyValue)}), {});
+    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue}), {});
   }
 
   get childValuesReq() {

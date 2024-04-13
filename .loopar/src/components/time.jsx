@@ -1,6 +1,7 @@
 import BaseInput from "$base-input";
 import dayjs from "dayjs";
-import { format } from 'date-fns';
+import { format, setHours, setMinutes } from 'date-fns';
+import loopar from "$loopar";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -28,16 +29,9 @@ export default class TimePicker extends BaseInput {
     
     return this.renderInput(field => {
       const setTimeHandler = (value) => {
-        const [hours, minutes] = value.split(":");
-        const date = dayjs(field.value).toDate();
-        date.setHours(hours);
-        date.setMinutes(minutes);
-
-        this.value(date);
+        this.value(loopar.dateUtils.getTime(value));
       };
 
-      const initialHour = dayjs(field.value).format("HH:mm");
-      
       return (
         <FormItem className="flex flex-col" >
           <FormLabel>{data.label}</FormLabel>
@@ -51,17 +45,13 @@ export default class TimePicker extends BaseInput {
                     !field.value && "text-muted-foreground"
                   )}
                 >
-                  {field.value ? (
-                    format(dayjs(field.value).isValid() ? field.value : new Date(), "PPP HH:mm:ss a")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
+                  {field.value ? loopar.dateUtils.getTime(field.value, "DB") : <span>Pick a date</span>}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <DateDemo value={initialHour} handleChange={setTimeHandler}/>
+              <DateDemo value={loopar.dateUtils.getTime(field.value, "DB")} handleChange={setTimeHandler}/>
             </PopoverContent>
           </Popover>
           <FormDescription>

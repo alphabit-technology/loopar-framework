@@ -214,7 +214,7 @@ export default class BaseForm extends BaseDocument {
 
     for (const key in data) {
       if (data.hasOwnProperty(key)) {
-        const value = (typeof data[key] === 'object' && !(data[key] instanceof File)) ? JSON.stringify(data[key]) : data[key];
+        const value = data[key]// (typeof data[key] === 'object' && !(data[key] instanceof File)) ? JSON.stringify(data[key]) : data[key];
         formData.append(key, value);
       }
     }

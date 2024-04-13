@@ -10,6 +10,7 @@ import path from "path";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
+import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
 import { Session } from "./session.js";
 import dayjs from "dayjs";
@@ -65,6 +66,7 @@ export class Loopar {
   async initialize() {
     console.log('......Initializing Loopar.......');
     this.utils = Helpers;
+    this.dateUtils = dateUtils; 
     await this.GlobalEnvironment();
     await this.#loadConfig();
     this.db = new DataBase();

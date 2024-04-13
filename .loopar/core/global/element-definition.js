@@ -1,4 +1,6 @@
 'use-strict';
+import dayjs from 'dayjs';
+import {getTime} from './date-utils.js';
 
 const commonProps = ['draggable', 'draggable_actions'];
 const droppableProps = ['droppable', 'droppable_actions'];
@@ -183,13 +185,16 @@ class DataInterface {
 
   isDate() {
     return {
-      valid: dayjs(this.value).isValid(),
+      valid: dayjs(new Date(this.value)).isValid(),
       message: 'Please enter a valid date'
     }
   }
 
   isTime() {
-    return this.isDate();
+    return {
+      valid: dayjs(new Date(getTime(this.value))).isValid(),
+      message: 'Please enter a valid date'
+    }
   }
 
   isDateTime() {
@@ -200,7 +205,7 @@ class DataInterface {
     var regex = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/;
     return {
       valid: regex.test(this.value),
-      message: 'Please enter a valid phone number'
+      message:  'Please enter a valid phone number'
     }
   }
 
@@ -277,20 +282,20 @@ class DataInterface {
   }
 
   validate() {
-    const validator_required = this.validatorRequired();
+    const validatorRequired = this.validatorRequired();
 
-    if (!validator_required.valid) {
-      return this.#validatorMessage(validator_required);
+    if (!validatorRequired.valid) {
+      return this.#validatorMessage(validatorRequired);
     }
 
     if (this.data.no_validate_type) {
       return { valid: true, message: '' };
     }
 
-    const validator_rules = this.validatorRules();
-    validator_rules.message = (validator_rules.message || "") + " in " + this.__label();
+    const validatorRules = this.validatorRules();
+    validatorRules.message = `'${this.value}' is not a valid value in ${this.__label()}`;
 
-    return this.#validatorMessage(validator_rules);
+    return this.#validatorMessage(validatorRules);
   }
 
   #validatorMessage(validator) {

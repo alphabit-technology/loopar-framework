@@ -2,6 +2,7 @@ import Router from "$tools/router/router";
 import GuiManage from "$tools/gui";
 import http from "$tools/router/http";
 import * as Helpers from "$global/helper";
+import * as dateUtils from "$global/date-utils";
 import scriptManager from "$tools/script-manager";
 
 class Loopar extends Router {
@@ -17,6 +18,7 @@ class Loopar extends Router {
   constructor() {
     super();
     this.utils = Helpers;
+    this.dateUtils = dateUtils;
   }
 
   /*getComponent(component, pre = "./") {

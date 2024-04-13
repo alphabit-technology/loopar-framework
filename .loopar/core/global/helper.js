@@ -249,17 +249,17 @@ function renderizableProps(props) {
 }
 
 function formatDate(date, format = "YYYY-MM-DD") {
-  date = dayjs(date).format(format);
+  date = dayjs(new Date(date)).format(format);
   return date == "Invalid Date" ? null : date;
 }
 
 function formatTime(date, format = "HH:mm:ss") {
-  date = dayjs(date).format(format);
+  date = dayjs(new Date(date)).format(format);
   return date == "Invalid Date" ? null : date;
 }
 
 function formatDateTime(date, format = "YYYY-MM-DD HH:mm:ss") {
-  date = dayjs(date).format(format);
+  date = dayjs(new Date(date)).format(format);
   return date == "Invalid Date" ? null : date;
 }
 
