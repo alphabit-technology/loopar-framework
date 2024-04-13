@@ -92,7 +92,6 @@ export default class Router {
     const pathname = req._parsedUrl.pathname//.replace('web/', '');
 
     const context = pathname.split("/")[1];
-    console.log(["Context", context])
     const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
     const routeStructure = { host: null, module: null, document: null, action: null };
     const controllerParams = { req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller", client: null, }
@@ -264,11 +263,11 @@ export default class Router {
     action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
 
     //await this.temporaryLogin();
-    console.log(["***************", args.workspace])
+    
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" ) {
       this.launchAction(controller, action, args.res, args.req);
     } else if(await controller.isAuthenticated()) {
-      console.log(["***************", action])
+      console.log(["***************", args.workspace])
       if(controller[action] && typeof controller[action] === "function") {
         this.launchAction(controller, action, args.res, args.req);
       }else{
