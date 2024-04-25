@@ -1,25 +1,7 @@
 const Components = {};
 import loopar from "$loopar";
-import {elementsDict} from "@global/element-definition";
-import {requireComponents} from "@/require-components";
+import {MetaComponents} from "@global/require-components";
 
-let extractedElements = [];
-const extractElements = (elements, environment) => {
-  for (const el of elements || []) {
-    
-    const element = typeof el === "string" ? { element: el } : el;
-
-    const def = elementsDict[element.element]?.def || {};
-
-    if((environment !== "server" || !def.clientOnly)){
-      element.element && extractedElements.push(element.element);
-
-      if (element.elements) {
-        extractElements(element.elements, environment);
-      }
-    }
-  }
-};
 
 function getComponent(component, pre = "./") {
   if(!component) return null;
@@ -27,6 +9,7 @@ function getComponent(component, pre = "./") {
   const cParse = component.replaceAll(/_/g, "-");
   return new Promise((resolve) => {
     if (Components[component]) {
+      console.log("Component already loaded: " + component)
       resolve(Components[component]);
     } else {
       import(`./components/${cParse}.jsx`).then((c) => {
@@ -72,14 +55,8 @@ async function loadComponents(components, callback) {
   return Promise.all(promises).then(callback);
 }
 
-async function ComponentsLoader(elementsList, environment) {
-  extractElements(elementsList, environment);
-  const elements = Array.from(new Set(extractedElements));
-  await loadComponents(elements);
-}
-
 async function MetaComponentsLoader(__META__, environment) {
-  await ComponentsLoader(requireComponents(__META__), environment);
+  await loadComponents(MetaComponents(__META__, environment), environment);
 }
 
-export { ComponentsLoader, MetaComponentsLoader, Components };
+export { MetaComponentsLoader, Components };

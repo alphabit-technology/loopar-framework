@@ -29,6 +29,7 @@ export default class ListContext extends BaseDocument {
       content,
       !content || this.renderGrid ?
         <ListGrid
+          hasSearchForm={this.hasSearchForm}
           meta={this.props.meta}
           viewType={this.viewType}
           docRef={this}

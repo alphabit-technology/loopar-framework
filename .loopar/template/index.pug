@@ -1,5 +1,5 @@
 doctype html
-html(lang='en')
+html(class=`${THEME}`, lang='en', style='scroll-behavior: smooth; background-color: hsl(var(--background));')
   head
     include base/base-css
     include base/fonts
@@ -31,117 +31,10 @@ html(lang='en')
       }
 
     script.
-      window.global = window;
-      window.toggleTheme = (toggle = true) => {
-        const skin = localStorage.getItem('skin') || 'dark';
-        const theme = toggle ? (skin === 'dark' ? 'default' : 'dark') : skin;
-        const themeStyle = theme === 'dark' ? '-dark' : '';
-
-        /*const style = document.getElementById("theme-style");
-        style.setAttribute("href", `/assets/plugins/bootstrap/css/theme${themeStyle}.min.css`);
-        window.theme = theme;
-        localStorage.setItem('skin', theme);*/
-      }
-
-      window.toggleTheme(false);
-
-      getTheme = () => {
-        return window.theme === 'dark' ? 'dark' : 'light';
-      }
-
-      getInverseTheme = () => {
-        return getTheme() === 'dark' ? 'light' : 'dark';
-      }
-
+      window.global = window;      
       const __META__ = !{__META__};
-
-      function loadStylesheet(href, { callback, options } = {}) {
-        const { defer = false, position = "before", target = null } = options || {};
-
-        return new Promise((resolve, reject) => {
-          const existingLink = document.querySelector(`link[href="${href}.css"]`);
-
-          if (existingLink) {
-            return resolve();
-            //callback && callback();
-            //return;
-          }
-
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = href+".css";
-          link.defer = defer;
-
-          link.onload = () => {
-            resolve();
-          }
-          link.onerror = () => {
-            reject();
-          }
-
-          if(target){
-            const Target = document.head.querySelector(target);
-
-            if(position === "before"){
-              Target.parentNode.insertBefore(link, target);
-            }else{
-              Target.parentNode.insertBefore(link, Target.nextSibling);
-            }
-          }else{
-            document.head.insertBefore(link, document.head.firstChild);
-          }
-        });
-          /*return new Promise((resolve, reject) => {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet'; 
-            link.href = url;
-            link.onload = resolve;
-            link.onerror = reject;
-
-            document.head.appendChild(link);
-          });*/
-        }
-
-        function loadScript(src, callback, options = { async: true}) {
-          return new Promise((resolve, reject) => {
-            const existingScript = document.querySelector(`script[src="${src}.js"]`);
-            window.scripts ??= {};
-            window.scripts[src] = window.scripts[src] || {loaded: false, callbacks: []};
-
-            const makeScript = () => {
-              const script = document.createElement('script');
-              script.src = src + ".js";
-              script.async = options.async;
-              script.onload = () => {
-                window.scripts[src].callbacks.forEach((callback) => {
-                  callback();
-                });
-
-                window.scripts[src].loaded = true;
-                resolve();
-              }
-              script.onerror = () => {
-                window.scripts[src].loaded = false;
-                reject();
-              }
-              document.head.appendChild(script);
-            }
-
-            if (existingScript) {
-              if(window.scripts[src].loaded){
-                resolve(callback && callback());
-              }else{
-                resolve(callback && window.scripts[src].callbacks.push(callback));
-              }
-              //resolve();
-            }else{
-              callback && window.scripts[src].callbacks.push(callback);
-              makeScript();
-            }
-          });
-        }
     //ssr-initial-data
-  body(class="min-h-screen bg-background font-sans antialiased __className_343187 theme-stone")
+  body(class="min-h-screen bg-background font-sans antialiased theme-stone")
     #loopar-root(style='display: none;')
       //ssr-outlet
     script(type='module' src='/src/entry-client.jsx')

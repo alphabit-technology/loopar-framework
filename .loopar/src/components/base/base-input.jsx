@@ -138,9 +138,10 @@ export default class BaseInput extends DivComponent {
     }*/
   }
 
-  value(val, { event_change = true, focus = false } = {}) {
+  value(val) {
     if(typeof val === "undefined") return this.fieldControl.value;
 
+    console.log(["value", val])
     this.fieldControl.value = val;
     setTimeout(() => {
       this.fieldControl.onChange({target: {value: val}});

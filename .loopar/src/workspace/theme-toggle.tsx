@@ -12,7 +12,7 @@ import { SunIcon, MoonStarIcon, ComputerIcon } from "lucide-react"
 
 export function ThemeToggle() {
   const { setTheme, theme } = useWorkspace();
-  const themeIcon = theme === "dark" ? Moon : SunIcon;
+  //const themeIcon = theme === "dark" ? Moon : SunIcon;
   
   return (
     <DropdownMenu>

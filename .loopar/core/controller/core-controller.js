@@ -122,7 +122,11 @@ export default class CoreController extends AuthController {
     const url = this.req.originalUrl;
     const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + this.engineTemplate
     const vite = loopar.server.vite;
-    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { __META__: JSON.stringify(response) }));
+    
+    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { 
+      __META__: JSON.stringify(response),
+      THEME: loopar.utils.cookie.get('vite-ui-theme') || 'dark'
+    }));
 
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {

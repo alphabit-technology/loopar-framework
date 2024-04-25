@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, use } from "react"
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
 import loopar from "$loopar";
 import { useLocation } from 'react-router-dom';
 
@@ -20,6 +20,7 @@ type WorkspaceProviderProps = {
   menuItems?: [],
   headerHeight?: number,
   device?: string,
+  loaded?: boolean,
 }
 
 type WorkspaceProviderState = {
@@ -27,6 +28,8 @@ type WorkspaceProviderState = {
   setTheme: (theme: Theme) => void,
   openNav?: boolean,
   setOpenNav?: (open: boolean) => void,
+  loaded?: boolean,
+  setLoaded?: (loaded: boolean) => void,
 }
 
 const initialState: WorkspaceProviderState = {
@@ -34,6 +37,8 @@ const initialState: WorkspaceProviderState = {
   setTheme: () => null,
   openNav: loopar.utils.cookie.get("openNav") === "true",
   setOpenNav: () => null,
+  loaded: false,
+  setLoaded: () => null,
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
@@ -72,7 +77,6 @@ export function WorkspaceProvider({
   const isTablet = useMediaQuery('(max-width: 1024px)');
   const isDesktop = useMediaQuery('(min-width: 1025px)');
 
-  
   const screenSize = isMobile ? "sm" : isTablet ? "md" : "lg";
   const device = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
 
@@ -83,6 +87,8 @@ export function WorkspaceProvider({
   const [openNav, setOpenNav] = useState<boolean>(
     loopar.utils.cookie.get("openNav") === "true"
   );
+
+  const [loaded, setLoaded] = useState<boolean>(false);
 
   const handleSetOpenNav = useCallback(
     (openNav) => {
@@ -99,9 +105,20 @@ export function WorkspaceProvider({
     [setOpenNav]
   );
 
+  const handledLoaded = useCallback(
+    () => {
+      const root = document.getElementById("loopar-root");
+      if (root) {
+        root.style.display = "block";
+      }
+      setLoaded(true);
+    },
+    [loaded]
+  );
+
   useEffect(() => {
-    const root = window.document.documentElement
-    root.classList.remove("light", "dark")
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -118,11 +135,17 @@ export function WorkspaceProvider({
     if (screenSize !== "lg" && openNav) handleSetOpenNav(false);
   }, [theme, pathname])
 
+
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      loopar.utils.cookie.set(storageKey, theme)
-      setTheme(theme)
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light"
+        
+      loopar.utils.cookie.set(storageKey, systemTheme)
+      setTheme(systemTheme)
     },
     sidebarWidth: props.sidebarWidth,
     collapseSidebarWidth: props.collapseSidebarWidth,
@@ -134,6 +157,8 @@ export function WorkspaceProvider({
     menuItems: props.menuItems,
     headerHeight: props.headerHeight,
     device: device,
+    loaded,
+    setLoaded: handledLoaded,
   }
 
   return (

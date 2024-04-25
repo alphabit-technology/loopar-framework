@@ -512,12 +512,15 @@ export class BaseTable extends BaseComponent {
       rowsNames.includes(row)
     );
   }
+  get _hasSearchForm() {
+    return this.props.hasSearchForm ?? this.hasSearchForm;
+  }
 
   getFormSearch(searchFields) {
     return (
       <FormWrapper>
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {searchFields.length > 0 && this.hasSearchForm && searchFields.map((c) => {
+          {searchFields.length > 0 && this._hasSearchForm && searchFields.map((c) => {
             if (c.data.name !== "selector_all") {
               if (fieldIsWritable(c)) {
                 const data = {
@@ -536,7 +539,7 @@ export class BaseTable extends BaseComponent {
                 return (
                   <div>
                     <DynamicComponent
-                      elements={[
+                      elements={[                   
                         {
                           element: c.element,
                           key: c.data.name,
@@ -545,10 +548,11 @@ export class BaseTable extends BaseComponent {
                           dontHaveLabel: true,
                           onChange: (e) => {
                             const value = e.target ? e.target.value : e;
+
                             if (value) {
-                              this.searchData[c.data.name] = `${value}`
+                              this.searchData[c.data.name] = `${value}`;
                             } else {
-                              delete this.searchData[c.data.name]
+                              delete this.searchData[c.data.name];
                             }
                             clearTimeout(this.lastSearch);
                             this.lastSearch = setTimeout(() => {
@@ -602,7 +606,7 @@ export class BaseTable extends BaseComponent {
 
     return (
       <>
-        {this.hasSearchForm && <div>{this.getFormSearch(searchFields)}</div>}
+        {this._hasSearchForm && <div>{this.getFormSearch(searchFields)}</div>}
         <div className="border">
           {this.viewType === "List" ? this.getTableRender(columns, rows) : this.getGridRender(columns, rows)}
         </div>

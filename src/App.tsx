@@ -1,7 +1,7 @@
 import "@styles/globals.css";
-import { cn } from "@/lib/utils"
-import { TailwindIndicator } from "@/components/tailwind-indicator"
-import React from "react";
+import { cn } from "@/lib/utils";
+import { TailwindIndicator } from "@/components/tailwind-indicator";
+import React, { useEffect } from "react";
 
 interface RootLayoutProps {
   __META__: {
@@ -16,9 +16,15 @@ interface RootLayoutProps {
   ENVIRONMENT: string;
 }
 
-const App = ({ __META__, Workspace, Document, ENVIRONMENT }:RootLayoutProps) => {
+const App = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
   const workspace = JSON.parse(__META__.workspace);
   const meta = JSON.parse(__META__.meta);
+
+  useEffect(() => {
+    if (ENVIRONMENT === "development") {
+      console.log("🚀 Development Mode");
+    }
+  }, []);
 
   return (
     <>

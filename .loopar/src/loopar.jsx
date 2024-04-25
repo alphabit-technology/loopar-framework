@@ -4,6 +4,7 @@ import http from "$tools/router/http";
 import * as Helpers from "$global/helper";
 import * as dateUtils from "$global/date-utils";
 import scriptManager from "$tools/script-manager";
+import { elementsDict } from "@global/element-definition";
 
 class Loopar extends Router {
   ui = GuiManage;
@@ -326,4 +327,6 @@ class Loopar extends Router {
   }
 }
 
-export default new Loopar();
+const loopar = new Loopar();
+export default loopar;
+export { loopar, elementsDict };

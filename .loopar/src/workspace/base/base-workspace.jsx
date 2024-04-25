@@ -114,16 +114,18 @@ export default class BaseWorkspace extends React.Component {
     res.meta.key = res.key;
 
     if (!documents[res.key]) {
-      MetaComponentsLoader(__META__, this.props.environment).then(() => {
+      //MetaComponentsLoader(__META__, this.props.environment).then(() => {
         AppSourceLoader(res.client_importer).then((module) => {
-          documents[res.key] = {
-            Module: module.default,
-            meta: res.meta,
-            active: true,
-          };
+          MetaComponentsLoader(__META__, this.props.environment).then(() => {
+            documents[res.key] = {
+              Module: module.default,
+              meta: res.meta,
+              active: true,
+            };
 
-          this.setState({ documents }, () => {
-            this.progress(102);
+            this.setState({ documents }, () => {
+              this.progress(102);
+            });
           });
         }).catch((e) => {
           res.client_importer.client = "error-view";
@@ -145,7 +147,7 @@ export default class BaseWorkspace extends React.Component {
             });
           });
         });
-      });
+      //});
     } else {
       documents[res.key] = {
         Module: documents[res.key].Module,

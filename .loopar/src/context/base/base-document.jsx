@@ -1,26 +1,17 @@
 import BaseComponent from "$base-component";
 import loopar from "$loopar";
 import {DocumentContext} from "@context/base/base-context";
+import { WorkspaceProviderContext } from "@workspace/workspace-provider";
+
 
 export default class BaseDocument extends BaseComponent {
   dontHaveContainer = true;
   customActions = {};
   __REFS__ = {};
+  static contextType = WorkspaceProviderContext;
 
   constructor(props) {
     super(props);
-
-    this.state = {
-      ...this.state,
-      sidebarOpen: false,
-      design: false,
-      preview: false,
-    }
-
-    /*this.style = {
-      ...this.style,
-      display: props.visible ? "block" : "none",
-    }*/
   }
 
   render(content) {
@@ -80,10 +71,8 @@ export default class BaseDocument extends BaseComponent {
   componentDidMount() {
     super.componentDidMount();
     setTimeout(() => {
-      const root = document.getElementById("loopar-root");
-      if (root) {
-        root.style.display = "block";
-      }
+      console.log(["BaseDocument", this.context])
+      this.context.setLoaded(true);
 
       this.initScroll();
     });

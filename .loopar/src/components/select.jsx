@@ -29,14 +29,14 @@ import {
   FormLabel
 } from "@/components/ui/form"
 
-function SelectFn({search, selectData, onSelect, options, field, ...props}) {
+function SelectFn({search, data, onSelect, options, field, ...props}) {
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
   const [searching, setSearching] = useState(false);
   //const [value, setValue] = useState(props.initialValue);
   //const [options, setOptions] = useState(props.options?.length > 0 ? props.options : value ? [value] : []);
-  const formContext = useFormContext();
+  //const formContext = useFormContext();
 
   const openHandler = (e) => {
     setSearching(true);
@@ -61,13 +61,17 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
   }
 
   useEffect(() => {
-    if (!field.value && props.defaultValue) {
-      setValueHandler(props.defaultValue);
+    if (field && field !== "" && props.defaultValue) {
+      //setValueHandler(props.defaultValue);
     }
   }, [field.value])
 
-  const value = loopar.utils.isJSON(field.value) ? JSON.parse(field.value).option : field.value;
+  const selected =  loopar.utils.isJSON(field.value) ? JSON.parse(field.value)?.option : field.value;
 
+  const value = options.find((option) => option.option === selected)?.option || `Select ${data.label}`;
+            //props.defaultValue || `Select ${data.label}`;
+
+  //if(selectData.name === "module") console.log(["SelectFn", field.value])
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild >
@@ -76,7 +80,7 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
           role="combobox"
           className={cn(
             "w-full justify-between pr-1",// max-w-sm
-            !field.value && "text-muted-foreground"
+            !selected && "text-muted-foreground"
           )}
           onClick={(e) => {
             e.preventDefault();
@@ -87,9 +91,7 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
           onMouseLeave={() => setActive(false)}
         >
           {
-            field.value ?
-            options.find((option) => option.option === value)?.option || `Select ${selectData.label}`:
-            props.defaultValue || `Select ${selectData.label}`
+            value
           }
           <div className="flex flex-row items-center justify-between">
             <Cross2Icon
@@ -98,7 +100,7 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
                 e.preventDefault();
                 e.stopPropagation();
                 setValueHandler(null);
-                searchHandler(null);
+                //searchHandler(null);
               }}
             />
             <CaretSortIcon className="ml-1 h-5 w-5 shrink-0 opacity-50" />
@@ -108,7 +110,7 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
       <PopoverContent className="w-full min-w-[var(--radix-popover-trigger-width)]" align="start">
         <Command>
           <CommandInput
-            placeholder={`Search ${selectData.label}...`}
+            placeholder={`Search ${data.label}...`}
             className="h-9"
             onKeyUp={searchHandler}
           />
@@ -124,7 +126,7 @@ function SelectFn({search, selectData, onSelect, options, field, ...props}) {
                 <CheckIcon
                   className={cn(
                     "ml-auto h-4 w-4",
-                    option.option === field.value
+                    option.option === selected
                       ? "opacity-100"
                       : "opacity-0"
                   )}
@@ -143,51 +145,52 @@ export default class Select extends BaseInput {
   filteredOptions = [];
   titleFields = ["value"];
 
-  /*get requires() {
-    return {
-      css: ["/assets/plugins/bootstrap/css/select2"],
-    };
-  }*/
-
   constructor(props) {
     super(props);
 
     this.state = {
       ...this.state,
-      //valid: true,
       rows: []
     };
   }
 
+  get data(){
+    return this.props.data;
+  }
+
   render() {
     const data = this.data || { label: "Select", name: "select", value: ""};
-    this.assignedValue = data.value;
 
-    return this.renderInput((field) => (
+    const onSelect = (e) => {
+      this.fieldControl.value = e
+      this.value(e);
+    }
+
+    return this.renderInput((field) => {
+      return (
       <div>
         {!this.props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
         <SelectFn
           field={field}
           options={this.state.rows}
           search={(delay) => this.#search(delay)}
-          selectData={data}
-          onSelect={field.onChange}
-          defaultValue={data.selected}
+          data={data}
+          onSelect={onSelect}
         />
         {data.description && (
           <FormDescription>{data.description}</FormDescription>
         )}
       </div>
-    ));
+    )});
   }
 
   componentDidMount() {
     super.componentDidMount();
-    const data = this.data;
-    const initialRows = loopar.utils.isJSON(data.value) ? [JSON.parse(data.value)] : [{ option: data.value, title: data.value}];
+    const value = this.value();
+    
+    const initialRows = loopar.utils.isJSON(value) ? [JSON.parse(value)] : [{ option: value, title: value}];
 
-    this.setState({ rows: initialRows })
-    //console.log("Select Component Mounted", this.optionsSelect)
+    this.setState({ rows: initialRows });
   }
 
   #search(target, delay = true) {
@@ -320,24 +323,37 @@ export default class Select extends BaseInput {
    * #param {boolean} trigger_change
    * #returns
    */
-  val(val = null, { trigger_change = true } = {}) {
+  /*val(val = null, { trigger_change = true } = {}) {
     if (val != null) {
-      this.assignedValue = val;
+      //this.assignedValue = val;
       this.renderValue(trigger_change);
       return this;
     } else {
       return this.data.value;
     }
   }
-
+*/
   value(val) {
-    const value = super.value();
+    if(typeof val != "undefined") {
+      super.value(val);
+    } else {
+      let value = super.value();
+      if(loopar.utils.isJSON(value)) {
+        value = JSON.parse(value);
+        return value?.option || value;
+      }else {
+        return value;
+      }
+    }
+
+
+    /*const value = super.value(val);
 
     if(loopar.utils.isJSON(value)) {
       return JSON.parse(value).option;
     }else {
       return value;
-    }
+    }*/
   }
 
   getPrepareOptions(options) {

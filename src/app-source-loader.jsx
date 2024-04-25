@@ -12,8 +12,6 @@ export async function AppSourceLoader(source) {
           return resolve(Source);
         }).catch((error) => {
           reject(error);
-          /*console.log(["Error loading source", source.client, error]);
-          throw new Error(`Error loading source ${source.client}`);*/
         });
       }
     } else {

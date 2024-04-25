@@ -1,151 +1,151 @@
 doctype html
 html(lang='en')
-    head
-        meta(charset='utf-8')
-        meta(name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no')
 
-        title Loopar Framework
+    title Loopar Framework
 
-        meta(property='og:title' content='Loopar Framework')
-        meta(name='author' content='Loopar')
-        meta(property='og:locale' content='en_US')
-        meta(name='description' content='Loopar Framework')
-        meta(property='og:description' content='Loopar Framework')
-        meta(property='og:site_name' content='Loopar Framework')
+    meta(property='og:title' content='Loopar Framework')
+    meta(name='author' content='Loopar')
+    meta(property='og:locale' content='en_US')
+    meta(name='description' content='Loopar Framework')
+    meta(property='og:description' content='Loopar Framework')
+    meta(property='og:site_name' content='Loopar Framework')
 
-        block head
-        include header-links
+    block head
+    include header-links
 
-        script(type='application/ld+json').
-            {
-            "name": "Loopar Framework with Bootstrap 4",
-            "description": "Loopar Framework with Bootstrap 4",
-            "author": {
-              "@type": "alfredrz2012@gmail.com",
-              "name": "Alfredo Ramirez"
-            },
-            "@type": "Loopar",
-            "url": "www.loopar.io",
-            "headline": "Loopar Framework with Bootstrap 4",
-            "@context": "www.loopar.io"
+    script(type='application/ld+json').
+      {
+      "name": "Loopar Framework with Bootstrap 4",
+      "description": "Loopar Framework with Bootstrap 4",
+      "author": {
+        "@type": "alfredrz2012@gmail.com",
+        "name": "Alfredo Ramirez"
+      },
+      "@type": "Loopar",
+      "url": "www.loopar.io",
+      "headline": "Loopar Framework with Bootstrap 4",
+      "@context": "www.loopar.io"
+      }
+
+    script.
+      window.global = window;
+      window.toggleTheme = (toggle = true) => {
+        const skin = localStorage.getItem('skin') || 'dark';
+        const theme = toggle ? (skin === 'dark' ? 'default' : 'dark') : skin;
+        const themeStyle = theme === 'dark' ? '-dark' : '';
+
+        const style = document.getElementById("theme-style");
+        style.setAttribute("href", `/assets/plugins/bootstrap/css/theme${themeStyle}.min.css`);
+        window.theme = theme;
+        localStorage.setItem('skin', theme);
+      }
+
+      window.toggleTheme(false);
+
+      getTheme = () => {
+        return window.theme === 'dark' ? 'dark' : 'light';
+      }
+
+      getInverseTheme = () => {
+        return getTheme() === 'dark' ? 'light' : 'dark';
+      }
+
+      global.importModule = (path) => {
+        console.log('------------Importing------------', path)
+        return import(path);
+      }
+      const __META__ = !{__META__};
+
+      function loadStylesheet(href, { callback, options } = {}) {
+        const { defer = false, position = "before", target = null } = options || {};
+
+        return new Promise((resolve, reject) => {
+          const existingLink = document.querySelector(`link[href="${href}.css"]`);
+
+          if (existingLink) {
+            return resolve();
+            //callback && callback();
+            //return;
+          }
+
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href+".css";
+          link.defer = defer;
+
+          link.onload = () => {
+            resolve();
+          }
+          link.onerror = () => {
+            reject();
+          }
+
+          if(target){
+            const Target = document.head.querySelector(target);
+
+            if(position === "before"){
+              Target.parentNode.insertBefore(link, target);
+            }else{
+              Target.parentNode.insertBefore(link, Target.nextSibling);
             }
+          }else{
+            document.head.insertBefore(link, document.head.firstChild);
+          }
+        });
+          /*return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet'; 
+            link.href = url;
+            link.onload = resolve;
+            link.onerror = reject;
 
-        script.
-            window.global = window;
-            window.toggleTheme = (toggle = true) => {
-                const skin = localStorage.getItem('skin') || 'dark';
-                const theme = toggle ? (skin === 'dark' ? 'default' : 'dark') : skin;
-                const themeStyle = theme === 'dark' ? '-dark' : '';
+            document.head.appendChild(link);
+          });*/
+        }
 
-                const style = document.getElementById("theme-style");
-                style.setAttribute("href", `/assets/plugins/bootstrap/css/theme${themeStyle}.min.css`);
-                window.theme = theme;
-                localStorage.setItem('skin', theme);
-            }
+        function loadScript(src, callback, options = { async: true}) {
+          return new Promise((resolve, reject) => {
+            const existingScript = document.querySelector(`script[src="${src}.js"]`);
+            window.scripts ??= {};
+            window.scripts[src] = window.scripts[src] || {loaded: false, callbacks: []};
 
-            window.toggleTheme(false);
-
-            getTheme = () => {
-                return window.theme === 'dark' ? 'dark' : 'light';
-            }
-
-            getInverseTheme = () => {
-                return getTheme() === 'dark' ? 'light' : 'dark';
-            }
-
-            global.importModule = (path) => {
-                console.log('------------Importing------------', path)
-                return import(path);
-            }
-            const __META__ = !{__META__};
-
-            function loadStylesheet(href, { callback, options } = {}) {
-                const { defer = false, position = "before", target = null } = options || {};
-
-                return new Promise((resolve, reject) => {
-                    const existingLink = document.querySelector(`link[href="${href}.css"]`);
-
-                    if (existingLink) {
-                        return resolve();
-                        //callback && callback();
-                        //return;
-                    }
-                
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = href+".css";
-                    link.defer = defer;
-
-                    link.onload = () => {
-                        resolve();
-                    }
-                    link.onerror = () => {
-                        reject();
-                    }
-
-                    if(target){
-                        const Target = document.head.querySelector(target);
-
-                        if(position === "before"){
-                            Target.parentNode.insertBefore(link, target);
-                        }else{
-                            Target.parentNode.insertBefore(link, Target.nextSibling);
-                        }
-                    }else{
-                        document.head.insertBefore(link, document.head.firstChild);
-                    }
+            const makeScript = () => {
+              const script = document.createElement('script');
+              script.src = src + ".js";
+              script.async = options.async;
+              script.onload = () => {
+                window.scripts[src].callbacks.forEach((callback) => {
+                  callback();
                 });
-                    /*return new Promise((resolve, reject) => {
-                        const link = document.createElement('link');
-                        link.rel = 'stylesheet'; 
-                        link.href = url;
-                        link.onload = resolve;
-                        link.onerror = reject;
 
-                        document.head.appendChild(link);
-                    });*/
-                }
+                window.scripts[src].loaded = true;
+                resolve();
+              }
+              script.onerror = () => {
+                window.scripts[src].loaded = false;
+                reject();
+              }
+              document.head.appendChild(script);
+            }
 
-                function loadScript(src, callback, options = { async: true}) {
-                    return new Promise((resolve, reject) => {
-                        const existingScript = document.querySelector(`script[src="${src}.js"]`);
-                        window.scripts ??= {};
-                        window.scripts[src] = window.scripts[src] || {loaded: false, callbacks: []};
+            if (existingScript) {
+              if(window.scripts[src].loaded){
+                resolve(callback && callback());
+              }else{
+                resolve(callback && window.scripts[src].callbacks.push(callback));
+              }
+              //resolve();
+            }else{
+              callback && window.scripts[src].callbacks.push(callback);
+              makeScript();
+            }
+          });
+        }
 
-                        const makeScript = () => {
-                            const script = document.createElement('script');
-                            script.src = src + ".js";
-                            script.async = options.async;
-                            script.onload = () => {
-                                window.scripts[src].callbacks.forEach((callback) => {
-                                    callback();
-                                });
+    //ssr-initial-data
 
-                                window.scripts[src].loaded = true;
-                                resolve();
-                            }
-                            script.onerror = () => {
-                                window.scripts[src].loaded = false;
-                                reject();
-                            }
-                            document.head.appendChild(script);
-                        }
-                        
-                        if (existingScript) {
-                            if(window.scripts[src].loaded){
-                                resolve(callback && callback());
-                            }else{
-                                resolve(callback && window.scripts[src].callbacks.push(callback));
-                            }
-                            //resolve();
-                        }else{
-                            callback && window.scripts[src].callbacks.push(callback);
-                            makeScript();
-                        }
-                    });
-                }
-
-        //ssr-initial-data
-            
-    include unsupported-browsers
-    block content
+  include unsupported-browsers
+  block content

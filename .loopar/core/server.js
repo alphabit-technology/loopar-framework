@@ -51,7 +51,7 @@ class Server extends Router {
   async #exposePublicDirectories() {
     const publicDirs = [
       'public',
-      'node_modules/particles.js',
+      'node_modules/particles.js'
       /*'src',
       'public', "public/js",
       'node_modules/loopar/core/global',
