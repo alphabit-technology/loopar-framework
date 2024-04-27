@@ -70,12 +70,9 @@ export default class BaseDocument extends BaseComponent {
 
   componentDidMount() {
     super.componentDidMount();
-    setTimeout(() => {
-      console.log(["BaseDocument", this.context])
-      this.context.setLoaded(true);
+    this.context.setLoaded(true);
 
-      this.initScroll();
-    });
+    this.initScroll();
   }
 
   getPageKey() {

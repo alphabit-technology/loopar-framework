@@ -9,7 +9,6 @@ function getComponent(component, pre = "./") {
   const cParse = component.replaceAll(/_/g, "-");
   return new Promise((resolve) => {
     if (Components[component]) {
-      console.log("Component already loaded: " + component)
       resolve(Components[component]);
     } else {
       import(`./components/${cParse}.jsx`).then((c) => {

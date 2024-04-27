@@ -1,9 +1,0 @@
-extends base/base-document
-block head
-    link(rel='stylesheet' href='/assets/plugins/aos/css/aos.css')
-block content
-    body.dark-skin.d-none(data-spy='scroll' data-offset='76')
-        .app.app-site.page.has-sidebar.has-sidebar-open#app-root
-            //ssr-outlet
-        script(type='module' src='/src/entry-client.jsx')
-    include base/footer-scripts

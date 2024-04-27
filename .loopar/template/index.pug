@@ -1,5 +1,5 @@
 doctype html
-html(class=`${THEME}`, lang='en', style='scroll-behavior: smooth; background-color: hsl(var(--background));')
+html(class=`${THEME}`, lang='en')
   head
     include base/base-css
     include base/fonts
@@ -34,7 +34,7 @@ html(class=`${THEME}`, lang='en', style='scroll-behavior: smooth; background-col
       window.global = window;      
       const __META__ = !{__META__};
     //ssr-initial-data
-  body(class="min-h-screen bg-background font-sans antialiased theme-stone")
+  body(class="min-h-screen bg-background font-sans antialiased theme-stone", style='background-color: hsl(var(--background));')
     #loopar-root(style='display: none;')
       //ssr-outlet
     script(type='module' src='/src/entry-client.jsx')

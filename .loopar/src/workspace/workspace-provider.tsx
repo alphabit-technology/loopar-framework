@@ -108,9 +108,7 @@ export function WorkspaceProvider({
   const handledLoaded = useCallback(
     () => {
       const root = document.getElementById("loopar-root");
-      if (root) {
-        root.style.display = "block";
-      }
+      root && (root.style.display = "block")
       setLoaded(true);
     },
     [loaded]
