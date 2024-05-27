@@ -2,7 +2,6 @@ import Component from "$component";
 import {
   Card as CardComponent,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -67,4 +66,12 @@ function CardHover(props){
   )
 }
 
-export { CardHover as Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export function CardDescription(props){
+  return (
+    <div className="text-sm text-muted-foreground">
+      {props.children}
+    </div>
+  )
+}
+
+export { CardHover as Card, CardHeader, CardFooter, CardTitle, CardContent }

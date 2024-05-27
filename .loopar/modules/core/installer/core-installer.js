@@ -249,7 +249,6 @@ export default class CoreInstaller {
   }
 
   async unInstall() {
-    //loopar.installing = true;
     loopar.installingApp = this.app_name;
     if (this.app_name === 'loopar') {
       loopar.throw("You can't uninstall Loopar");
@@ -261,13 +260,13 @@ export default class CoreInstaller {
     for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].doctypeId - a[1].doctypeId)) {
       for (const document of Object.values(records.documents).sort((a, b) => b.id - a.id)) {
         if (document.__document_status__ === "Deleted") continue;
+        if(!await loopar.db._count(doc_name, document.name)) continue;
         console.warn("Uninstalling", doc_name, document.name);
 
         await loopar.deleteDocument(doc_name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
       }
     }
 
-    //loopar.installing = false;
     loopar.installingApp = null;
 
     return `App ${this.app_name} uninstalled successfully!`;
@@ -275,7 +274,6 @@ export default class CoreInstaller {
 
   async install() {
     console.warn("Installing " + this.app_name);
-    //loopar.installing = true;
     loopar.installingApp = this.app_name;
 
     if (this.app_name === 'loopar') {
@@ -288,7 +286,6 @@ export default class CoreInstaller {
     }
     await this.installData();
 
-    //loopar.installing = false;
     loopar.installingApp = null;
     await loopar.initialize();
     await loopar.server.exposeClientAppFiles(this.app_name);

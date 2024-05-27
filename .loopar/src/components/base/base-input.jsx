@@ -115,6 +115,14 @@ export default class BaseInput extends DivComponent {
     this.input?.on(event, callback);
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    super.componentDidUpdate(prevProps, prevState);
+
+    if (this.props.onChange && !prevProps.onChange) {
+      this.handleInputChange(this.value());
+    }
+  }
+
   disable(on_disable = true) {
     super.disable(on_disable);
     this.input.prop("disabled", true);

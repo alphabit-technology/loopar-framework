@@ -6,18 +6,17 @@ import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 
 const Layout = ((props) => {
-  const {sidebarWidth, collapseSidebarWidth, screenSize, headerHeight, openNav} = useWorkspace();
+  const {openNav} = useWorkspace();
 
   return (
    <>
-    <TopNav openNav={openNav} height={headerHeight}></TopNav>
-    <section style={{ minHeight: `calc(100vh - ${headerHeight}px)` }} className="flex">
+    <TopNav openNav={openNav}></TopNav>
+    <section className="flex min-h-headerHeight">
       <SideNav
         items={props.menu_data}
       />
       <div 
-        className={`ease-induration-100 ml-4 w-full overflow-auto p-4 duration-100 ease-in`}
-        style={{ paddingLeft: (openNav && screenSize === "lg" ? sidebarWidth : screenSize === "lg" ? collapseSidebarWidth : 0 )}}
+        className={`ease-induration-100 ml-4 w-full overflow-auto p-4 duration-100 ease-in ${openNav ? "lg:pl-sidebarWidth" : "lg:pl-collapseSidebarWidth"}`}
       >
         {props.children}
       </div>
@@ -26,11 +25,7 @@ const Layout = ((props) => {
   );
 });
 
-export default class DeskWorkspace extends BaseWorkspace {
-  sidebarWidth = 250;
-  collapseSidebarWidth = 70;
-  headerHeight = "2rem";
-  
+export default class DeskWorkspace extends BaseWorkspace { 
   constructor(props) {
     super(props);
 

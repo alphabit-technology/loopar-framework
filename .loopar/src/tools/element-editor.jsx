@@ -3,7 +3,7 @@ import DivComponent from "$div";
 import loopar from "$loopar";
 import { elementsDict } from "$global/element-definition";
 import Tabs from "@tabs"
-import { MetaComponent } from "@dynamic-component";
+import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 
@@ -350,7 +350,7 @@ export default class ElementEditorClass extends DivComponent {
     const dontHaveMetaElements = connectedElement.dontHaveMetaElements || [];
 
     const metaFields = this.metaFields().map(({ group, elements }) => {
-      if (group === 'form' && elementsDict[connectedElement.element].def.isWritable) {
+      if (group === 'form' && elementsDict[connectedElement.element]?.def?.isWritable) {
         elements['divider_default'] = (
           <Separator className="my-3"/>
         );
@@ -407,7 +407,8 @@ export default class ElementEditorClass extends DivComponent {
                             data={{
                               ...props.data,
                               name: field,
-                              value: value
+                              value: value,
+                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
                             }}
                             onChange={(e) => {
                               this.formValues[field] = e.target ? e.target.value : e;

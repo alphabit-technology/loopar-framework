@@ -51,7 +51,11 @@ export default class Router {
 
   route() {
     const loadHttp = async (req, res) => {
+      loopar.req = req;
       loopar.res = res;
+      loopar.cookie.res = res;
+      loopar.cookie.cookies = req.cookies;
+
       if (req.files && req.files.length > 0) {
         req.body.reqUploadFiles = req.files;
       }
@@ -94,7 +98,7 @@ export default class Router {
     const context = pathname.split("/")[1];
     const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
     const routeStructure = { host: null, module: null, document: null, action: null };
-    const controllerParams = { req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller", client: null, }
+    const controllerParams = { req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller"}
 
     if (reqWorkspace === "loopar") {
       controllerParams.workspace = 'auth';
@@ -113,13 +117,21 @@ export default class Router {
       controllerParams.url = "/web" + pathname;
       controllerParams.workspace = 'web';
       controllerParams.action ??= 'view';
+      controllerParams.context = "web"
     }
 
-    (controllerParams.url || "").split("/").forEach((seg, index) => {
-      const RTK = Object.keys(routeStructure)[index];
-      routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
-    });
-
+    if(reqWorkspace === "web"){
+      const [host, document,action] = controllerParams.url.split("/").filter(Boolean);
+      routeStructure.module = "web";
+      routeStructure.document = document;
+      routeStructure.action = action || "view";
+      controllerParams.action = routeStructure.action;
+    }else{
+      (controllerParams.url || "").split("/").forEach((seg, index) => {
+        const RTK = Object.keys(routeStructure)[index];
+        routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
+      });
+    }
     if (reqWorkspace === "web" && routeStructure.document === "Undefined") {
       routeStructure.document = "Home";
     }
@@ -130,29 +142,24 @@ export default class Router {
     }
 
     if (reqWorkspace === "web" && loopar.frameworkInstalled && loopar.databaseServerInitialized && loopar.databaseInitialized) {
-      const settings = await loopar.getSettings();
-      const doctypeAppId = await loopar.db.getValue("Document", "id", { "=": { name: "App" } });
-      const webApp = await loopar.db.getValue("App", "id", settings.active_web_app);
-      loopar.activeWebApp = webApp;
+      const webApp = loopar.webApp || {menu_items: []};
+      const menu = webApp.menu_items.find(item => item.link === routeStructure.document);
 
-      if(!webApp) {
+      //console.log(["routeStructure", routeStructure])
+      if(!webApp.name || !menu) {
         Object.assign(routeStructure, {
           module: "core",
           document: "Error",
           action: "view",
           code: 404,
-          title: "Web App not found",
-          description: "You don\'t have Install the Web App, please install it first and set as default"
+          title: !webApp.name ? "Web App not found" : "Page not found",
+          description: !webApp.name ? "You don\'t have Install the Web App, please install it first and set as default" : "The page you are looking for does not exist"
         });
 
         return await this.#makeController({ ...routeStructure, ...controllerParams });
+      }else{
+        routeStructure.document = menu.page
       }
-
-      const menu = await loopar.db.getDoc("Menu Item", {
-        "=": { parent_document: doctypeAppId, parent_id: webApp, link: routeStructure.document }
-      });
-
-      menu && (routeStructure.document = menu.page);
     }
 
     return await this.#makeController({ ...routeStructure, ...controllerParams });
@@ -199,7 +206,7 @@ export default class Router {
       }
     } else {
       /**System detected that Database Server is Initialized and have Database */
-      if (args.client === "installer") {
+      if (args.document === "Installer") {
         return res.redirect('/desk');
       }
     }
@@ -250,7 +257,7 @@ export default class Router {
   }
 
   async launchAction(controller, action, res, req) {
-    const response = await controller[action]();
+    const response = await  controller.sendAction(action);
     this.sendResponse(res, req, response);
   }
 
@@ -258,20 +265,12 @@ export default class Router {
     loopar.lastController = controller;
 
     args.action = args.action && args.action.length > 0 ? args.action : controller.default_action;
-    controller.client = args.client || (["update", "create"].includes(args.action) ? "form" : args.action);
-    let action = `action${loopar.utils.Capitalize(args.action)}`;
-    action = controller[action] && typeof controller[action] === "function" ? action : "notFound";
+    //controller.client = args.client || (["update", "create"].includes(args.action) ? "form" : args.action);
 
-    //await this.temporaryLogin();
+    await this.temporaryLogin();
     
-    if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" ) {
-      this.launchAction(controller, action, args.res, args.req);
-    } else if(await controller.isAuthenticated()) {
-      if(controller[action] && typeof controller[action] === "function") {
-        this.launchAction(controller, action, args.res, args.req);
-      }else{
-        this.launchAction(controller, "notFound", args.res, args.req);
-      }
+    if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || await controller.isAuthenticated() ) {
+      this.launchAction(controller, args.action, args.res, args.req);
     }
   }
 

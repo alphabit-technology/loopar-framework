@@ -1,6 +1,22 @@
 import BaseText from "$base-text";
+import { useDesigner} from "@custom-hooks";
 
-export default class Paragraph extends BaseText {
+
+export function Paragraph(props) {
+  const designer = useDesigner();
+  const style = {
+    ...props.style,
+    ...(designer.designerMode ? {maxHeight: "6em", overflow: "auto", display: "-webkit-box", "-webkit-box-orient": "vertical"} : {})
+  }
+
+  return (
+    <div className="text-pretty mt-6 text-slate-700 dark:text-slate-300">
+      <p className="mb-4 text-lg" style={style}>{props.text}</p>
+    </div>
+  )
+}
+
+export default class ParagraphClass extends BaseText {
   droppable = false;
   draggable = true;
   tagName = "p";
@@ -36,8 +52,12 @@ export default class Paragraph extends BaseText {
     }
 
     return (
+      <Paragraph text={this.getText()}/>
+    )
+
+    return (
       <blockquote className="text-pretty mt-6 text-slate-700 dark:text-slate-300">
-        <p className="mb-4 text-lg ">{this.getText()}</p>
+        <p className="mb-4 text-lg " style={pStyle}>{this.getText()}</p>
       </blockquote>
     )
     return super.render(

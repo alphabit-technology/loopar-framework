@@ -3,7 +3,7 @@ import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDesigner } from "@custom-hooks";
-import DynamicComponent from "@dynamic-component";
+import MetaComponent from "@meta-component";
 import { PlusIcon } from "lucide-react";
 import React, {useState, useEffect} from "react";
 
@@ -12,11 +12,11 @@ function TabFn({id, elementsDict, asChild = false, tabParent, ...props}){
   const getIdentifier = () => {
     return `${id}${designer.designerMode ? '-designer' : ''}`;
   }
-  const savedTab = loopar.utils.cookie.get(getIdentifier());
+  const savedTab = loopar.cookie.get(getIdentifier());
   const [currentTab, setCurrentTab] = useState((savedTab && savedTab !== 'undefined') ? savedTab : elementsDict[0]?.data.key);
 
   const handleSetCurrentTab = (tab) => {
-    loopar.utils.cookie.set(getIdentifier(), tab);
+    loopar.cookie.set(getIdentifier(), tab);
     setCurrentTab(tab);
   }
 
@@ -47,7 +47,7 @@ function TabFn({id, elementsDict, asChild = false, tabParent, ...props}){
   const getTabContent = (element) => {
     if(element.type === "dynamic.component"){
       return (
-        <DynamicComponent
+        <MetaComponent
           elements={[
             {
               element: "tab",
@@ -132,7 +132,7 @@ export default class Tabs extends Component {
       },
     ];
 
-    loopar.utils.cookie.set(identifier, name);
+    loopar.cookie.set(identifier, name);
     this.setElements(tab);
   }
 

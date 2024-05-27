@@ -2,6 +2,7 @@
 
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
+import { marked } from "marked";
 
 export default class CoreDocument {
   #fields = {};
@@ -67,7 +68,7 @@ export default class CoreDocument {
   }
 
   async getConnectedDocuments() {
-    const documents = await loopar.db.getAll("Document", ["name", "type", "module", "doc_structure"]);
+    const documents = await loopar.db.getAll("Document", ["name", "type", "module", "doc_structure", "is_single"]);
 
     const connexions = documents.reduce((acc, cur) => {
       const fields = loopar.utils.fieldList(cur.doc_structure);
@@ -81,7 +82,8 @@ export default class CoreDocument {
               module: cur.module,
               type: cur.type,
               name: cur.name,
-              field: field.data.name
+              field: field.data.name,
+              is_single: cur.is_single
             }
           }
         }).filter(e => e)
@@ -95,7 +97,7 @@ export default class CoreDocument {
         "=": {
           [document.field]: this.name
         }
-      });
+      }, { isSingle: document.is_single });
 
       connectedDocuments = [...connectedDocuments, ...dosc.map(doc => {
         return {
@@ -181,18 +183,11 @@ export default class CoreDocument {
 
   async save() {
     const args = arguments[0] || {};
-
     const validate = args.validate !== false;
 
     return new Promise(async resolve => {
       this.setUniqueName();
       if (validate) await this.validate();
-
-      /*if(this.__DOCTYPE__.name === "Document"){
-         await this.saveCoreFiles();
-      }*/
-
-      //console.log(["On Save", this.stringifyValues])
 
       if (this.__IS_NEW__ || this.__DOCTYPE__.is_single) {
         await loopar.db.insertRow(this.__DOCTYPE__.name, this.stringifyValues, this.__DOCTYPE__.is_single);
@@ -210,70 +205,34 @@ export default class CoreDocument {
       }
 
       const updateChild = async () => {
+        
         const ID = await this.__ID__();
         const childValuesReq = this.childValuesReq;
 
         if (Object.keys(childValuesReq).length) {
+          const promises = [];
+
           for (const [key, value] of Object.entries(childValuesReq)) {
-            await loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__DOCTYPE__.id}' AND parent_id = '${ID}'`, false);
+            const deletePromise = loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__DOCTYPE__.id}' AND parent_id = '${ID}'`, false);
 
-            let rows = typeof value === 'string' ? JSON.parse(value) : value;
-            rows = Array.isArray(rows) ? rows : [];
+            const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
 
-            for (const row of (rows || [])) {
+            const documentsPromises = rows.map(async (row) => {
               row.parent_document = this.__DOCTYPE__.id;
               row.parent_id = ID;
 
               const document = await loopar.newDocument(key, row);
-              await document.save();
-            }
+              return document.save();
+            });
+
+            promises.push(deletePromise, ...documentsPromises);
           }
+
+          await Promise.all(promises);
         }
       }
 
-      if (!loopar.installing) await updateChild();
-
-      /*const updateConnections = async () => {
-         if(["Document History"].includes(this.__DOCTYPE__.name)) return;
-
-         for (const field of Object.values(this.#fields)) {
-            if (field.element === SELECT && field.options && typeof field.options === 'string') {
-               const options = (field.options || "").split("\n");
-               if (!field.value || field.value === "") continue;
-
-               if (options.length == 1) {
-                  const toDocument = options[0];
-                  const toDocumentID = await loopar.db.getValue(toDocument, "id", field.value);
-                  const fromDocumentID = await this.__ID__();
-                  const name = loopar.utils.hash(`${this.__DOCTYPE__.name}${fromDocumentID}${toDocument}}`);
-
-                  const data = {
-                     name: name,
-                     from_document: this.__DOCTYPE__.name,
-                     from_id: fromDocumentID,
-                     from_name: this.__DOCUMENT_NAME__,
-                     to_document: toDocument,
-                     to_id: toDocumentID,
-                     to_name: field.value,
-                  }
-
-                  if (!await loopar.db.getValue("Connected Document", "name", name)){
-                     const connect = await loopar.newDocument("Connected Document");
-
-                     Object.entries(data).forEach(([key, value]) => {
-                        connect[key] = value;
-                     });
-
-                     await connect.save();
-                  }else{
-                     await loopar.db.updateRow("Connected Document", data, name);
-                  }
-               }
-            }
-         }
-      }
-
-      await updateConnections();*/
+      if(!this.is_single) await updateChild();
       await this.updateHistory();
       await this.updateInstaller();
 
@@ -346,13 +305,13 @@ export default class CoreDocument {
       .filter(field => field.name !== ID).map(e => e.validate())
       .filter(e => !e.valid).map(e => e.message);
 
-    const selectTypes = await this.validateSelectTypes();
+    const selectTypes = await this.validateLinkDocuments();
     !loopar.installing && errors.push(...selectTypes);
 
     errors.length > 0 && loopar.throw(errors.join('<br/>'));
   }
 
-  async validateSelectTypes() {
+  async validateLinkDocuments() {
     const errors = [];
     for (const field of Object.values(this.#fields)) {
       if (field.element === SELECT && field.options && typeof field.options === 'string') {
@@ -389,7 +348,7 @@ export default class CoreDocument {
 
   async delete() {
     const { updateInstaller = true, sofDelete, force, updateHistory } = arguments[0] || {};
-    const connections = await this.getConnectedDocuments();
+    const connections =  await this.getConnectedDocuments();
     //console.log({connections});
     /*const connections = await loopar.db.getAll("Connected Document", ["name", "from_document", "from_name"], {
        "=": {
@@ -438,6 +397,13 @@ export default class CoreDocument {
   }
 
   async __data__() {
+    console.log(["get Data"])
+    const doctype = this.__DOCTYPE__;
+
+    
+
+    if(doctype.is_single) doctype.doc_structure = JSON.stringify(parseDocStructure(JSON.parse(doctype.doc_structure)));
+
     return {
       __DOCTYPE__: this.__DOCTYPE__,
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,

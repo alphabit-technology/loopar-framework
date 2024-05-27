@@ -3,8 +3,12 @@
 import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar";
-import { fileManage } from "../file-manage.js";
 import pug from "pug";
+import { MetaComponents } from "loopar";
+
+//import { renderToHtml } from 'some-ui-framework'
+import { escapeInject, dangerouslySkipEscape } from 'vike/server'
+
 
 export default class CoreController extends AuthController {
   error = {};
@@ -12,29 +16,44 @@ export default class CoreController extends AuthController {
   response = {};
   #engineTemplate = 'pug';
   
-  hasData() {
+  hasData() { 
     return Object.keys(this.data || {}).length > 0;
   }
 
   exposeClientFiles() {
-    this.defaultImporterFiles.forEach(file => {
+    /*this.defaultImporterFiles.forEach(file => {
       loopar.server.use(express.static(loopar.makePath(this.controllerPath, file)));
-    });
+    });*/
 
     loopar.server.use(express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
   }
 
-  async clientImporter() {
-    const document = this.document.replaceAll(/\s+/g, '-').toLowerCase();
-    const client = this.client || this.workspace;
-    const route = loopar.makePath(this.controllerPath, 'client', `${document}-${client}.jsx`).toLowerCase();
-    this.moduleRoute = route;
-    const exist = await fileManage.existFile(route)// ? `${document}-${client}` : `/gui/document/${client}-context`;
+  clientImporter(meta) {
+    if(!meta.__DOCTYPE__) return {}
+
+    const getClient = () => {
+      if(this.client) return this.client;
+
+      if(meta.__DOCTYPE__.is_single || this.workspace === "web") {
+        return "view"
+      }
+
+      const action = this.action;
+      if(['create', 'update'].includes(action)) {
+        return "form";
+      }else if(['list', 'index'].includes(action)) {
+        return "list";
+      }else {
+        return "view"
+      }
+    }
+
+    const document = meta.__DOCTYPE__.name;
 
     return {
-      context: `${client}-context`,
-      client: exist ? `${document}-${client}` : null
-    };
+      context: `${this.context}-context`,
+      client: `${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
+    }
   }
 
   getCodeError(code) {
@@ -42,6 +61,14 @@ export default class CoreController extends AuthController {
     //const code_error = this.error[code] || this.error[500];
 
     return validCodeErrors.includes(code) ? code : 500;
+  }
+
+  async sendAction(action) {
+    action = `action${loopar.utils.Capitalize(action)}`
+    if(typeof this[action] !== 'function') {
+      return await this.notFound(`Action ${action} not found`);
+    }
+    return await this[action]();
   }
 
   async sendError(error) {
@@ -84,13 +111,13 @@ export default class CoreController extends AuthController {
     return `errors/${code || 'base-error'}`;
   }*/
 
-  async render(meta, workspace = this.workspace, clientImporter = null) {
+  async render(meta, workspace = this.workspace) {
     meta.action = this.action;
 
     const response = {
       meta: meta,
       key: this.getKey(),
-      client_importer: clientImporter || await this.clientImporter(),
+      client_importer: this.clientImporter(meta),
       context: this.context,
       action: this.action,
     }
@@ -106,7 +133,7 @@ export default class CoreController extends AuthController {
     if (workspace === "desk") {
       WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
     } else if (workspace === "web") {
-      WORKSPACE.web_app = loopar.completedTransaction ? {} : await this.#webApp();
+      WORKSPACE.web_app = loopar.webApp//completedTransaction ? {} : await this.#webApp();
     }
     
     return await this.#send({
@@ -125,7 +152,7 @@ export default class CoreController extends AuthController {
     
     const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { 
       __META__: JSON.stringify(response),
-      THEME: loopar.utils.cookie.get('vite-ui-theme') || 'dark'
+      THEME: loopar.cookie.get('vite-ui-theme') || 'dark'
     }));
 
     global.File = class SimulatedFile {
@@ -140,9 +167,43 @@ export default class CoreController extends AuthController {
     global.getTheme = () => { };
 
     const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
-    const appHtml = await renderPage(url, response, "server");
-    
-    const html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
+    const appHtml = await renderPage(url, response, this.req, this.res);
+
+    let html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
+    const _MetaComponents = MetaComponents(response, "client");
+
+    html = html.replace(`<!--ssr-modulepreload-->`, `
+      <link rel="modulepreload" href="/workspace/${response.W}/${response.W}-workspace.jsx">
+      <link rel="modulepreload" href="/src/${response.client_importer.client}.jsx">
+      <link rel="modulepreload" href="/src/entry-client.jsx">
+    `);
+    //${_MetaComponents.map(c => `<link rel="modulepreload" href="/components/${c.replaceAll("_", "-")}.jsx"/>`).join('\n')}
+    /*html = html.replace(`<!--ssr-imported-->`, `
+      <script type="module" async>
+        import Workspace from "/workspace/${response.W}/${response.W}-workspace.jsx";
+        import Document from "/src/${response.client_importer.client}.jsx";
+        ${_MetaComponents.map(c => `import _${c}_ from "/components/${c.replaceAll("_", "-")}.jsx";`).join('\n')}
+
+        window.__LOOPAR__ = {
+          Workspace,
+          Document,
+        };
+
+        window.__META_COMPONENTS__ = {
+          ${_MetaComponents.map(c => `${c}: _${c}_`).join(',')}
+        }
+
+        import("/src/entry-client.jsx");
+      </script>
+    `);*/
+
+    /*html = html.replace(`<!--ssr-imported-->`, `
+      <script type="module" async>
+        import("/src/entry-client.jsx");
+      </script>
+    `);*/
+
+    //this.exposeClientFiles();
 
     return {
       status: 200,
@@ -150,6 +211,38 @@ export default class CoreController extends AuthController {
       headers: { 'Content-Type': 'text/html' }
     }
   }
+
+  async #send1(response) {
+    //const { Page } = pageContext
+    //const pageHtml = await renderToHtml(Page)
+    global.File = class SimulatedFile {
+      constructor(buffer, fileName, options = {}) {
+        this.buffer = Buffer.from(buffer);
+        this.name = fileName || options.filename || 'untitled.txt';
+        this.size = this.buffer.length;
+        this.type = options.contentType || 'application/octet-stream';
+      }
+    }
+    global.theme = 'dark';
+    global.getTheme = () => { };
+
+    const url = this.req.originalUrl;
+    const vite = loopar.server.vite;
+
+    const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
+    const appHtml = await renderPage(url, response, this.req, this.res);
+
+    return escapeInject`<!DOCTYPE html>
+    <html>
+      <head>
+        <title>My Vike app</title>
+      </head>
+      <body>
+        <div id="root">${dangerouslySkipEscape(appHtml.appHtml)}</div>
+      </body>
+    </html>`
+  }
+
 
   getKey(route = this.dictUrl) {
     const query = route.search ? route.search.split('?') : '';

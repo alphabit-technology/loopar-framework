@@ -1,20 +1,21 @@
 'use client';
 
-import loopar from "$loopar";
 import Component from "$component";
 import { DesignerContext, useDesigner } from "@custom-hooks";
-import React, { useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, { useCallback, useMemo } from "react";
 import {marked} from "marked";
 import SimpleMDE from "react-simplemde-editor";
-import "easymde/dist/easymde.min.css";
-import "./markdown.css"
+//import "easymde/dist/easymde.min.css";
+//import "./markdown.css"
 
 function MarkdownEditor({ data, handleChange, ...props }) {
   const {design} = useDesigner();
 
   if(!design){
     return (
-      <div dangerouslySetInnerHTML={{__html: marked.parse(data.value || "")}} />
+      <div className="contents w-full prose dark:prose-invert">
+        <div id={props.id} dangerouslySetInnerHTML={{__html: marked.parse(data.value || "")}}/>
+      </div>
     )
   }
 
@@ -30,11 +31,15 @@ function MarkdownEditor({ data, handleChange, ...props }) {
   }, []);
 
   return (
-    <SimpleMDE
-      options={autofocusNoSpellcheckerOptions}
-      value={data.value}  
-      onChange={onChange}
-    />
+    <div className="contents w-full prose dark:prose-invert">
+      <div id={props.id}>
+        <SimpleMDE
+          options={autofocusNoSpellcheckerOptions}
+          value={data.value}  
+          onChange={onChange}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -59,7 +64,7 @@ export default class MarkdownBase extends Component {
     }
     
     return (
-      <MarkdownEditor data={data} handleChange={handleChange}/>
+      <MarkdownEditor data={data} handleChange={handleChange} id={data.id}/>
     )
   }
 

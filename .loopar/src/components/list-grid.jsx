@@ -22,8 +22,21 @@ export class ListGrid extends BaseTable {
     super(props);
   }
 
+  getDocumentTitle(row){
+    const titleFields = this.meta.__DOCTYPE__.title_fields?.split(",");
+
+    if(titleFields){
+      return titleFields.map((field) => row[field]).join(" ");
+    }
+
+    return row.name;
+  }
+
   get mappedColumns() {
     const base = super.mappedColumns.filter((col) => col.data.name !== "name");
+    const titleDocument = this.meta.__DOCTYPE__.title_fields;
+
+    //console.log(["mappedColumns", this.meta])
 
     const customName = [
       {
@@ -44,7 +57,7 @@ export class ListGrid extends BaseTable {
                 </Avatar>
                 <div className="h-ful items-left flex flex-col justify-center">
                   <h1>{row.name}</h1>
-                  <h5 className='font-bold text-slate-500 dark:text-slate-400'>{loopar.utils.UPPERCASE(row.module)}</h5>
+                  <h5 className='font-bold text-slate-500 dark:text-slate-400'>{loopar.utils.UPPERCASE(this.getDocumentTitle(row))}</h5>
                 </div>
               </Link>
             );

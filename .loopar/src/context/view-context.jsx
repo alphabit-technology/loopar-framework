@@ -1,5 +1,5 @@
 import BaseDocument from "$context/base/base-document";
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 import DeskGUI from "@context/base/desk-gui";
 
 export default class View extends BaseDocument {
@@ -20,7 +20,7 @@ export default class View extends BaseDocument {
         docRef={this}
       >
         <>
-        <DynamicComponent elements={JSON.parse(meta.__DOCTYPE__.doc_structure)} parent={this}/>
+        <MetaComponent elements={JSON.parse(meta.__DOCTYPE__.doc_structure)} parent={this}/>
         {content}
         </>
       </DeskGUI>

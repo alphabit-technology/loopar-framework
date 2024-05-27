@@ -1,11 +1,11 @@
 import React from "react";
-import loopar from "$loopar";
 import { MetaComponentsLoader } from "$components-loader";
 import Dialog, { Prompt } from "$dialog";
 import { AppSourceLoader } from "$/app-source-loader";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
 import { WorkspaceProvider, useWorkspace } from "@workspace/workspace-provider";
+import loopar from "$loopar";
 
 const Notifies = () => {
   const {theme} = useWorkspace();
@@ -63,7 +63,7 @@ class Dialogs extends React.Component {
   }
 }
 
-const WorkspaceContext = ({ children, sidebarWidth, collapseSidebarWidth, headerHeight, __META__, menuItems }) => {
+const WorkspaceContext = ({ children, sidebarWidth, collapseSidebarWidth, headerHeight, __META__, menuItems, ...props }) => {
   return (
     <WorkspaceProvider
       sidebarWidth={sidebarWidth}
@@ -71,6 +71,7 @@ const WorkspaceContext = ({ children, sidebarWidth, collapseSidebarWidth, header
       workspace={__META__.W}
       headerHeight={headerHeight}
       menuItems={menuItems}
+      {...props}
     >
       {children}
     </WorkspaceProvider>
@@ -116,7 +117,7 @@ export default class BaseWorkspace extends React.Component {
     if (!documents[res.key]) {
       //MetaComponentsLoader(__META__, this.props.environment).then(() => {
         AppSourceLoader(res.client_importer).then((module) => {
-          MetaComponentsLoader(__META__, this.props.environment).then(() => {
+          MetaComponentsLoader(__META__, this.props.ENVIRONMENT).then(() => {
             documents[res.key] = {
               Module: module.default,
               meta: res.meta,
@@ -172,6 +173,10 @@ export default class BaseWorkspace extends React.Component {
         })}
       </>
     );
+  }
+
+  getActiveDocument(){
+    return Object.values(this.state.documents || []).find(document => document.active);
   }
 
   componentDidUpdate() {
@@ -252,7 +257,7 @@ export default class BaseWorkspace extends React.Component {
     //this.setState({documents: this.state.documents});
   }
 
-  render(content) {
+  render(content, props) {
     return (
       <>
         <WorkspaceContext
@@ -261,6 +266,8 @@ export default class BaseWorkspace extends React.Component {
           collapseSidebarWidth={this.collapseSidebarWidth ?? 0}
           headerHeight={this.headerHeight ?? 55}
           menuItems={this.menuItems && this.menuItems() || []}
+          ENVIRONMENT={this.props.ENVIRONMENT}
+          {...props}
         >
           {this.pace}
           <Dialogs ref={(dialogs) => (this.dialogs = dialogs)} />

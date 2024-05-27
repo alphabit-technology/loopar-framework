@@ -14,7 +14,7 @@ export default class ListContext extends BaseDocument {
 
     this.state = {
       ...this.state,
-      viewType: loopar.utils.cookie.get(this.props.meta.__DOCTYPE__.name + "_viewType") || this.props.meta.__DOCTYPE__.default_list_view || "List"
+      viewType: loopar.cookie.get(this.props.meta.__DOCTYPE__.name + "_viewType") || this.props.meta.__DOCTYPE__.default_list_view || "List"
       //viewType: localStorage.getItem(props.__DOCTYPE__.name + "_viewType") || props.__DOCTYPE__.default_list_view || "List"
     };
   }
@@ -33,9 +33,9 @@ export default class ListContext extends BaseDocument {
           meta={this.props.meta}
           viewType={this.viewType}
           docRef={this}
-          ref={(grid) => {
+          /*ref={(grid) => {
             this.grid = grid;
-          }}
+          }}*/
         /> : null
       /*!content || this.renderGrid ? ListGrid({
          meta: this.props,

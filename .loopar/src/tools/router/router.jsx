@@ -1,14 +1,15 @@
 import HTTP from '$tools/router/http';
-import {makeUrl} from "@link"
+//import {makeUrl} from "@link"
 
-export default class Router {
+export default class Router extends HTTP {
   #route = global.location;
-  routeHistory = [];
+  //routeHistory = [];
   routeOptions = null;
   currentRoute = null;
-  http = HTTP;
+  //http = HTTP;
 
   constructor() {
+    super();
     this.#bindEvents();
   }
 
@@ -22,13 +23,13 @@ export default class Router {
 
   sendRoute() {
     this.currentRoute = this.getSubPath();
-    this.setHistory(this.currentRoute);
+    //this.setHistory(this.currentRoute);
     this.change();
   }
 
-  setHistory() {
-    this.routeHistory.push(this.currentRoute);
-  }
+  /*setHistory() {
+    //this.routeHistory.push(this.currentRoute);
+  }*/
 
   #setRoute() {
     this.pushState(this.makeUrl(arguments));
@@ -107,7 +108,7 @@ export default class Router {
   }
   #fetch() {
     return new Promise((resolve, reject) => {
-      HTTP.send({
+      this.send({
         action: this.route.pathname,
         params: this.route.search,
         success: r => {

@@ -34,6 +34,7 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
   const [searching, setSearching] = useState(false);
+  options = options.filter(option => option)
   //const [value, setValue] = useState(props.initialValue);
   //const [options, setOptions] = useState(props.options?.length > 0 ? props.options : value ? [value] : []);
   //const formContext = useFormContext();
@@ -68,7 +69,7 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
 
   const selected =  loopar.utils.isJSON(field.value) ? JSON.parse(field.value)?.option : field.value;
 
-  const value = options.find((option) => option.option === selected)?.option || `Select ${data.label}`;
+  const value = options.find((option) => option?.option === selected)?.option || data.value || `Select ${data.label}`;
             //props.defaultValue || `Select ${data.label}`;
 
   //if(selectData.name === "module") console.log(["SelectFn", field.value])
@@ -118,7 +119,7 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
           <CommandGroup>
             {options.map((option) => (
               <CommandItem
-                value={option.option}
+                //value={"option.option"}
                 key={option.option}
                 onSelect={() => setValueHandler(option.option)}
               >

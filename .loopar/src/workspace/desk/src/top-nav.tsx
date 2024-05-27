@@ -2,7 +2,6 @@ import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
 import { AppsMenu } from "./apps-menu"
 import { UserInfo } from "./user-info"
-import {Link} from "@link"
 
 export function TopNav() {
   return (

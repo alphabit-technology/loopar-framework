@@ -34,11 +34,6 @@ export const SideNavItem = (props) => {
   ) : null
 
   return compact ? link : (
-    <Link
-      className={`${active ? 'text-primary' : module.disabled ? 'text-disabled' : 'text-neutral-400'}
-                      grow whitespace-nowrap px-0 font-sans text-[14px] font-semibold leading-6 no-underline `}
-      href={`/desk/${path}`}
-    >
       <Link
         className={`flex w-full justify-start rounded bg-slate-100/50 px-4 py-1 text-left align-middle dark:bg-slate-700/30 ${props.className || ''}`}
         {...linkProps}
@@ -47,7 +42,6 @@ export const SideNavItem = (props) => {
         {Icon && <Icon className="mr-2"/> }
         {title}
       </Link>
-    </Link>
   );
 };
 

@@ -1,0 +1,49 @@
+doctype html
+html(class=`${THEME}`, lang='en')
+  head
+    link(rel="stylesheet", href="/home/aramirez/loopar-framework/node_modules/aos/dist/aos.css")
+    link(rel="stylesheet" href="/styles/globals.css")
+    
+    include base/base-css
+    include base/fonts
+    include base/fav-icon
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no')
+
+    title Loopar Framework
+
+    meta(property='og:title' content='Loopar Framework')
+    meta(name='author' content='Loopar')
+    meta(property='og:locale' content='en_US')
+    meta(name='description' content='Loopar Framework')
+    meta(property='og:description' content='Loopar Framework')
+    meta(property='og:site_name' content='Loopar Framework')
+
+    //ssr-modulepreload
+
+    script(type='application/ld+json').
+      {
+      "name": "Loopar Framework with Bootstrap 4",
+      "description": "Loopar Framework with Bootstrap 4",
+      "author": {
+        "@type": "alfredrz2012@gmail.com",
+        "name": "Alfredo Ramirez"
+      },
+      "@type": "Loopar",
+      "url": "www.loopar.io",
+      "headline": "Loopar Framework with Bootstrap 4",
+      "@context": "www.loopar.io"
+      }
+
+    script.
+      window.global = window;
+
+      const __META__ = !{__META__};
+    //ssr-initial-data
+  body(class="min-h-screen font-sans antialiased theme-stone")
+    #loopar-root
+      //ssr-outlet
+      script(type="module", src="/src/entry-client.jsx", async, blocking="render")
+      //ssr-imported
+
+    include base/footer-scripts

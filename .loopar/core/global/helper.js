@@ -114,7 +114,7 @@ function debug_name(name) {
  */
 
 function hash(input) {
-  return crypto.MD5(input).toString();
+  return Crypto.MD5(input).toString();
 }
 
 /**
@@ -241,7 +241,14 @@ function aspectRatio(ratio) {
 
 function renderizableProps(props) {
   return Object.keys(props).reduce((acc, key) => {
-    if (typeof props[key] != 'object' || (typeof props[key] === 'function' || key === "children" || key === "style")) {
+    if (
+      (
+        typeof props[key] != 'object' || 
+        (typeof props[key] === 'function' || key === "children" || key === "style")
+      ) && 
+      ["element", "elements", "type", "key", "id", "className", "style", "children"].indexOf(key) == -1 &&
+      !key.startsWith("on")
+    ) {
       acc[key] = props[key];
     }
     return acc;

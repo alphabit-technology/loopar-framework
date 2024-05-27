@@ -1,4 +1,3 @@
-import * as React from "react"
 import {DeskLogo} from './desk-logo';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { useWorkspace } from "@workspace/workspace-provider"

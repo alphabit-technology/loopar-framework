@@ -2,8 +2,6 @@ import loopar from '$loopar';
 import BaseDocument from "$context/base/base-document";
 import http from '$tools/router/http';
 import { dataInterface } from '@global/element-definition';
-import { ta } from 'date-fns/locale';
-//import { data } from 'autoprefixer';
 
 export default class BaseForm extends BaseDocument {
   tagName = "form";
@@ -44,7 +42,7 @@ export default class BaseForm extends BaseDocument {
     }*/
 
     return new Promise((resolve, reject) => {
-      http.send({
+      loopar.send({
         action: options.action,
         params: this.params,
         body: this.#formData(),

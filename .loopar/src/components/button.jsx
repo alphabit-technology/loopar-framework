@@ -24,7 +24,8 @@ export default class Button extends Component {
       const docRef = this.context.docRef;
 
       if (data.action) {
-        docRef[data.action] &&  docRef[data.action]();
+        if(!docRef[data.action]) loopar.throw("Action not Defined",`Action ${data.action} not found in model`)
+        docRef[data.action]();
       }
     }
 
@@ -51,7 +52,7 @@ export default class Button extends Component {
           element: INPUT,
           data: {
             description:
-              "if you define url, button will be link; if you define simple action like save, print..., button will be call action function in your view",
+              "You can define action like save, print..., button will be call action function in your model",
           },
         },
         variant: {

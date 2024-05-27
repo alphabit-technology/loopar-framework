@@ -1,15 +1,13 @@
-const Components = {};
+const __META_COMPONENTS__ = {};
 import loopar from "$loopar";
 import {MetaComponents} from "@global/require-components";
 
-
 function getComponent(component, pre = "./") {
   if(!component) return null;
-  
   const cParse = component.replaceAll(/_/g, "-");
   return new Promise((resolve) => {
-    if (Components[component]) {
-      resolve(Components[component]);
+    if (__META_COMPONENTS__[component]) {
+      resolve(__META_COMPONENTS__[component]);
     } else {
       import(`./components/${cParse}.jsx`).then((c) => {
         const promises = [];
@@ -38,7 +36,7 @@ function getComponent(component, pre = "./") {
 
         Promise.all(promises)
           .then(() => {
-            Components[component] = c;
+            __META_COMPONENTS__[component] = c;
             resolve(c);
           })
           .catch((error) => {
@@ -58,4 +56,4 @@ async function MetaComponentsLoader(__META__, environment) {
   await loadComponents(MetaComponents(__META__, environment), environment);
 }
 
-export { MetaComponentsLoader, Components };
+export { MetaComponentsLoader, __META_COMPONENTS__ };

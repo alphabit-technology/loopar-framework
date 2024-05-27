@@ -7,7 +7,7 @@ export default class SubTitle extends BaseText {
   render() {
     return super.render(
       <h3
-        className={`text-center ${this.getSize()} font-bold leading-tight tracking-tighter md:text-xl lg:leading-[1.1]`}
+        className={`font-bold leading-tight tracking-tighter md:text-xl lg:leading-[1.1] ${this.getAlign()} ${this.getSize()}`}
         {...(this.props.designer
           ? {
               style: {

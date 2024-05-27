@@ -1,6 +1,6 @@
 import React, { useState, useRef, useContext} from "react";
 import { elementsDict as baseElementsDict } from "$global/element-definition";
-import { Components as ImportedComponents } from "$components-loader";
+import { __META_COMPONENTS__ } from "$components-loader";
 import elementManage from "$tools/element-manage";
 import {ElementTitle} from "$element-title";
 import DragAndDropUtils from "$tools/drag-and-drop";
@@ -36,7 +36,7 @@ const designElementProps = (el) => {
   return newProps;
 };
 
-function prepareMetaData(props, image) {
+function prepareMetaData(props, parent, image) {
   const data = props.data || {};
   if (image && (!data || !data.background_image || data.background_image === '[]')) {
     props.src = "/uploads/empty-image.svg"
@@ -62,10 +62,13 @@ function prepareMetaData(props, image) {
       }
     }
 
-    const animations = {}
-    if (data.animation) {
-      const animation = loopar.getAnimation(data.animation);
+    const animations = {};
+
+    if ((data.animation || parent?.data?.static_content)) {
+      const animation = parent?.data?.static_content ? loopar.reverseAnimation(parent.data.animation) : loopar.getAnimation(data.animation);
+
       animations["data-aos"] = animation;
+      data.static_content = parent?.data?.static_content;
 
       if (data.animation_delay) {
         animations["data-aos-delay"] = data.animation_delay;
@@ -144,7 +147,7 @@ function prepareMetaData(props, image) {
 }
 
 const elementProps = ({elDict, parent = {}, isDesigner}) => {
-  prepareMetaData(elDict, false);
+  prepareMetaData(elDict, parent, false);
 
   if (isDesigner) return designElementProps(elDict, parent);
   elDict.data ??= {};
@@ -171,11 +174,13 @@ const DesignElement = ({parent, element, Comp, def}) => {
 
   if(document.mode !== "preview"){
     if(isDroppable) {
-      className += "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 p-2 pb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg";
+      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 p-2 pb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg");
     }else{
-      className += "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md";
+      className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
     }
   }
+
+  className = cn(className, element.data?.class, element.className);
 
   const handleMouseOver = (e) => {
     e.stopPropagation();
@@ -263,7 +268,18 @@ const DesignElement = ({parent, element, Comp, def}) => {
   )
 };
 
-function MetaComponents({ elements = [], parent }) {
+function HTMLBlock({element, className = "", ...props}) {
+  return (
+    <div
+      className={`h-auto w-full prose dark:prose-invert pb-5`}
+      id={element.data.id}
+      dangerouslySetInnerHTML={{__html: element.data.value}}
+      {...props}
+    />
+  )
+}
+
+function MetaComponents({ elements = [], parent, className}) {
   const designer = useDesigner();
   const { docRef } = useDocumentContext();
   const isDesigner = designer.designerMode;
@@ -273,31 +289,46 @@ function MetaComponents({ elements = [], parent }) {
       {elements.map((el, index) => {
         const def = baseElementsDict[el.element]?.def || {};
         el.def = def;
-        const Comp = ImportedComponents[def.element]?.default;
+        const Comp = __META_COMPONENTS__[def.element]?.default || __META_COMPONENTS__[def.element];
 
-        if (Comp) {
-          const props = elementProps({ elDict: el, isDesigner, parent });
-          props.className = cn("relative", Comp.prototype.designerClasses, props.className, props.data?.class, "rounded-md");
+        if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
+          const props = elementProps({ elDict: el, parent, isDesigner });
+          props.className = cn("relative",(Comp && Comp.prototype.designerClasses), props.className, props.data?.class, "rounded-md", el.className, className);
 
-          if (isDesigner) {
-            return <DesignElement key={index} Comp={Comp} element={props} parent={parent} def={def} />;
+          if(docRef.__META_DEFS__[props.data.name]) {
+            const newData = {...props.data, ...docRef.__META_DEFS__[props.data.name]?.data || {}};
+            Object.assign(props, docRef.__META_DEFS__[props.data.name], {data:  newData});
+          }
+          
+          if (isDesigner && Comp) {
+            return <DesignElement key={index} Comp={Comp} element={props} parent={parent} def={def}/>;
           } else if (!props.data.hidden) {
             const disabled = props.data.disabled;
 
             const Fragment = disabled ? "div" : React.Fragment;
             const fragmentProps = disabled ? {className: "pointer-events-none opacity-40"} : {};
 
+            if([HTML_BLOCK, MARKDOWN].includes(el.element)) {
+              return <HTMLBlock key={index} element={el} {...loopar.utils.renderizableProps(props)}/>
+            }
+
+            if(!Comp) return null;
+
             return (
               <Fragment {...fragmentProps}>
-                <Comp {...props} ref={ref => {
-                  docRef.__REFS__[props.data.name] = ref;
-                  parent?.__REFS__ && (parent.__REFS__[props.data.name] = ref);
-                }} />
+                <Comp 
+                  {...props}
+                  key={props.key || index}
+                  ref={ref => {
+                    docRef.__REFS__[props.data.name] = ref;
+                    parent?.__REFS__ && (parent.__REFS__[props.data.name] = ref);
+                  }
+                } />
               </Fragment>
             );
           }
         } else {
-          console.warn(["Err on getComponent: " + def.element]);
+          //console.warn(["Component: " + def.element + " is not loaded yet"]);
           return null;
         }
       })}
@@ -306,14 +337,14 @@ function MetaComponents({ elements = [], parent }) {
 }
 
 
-export default function DynamicComponent({elements, parent}){
+export default function MetaComponentBase({elements, parent, className}){
   return (
-    <MetaComponents elements={elements} parent={parent}/>
+    <MetaComponents elements={elements} parent={parent} className={className}/>
   );
 };
 
-export const MetaComponent = ({component, render, parent, ...props}) => {
-  const C = ImportedComponents[component];
+export const MetaComponent = ({component = "div", render, parent, ...props}) => {
+  const C = __META_COMPONENTS__[component];
   const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
 

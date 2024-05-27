@@ -1,7 +1,7 @@
 import Preassembled from "$preassembled";
 import loopar from "$loopar";
 import AOS from "aos";
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 import { DesignerContext } from "@custom-hooks";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
@@ -13,7 +13,7 @@ export default class BaseCarrusel extends Preassembled {
 
     this.state = {
       ...this.state,
-      currentIndex: loopar.utils.cookie.get(this.props.data.key) || 0,
+      currentIndex: loopar.cookie.get(this.props.data.key) || 0,
       prevIndex: 0,
       focus: false,
       initialized: false,
@@ -41,7 +41,6 @@ export default class BaseCarrusel extends Preassembled {
           const key = element.data.key;
 
           const data = {
-            test_name: index == 0 ? "test-name" : "",
             ...element.data,
             animation: index == 0 && !designerMode ? null : transition,
             static_content: baseData.static_content,
@@ -55,7 +54,7 @@ export default class BaseCarrusel extends Preassembled {
             <div
               className="absolute w-full h-full"
             >
-              <DynamicComponent
+              <MetaComponent
                 elements={[
                   {
                     ...element,
@@ -70,15 +69,11 @@ export default class BaseCarrusel extends Preassembled {
                     key: key,
                     ref: (tab) => {
                       if (tab) {
-                        /*if (this.props.designer) {
-                          tab.parentComponent = this;
-                        }*/
                         this["slider" + index] = tab;
                       }
                     },
                   },
                 ]}
-                parent={this}
                 key={key}
               />
             </div>
@@ -156,7 +151,7 @@ export default class BaseCarrusel extends Preassembled {
         currentIndex: this.getNextSlideIndex(),
       }),
       () => {
-        loopar.utils.cookie.set(this.props.data.key, this.state.currentIndex);
+        loopar.cookie.set(this.props.data.key, this.state.currentIndex);
         //localStorage.setItem(this.props.data.key, this.state.currentIndex);
       }
     );
@@ -169,7 +164,7 @@ export default class BaseCarrusel extends Preassembled {
         currentIndex: this.getPrevSlideIndex(),
       }),
       () => {
-        loopar.utils.cookie.set(this.props.data.key, this.state.currentIndex);
+        loopar.cookie.set(this.props.data.key, this.state.currentIndex);
         //localStorage.setItem(this.props.data.key, this.state.currentIndex);
       }
     );

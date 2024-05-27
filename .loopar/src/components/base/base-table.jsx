@@ -2,7 +2,7 @@ import BaseComponent from "$base-component";
 import elementManage from "$tools/element-manage";
 import Pagination from "$pagination";
 import loopar from "$loopar";
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 import { Link } from "$link";
 import { FormWrapper } from "$context/form";
 
@@ -345,20 +345,22 @@ export class BaseTable extends BaseComponent {
 
   popPopRowActions(selectorAllStatus, rowsCount, selectedRows) {
     return <DropdownMenu>
-      <Button variant="outline" className="px-2" type="button">
-        <Checkbox
-          checked={selectorAllStatus}
-          onCheckedChange={(event) => {
-            this.selectAllVisibleRows(event);
-          }}
-        />
-        <DropdownMenuTrigger asChild className="p-1" >
-          <div className="flex flex-row pl-2 align-middle">
-            {selectedRows > 0 && <p className="flex items-center justify-center">Selected {selectedRows}</p>}
-            <ChevronDownIcon className="ml-1" />
-          </div>
-        </DropdownMenuTrigger>
-      </Button>
+      <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 py-2 px-2">
+        <>
+          <Checkbox
+            checked={selectorAllStatus}
+            onCheckedChange={(event) => {
+              this.selectAllVisibleRows(event);
+            }}
+          />
+          <DropdownMenuTrigger asChild className="p-1" >
+            <div className="flex flex-row pl-2 align-middle">
+              {selectedRows > 0 && <p className="flex items-center justify-center">Selected {selectedRows}</p>}
+              <ChevronDownIcon className="ml-1" />
+            </div>
+          </DropdownMenuTrigger>
+        </>
+      </div>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -538,7 +540,7 @@ export class BaseTable extends BaseComponent {
 
                 return (
                   <div>
-                    <DynamicComponent
+                    <MetaComponent
                       elements={[                   
                         {
                           element: c.element,

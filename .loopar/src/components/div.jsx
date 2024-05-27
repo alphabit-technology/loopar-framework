@@ -1,12 +1,17 @@
 import Component from "$component";
+import { loopar } from "$loopar";
 
 export default class DivComponent extends Component {
-   tagName = "div";
+   blockComponent = true;
 
    render(content = null) {
-      return super.render([
-         this.props.children,
-         content
-      ]);
+      return super.render(
+        <div
+          {...loopar.utils.renderizableProps(this.props)}
+        >
+         {this.elements}
+         {content}
+        </div>
+      );
    }
 }

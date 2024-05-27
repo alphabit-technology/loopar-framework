@@ -1,11 +1,8 @@
-import * as React from "react";
 import { Breadcrumbs } from "@loopar/context/base/breadcrumbs";
-import { Separator } from "@/components/ui/separator";
 import loopar from "$loopar";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, XIcon, MoreVerticalIcon, GridIcon} from "lucide-react";
 import {Link} from "$link";
-import { useFormContext } from "@context/form-context";
 
 
 export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
@@ -67,7 +64,7 @@ export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
               variant="secondary"
               onClick={() => {
                 const viewType = docRef.state.viewType === 'List' ? 'Grid' : 'List';
-                loopar.utils.cookie.set(meta.__DOCTYPE__.name + "_viewType", viewType);
+                loopar.cookie.set(meta.__DOCTYPE__.name + "_viewType", viewType);
                 docRef.setState({ viewType });
               }}
             >
@@ -83,8 +80,8 @@ export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
 
   return (
     <>
-      <div 
-        className="flex w-full flex-row justify-between border-b"
+      <div
+        className="sticky top-0 flex w-full flex-row justify-between border-b"
         style={{paddingRight: sidebarOpen ? "0" : "2rem"}}
       >
         <div className="gap-1">

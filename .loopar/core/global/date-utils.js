@@ -5,14 +5,13 @@ const getDate = (date=new Date(), format) => {
 
   if(format){
     if(typeof date === "string"){
-      date = parse(date, 'yyyy-MM-dd', new Date());
+      date = parse(new Date(date).toString(), 'yyyy-MM-dd', new Date());
     } else if(typeof date === "object"){
       date = new Date(date);
     }else{
       return null;
     }
 
-    
     return Format(date, format === "DB" ? 'yyyy-MM-dd' : format);
   }
 
@@ -24,13 +23,14 @@ const getDateTime = (date=new Date(), format) => {
 
   if (format) {
     if (typeof date === "string") {
-      date = parse(date, 'yyyy-MM-dd HH:mm:ss', new Date());
+      date = parse((new Date(date)).toString(), 'yyyy-MM-dd HH:mm:ss', new Date());
     } else if (typeof date === "object") {
       date = new Date(date);
     } else {
       return null;
     }
 
+    if(date == "Invalid Date") return null;
 
     return Format(date, format === "DB" ? 'yyyy-MM-dd HH:mm:ss' : format);
   }

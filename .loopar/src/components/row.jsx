@@ -1,8 +1,7 @@
 import Component from "$component";
 import {Droppable} from "$droppable";
 import {WorkspaceProviderContext} from "@workspace/workspace-provider";  
-import DynamicComponent from "./base/dynamic-component";
-import {cn} from "@/lib/utils";
+import MetaComponent from "./base/meta-component";
 import loopar from "$loopar";
 
 export default class Row extends Component {
@@ -86,47 +85,48 @@ export default class Row extends Component {
     });*/
   }
 
+  get spacing() {
+    return {
+      0: "gap-0",
+      1: "gap-1",
+      2: "gap-2",
+      3: "gap-3",
+      4: "gap-4",
+      5: "gap-5",
+    }[this.props?.data?.spacing || 3]
+  }
+
+  get colsDistribution() {
+    let columsCount = this.props.elements?.length || 1;
+    columsCount = columsCount > 6 ? 6 : columsCount;
+    return {
+      1: "md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1",
+      2: "md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2",
+      3: "md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3",
+      4: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4",
+      5: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5",
+      6: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6"
+    }[columsCount]
+  }
+
   render() {
-    const data = this.props?.data || {};
-    const { screenSize = "lg" } = this.context; 
-
-    const columsCount = this.props.elements?.length;
-    const spacing = data.spacing || 1;
-
-    const colsDistribution = {"xm": 1,"sm": 1, "md": 2, "lg": 3, "xl": 4}
-
-    const colsAvailable = colsDistribution[screenSize];
-    const colSize = 100 / (columsCount > colsAvailable ? colsAvailable : columsCount);
-    const className = cn(`grid-${screenSize}-cols-${columsCount}-${spacing} align-items-stretch`, this.props.className || "")
-    
     const cols = (this.props.elements || []);
     
     return (
-      <>
-      <style key={screenSize + columsCount}>
-          {`
-            .grid-${screenSize}-cols-${columsCount}-${spacing} {
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(calc(${colSize}% - ${spacing}rem), 1fr));
-              gap: ${spacing}rem;
-            }
-          `}
-        </style>
       <Droppable 
         {...loopar.utils.renderizableProps(this.props)}
-        className={className}
+        className={`grid xm:grid-cols-1 sm:grid-cols-1 ${this.colsDistribution} ${this.spacing}`}
         receiver={this}
       >
         {this.props.children}
         {
           cols.map((el) => {
             return (
-              <DynamicComponent elements={[el]} parent={this} />
+              <MetaComponent elements={[el]} parent={this} />
             );
           })
         }
       </Droppable>
-      </>
     );
   }
 
@@ -182,9 +182,16 @@ export default class Row extends Component {
           },
         },
         spacing: {
-          element: INPUT,
+          element: SELECT,
           data: {
-            type: "number",
+            options: [
+              { option: "0", value: 0 },
+              { option: "1", value: 1 },
+              { option: "2", value: 2 },
+              { option: "3", value: 3 },
+              { option: "4", value: 4 },
+              { option: "5", value: 5 },
+            ],
             description: "Spacing between columns in rem.",
           },
         },

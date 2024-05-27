@@ -1,8 +1,17 @@
-import loopar from "$loopar";
 import BaseInput from "$base-input";
+import { useState } from "react";
 
-export default class TextEditor extends BaseInput {
-  toolbarOptions = [
+import { useRef } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
+
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+function TextEditor({onChange}) {
+  const [value, setValue] = useState('');
+
+  console.log(["TextEditor", value])
+  const toolbarOptions = [
     ["bold", "italic", "underline", "strike"], // toggled buttons
     ["blockquote", "code-block"],
 
@@ -21,41 +30,82 @@ export default class TextEditor extends BaseInput {
 
     ["clean"], // remove formatting button
   ];
+  const handleChange = (content, delta, source, editor) => {
+    setValue(content);
+    onChange(content);
+  }
+  return (
+    <ReactQuill
+      theme="snow" 
+      value={value} 
+      onChange={handleChange}
+      modules={{
+        toolbar: toolbarOptions
+      }}
+    />
+  )
+}
+
+export default class TextEditorClass extends BaseInput {
+  constructor(props) {
+    super(props);
+  }
 
   render() {
-    return super.render(
-      <div
-        className="text-editor"
-        ref={(editor_container) => (this.editor_container = editor_container)}
-        style={{ height: 300 }}
-      ></div>
-    );
-  }
-
-  componentDidMount() {
-    super.componentDidMount();
-    loopar.scriptManager.loadStylesheet("/assets/plugins/quill/quill.snow");
-    loopar.scriptManager.loadScript("/assets/plugins/quill/quill.min", () => {
-      this.initEditor();
-    });
-  }
-
-  initEditor() {
-    this.input.addClass("d-none");
-    this.label.addClass("d-none");
-
-    this.editor = new Quill(this.editor_container.node, {
-      modules: {
-        toolbar: this.toolbarOptions,
-      },
-      theme: "snow",
-    });
-
-    this.editor.on("text-change", (delta, oldDelta, source) => {
-      this.handleInputChange({ target: { value: this.editor.getContents() } });
-    });
-
-    this.editor.setContents(JSON.parse(this.data.value || "{}"));
+    return this.renderInput(field => {
+      
+      return (
+      <>
+      <style>{`
+.ql-editor {
+  min-height: 300px;
+}
+.quill > * {
+  border-color: inherit !important;
+  color: inherit !important;
+}
+.quill > .ql-toolbar {
+  /* border radius of the toolbar */
+  border-radius: 10px 10px 0 0;
+}
+.quill > .ql-container {
+  /* border radius of the container and for font size*/
+  font-size: inherit;
+  border-radius: 0 0 10px 10px;
+}
+.ql-toolbar.ql-snow .ql-picker-label {
+  color: inherit !important;
+  opacity: 0.76;
+}
+.ql-snow .ql-picker {
+  color: inherit !important;
+}
+.quill > .ql-container > .ql-editor.ql-blank::before {
+  /* for placeholder */
+  color: inherit;
+}
+.ql-snow.ql-toolbar button svg {
+  opacity: 0.76;
+  color: currentColor;
+}
+.ql-snow .ql-stroke {
+  /* for the border of the editor */
+  stroke: currentColor !important;
+}
+.ql-snow .ql-fill {
+  /* for the bg color */
+  fill: currentColor !important;
+}
+.ql-picker-item {
+  /* for dropdown */
+  color: #444 !important;
+}
+      `}
+      </style>
+        <TextEditor onChange={field.onChange}/>
+      </>
+    )
+  });
   }
 
   val(val = null) {
