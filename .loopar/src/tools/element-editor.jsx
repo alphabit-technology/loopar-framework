@@ -52,8 +52,8 @@ export default class ElementEditorClass extends DivComponent {
   }
 
   getMetaFields() {
-    const previewProps = {}
-    const animationDuration = this.data.aos_animation_duration || 2000;
+    //const previewProps = {}
+    //const animationDuration = this.data.aos_animation_duration || 2000;
     const data = this.formValues
 
     return [
@@ -153,6 +153,12 @@ export default class ElementEditorClass extends DivComponent {
             element: TEXTAREA,
             data: {
               description: "You can use raw css code here",
+            }
+          },
+          display_on: {
+            element: TEXTAREA,
+            data: {
+              description: "Define where the element will be displayed",
             }
           },
           hidden: { element: SWITCH },

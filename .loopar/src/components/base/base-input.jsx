@@ -47,8 +47,10 @@ export default class BaseInput extends DivComponent {
     setTimeout(() => {
       this.validate();
       this.props.onChange && this.props.onChange(event);
+      
       //setTimeout necessary to witing for the onChange event to be called
       this.onChange && this.onChange(event);
+      this.props.onChanged && this.props.onChanged(event);
     }, 0);
   }
 

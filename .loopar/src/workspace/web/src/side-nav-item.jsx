@@ -1,6 +1,10 @@
-import React, {useState, useEffect} from "react";
+import React, {useEffect} from "react";
 import {Link} from "$link";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import {useCookies} from "@services/cookie";
+
+import { buttonVariants } from "@/components/ui/button";
+
 
 export const SideNavItem = (props) => {
   const {
@@ -8,11 +12,10 @@ export const SideNavItem = (props) => {
     Icon,
     path,
     title,
-    active,
-    activeParent
+    active
   } = props;
 
-  const [open, setOpen] = useState(active || activeParent);
+  const [open, setOpen] = useCookies(path, active);
 
   const external = {
     href: path,
@@ -21,7 +24,8 @@ export const SideNavItem = (props) => {
   };
 
   const linkProps = path ? external : {};
-  const activeClass = active ? 'bg-primary/10 text-primary' : '';
+  const activeBg = 'bg-secondary'
+  const activeClass = active ? `${activeBg} text-primary` : ``;
 
   const handleToggleCollapse = (e) => {
     e.preventDefault();
@@ -30,13 +34,14 @@ export const SideNavItem = (props) => {
   }
   
   useEffect(() => {
-    setOpen((children && children.length > 0 && active) || activeParent);
-  }, [active, activeParent]);
+    !open && setOpen(active);
+    //setOpen((children && children.length > 0 || active) || activeParent);
+  }, [active]);
 
   return (
     <>
       <Link
-        className={`text-primary w-full text-neutral-400 grow whitespace-nowrap font-sans text-[14px] font-semibold leading-6 no-underline ${activeClass} items-center justify-between py-2 px-4 hover:bg-primary/10 hover:text-primary/80 rounded-md transition-colors mt-2`}
+        className={`w-full text-neutral-400 grow whitespace-nowrap font-sans text-[14px] font-semibold leading-6 no-underline ${activeClass} hover:bg-secondary items-center justify-between py-2 px-3 rounded-md transition-colors mt-1`}
         to={`${path}`}
       >
         <button

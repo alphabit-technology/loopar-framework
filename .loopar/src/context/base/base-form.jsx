@@ -1,6 +1,5 @@
 import loopar from '$loopar';
 import BaseDocument from "$context/base/base-document";
-import http from '$tools/router/http';
 import { dataInterface } from '@global/element-definition';
 
 export default class BaseForm extends BaseDocument {
@@ -164,12 +163,12 @@ export default class BaseForm extends BaseDocument {
   }
 
   getValue(name) {
-    return this.formFields.defaultValues[name] || null;
-    /*const field = this.getField(name);
-    return field ? field.value() : null;*/
+    return this.formValues[name];
   }
 
   get formValues() {
+    if(!this.Form)  return this.meta.__DOCUMENT__;
+    
     const fields = this.__FIELDS__;
     return Object.entries(this.Form.watch()).reduce((obj, [name, value]) => {
       const field = fields.find(f => f.data?.name === name);
@@ -199,6 +198,11 @@ export default class BaseForm extends BaseDocument {
 
       if([FORM_TABLE].includes(field.def.element)) {
         obj[name] = JSON.stringify(value.rows);
+        return obj;
+      }
+
+      if([CHECKBOX, SWITCH].includes(field.def.element)) {
+        obj[name] = value ? 1 : 0;
         return obj;
       }
 

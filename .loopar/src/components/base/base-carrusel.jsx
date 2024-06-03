@@ -347,10 +347,6 @@ export default class BaseCarrusel extends Preassembled {
     this.startInterval();
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    super.componentDidUpdate(prevProps, prevState, snapshot);
-  }
-
   get metaFields() {
     return [
       {

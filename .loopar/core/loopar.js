@@ -367,6 +367,18 @@ export class Loopar {
     }, []);
   }
 
+  parseDocStructure(doc_structure){
+    return doc_structure.map(field => {
+      field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
+
+      if (field.elements) {
+        field.elements = this.parseDocStructure(field.elements);
+      }
+
+      return field;
+    });
+  }
+
   async #GET_DOCTYPE(document, { app = null, module = null } = {}) {
     let { appName, moduleName } = { appName: app, moduleName: module };
 
@@ -389,20 +401,8 @@ export class Loopar {
     appName && (DOCTYPE.__APP__ = appName);
     moduleName && (DOCTYPE.__MODULE__ = moduleName);
 
-    const parseDocStructure = (doc_structure) => {
-      return doc_structure.map(field => {
-        field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
-
-        if (field.elements) {
-          field.elements = parseDocStructure(field.elements);
-        }
-
-        return field;
-      });
-    }
-
     if(DOCTYPE.is_single){
-      DOCTYPE.doc_structure = JSON.stringify(parseDocStructure(JSON.parse(DOCTYPE.doc_structure)));
+      DOCTYPE.doc_structure = JSON.stringify(this.parseDocStructure(JSON.parse(DOCTYPE.doc_structure)));
     }
 
     return DOCTYPE;

@@ -34,7 +34,7 @@ type WorkspaceProviderState = {
 const initialState: WorkspaceProviderState = {
   theme: "system",
   setTheme: () => null,
-  openNav: false,// useCookies("openNav"),//loopar.cookie.get("openNav"),
+  openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
   loaded: false,
   setLoaded: () => null,
@@ -42,7 +42,7 @@ const initialState: WorkspaceProviderState = {
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
 
-const useMediaQuery = (query) => {
+/*const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ const useMediaQuery = (query) => {
   }, [query]);
 
   return matches;
-};
+};*/
 
 export function WorkspaceProvider({
   children,
@@ -89,15 +89,6 @@ export function WorkspaceProvider({
       handleSetOpenNav(!openNav);
     },
     [setOpenNav]
-  );
-
-  const handledLoaded = useCallback(
-    () => {
-      //const root = document.getElementById("loopar-root");
-      //root && (root.style.display = "block")
-      setLoaded(true);
-    },
-    [loaded]
   );
 
   useEffect(() => {
@@ -135,7 +126,6 @@ export function WorkspaceProvider({
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
     loaded,
-    setLoaded: handledLoaded,
     currentPage: props.currentPage,
     currentLink: props.currentLink,
     ENVIRONMENT: props.ENVIRONMENT

@@ -5,41 +5,45 @@ import path from 'path';
 //import importDynamicModule from 'vite-plugin-dynamic-import-vars';
 import vike from "vike/plugin";
 
-
 const appAlias = {};
-fs.readdirSync('./apps').forEach(app => {
-  if (fs.lstatSync(path.resolve(__dirname, "apps", app)).isDirectory()) {
-    const moduleRoot = path.resolve(__dirname, `./apps/${app}/modules`);
-    const modules = fs.readdirSync(moduleRoot);
+const makeAppsToAlias = (dir) => {
+  fs.readdirSync(dir).forEach(app => {
+    if (fs.lstatSync(path.resolve(__dirname, dir, app)).isDirectory()) {
+      const moduleRoot = path.resolve(__dirname, dir, `${app}/modules`);
+      const modules = fs.readdirSync(moduleRoot);
 
-    modules.forEach(module => {
-      const documentsRoot = path.resolve(`${moduleRoot}/${module}`);
-      const documents = fs.readdirSync(documentsRoot);
+      modules.forEach(module => {
+        const documentsRoot = path.resolve(`${moduleRoot}/${module}`);
+        const documents = fs.readdirSync(documentsRoot);
 
-      documents.forEach(document => {
-        const clientRoot = path.resolve(`${documentsRoot}/${document}/client`);
-        const clientFiles = fs.readdirSync(clientRoot);
+        documents.forEach(document => {
+          const clientRoot = path.resolve(`${documentsRoot}/${document}/client`);
+          const clientFiles = fs.readdirSync(clientRoot);
 
-        clientFiles.forEach(clientFile => {
-          /**
-           * To default import ej: import MyComponent from '$my-component'
-           */
-          appAlias[`$${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
-          appAlias[`@${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+          clientFiles.forEach(clientFile => {
+            /**
+             * To default import ej: import MyComponent from '$my-component'
+             */
+            appAlias[`$${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            appAlias[`@${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
 
-          /**
-           * to dynamic import ej: const myComponent = await import('./my-component.jsx')
-           * But to work you need use:
-           * import { AppSourceLoader } from "$/app-source-loader";
-           * 
-           * await AppSourceLoader(clientFile): (await import('item-client')).default
-           * */
-          appAlias[`/src/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            /**
+             * to dynamic import ej: const myComponent = await import('./my-component.jsx')
+             * But to work you need use:
+             * import { AppSourceLoader } from "$/app-source-loader";
+             * 
+             * await AppSourceLoader(clientFile): (await import('item-client')).default
+             * */
+            appAlias[`/src/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+          });
         });
       });
-    });
-  }
-});
+    }
+  });
+}
+
+makeAppsToAlias('./apps');
+makeAppsToAlias('./.loopar/apps');
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {

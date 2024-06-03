@@ -1,13 +1,13 @@
-import React, { useState, useRef, useContext} from "react";
+import React, { useState, useRef, useContext } from "react";
 import { elementsDict as baseElementsDict } from "$global/element-definition";
 import { __META_COMPONENTS__ } from "$components-loader";
 import elementManage from "$tools/element-manage";
-import {ElementTitle} from "$element-title";
+import { ElementTitle } from "$element-title";
 import DragAndDropUtils from "$tools/drag-and-drop";
-import { useDocument, useDesigner , HiddenContext} from "@custom-hooks";
-import {cn} from "@/lib/utils";
+import { useDocument, useDesigner, HiddenContext } from "@custom-hooks";
+import { cn } from "@/lib/utils";
 import loopar from "$loopar";
-import {useDocumentContext} from "@context/base/base-context";
+import { useDocumentContext } from "@context/base/base-context";
 import fileManager from "$tools/file-manager";
 
 const designElementProps = (el) => {
@@ -41,7 +41,7 @@ function prepareMetaData(props, parent, image) {
   if (image && (!data || !data.background_image || data.background_image === '[]')) {
     props.src = "/uploads/empty-image.svg"
   }
-  
+
   const getSrc = () => {
     if (data) {
       return fileManager.getMappedFiles(data.background_image, data.name);
@@ -146,7 +146,7 @@ function prepareMetaData(props, parent, image) {
   }
 }
 
-const elementProps = ({elDict, parent = {}, isDesigner}) => {
+const elementProps = ({ elDict, parent = {}, isDesigner }) => {
   prepareMetaData(elDict, parent, false);
 
   if (isDesigner) return designElementProps(elDict, parent);
@@ -162,7 +162,7 @@ const elementProps = ({elDict, parent = {}, isDesigner}) => {
   };
 };
 
-const DesignElement = ({parent, element, Comp, def}) => {
+const DesignElement = ({ parent, element, Comp, def }) => {
   const [hover, setHover] = useState(false);
   const document = useDocument();
   const designer = useDesigner();
@@ -172,10 +172,10 @@ const DesignElement = ({parent, element, Comp, def}) => {
   const isDroppable = Comp.prototype.droppable || element.fieldDesigner;
   let className = Comp.prototype.designerClasses || "";
 
-  if(document.mode !== "preview"){
-    if(isDroppable) {
+  if (document.mode !== "preview") {
+    if (isDroppable) {
       className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 p-2 pb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg");
-    }else{
+    } else {
       className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
     }
   }
@@ -199,11 +199,11 @@ const DesignElement = ({parent, element, Comp, def}) => {
     designer.handleDeleteElement(dragginElement.current)
   }
 
-  if(parentHidden) {
+  if (parentHidden) {
     return (
       <Comp {...element}
         ref={self => {
-          if(self){
+          if (self) {
             self.parentComponent = parent;
             dragginElement.current = self;
           }
@@ -213,13 +213,13 @@ const DesignElement = ({parent, element, Comp, def}) => {
   }
   const disabled = element.data.hidden || element.data.disabled;
   const Fragment = (disabled && !parentHidden) ? "div" : React.Fragment;
-  const fragmentProps = disabled ? {className: "pointer-events-none opacity-40"} : {};
+  const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
   return (
     <HiddenContext.Provider value={disabled}>
       <div
         className={cn('relative w-full h-auto', className)}
-        style={{opacity: hover ? 0.8 : 1, ...element.style}}
+        style={{ opacity: hover ? 0.8 : 1, ...element.style }}
         draggable={!element.fieldDesigner}
         onDragStartCapture={(e) => {
           DragAndDropUtils.elementToDrag = dragginElement.current;
@@ -245,18 +245,18 @@ const DesignElement = ({parent, element, Comp, def}) => {
       >
         {
           document.mode !== "preview" &&
-          <ElementTitle 
+          <ElementTitle
             element={element}
             active={hover}
             handleEditElement={handleEditElement}
             handleDeleteElement={handleDeleteElement}
-            style={{top:0}}
+            style={{ top: 0 }}
           />
         }
         <Fragment {...fragmentProps}>
           <Comp {...element}
             ref={self => {
-              if(self){
+              if (self) {
                 self.parentComponent = parent;
                 dragginElement.current = self;
               }
@@ -268,20 +268,51 @@ const DesignElement = ({parent, element, Comp, def}) => {
   )
 };
 
-function HTMLBlock({element, className = "", ...props}) {
+function HTMLBlock({ element, className = "", ...props }) {
   return (
     <div
       className={`h-auto w-full prose dark:prose-invert pb-5`}
       id={element.data.id}
-      dangerouslySetInnerHTML={{__html: element.data.value}}
+      dangerouslySetInnerHTML={{ __html: element.data.value }}
       {...props}
     />
   )
 }
 
-function MetaComponents({ elements = [], parent, className}) {
+function evaluateCondition(condition, values) {
+  let sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||').replace(/=/g, '==');
+
+  const keys = Object.keys(values);
+  keys.forEach(key => {
+    const value = values[key];
+    const regex = new RegExp(`\\b${key}\\b`, 'g');
+    sanitizedCondition = sanitizedCondition.replace(regex, `'${value}'`);
+  });
+
+  try {
+    return new Function(`return ${sanitizedCondition};`)();
+  } catch (error) {
+    console.error("Error evaluating condition:", error);
+    return false;
+  }
+}
+
+function extractFieldNames(condition) {
+  const sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||');
+  const regex = /\b([a-zA-Z_]\w*)\b(?=\s*[=!><])/g;
+  const matches = new Set();
+  let match;
+
+  while ((match = regex.exec(sanitizedCondition)) !== null) {
+    matches.add(match[1]);
+  }
+
+  return Array.from(matches);
+}
+
+function MetaComponents({ elements = [], parent, className }) {
   const designer = useDesigner();
-  const { docRef } = useDocumentContext();
+  const { docRef, formValues } = useDocumentContext();
   const isDesigner = designer.designerMode;
 
   return (
@@ -290,40 +321,53 @@ function MetaComponents({ elements = [], parent, className}) {
         const def = baseElementsDict[el.element]?.def || {};
         el.def = def;
         const Comp = __META_COMPONENTS__[def.element]?.default || __META_COMPONENTS__[def.element];
+        const props = elementProps({ elDict: el, parent, isDesigner });
+
+        let display = true;
+        if (props.data?.display_on){
+          const fields = extractFieldNames(props.data?.display_on);
+
+          const values = fields.reduce((acc, field) => {
+            acc[field] = formValues[field];
+            return acc;
+          }, {});
+
+          display = evaluateCondition(props.data?.display_on, values);
+        }
 
         if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
-          const props = elementProps({ elDict: el, parent, isDesigner });
-          props.className = cn("relative",(Comp && Comp.prototype.designerClasses), props.className, props.data?.class, "rounded-md", el.className, className);
+          const data = props.data || {};
+          props.className = cn("relative", (Comp && Comp.prototype.designerClasses), props.className, data?.class, "rounded-md", el.className, className);
 
-          if(docRef.__META_DEFS__[props.data.name]) {
-            const newData = {...props.data, ...docRef.__META_DEFS__[props.data.name]?.data || {}};
-            Object.assign(props, docRef.__META_DEFS__[props.data.name], {data:  newData});
+          if (docRef.__META_DEFS__[data.name]) {
+            const newData = { ...data, ...docRef.__META_DEFS__[data.name]?.data || {} };
+            Object.assign(props, docRef.__META_DEFS__[data.name], { data: newData });
           }
-          
+
           if (isDesigner && Comp) {
-            return <DesignElement key={index} Comp={Comp} element={props} parent={parent} def={def}/>;
-          } else if (!props.data.hidden) {
-            const disabled = props.data.disabled;
+            return <DesignElement key={index} Comp={Comp} element={props} parent={parent} def={def} />;
+          } else if (!data.hidden && display) {
+            const disabled = data.disabled;
 
             const Fragment = disabled ? "div" : React.Fragment;
-            const fragmentProps = disabled ? {className: "pointer-events-none opacity-40"} : {};
+            const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
-            if([HTML_BLOCK, MARKDOWN].includes(el.element)) {
-              return <HTMLBlock key={index} element={el} {...loopar.utils.renderizableProps(props)}/>
+            if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
+              return <HTMLBlock key={index} element={el} {...loopar.utils.renderizableProps(props)} />
             }
 
-            if(!Comp) return null;
+            if (!Comp) return null;
 
             return (
               <Fragment {...fragmentProps}>
-                <Comp 
+                <Comp
                   {...props}
                   key={props.key || index}
                   ref={ref => {
-                    docRef.__REFS__[props.data.name] = ref;
-                    parent?.__REFS__ && (parent.__REFS__[props.data.name] = ref);
+                    docRef.__REFS__[data.name] = ref;
+                    parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
                   }
-                } />
+                  } />
               </Fragment>
             );
           }
@@ -337,21 +381,21 @@ function MetaComponents({ elements = [], parent, className}) {
 }
 
 
-export default function MetaComponentBase({elements, parent, className}){
+export default function MetaComponentBase({ elements, parent, className }) {
   return (
-    <MetaComponents elements={elements} parent={parent} className={className}/>
+    <MetaComponents elements={elements} parent={parent} className={className} />
   );
 };
 
-export const MetaComponent = ({component = "div", render, parent, ...props}) => {
+export const MetaComponent = ({ component = "div", render, parent, ...props }) => {
   const C = __META_COMPONENTS__[component];
   const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
 
-  if(C && C.default) {
-    if(isDesigner) {
+  if (C && C.default) {
+    if (isDesigner) {
       return (
-        <DesignElement Comp={C.default} element={{...props, ...{element: component}}} dragginElement={ref}>
+        <DesignElement Comp={C.default} element={{ ...props, ...{ element: component } }} dragginElement={ref}>
           {render && render(C.default, ref)}
         </DesignElement>
       )
@@ -360,7 +404,7 @@ export const MetaComponent = ({component = "div", render, parent, ...props}) => 
     return (
       render && render(C.default)
     )
-  }else{
+  } else {
     throw new Error(`Component ${component} not included in the initial bundle`);
   }
 }

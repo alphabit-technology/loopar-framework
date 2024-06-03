@@ -99,6 +99,7 @@ module.exports = {
       },
       spacing: {
         sidebarWidth: "250px",
+        webSidebarWidth: "270px",
         collapseSidebarWidth: "70px",
         headerHeight:  "4rem",
         webHeaderHeight: "5rem",

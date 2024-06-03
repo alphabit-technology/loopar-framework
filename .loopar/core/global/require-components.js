@@ -49,7 +49,6 @@ export function requireComponents(__META__) {
 
   const DOCTYPE = meta?.__DOCTYPE__ || {};
 
-  console.log(["Require Componentes", action])
   if(action === "list"){
     return filterByWritable(JSON.parse(DOCTYPE.doc_structure || "[]"));
   }else{

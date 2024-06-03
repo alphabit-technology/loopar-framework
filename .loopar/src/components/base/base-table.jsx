@@ -1,6 +1,6 @@
 import BaseComponent from "$base-component";
 import elementManage from "$tools/element-manage";
-import Pagination from "$pagination";
+import {Pagination} from "$pagination";
 import loopar from "$loopar";
 import MetaComponent from "@meta-component";
 import { Link } from "$link";
@@ -436,10 +436,16 @@ export class BaseTable extends BaseComponent {
     return this.props.docRef || {};
   }
 
-  getGridRender(columns, rows) {
+  getGridRender(rows) {
     return (
       <div className="justify flex flex-wrap gap-3 border p-2">
         {
+          rows.length === 0 ? (
+            <div className="flex flex-col bg-background w-full p-3 place-items-center">
+              <AlertTriangleIcon className="w-10 h-10"/>
+              <div className="text-lg">No items to show</div>
+            </div>
+          ) : 
           rows.map((row) => {
             const action = row.is_single ? (row.type === "Page" ? "view" : "update") : "list";
 
@@ -610,12 +616,12 @@ export class BaseTable extends BaseComponent {
       <>
         {this._hasSearchForm && <div>{this.getFormSearch(searchFields)}</div>}
         <div className="border">
-          {this.viewType === "List" ? this.getTableRender(columns, rows) : this.getGridRender(columns, rows)}
+          {this.viewType === "List" ? this.getTableRender(columns, rows) : this.getGridRender(rows)}
         </div>
         <div spacing={3}>
           {this.getFooter()}
           {this.hasPagination ? (
-            <Pagination pagination={this.pagination} onChange={setPage} app={this} />
+            <Pagination pagination={this.pagination} setPage={setPage} app={this} />
           ) : null}
         </div>
       </>

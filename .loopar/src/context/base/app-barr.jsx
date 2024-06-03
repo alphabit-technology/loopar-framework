@@ -3,9 +3,10 @@ import loopar from "$loopar";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, XIcon, MoreVerticalIcon, GridIcon} from "lucide-react";
 import {Link} from "$link";
+//import {useCookies} from "@services/cookie";
 
 
-export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
+export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar, viewTypeToggle, viewType, ...props}) {
   //const {docRef, meta} = useFormContext();
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
   const title = ((meta.title || context === 'module') ? meta.module_group :
@@ -62,13 +63,9 @@ export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
             {docRef.onlyGrid !== true && <Button
               className="p-1"
               variant="secondary"
-              onClick={() => {
-                const viewType = docRef.state.viewType === 'List' ? 'Grid' : 'List';
-                loopar.cookie.set(meta.__DOCTYPE__.name + "_viewType", viewType);
-                docRef.setState({ viewType });
-              }}
+              onClick={viewTypeToggle}
             >
-              {docRef.state.viewType === 'List' ? <GridIcon /> : <MenuIcon />}
+              {viewType === 'List' ? <GridIcon /> : <MenuIcon />}
             </Button>}
           </>
         ) : null}
@@ -81,7 +78,7 @@ export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar}) {
   return (
     <>
       <div
-        className="sticky top-0 flex w-full flex-row justify-between border-b"
+        className="flex w-full flex-row justify-between border-b"
         style={{paddingRight: sidebarOpen ? "0" : "2rem"}}
       >
         <div className="gap-1">

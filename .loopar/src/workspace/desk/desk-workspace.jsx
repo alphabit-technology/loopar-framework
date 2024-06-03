@@ -16,7 +16,7 @@ const Layout = ((props) => {
         items={props.menu_data}
       />
       <div 
-        className={`ease-induration-100 ml-4 w-full overflow-auto p-4 duration-100 ease-in ${openNav ? "lg:pl-sidebarWidth" : "lg:pl-collapseSidebarWidth"}`}
+        className={`ease-induration-100 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${openNav ? "lg:pl-sidebarWidth" : "lg:pl-collapseSidebarWidth"}`}
       >
         {props.children}
       </div>

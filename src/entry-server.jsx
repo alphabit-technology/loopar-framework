@@ -5,7 +5,6 @@ import { StaticRouter } from "react-router-dom";
 import { Loader } from "@/loader";
 import { ServerCookiesManager } from '@services/cookie';
 
-
 const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
   const cookieManager = new ServerCookiesManager(req, res);
 

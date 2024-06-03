@@ -30,58 +30,108 @@ export const makeUrl = (href) => {
   return `/${Object.values(urlObject).filter(e => e && e !== "").join("/")}${queryString ? "?" + queryString : ""}`;
 }
 
-export function Link({ to="", variant="link", size, children, ...props}) {
+export function Link({ to = "", variant = "link", size, children, ...props }) {
   const [called, setCalled] = useState(false);
   const url = makeUrl(to);
   const location = useLocation();
   const isAbsolute = url.includes("http");
+  const [active, setActive] = useState(null);
+
+  const handleSetCalled = (called) => {
+    setCalled(called);
+  };
+
+  const getHeaderHeight = () => {
+    const header = document.querySelector('header');
+    return parseFloat(getComputedStyle(header).height);
+  };
+
+  const detectActiveMenuViaScroll = () => {
+    const scroll = window.scrollY + getHeaderHeight();
+    let activeSection = null;
+    let minDistance = Infinity;
+
+    document.querySelectorAll('[id]').forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.offsetHeight;
+      const distance = Math.abs(sectionTop - scroll);
+
+      if (
+        distance <= minDistance && 
+        ((sectionTop <= scroll && sectionTop + sectionHeight > scroll) ||
+         (sectionTop + sectionHeight <= scroll + window.innerHeight && sectionTop >= scroll) ||
+         (scroll >= sectionTop && scroll < sectionTop + sectionHeight))
+      ) {
+        minDistance = distance;
+        activeSection = section.id;
+      }
+    });
+
+    setActive(activeSection);
+  };
 
   useEffect(() => {
-    if(called){
-      if(to.startsWith("#")){
+    if (called) {
+      if (to.startsWith("#")) {
         goTo({ target: { getAttribute: () => to } });
-      }else{
+      } else {
         loopar.rootApp.navigate(url);
       }
-      setCalled(false);
+      handleSetCalled(false);
     }
+
+    if (to.startsWith("#") && typeof window !== "undefined") {
+      window.addEventListener("scroll", detectActiveMenuViaScroll);
+      detectActiveMenuViaScroll();
+    }
+
+    return () => {
+      if (to.startsWith("#") && typeof window !== "undefined") {
+        window.removeEventListener("scroll", detectActiveMenuViaScroll);
+      }
+    };
   }, [called, location.pathname, location.search]);
 
   const handleOnClick = (e) => {
-    setCalled(true);
+    handleSetCalled(true);
     props.onClick && props.onClick(e);
-  }
+  };
 
-  function goTo(event){
-    const self = event.target;
-    const header = document.querySelector('header');
- 
-    var targetId = self.getAttribute('href').substring(1);
-    var target = document.getElementById(targetId);
-    if(!target) return;
-    var offsetTop = target.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(header).height);
+  function goTo(e) {
+    const target = document.getElementById(e.target.getAttribute('href').substring(1));
+
+    if (!target) return;
+    const offsetTop = target.getBoundingClientRect().top + window.scrollY - getHeaderHeight();
 
     window.scrollTo({
-      top: offsetTop,
+      top: offsetTop - 15,
       behavior: 'smooth'
     });
   }
 
-  const className = cn(buttonVariants({ variant, size }), "justify-normal text-left text-primary cursor-pointer p-2", props.className || "");
-  const renderizableProps = loopar.utils.renderizableProps(props);
-
-  if(isAbsolute) return (
-    <a
-      {...renderizableProps}
-      key={renderizableProps.key || to}
-      className={className}
-      href={to}
-      target={props._target}
-      active
-    >
-      {children}
-    </a>
+  const className = cn(
+    buttonVariants({ variant, size }),
+    "justify-normal text-left text-primary cursor-pointer p-2",
+    props.className,
+    active === to.split("#")[1] ? "bg-red-600/50" : ""
   );
+
+  const renderizableProps = loopar.utils.renderizableProps(props);
+   
+  if (isAbsolute) {
+    return (
+      <a
+        {...renderizableProps}
+        key={renderizableProps.key || to}
+        className={className}
+        href={to}
+        target={props._target}
+        active
+      >
+        {children}
+      </a>
+    );
+  }
 
   return (
     <ReactLink
@@ -97,6 +147,7 @@ export function Link({ to="", variant="link", size, children, ...props}) {
   );
 }
 
+
 const variants = {
   primary: "primary",
   secondary: "secondary",
@@ -108,8 +159,10 @@ const variants = {
 export default class LinkComponent extends BaseComponent {
   render() {
     const data = this.props.data;
+    const className = data.class || "";
+    delete data.class;
 
-    return <Link {...this.props} {...data} key={this.props.key || data.key || this.props.to} >{data.label}</Link>;
+    return <Link {...this.props} {...data} className={className} key={this.props.key || data.key || this.props.to} >{data.label}</Link>;
   }
 
   get metaFields() {

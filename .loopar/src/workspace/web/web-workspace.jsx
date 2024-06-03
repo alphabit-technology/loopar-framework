@@ -10,7 +10,11 @@ const Layout = (({ webApp={}, ...props }) => {
   const [animated, setAnimated] = useState(true);
 
   const handlerInitAnimation = () => {
-    AOS.init();
+    AOS.init({
+      duration: 100,
+      easing: 'ease-in-out',
+      once: false,
+    });
 
     setAnimated(true);
   }
@@ -29,9 +33,11 @@ const Layout = (({ webApp={}, ...props }) => {
       >
         <SideNav sideMenuItems={sideMenuItems}/>
         <div
-          className={`ease-induration-100 w-full overflow-auto ${sideMenuItems.length > 0 && 'lg:ml-[250px]'}`}
+          className={`ease-induration-100 w-full overflow-auto mt-webHeaderHeight ${sideMenuItems.length > 0 && 'lg:ml-webSidebarWidth'}`}
         >
-          {props.children}
+          <div className="p-3">
+            {props.children}
+          </div>
         </div>
       </section>
       <footer className="py-6 md:px-8 md:py-0 border-t">

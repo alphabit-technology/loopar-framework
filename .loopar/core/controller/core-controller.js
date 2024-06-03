@@ -80,7 +80,7 @@ export default class CoreController extends AuthController {
   }
 
   async renderError(error) {
-    if (this.method === AJAX) {
+    if (this.method === AJAX || !loopar.frameworkInstalled) {
       return error;
     }
 
@@ -133,7 +133,7 @@ export default class CoreController extends AuthController {
     if (workspace === "desk") {
       WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
     } else if (workspace === "web") {
-      WORKSPACE.web_app = loopar.webApp//completedTransaction ? {} : await this.#webApp();
+      WORKSPACE.web_app = loopar.webApp;//completedTransaction ? {} : await this.#webApp();
     }
     
     return await this.#send({
@@ -147,6 +147,7 @@ export default class CoreController extends AuthController {
 
   async #send(response) {
     const url = this.req.originalUrl;
+    //const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + ".ejs"
     const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + this.engineTemplate
     const vite = loopar.server.vite;
     
@@ -165,10 +166,10 @@ export default class CoreController extends AuthController {
     }
     global.theme = 'dark';
     global.getTheme = () => { };
-
+    
     const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
     const appHtml = await renderPage(url, response, this.req, this.res);
-
+    
     let html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
     const _MetaComponents = MetaComponents(response, "client");
 
@@ -177,6 +178,7 @@ export default class CoreController extends AuthController {
       <link rel="modulepreload" href="/src/${response.client_importer.client}.jsx">
       <link rel="modulepreload" href="/src/entry-client.jsx">
     `);
+
     //${_MetaComponents.map(c => `<link rel="modulepreload" href="/components/${c.replaceAll("_", "-")}.jsx"/>`).join('\n')}
     /*html = html.replace(`<!--ssr-imported-->`, `
       <script type="module" async>
@@ -212,38 +214,6 @@ export default class CoreController extends AuthController {
     }
   }
 
-  async #send1(response) {
-    //const { Page } = pageContext
-    //const pageHtml = await renderToHtml(Page)
-    global.File = class SimulatedFile {
-      constructor(buffer, fileName, options = {}) {
-        this.buffer = Buffer.from(buffer);
-        this.name = fileName || options.filename || 'untitled.txt';
-        this.size = this.buffer.length;
-        this.type = options.contentType || 'application/octet-stream';
-      }
-    }
-    global.theme = 'dark';
-    global.getTheme = () => { };
-
-    const url = this.req.originalUrl;
-    const vite = loopar.server.vite;
-
-    const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
-    const appHtml = await renderPage(url, response, this.req, this.res);
-
-    return escapeInject`<!DOCTYPE html>
-    <html>
-      <head>
-        <title>My Vike app</title>
-      </head>
-      <body>
-        <div id="root">${dangerouslySkipEscape(appHtml.appHtml)}</div>
-      </body>
-    </html>`
-  }
-
-
   getKey(route = this.dictUrl) {
     const query = route.search ? route.search.split('?') : '';
     route.query = query[1] || '';
@@ -255,22 +225,6 @@ export default class CoreController extends AuthController {
 
   static async sidebarData() {
     return loopar.modulesGroup;
-  }
-
-  async #webApp() {
-    const settings = await loopar.getDocument("System Settings");
-
-    if (await loopar.db.getValue("App", "name", settings.active_web_app)) {
-      const app = await loopar.getDocument("App", settings.active_web_app);
-      return await app.__data__();
-    } else {
-      /*loopar.throw({
-        type: 'error',
-        title: 'Error',
-        message: 'You don\'t have Install the Web App, please install it first and set as default'
-      });*/
-      return {}
-    }
   }
 
   async actionSearch() {

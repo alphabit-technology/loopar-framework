@@ -1,15 +1,12 @@
 import BaseComponent from "$base-component";
 import loopar from "$loopar";
 import {DocumentContext} from "@context/base/base-context";
-import { WorkspaceProviderContext } from "@workspace/workspace-provider";
-
 
 export default class BaseDocument extends BaseComponent {
   dontHaveContainer = true;
   customActions = {};
   __REFS__ = {};
   __META_DEFS__ = {};
-  static contextType = WorkspaceProviderContext;
 
   constructor(props) {
     super(props);
@@ -17,7 +14,7 @@ export default class BaseDocument extends BaseComponent {
 
   render(content) {
     return (
-      <DocumentContext.Provider value={{ docRef: this }}>
+      <DocumentContext.Provider value={{ docRef: this, formValues: this.formValues }}>
         {content}
       </DocumentContext.Provider>
     );
@@ -69,6 +66,15 @@ export default class BaseDocument extends BaseComponent {
     return mapFields(this.__STRUCTURE__);
   }
 
+  get __WRITABLE_FIELDS__() {
+    return this.__FIELDS__.filter(field => field.def?.isWritable);
+  }
+
+  get __READONLY_FIELDS__() {
+    return this.__FIELDS__.filter(field => field.data.readonly);
+  }
+
+
   __FIELD__(fieldName) {
     return this.__FIELDS__.find(field => field.data.name === fieldName);
   }
@@ -80,10 +86,21 @@ export default class BaseDocument extends BaseComponent {
 
   setCustomActions() { }
 
+  initActions() {
+
+    this.__WRITABLE_FIELDS__.forEach(field => {
+      //this.get(field.data.name)?.handleChange()
+      this.on(field.data.name, "changed", (value) => {
+        this.setState({});
+      });
+    });
+
+  }
+
   componentDidMount() {
     super.componentDidMount();
-    this.context.setLoaded(true);
     this.initScroll();
+    this.initActions();
   }
 
   getPageKey() {

@@ -76,7 +76,7 @@ export function SideNav({ items }: SideNavProps) {
   return (
     <>
       <div 
-        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-headerHeight ${openNav ? 'w-sidebarWidth lg:w-sidebarWidth' : 'w-0 lg:w-collapseSidebarWidth'}`}
+        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-headerHeight ${openNav ? 'w-sidebarWidth lg:w-sidebarWidth p-2' : 'w-0 lg:w-collapseSidebarWidth'}`}
       >
         <div 
           className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}
@@ -85,7 +85,7 @@ export function SideNav({ items }: SideNavProps) {
           onClick={() => setOpenNav(false)}
         />
         <div 
-          className={`${openNav ? 'p-2 w-sidebarWidth' : 'p-0 w-collapseSidebarWidth'}`}
+          className="w-full"
         >
           {openNav && <button 
             type="button" 

@@ -23,24 +23,11 @@ html(class=`${THEME}`, lang='en')
 
     //app-head
 
-    script(type='application/ld+json').
-      {
-      "name": "Loopar Framework",
-      "description": "Loopar Framework",
-      "author": {
-        "@type": "alfredrz2012@gmail.com",
-        "name": "Alfredo Ramirez"
-      },
-      "@type": "Loopar",
-      "url": "www.loopar.io",
-      "headline": "Loopar Framework with",
-      "@context": "www.loopar.io"
-      }
-
     script.
       window.global = window;
+    script(id="__loopar-meta-data__", type="application/json").
+      !{__META__}
 
-      const __META__ = !{__META__};
   body(class="min-h-screen font-sans antialiased theme-stone")
     #loopar-root
       //ssr-outlet

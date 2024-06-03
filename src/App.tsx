@@ -1,6 +1,5 @@
 //import "@styles/globals.css";
 import { cn } from "@/lib/utils";
-import { TailwindIndicator } from "@/components/tailwind-indicator";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';
 
@@ -48,7 +47,6 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
               />
             </div>
           </div>
-          <TailwindIndicator />
         </main>
       </CookiesProvider>
     </>

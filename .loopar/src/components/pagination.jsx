@@ -1,17 +1,9 @@
-import DivComponent from "$div";
-import {Button} from "@/components/ui/button";
-import {Link} from "@link";
+import { Button } from "@/components/ui/button";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
-export default class PaginationClass extends DivComponent {
-  className = "row align-items-center aside-footer p-2";
-  style = { width: "100%" };
-
-  get pagination() {
-    return this.props.pagination;
-  }
-
-  getPages() {
-    const { page, totalPages } = this.pagination;
+export function Pagination({ setPage, pagination }) {
+  const getPages = () => {
+    const { page, totalPages } = pagination;
     const maxPagesToShow = 5;
     const pages = [];
 
@@ -48,96 +40,54 @@ export default class PaginationClass extends DivComponent {
     }
   }
 
-  render() {
-    const { page, pageSize, totalRecords, totalPages } = this.pagination;
+  const { page, pageSize, totalRecords, totalPages } = pagination;
 
-    const initial = (page - 1) * pageSize + 1;
-    const final =
-      page * pageSize > totalRecords ? totalRecords : page * pageSize;
+  const initial = (page - 1) * pageSize + 1;
+  const final = page * pageSize > totalRecords ? totalRecords : page * pageSize;
 
-    return (
-      <div className="flex-col-2 justify-content flex flex-row border bg-slate-100/80 py-2 pr-2 dark:bg-slate-900/60">
-        <div className="w-full p-3 pt-4">
-            Showing {initial} to {final} of {totalRecords} entries
-        </div>
-        <div className="w-full">
-            <ul
-              className="flex flex-row justify-end gap-1"
-            >
-              <li
-                className={`paginate_button page-item previous ${
-                  totalPages <= 1 || page === 1 ? "disabled" : ""
-                }`}
-              >
-                <a
-                  className="page-link"
-                  onClick={() => {
-                    this.setPage(page - 1);
-                  }}
-                >
-                  <i className="fa fa-lg fa-angle-left"></i>
-                </a>
-              </li>
-              {this.getPages().map((p) => {
-                return (
-                  <Button 
-                    onClick={() => p !== "..." && this.setPage(p)} 
-                    variant={p === page ? "destructive" : "secondary"}
-                  >{p}</Button>
-                  /*<Button
-                    className={`page-link ${
-                      p === page ? "bg-slate-950/60" : ""
-                    }`}
-                    variant="secondary"
-                    onClick={() => {
-                      p !== "..." && this.setPage(p);
-                    }}
-                  />*/
-                  /*<li
-                    className={`paginate_button page-item w-15 btn bg-slate-800/80  ${
-                      p === page ? "bg-slate-950/60" : ""
-                    }`}
-                    onClick={() => {
-                        p !== "..." && this.setPage(p);
-                      }}
-                  >
-                    <a
-                      className="page-link"
-                      onClick={() => {
-                        p !== "..." && this.setPage(p);
-                      }}
-                    >
-                      {p}
-                    </a>
-                  </li>*/
-                );
-              })}
-              <li
-                className={`paginate_button page-item previous ${
-                  page >= totalPages || totalPages <= 1 ? "disabled" : ""
-                }`}
-              >
-                <a
-                  className="page-link"
-                  onClick={() => {
-                    this.setPage(page + 1);
-                  }}
-                >
-                  <i className="fa fa-lg fa-angle-right"></i>
-                </a>
-              </li>
-            </ul>
-        </div>
+  return (
+    <div className="flex-col-2 justify-content flex flex-row border bg-slate-100/80 py-2 pr-2 dark:bg-slate-900/60">
+      <div className="w-full p-3 pt-4">
+        Showing {initial} to {final} of {totalRecords} entries
       </div>
-    );
-  }
-
-  setPage(page) {
-    this.props.app.setPage(page);
-  }
+      <div className="w-full">
+        <ul
+          className="flex flex-row justify-end gap-1"
+        >
+          <li
+            className={`${totalPages <= 1 || page === 1 ? "disabled" : ""}`}
+          >
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPage(page - 1);
+              }}
+            >
+              <ChevronLeftIcon />
+            </Button>
+          </li>
+          {getPages().map((p) => {
+            return (
+              <Button
+                onClick={() => p !== "..." && setPage(p)}
+                variant={p === page ? "destructive" : "ghost"}
+              >{p}</Button>
+            );
+          })}
+          <li
+            className={`${page >= totalPages || totalPages <= 1 ? "disabled" : ""}`}
+          >
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPage(page + 1);
+              }}
+            >
+              <ChevronRightIcon />
+            </Button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-/*export const Pagination = (props, content) => {
-  return React.createElement(PaginationClass, props, content);
-};
-*/

@@ -10,7 +10,6 @@ import 'react-quill/dist/quill.snow.css';
 function TextEditor({onChange}) {
   const [value, setValue] = useState('');
 
-  console.log(["TextEditor", value])
   const toolbarOptions = [
     ["bold", "italic", "underline", "strike"], // toggled buttons
     ["blockquote", "code-block"],

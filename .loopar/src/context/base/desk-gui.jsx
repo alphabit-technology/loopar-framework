@@ -74,6 +74,8 @@ export default function DeskGUI(props) {
               docRef={docRef} 
               meta={docRef.meta} 
               toggleSidebar={toggleSidebar}
+              viewTypeToggle={props.viewTypeToggle}
+              viewType={props.viewType}
               sidebarOpen={sidebarOpen}
             />
           }

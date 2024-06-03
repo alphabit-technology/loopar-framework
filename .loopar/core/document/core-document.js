@@ -402,7 +402,7 @@ export default class CoreDocument {
 
     
 
-    if(doctype.is_single) doctype.doc_structure = JSON.stringify(parseDocStructure(JSON.parse(doctype.doc_structure)));
+    if(doctype.is_single) doctype.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(doctype.doc_structure)));
 
     return {
       __DOCTYPE__: this.__DOCTYPE__,
