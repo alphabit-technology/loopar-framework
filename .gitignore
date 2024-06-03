@@ -50,4 +50,7 @@ public/uploads
 public/js/components
 
 #apps
-apps
+/apps
+
+
+!/.loopar/apps
