@@ -2,7 +2,7 @@ import Component from "$component";
 import loopar from "$loopar";
 import { Modal } from "$dialog";
 import elementManage from "$tools/element-manage";
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 import { BrushIcon, Code2Icon, EyeIcon, StarIcon } from "lucide-react";
 import { Droppable } from "$droppable";
 import { FormField } from "@form-field";
@@ -49,7 +49,7 @@ const MetaComponents = ({ metaComponents, name, designerRef}) => {
       }}
     >
       <Tailwind/>
-      <DynamicComponent
+      <MetaComponent
         className="gap-4"
         elements={JSON.parse(metaComponents || "[]")}
         parent={designerRef}

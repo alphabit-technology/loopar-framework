@@ -1,5 +1,4 @@
 /** @type {import('tailwindcss').Config} */
-import animations from '@midudev/tailwind-animations'
 
 module.exports = {
   mode: 'jit',
@@ -49,7 +48,7 @@ module.exports = {
         },
         danger: {
           DEFAULT: "hsl(var(--danger))",
-          foreground: "hsl(var(--danger-foreground))",
+          foreground: "hsl(var(--danger))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -97,8 +96,26 @@ module.exports = {
       },
       strokeWidth: {
         '2': '2px',
+      },
+      spacing: {
+        sidebarWidth: "250px",
+        webSidebarWidth: "270px",
+        collapseSidebarWidth: "70px",
+        headerHeight:  "4rem",
+        webHeaderHeight: "5rem",
+      },
+      screens: {
+        "2xl": "1400px",
+      },
+      fontSize: {
+        "2xs": "0.625rem",
+      },
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
       }
     },
   },
-  plugins: [require("tailwindcss-animate"), animations],
+  plugins: [
+    require('@tailwindcss/typography')
+  ],
 }

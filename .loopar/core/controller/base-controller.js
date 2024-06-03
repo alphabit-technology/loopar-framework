@@ -56,7 +56,15 @@ export default class BaseController extends CoreController {
   async actionView() {
     const document = await loopar.getDocument(this.document, this.documentName);
 
-    return this.render(document);
+    if (document.__DOCTYPE__.side_menu) {
+      //const menuId = await loopar.db.getValue('Menu Item', 'name', { "=": {page: document.__DOCTYPE__.name}});
+
+      //console.log(["Menu Id", menuId])
+      //document.side_menu = document.__DOCTYPE__.side_menu;
+      //document.side_menu_items = await loopar.db.getList('Menu Item', ["page", "link", "parent_menu"], {"=": {parent_menu: menuId}});
+    }
+
+    return await this.render(document);
   }
 
   async actionDelete() {

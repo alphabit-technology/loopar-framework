@@ -2,6 +2,7 @@
 
 import cookieParser from "cookie-parser";
 import session from 'express-session';
+import useragent from "express-useragent";
 import express from "express";
 import { loopar } from "./loopar.js";
 import Router from "./router.js";
@@ -30,6 +31,8 @@ class Server extends Router {
     });
 
     this.server.use(this.vite.middlewares);
+    this.server.use(useragent.express());
+
 
     await this.#exposePublicDirectories();
     this.#initializeSession();
@@ -38,14 +41,14 @@ class Server extends Router {
   }
 
   #initializeSession() {
-    const session_config = env.serverConfig.session;
-    session_config.maxAge = session_config.maxAge * 1000 * 60 * 60 * 24;
+    const sessionConfig = env.serverConfig.session;
+    sessionConfig.maxAge = sessionConfig.maxAge * 1000 * 60 * 60 * 24;
 
     this.server.set('view engine', 'pug');
     this.server.use(cookieParser());
     this.server.use(this.express.json());
     this.server.use(this.express.urlencoded({ extended: true }));
-    this.server.use(session(session_config));
+    this.server.use(session(sessionConfig));
   }
 
   async #exposePublicDirectories() {

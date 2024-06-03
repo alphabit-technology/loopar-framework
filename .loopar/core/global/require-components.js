@@ -1,8 +1,10 @@
 import {loopar, elementsDict} from "loopar";
 
 
-export const extractElements = (elements, environment) => {
+export const extractElements = (__META__, elements, environment) => {
   let extractedElements = [];
+  const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta)
+  const DOCTYPE = meta?.__DOCTYPE__ || {};
 
   const extract = (elements, environment) => {
     for (const el of elements || []) {
@@ -11,7 +13,7 @@ export const extractElements = (elements, environment) => {
 
       const def = elementsDict[element.element]?.def || {};
 
-      if ((environment !== "server" || !def.clientOnly)) {
+      if ((environment !== "server" || !def.clientOnly) && (!def.designerOnly || DOCTYPE.name === "Document" )) {
         element.element && extractedElements.push(element.element);
 
         if (element.elements) {
@@ -55,5 +57,5 @@ export function requireComponents(__META__) {
 }
 
 export function MetaComponents(__META__, environment){
-  return extractElements(requireComponents(__META__), environment)
+  return extractElements(__META__, [...requireComponents(__META__), "fragment"], environment)
 }

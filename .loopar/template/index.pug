@@ -1,6 +1,9 @@
 doctype html
 html(class=`${THEME}`, lang='en')
   head
+    link(rel="stylesheet", href="/home/aramirez/loopar-framework/node_modules/aos/dist/aos.css")
+    link(rel="stylesheet" href="/styles/globals.css")
+    
     include base/base-css
     include base/fonts
     include base/fav-icon
@@ -16,27 +19,18 @@ html(class=`${THEME}`, lang='en')
     meta(property='og:description' content='Loopar Framework')
     meta(property='og:site_name' content='Loopar Framework')
 
-    script(type='application/ld+json').
-      {
-      "name": "Loopar Framework with Bootstrap 4",
-      "description": "Loopar Framework with Bootstrap 4",
-      "author": {
-        "@type": "alfredrz2012@gmail.com",
-        "name": "Alfredo Ramirez"
-      },
-      "@type": "Loopar",
-      "url": "www.loopar.io",
-      "headline": "Loopar Framework with Bootstrap 4",
-      "@context": "www.loopar.io"
-      }
+    //ssr-modulepreload
+
+    //app-head
 
     script.
-      window.global = window;      
-      const __META__ = !{__META__};
-    //ssr-initial-data
-  body(class="min-h-screen bg-background font-sans antialiased theme-stone", style='background-color: hsl(var(--background));')
-    #loopar-root(style='display: none;')
+      window.global = window;
+    script(id="__loopar-meta-data__", type="application/json").
+      !{__META__}
+
+  body(class="min-h-screen font-sans antialiased theme-stone")
+    #loopar-root
       //ssr-outlet
-    script(type='module' src='/src/entry-client.jsx')
+      script(type="module", src="/src/entry-client.jsx", async, blocking="render")
 
     include base/footer-scripts

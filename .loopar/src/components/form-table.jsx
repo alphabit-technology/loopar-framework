@@ -1,6 +1,6 @@
 import {BaseTable} from "@base-table"
 import BaseInput from "@base-input"
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
 
@@ -51,7 +51,7 @@ class FormTableClass extends BaseTable {
             {...cellProps}
             key={column.name}
           >
-            <DynamicComponent
+            <MetaComponent
               elements={[
                 {
                   element: column.element || DIV,

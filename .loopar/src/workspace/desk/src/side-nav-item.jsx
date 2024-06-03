@@ -3,7 +3,6 @@ import { useWorkspace } from "@workspace/workspace-provider";
 
 export const SideNavItem = (props) => {
   const {
-    active = false,
     external,
     Icon,
     path,
@@ -35,18 +34,12 @@ export const SideNavItem = (props) => {
 
   return compact ? link : (
     <Link
-      className={`${active ? 'text-primary' : module.disabled ? 'text-disabled' : 'text-neutral-400'}
-                      grow whitespace-nowrap px-0 font-sans text-[14px] font-semibold leading-6 no-underline `}
-      href={`/desk/${path}`}
+      className={`flex w-full justify-start rounded bg-slate-100/50 px-4 py-1 text-left align-middle dark:bg-slate-700/30 ${props.className || ''}`}
+      {...linkProps}
+      to={`/desk/${path}`}  
     >
-      <Link
-        className={`flex w-full justify-start rounded bg-slate-100/50 px-4 py-1 text-left align-middle dark:bg-slate-700/30 ${props.className || ''}`}
-        {...linkProps}
-        to={`/desk/${path}`}  
-      >
-        {Icon && <Icon className="mr-2"/> }
-        {title}
-      </Link>
+      {Icon && <Icon className="mr-2"/> }
+      {title}
     </Link>
   );
 };

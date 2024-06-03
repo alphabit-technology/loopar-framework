@@ -6,7 +6,7 @@ import loopar from "$loopar";
 
 export function Droppable(props) {
   const [dropping, setDropping] = useState(false);
-  const { children, receiver, className, Component = "div" } = props;
+  const { children, receiver, className, Component="div"} = props;
   const document = useDocument();
   const mode = document.mode;
   const hidden = useHidden();
@@ -44,17 +44,19 @@ export function Droppable(props) {
 
   const renderizableProps = loopar.utils.renderizableProps(props);
 
+  const C = (isDesigner && isDroppable && !hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
+
   return (
     (isDesigner && isDroppable && !hidden) ?
-      <Component
+      <C
         {...renderizableProps}
         className={ClassNames}
         {...droppableEvents}
       >
         {children}
-      </Component> :
-      <Component {...renderizableProps} className={className} >
+      </C> :
+      <C {...(C.toString() === 'Symbol(react.fragment)' ? {} : {...renderizableProps, className: className})}>
         {children}
-      </Component>
+      </C>
   );
 }

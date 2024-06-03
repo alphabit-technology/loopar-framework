@@ -1,6 +1,6 @@
 'use strict'
 
-import Installer from "../../modules/core/installer/core-installer.js";
+import Installer from "../../apps/core/modules/installer/installer/core-installer.js";
 import BaseController from "./base-controller.js";
 import { loopar } from "../loopar.js";
 import { fileManage } from "../file-manage.js";
@@ -37,6 +37,7 @@ export default class InstallerController extends BaseController {
   }
 
   async actionInstall() {
+    this.client = "form";
     const installerModel = await this.getInstallerModel();
     const model = new installerModel(this.data);
 

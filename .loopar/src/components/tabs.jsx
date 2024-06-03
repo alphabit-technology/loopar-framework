@@ -1,53 +1,65 @@
 import Component from "$component";
 import elementManage from "$tools/element-manage";
-import loopar from "$loopar";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDesigner } from "@custom-hooks";
-import DynamicComponent from "@dynamic-component";
+import MetaComponent from "@meta-component";
 import { PlusIcon } from "lucide-react";
-import React, {useState, useEffect} from "react";
+import React, { useEffect} from "react";
+import {useCookies} from "@services/cookie";
 
-function TabFn({id, elementsDict, asChild = false, tabParent, ...props}){
+
+function TabFn({id, elementsDict, asChild = false, setElements}){
   const designer = useDesigner();
   const getIdentifier = () => {
     return `${id}${designer.designerMode ? '-designer' : ''}`;
   }
-  const savedTab = loopar.utils.cookie.get(getIdentifier());
-  const [currentTab, setCurrentTab] = useState((savedTab && savedTab !== 'undefined') ? savedTab : elementsDict[0]?.data.key);
-
-  const handleSetCurrentTab = (tab) => {
-    loopar.utils.cookie.set(getIdentifier(), tab);
-    setCurrentTab(tab);
-  }
+  
+  const [currentTab, setCurrentTab] = useCookies(getIdentifier(), elementsDict[0]?.data?.key);
 
   const selectFirstTab = () => {
-    if(elementsDict.length > 0){
-      handleSetCurrentTab(elementsDict[0].data.key);
-    }
+    elementsDict.length > 0 &&  setCurrentTab(elementsDict[0].data.key);
   }
 
   const checkIfTabExists = (key) => {
     return elementsDict.some((element) => element.data.key === key);
   }
 
+  const addTab = () => {
+    const [name, label] = [`tab_${elementManage.uuid()}`, `Tab ${elementsDict.length + 1}`];
+
+    const tab = [
+      {
+        element: "tab",
+        key: name,
+        data: {
+          name,
+          id: name,
+          label,
+          droppable: true,
+          draggable: false,
+          key: name,
+        },
+      },
+    ];
+
+    setElements(tab, () => {
+      setCurrentTab(name);
+    });
+  }
+
   useEffect(() => {
     if(!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)){ 
-      selectFirstTab()
+      selectFirstTab();
+      return;
     }
 
-    if(elementsDict.length === 0 && !asChild && designer.designerMode){
-      tabParent.addTab(getIdentifier());
-    }
+    elementsDict.length === 0 && !asChild && designer.designerMode && addTab();
   }, [currentTab, elementsDict]);
-
-  const handleChange = (key) => {
-    handleSetCurrentTab(key);
-  };
 
   const getTabContent = (element) => {
     if(element.type === "dynamic.component"){
       return (
-        <DynamicComponent
+        <MetaComponent
           elements={[
             {
               element: "tab",
@@ -64,14 +76,14 @@ function TabFn({id, elementsDict, asChild = false, tabParent, ...props}){
   }
 
   return (
-    <BaseTabs defaultValue={currentTab} className="w-full" key={id + elementsDict.length + currentTab}>
+    <BaseTabs defaultValue={currentTab} className="w-full" key={id + elementsDict.length + currentTab} >
       <TabsList className="inline-table align-middle">
         {
           elementsDict.map(({data}) => (
             <TabsTrigger
               value={data.key}
               onClick={() => {
-                handleChange(data.key);
+                setCurrentTab(data.key);
               }}
             >{data.label}</TabsTrigger>
           ))
@@ -81,7 +93,7 @@ function TabFn({id, elementsDict, asChild = false, tabParent, ...props}){
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              tabParent.addTab(getIdentifier());
+              addTab(getIdentifier());
             }}
           >
             <PlusIcon className="pr-1"/>
@@ -108,32 +120,6 @@ export default class Tabs extends Component {
     return {
       modules: ["tab"],
     }
-  }
-
-  addTab(identifier) {
-    const elements = this.elementsDict;
-    const [name, label] = [
-      `tab_${elementManage.uuid()}`,
-      `Tab ${elements.length + 1}`,
-    ];
-
-    const tab = [
-      {
-        element: "tab",
-        key: name,
-        data: {
-          name,
-          id: name,
-          label,
-          droppable: true,
-          draggable: false,
-          key: name,
-        },
-      },
-    ];
-
-    loopar.utils.cookie.set(identifier, name);
-    this.setElements(tab);
   }
 
   get elementsDict () {
@@ -166,16 +152,17 @@ export default class Tabs extends Component {
 
   render() {
     const props = this.props;
-    const elementsDict = this.elementsDict;
 
     return (
-      <div className="p-2 my-3 border border-separate">
+      <div className="p-2 my-3 border border-separate" id={props.data?.id}>
         {props.data.label && <h4 className="p-2">{props.data.label}</h4>}
         <TabFn
           id={super.identifier}
-          elementsDict={elementsDict}
+          elementsDict={this.elementsDict}
           asChild={props.asChild}
-          tabParent={this}
+          setElements={(elements, callback) => {
+            this.setElements(elements, callback);
+          }}
         />
       </div>
     )

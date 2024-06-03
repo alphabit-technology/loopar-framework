@@ -2,7 +2,6 @@ import Preassembled from "$preassembled";
 import { Droppable } from "$droppable";
 import {cn} from "@/lib/utils";
 import loopar from "$loopar";
-import Image from "@image";
 
 export default class Banner extends Preassembled {
   droppable = true;

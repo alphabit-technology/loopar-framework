@@ -288,7 +288,9 @@ export default class DataBase {
           return [...acc, acc.length && W.length ? operand : null, ...W].filter(e => e);
         } else {
           if (["IN", "NOT IN", "BETWEEN", "NOT BETWEEN", "IS", "IS NOT", "LIKE", "NOT LIKE"].includes(operand)) {
-            const [FIELD, VALUE] = Object.entries(DEF)[0];
+            let [FIELD, VALUE] = Object.entries(DEF)[0];
+
+            if(!VALUE || (Array.isArray(VALUE) && VALUE.length === 0)) VALUE = [null]
 
             if (["IN", "NOT IN"].includes(operand)) {
               return [...acc, `${FIELD} ${operand} (${VALUE.map(v => con.escape(v)).join(',')})`];
@@ -361,7 +363,7 @@ export default class DataBase {
   async #escapeId(value, connection = null) {
     connection = connection || await this.connection();
 
-    return connPromiseection.escapeId(value);
+    return connection.escapeId(value);
   }
 
   async insertRow(document, data = {}, isSingle = false) {
@@ -386,11 +388,7 @@ export default class DataBase {
         this.execute(query, false).then(resolve).catch(reject);
       } else {
         con.query(`INSERT INTO ${await this.tableName(document)} SET ?`, data, function (error, results) {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(results);
-          }
+          error ? reject(error) : resolve(results);
         });
       }
     });
@@ -627,8 +625,9 @@ export default class DataBase {
     }
   }
 
-  async getDoc(document, documentName, fields = ['*'], { isSingle = false, includeDeleted = false } = {}) {
+  async getDoc(document, documentName, fields = ['*'], { isSingle, includeDeleted = false } = {}) {
     const doctypeIsSingle = typeof isSingle != "undefined" ? isSingle : await this.#getDbValue("Document", 'is_single', document, { includeDeleted });
+    
     return await this.getRow(document, documentName, fields, { isSingle: doctypeIsSingle, includeDeleted });
   }
 

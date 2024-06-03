@@ -1,6 +1,5 @@
 import BaseDocument from "$context/base/base-document";
-import DynamicComponent from "$dynamic-component";
-import loopar from "$loopar";
+import MetaComponent from "@meta-component";
 
 export default class WebContext extends BaseDocument {
   constructor(props) {
@@ -9,7 +8,7 @@ export default class WebContext extends BaseDocument {
 
   render(content = []) {
     return super.render([
-      <DynamicComponent elements={JSON.parse(this.meta.__DOCTYPE__.doc_structure)} parent={this} />,
+      <MetaComponent elements={JSON.parse(this.meta.__DOCTYPE__.doc_structure)} parent={this}/>,
       content
     ]);
   }
@@ -19,23 +18,23 @@ export default class WebContext extends BaseDocument {
     this.initScroll();
   }
 
-  getPageKey() {
+  /*getPageKey() {
     return this.meta.key;
-  }
+  }*/
 
-  getCurrentScrollPosition() {
-    return loopar.utils.cookie.get(this.getPageKey()) || window.scrollY || window.pageYOffset;
-  }
+  /*getCurrentScrollPosition() {
+    return loopar.cookie.get(this.getPageKey()) || window.scrollY || window.pageYOffset;
+  }*/
 
-  initScroll() {
-    const scrollPosition = loopar.utils.cookie.get(this.getPageKey()) || 0;
+  /*initScroll() {
+    const scrollPosition = loopar.cookie.get(this.getPageKey()) || 0;
 
     window.scrollTo(0, scrollPosition);
     window.addEventListener("beforeunload", this.handleBeforeUnload);
-  }
+  }*/
 
-  setScrollPosition() {
-    loopar.utils.cookie.set(this.getPageKey(), window.scrollY || window.pageYOffset);
+  /*setScrollPosition() {
+    loopar.cookie.set(this.getPageKey(), window.scrollY || window.pageYOffset);
   }
 
   componentWillUnmount() {
@@ -46,5 +45,5 @@ export default class WebContext extends BaseDocument {
 
   handleBeforeUnload = () => {
     this.setScrollPosition();
-  };
+  };*/
 }

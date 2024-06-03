@@ -12,11 +12,13 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
-import { Session } from "./session.js";
+import { Session, Cookie } from "./session.js";
 import dayjs from "dayjs";
 import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
+import { marked } from "marked";
+
 
 export class Loopar {
   #installingApp = false;
@@ -26,7 +28,9 @@ export class Loopar {
   pathCore = process.argv[1];
   baseDocumentFields = ["id", "name", "type", "module", "doc_structure", "title_fields", "search_fields", "is_single", "is_static"];
   session = new Session();
+  cookie = new Cookie();
   tailwindClasses = {}
+  #server={};
 
   constructor() { }
 
@@ -34,6 +38,15 @@ export class Loopar {
     if (!this.gitRepositoryIsValid(repository)) {
       this.throw(`The app ${appName} does not have a valid git repository`);
     }
+  }
+
+  set server(server){
+    this.#server = server;
+    this.session.req = server.req;
+  }
+
+  get server(){
+    return this.#server;
   }
 
   set installingApp(app) { this.#installingApp = app }
@@ -76,6 +89,16 @@ export class Loopar {
     await this.makeConfig();
     this.tailwindClasses = {};
     this.setTailwind();
+  }
+
+  makeClientImporter(){
+
+    /*const fn = `
+    import {Document}
+    export default {Document}
+    `
+    fileManage.makeFile('apps', 'index', fn, 'jsx', true);*/
+
   }
 
   setTailwind(to_element, classes) {
@@ -226,12 +249,22 @@ export class Loopar {
         JSON.parse(await this.db.getValue('Document', 'doc_structure', 'Document')) || []
       ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
 
-      await writeModules(data);
+      const activeWebApp = await this.db.getDoc('System Settings');
+      const webApp = await this.db.getDoc('App', activeWebApp.active_web_app);
 
-      this.defaultWebApp = await this.db.getValue('App', 'name', { '=': { default_app: 1 } });
+      data.webApp = {
+        ...(webApp || {}),
+        menu_items: webApp ? await this.db.getList("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : []
+      }
+      
+      await writeModules(data);
     } else {
       await writeFile(data);
     }
+  }
+
+  async systemsSettings(){
+    return await this.getDocument("System Settings");
   }
 
   async #writeDefaultSSettings() {
@@ -316,7 +349,8 @@ export class Loopar {
       }
     });
 
-    global.crypto = crypto;
+    //global.__META_COMPONENTS__ = {};
+    global.Crypto = crypto;
     global.AJAX = 'POST';
     global.env = {};
     global.dayjs = dayjs;
@@ -331,6 +365,18 @@ export class Loopar {
     return fields.reduce((acc, field) => {
       return acc.concat(field, ...this.#makeDoctypeFields(field.elements || []));
     }, []);
+  }
+
+  parseDocStructure(doc_structure){
+    return doc_structure.map(field => {
+      field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
+
+      if (field.elements) {
+        field.elements = this.parseDocStructure(field.elements);
+      }
+
+      return field;
+    });
   }
 
   async #GET_DOCTYPE(document, { app = null, module = null } = {}) {
@@ -354,6 +400,10 @@ export class Loopar {
 
     appName && (DOCTYPE.__APP__ = appName);
     moduleName && (DOCTYPE.__MODULE__ = moduleName);
+
+    if(DOCTYPE.is_single){
+      DOCTYPE.doc_structure = JSON.stringify(this.parseDocStructure(JSON.parse(DOCTYPE.doc_structure)));
+    }
 
     return DOCTYPE;
   }
@@ -460,9 +510,9 @@ export class Loopar {
     return user.length > 0 ? user[0] : null;
   }
 
-  get session() {
+  /*get session() {
     return this.server && this.server.req && this.server.req.session ? this.server.req.session : {};
-  }
+  }*/
 
   isLoggedIn() {
     return this.currentUser;

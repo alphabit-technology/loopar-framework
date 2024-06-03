@@ -1,6 +1,6 @@
-import loopar from '$loopar';
+//import this from '$this';
 
-class HTTP {
+export default class HTTP {
   #jsonParams = {};
   #options = {};
 
@@ -9,14 +9,13 @@ class HTTP {
     this.#sendPetition(options);
   }
 
-  get method() { return this.#options.method || "POST" }
-  get action() { return this.#options.action }
-  get body() { return this.#options.body }
-
-  get params() {
+  get __method__() { return this.#options.method || "POST" }
+  get __action__() { return this.#options.action }
+  get __body__() { return this.#options.body }
+  get __params__() {
     const params = this.#options.params;
-    if (loopar.utils.isJSON(params)) {
-      this.#jsonParams = loopar.utils.JSONParse(params);
+    if (this.utils.isJSON(params)) {
+      this.#jsonParams = this.utils.JSONParse(params);
     } else {
       this.#jsonParams = params;
     }
@@ -29,12 +28,12 @@ class HTTP {
   }
 
   get url() {
-    return `${this.action}${this.params || ''}`;
+    return `${this.__action__}${this.__params__ || ''}`;
   }
 
   get options() {
     const options = {
-      method: this.method, // *GET, POST, PUT, DELETE, etc.
+      method: this.__method__, // *GET, POST, PUT, DELETE, etc.
       mode: 'same-origin', // no-cors, *cors, same-origin
       cache: 'default', // *default, no-cache, reload, force-cache, only-if-cached
       credentials: 'include', // include, *same-origin, omit
@@ -46,23 +45,27 @@ class HTTP {
       },*/
       redirect: 'follow', // manual, *follow, error
       referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-      body: this.body, // body data type must match "Content-Type" header),
+      body: this.__body__, // body data type must match "Content-Type" header),
     };
 
-    if (!(this.body instanceof FormData)) {
+    if (!(this.__body__ instanceof FormData)) {
       options.headers = {
         'Content-Type': 'application/json',
       };
 
-      options.body = JSON.stringify(this.body);
+      options.body = JSON.stringify(this.__body__);
     }
 
-    return options;
+    return Object.entries(options).reduce((acc, [key, value]) => {
+      value && (acc[key] = value);
+      return acc;
+    }, {});
   }
 
   #sendPetition(options) {
     const self = this;
-    options.freeze && loopar.freeze(true);
+    options.freeze && self.freeze(true);
+
     fetch(self.url, self.options).then(async response => {
       return new Promise(async (resolve, reject) => {
         if (response.redirected) {
@@ -80,20 +83,20 @@ class HTTP {
           options.success && options.success(data);
 
           if (data && data.notify) {
-            loopar.notify(data.notify);
+            self.notify(data.notify);
           }
           resolve(data);
         }
       });
     }).catch(error => {
       options.error && options.error(error);
-      loopar.rootApp?.progress(102);
-      loopar.throw({
+      self.rootApp?.progress(102);
+      self.throw({
         title: error.title || error.code || 'Undefined Error',
         message: error.message || error.description || 'Undefined Error',
       });
     }).finally(() => {
-      options.freeze && loopar.freeze(false);
+      options.freeze && self.freeze(false);
       options.always && options.always();
     });
   }
@@ -137,7 +140,7 @@ class HTTP {
   }
 }
 
-export default new HTTP();
+//export default new HTTP();
 
 /*fetch(self.url, {
     method: 'POST', // *GET, POST, PUT, DELETE, etc.

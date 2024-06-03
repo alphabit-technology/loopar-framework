@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import loopar from "$loopar";
+import { loopar } from "loopar";
 import { useLocation } from 'react-router-dom';
+import {useCookies} from "@services/cookie";
 
 const usePathname = () => {
   return useLocation().pathname;
@@ -12,15 +13,13 @@ type WorkspaceProviderProps = {
   children: React.ReactNode
   defaultTheme?: Theme
   storageKey?: string,
-  sidebarWidth?: number,
-  collapseSidebarWidth?: number,
   workspace?: string,
-  screenSize?: string,
   openNav?: boolean,
   menuItems?: [],
-  headerHeight?: number,
-  device?: string,
   loaded?: boolean,
+  currentPage?: string,
+  currentLink?: string,
+  ENVIRONMENT?: string,
 }
 
 type WorkspaceProviderState = {
@@ -35,7 +34,7 @@ type WorkspaceProviderState = {
 const initialState: WorkspaceProviderState = {
   theme: "system",
   setTheme: () => null,
-  openNav: loopar.utils.cookie.get("openNav") === "true",
+  openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
   loaded: false,
   setLoaded: () => null,
@@ -43,7 +42,7 @@ const initialState: WorkspaceProviderState = {
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
 
-const useMediaQuery = (query) => {
+/*const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
@@ -61,7 +60,7 @@ const useMediaQuery = (query) => {
   }, [query]);
 
   return matches;
-};
+};*/
 
 export function WorkspaceProvider({
   children,
@@ -70,48 +69,26 @@ export function WorkspaceProvider({
   ...props
 }: WorkspaceProviderProps) {
   const pathname = usePathname();
-  /*const isMobile = useMediaQuery('(max-width: 768px)');
-  const isMedium = useMediaQuery('(max-width: 1024px)');*/
-
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTablet = useMediaQuery('(max-width: 1024px)');
-  const isDesktop = useMediaQuery('(min-width: 1025px)');
-
-  const screenSize = isMobile ? "sm" : isTablet ? "md" : "lg";
-  const device = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
 
   const [theme, setTheme] = useState<Theme>(
-    () => (loopar.utils.cookie.get(storageKey) as Theme) || defaultTheme
-  )
-
-  const [openNav, setOpenNav] = useState<boolean>(
-    loopar.utils.cookie.get("openNav") === "true"
+    () => (loopar.cookie.get(storageKey) as Theme) || defaultTheme
   );
 
+  const [openNav, setOpenNav] = useCookies("openNav");
   const [loaded, setLoaded] = useState<boolean>(false);
 
   const handleSetOpenNav = useCallback(
     (openNav) => {
-      loopar.utils.cookie.set("openNav", openNav);
       setOpenNav(openNav);
     },
-    [setOpenNav]
+    [openNav]
   );
 
   const handleToogleSidebarNav = useCallback(
     () => {
-      handleSetOpenNav(!loopar.utils.cookie.get("openNav"));
+      handleSetOpenNav(!openNav);
     },
     [setOpenNav]
-  );
-
-  const handledLoaded = useCallback(
-    () => {
-      const root = document.getElementById("loopar-root");
-      root && (root.style.display = "block")
-      setLoaded(true);
-    },
-    [loaded]
   );
 
   useEffect(() => {
@@ -129,8 +106,6 @@ export function WorkspaceProvider({
     }
 
     root.classList.add(theme)
-
-    if (screenSize !== "lg" && openNav) handleSetOpenNav(false);
   }, [theme, pathname])
 
 
@@ -141,22 +116,19 @@ export function WorkspaceProvider({
         .matches
         ? "dark"
         : "light"
-        
-      loopar.utils.cookie.set(storageKey, systemTheme)
-      setTheme(systemTheme)
+
+      loopar.cookie.set(storageKey, theme)
+      setTheme(theme)
     },
-    sidebarWidth: props.sidebarWidth,
-    collapseSidebarWidth: props.collapseSidebarWidth,
     workspace: props.workspace,
-    screenSize: screenSize,
     openNav,
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    headerHeight: props.headerHeight,
-    device: device,
     loaded,
-    setLoaded: handledLoaded,
+    currentPage: props.currentPage,
+    currentLink: props.currentLink,
+    ENVIRONMENT: props.ENVIRONMENT
   }
 
   return (

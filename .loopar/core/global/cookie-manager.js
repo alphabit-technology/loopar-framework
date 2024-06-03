@@ -1,22 +1,39 @@
-import Cookies from 'universal-cookie';
-const cookies = new Cookies(null, { path: '/' });
+//import Cookies from 'universal-cookie';
+//const cookies = new Cookies(null, { path: '/' });
+import Cookies from 'js-cookie';
 
-export const set = (name, value, options={}) => {
-    cookies.set(name, value, options);
+export const set = (name, value, options = {}) => {
+  Cookies.set(name, value, options);
 };
 
-export const get = (name, ootions={}) => {
-    return cookies.get(name, ootions);
+export const get = (name, ootions = {}) => { 
+  
+  const value = Cookies.get(name, ootions);
+
+  //console.log(["Get from Cookie Client: " + name, value])
+  if(value === 'undefined') {
+    return undefined;
+  }
+
+  if(value === 'true') {
+    return true;
+  }
+
+  if(value === 'false') {
+    return false;
+  }
+
+  return value;
 };
 
-export const remove = (name, options={}) => {
-    cookies.remove(name, options);
+export const remove = (name, options = {}) => {
+  Cookies.remove(name, options);
 };
 
 const CookieManager = {
-    set,
-    get,
-    remove
+  set,
+  get,
+  remove
 };
 
 export default CookieManager;

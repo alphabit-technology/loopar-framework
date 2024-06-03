@@ -2,7 +2,7 @@ import React from "react";
 import loopar from "$loopar";
 import DragAndDropUtils from "$tools/drag-and-drop";
 import elementManage, { styleToObject } from "$tools/element-manage";
-import DynamicComponent from "$dynamic-component";
+import MetaComponent from "@meta-component";
 
 export default class BaseComponent extends React.Component {
   states = [];
@@ -129,7 +129,7 @@ export default class BaseComponent extends React.Component {
   }
 
   get elements() {
-    return <DynamicComponent elements={this.elementsDict || []} parent={this} />
+    return <MetaComponent elements={this.elementsDict || []} parent={this} />
   }
 
   get elementsDict() {
@@ -138,7 +138,7 @@ export default class BaseComponent extends React.Component {
 
   getElement(el, props = {}) {
     Object.assign(el, props)
-    return <DynamicComponent elements={[el]} parent={this} />
+    return <MetaComponent elements={[el]} parent={this} />
   }
 
   addChild(child, merge = false) {
@@ -341,13 +341,10 @@ export default class BaseComponent extends React.Component {
 
   drop(event) {
     event.preventDefault();
-    //const container = this.container || this;
     const self = this.Component || this;
     const { elementToCreate, elementToDrag, lastElementTargetSibling } = DragAndDropUtils;
     let elements = self.elementsDict;
     let newElements = null;
-
-    //container.removeClass("over-drag");
 
     if (elementToCreate) {
       if (elementToCreate.element) {

@@ -1,14 +1,12 @@
 import BaseInput from "$base-input";
-import http from "$tools/router/http";
 
-import React, { useState, useEffect } from "react"
-import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons"
+import React, { useState } from "react";
+import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import loopar from "$loopar";
+import {useCookies} from "@services/cookie";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-
-import { useFormContext } from "@context/form-context"
-import loopar from "$loopar"
 
 import {
   Command,
@@ -29,21 +27,28 @@ import {
   FormLabel
 } from "@/components/ui/form"
 
-function SelectFn({search, data, onSelect, options, field, ...props}) {
-
+function SelectFn({search, data, onSelect, options=[], field, selected, ...props}) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
-  const [searching, setSearching] = useState(false);
-  //const [value, setValue] = useState(props.initialValue);
-  //const [options, setOptions] = useState(props.options?.length > 0 ? props.options : value ? [value] : []);
-  //const formContext = useFormContext();
+  const [currentSearch, setCurrentSearch] = useCookies(data.name, "");
+  options = options.filter(option => !!option)
+
+  const checkCurrentSelection = () => {
+    if(selected && selected.option) {
+      if(!options.some(option => option.option === selected.option)) {
+        options.unshift(selected);
+      }
+    }
+  }
+
+  checkCurrentSelection();
 
   const openHandler = (e) => {
-    setSearching(true);
+    //setSearching(true);
     setOpen(e);
 
     search(null, false).then((result) => {
-      setSearching(false);
+      //setSearching(false);
     });
   }
 
@@ -51,27 +56,11 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
     search(e, true);
   }
 
-  /*const getOption = (option) => {
-    return options.find((item) => item.option === option);
-  }*/
-
   const setValueHandler = (e) => {
     setOpen(false);
     onSelect(e);
   }
 
-  useEffect(() => {
-    if (field && field !== "" && props.defaultValue) {
-      //setValueHandler(props.defaultValue);
-    }
-  }, [field.value])
-
-  const selected =  loopar.utils.isJSON(field.value) ? JSON.parse(field.value)?.option : field.value;
-
-  const value = options.find((option) => option.option === selected)?.option || `Select ${data.label}`;
-            //props.defaultValue || `Select ${data.label}`;
-
-  //if(selectData.name === "module") console.log(["SelectFn", field.value])
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild >
@@ -90,9 +79,11 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
           onMouseEnter={setActive}
           onMouseLeave={() => setActive(false)}
         >
-          {
-            value
-          }
+          {(selected && selected.title) ? selected.title : (
+            <span className="truncate text-slate-600/70">
+              Select {data.label}
+            </span>
+            )}
           <div className="flex flex-row items-center justify-between">
             <Cross2Icon
               className={`h-5 w-5 shrink-0 ${active ? "opacity-50" : "opacity-0"}`}
@@ -116,23 +107,29 @@ function SelectFn({search, data, onSelect, options, field, ...props}) {
           />
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup>
-            {options.map((option) => (
+            {options.map((option) => { 
+              //if(!option) return null;
+              return (
               <CommandItem
                 value={option.option}
                 key={option.option}
                 onSelect={() => setValueHandler(option.option)}
+                className={cn(
+                  "flex items-center",
+                  option.option === selected.option && "bg-secondary text-white"
+                )}
               >
                 {option.title || option.value || option.option}
                 <CheckIcon
                   className={cn(
                     "ml-auto h-4 w-4",
-                    option.option === selected
+                    option.option === selected.option
                       ? "opacity-100"
                       : "opacity-0"
                   )}
                 />
               </CommandItem>
-            ))}
+            )})}
           </CommandGroup>
         </Command>
       </PopoverContent>
@@ -176,6 +173,7 @@ export default class Select extends BaseInput {
           search={(delay) => this.#search(delay)}
           data={data}
           onSelect={onSelect}
+          selected={this.optionValue()}
         />
         {data.description && (
           <FormDescription>{data.description}</FormDescription>
@@ -261,7 +259,7 @@ export default class Select extends BaseInput {
 
   getServerData(q) {
     return new Promise((resolve, reject) => {
-      http.send({
+      loopar.send({
         action: `/api/${this.model}/search`,
         params: { q },
         success: (r) => {
@@ -317,6 +315,10 @@ export default class Select extends BaseInput {
       };
   }
 
+  getPrepareOptions(options) {
+    return options.map((item) => this.optionValue(item));
+  }
+
   /**
    *
    * #param {string || object} val
@@ -354,12 +356,11 @@ export default class Select extends BaseInput {
     }else {
       return value;
     }*/
+  
   }
 
-  getPrepareOptions(options) {
-    return options.map((item) => {
-      return typeof item == "object" ? { option: item.title || item.name, title: item.value || item.description || item.title } : { option: item, title: item };
-    });
+  get assignedValue() {
+    return this.value();
   }
 
   get currentSelection() {

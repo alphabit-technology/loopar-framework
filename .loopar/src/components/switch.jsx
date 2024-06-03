@@ -17,10 +17,11 @@ export default class SwitchClass extends DefaultCheckbox {
     return this.renderInput((field) => (
       <div className="gap-2">
         <div className="flex items-center">
-          <FormControl>
+          <FormControl className="bg-red-500">
             <Switch
               onCheckedChange={field.onChange}
               checked={field.value}
+              className="-switch- hover:border-slate-500/70"
             />
           </FormControl>
           <FormLabel className="pl-2">{data.label}</FormLabel>

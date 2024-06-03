@@ -1,13 +1,13 @@
 import Router from "$tools/router/router";
-import GuiManage from "$tools/gui";
-import http from "$tools/router/http";
+//import GuiManage from "$tools/gui";
+//import http from "$tools/router/http";
 import * as Helpers from "$global/helper";
 import * as dateUtils from "$global/date-utils";
 import scriptManager from "$tools/script-manager";
 import { elementsDict } from "@global/element-definition";
 
 class Loopar extends Router {
-  ui = GuiManage;
+  //ui = GuiManage;
   scriptManager = scriptManager;
   currentPageName = "";
   rootApp = null;
@@ -19,6 +19,7 @@ class Loopar extends Router {
   constructor() {
     super();
     this.utils = Helpers;
+    this.cookie = Helpers.cookie;
     this.dateUtils = dateUtils;
   }
 
@@ -200,7 +201,7 @@ class Loopar extends Router {
   async method(Document, method, params = {}, options = {}) {
     const url = `/desk/method/${Document}/${method}`;
     params = typeof params === "string" ? { documentName: params } : params;
-    return await http.post(url, params, { freeze: false, ...options });
+    return await this.post(url, params, { freeze: false, ...options });
   }
 
   async getMeta(Document, action, params = {}, options = {}) {
@@ -251,7 +252,7 @@ class Loopar extends Router {
     //this.scriptManager.loadStylesheet(src, callback);
   }
 
-  #reserses = {
+  #reverses = {
     top: "bottom",
     bottom: "top",
     left: "right",
@@ -310,7 +311,7 @@ class Loopar extends Router {
       ? null
       : animation
           .split("-")
-          .map((a) => this.#reserses[a] || a)
+          .map((a) => this.#reverses[a] || a)
           .join("-");
   }
 

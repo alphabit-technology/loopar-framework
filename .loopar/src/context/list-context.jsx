@@ -1,7 +1,43 @@
 import BaseDocument from "@context/base/base-document";
-import loopar from "$loopar";
 import DeskGUI from "@context/base/desk-gui";
 import { ListGrid } from "@list-grid";
+import {useCookies} from "@services/cookie";
+
+function ListContextFn({isModal, content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid, ...props}){
+  const [viewType, setViewType] = useCookies(meta.__DOCTYPE__.name + "_viewType") || meta.__DOCTYPE__.default_list_view || "List";
+
+  const getViewType = () => {
+    return onlyGrid === true ? "Grid" : viewType;
+  }
+
+  const viewTypeToggle = () => {
+    setViewType(viewType === 'List' ? 'Grid' : 'List');
+  }
+
+  content = [
+    content,
+    (!content || renderGrid) &&
+      <ListGrid
+        hasSearchForm={hasSearchForm}
+        meta={meta}
+        viewType={getViewType()}
+        viewTypeToggle={viewTypeToggle}
+        docRef={docRef}
+      />
+  ];
+  
+  if(isModal) return content;
+
+  return (
+   <DeskGUI
+      docRef={docRef}
+      viewTypeToggle={viewTypeToggle}
+      viewType={getViewType()}
+    >
+      {content}
+    </DeskGUI>
+  )
+}
 
 export default class ListContext extends BaseDocument {
   hasHeader = true;
@@ -9,52 +45,18 @@ export default class ListContext extends BaseDocument {
   context = 'index';
   renderStructure = false;
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      viewType: loopar.utils.cookie.get(this.props.meta.__DOCTYPE__.name + "_viewType") || this.props.meta.__DOCTYPE__.default_list_view || "List"
-      //viewType: localStorage.getItem(props.__DOCTYPE__.name + "_viewType") || props.__DOCTYPE__.default_list_view || "List"
-    };
-  }
-
-
-  get viewType() {
-    return this.onlyGrid === true ? "Grid" : this.state.viewType;
-  }
-
   render(content) {
-    content = [
-      content,
-      !content || this.renderGrid ?
-        <ListGrid
-          hasSearchForm={this.hasSearchForm}
-          meta={this.props.meta}
-          viewType={this.viewType}
-          docRef={this}
-          ref={(grid) => {
-            this.grid = grid;
-          }}
-        /> : null
-      /*!content || this.renderGrid ? ListGrid({
-         meta: this.props,
-         viewType: this.viewType,
-         docRef: this,
-         ref: (grid) => {
-            this.grid = grid;
-         }
-      }) : null*/
-    ];
-
     return super.render(
-      this.props.modal ? content :
-        <DeskGUI
-          docRef={this}
-        >
-          {content}
-        </DeskGUI>
-    );
+      <ListContextFn
+        isModal={this.modal}
+        content={content}
+        meta={this.props.meta} 
+        hasSearchForm={this.hasSearchForm}
+        renderGrid={this.renderGrid}
+        docRef={this}
+        onlyGrid={this.onlyGrid}
+      />
+    )
   }
 
   componentDidMount() {

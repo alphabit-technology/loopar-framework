@@ -47,8 +47,10 @@ export default class BaseInput extends DivComponent {
     setTimeout(() => {
       this.validate();
       this.props.onChange && this.props.onChange(event);
+      
       //setTimeout necessary to witing for the onChange event to be called
       this.onChange && this.onChange(event);
+      this.props.onChanged && this.props.onChanged(event);
     }, 0);
   }
 
@@ -113,6 +115,14 @@ export default class BaseInput extends DivComponent {
 
   on(event, callback) {
     this.input?.on(event, callback);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    super.componentDidUpdate(prevProps, prevState);
+
+    if (this.props.onChange && !prevProps.onChange) {
+      this.handleInputChange(this.value());
+    }
   }
 
   disable(on_disable = true) {

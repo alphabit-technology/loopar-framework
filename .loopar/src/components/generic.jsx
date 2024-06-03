@@ -104,14 +104,15 @@ export default class Generic extends Component {
       this.tagName = "div";
     }
 
-    /*if (this.tagDontHaveChild(data.tag)) {
-         this.tagName = data.tag;
-         this.dontHaveContainer = true;
+    console.log(["Generic Component"])
+    if (this.tagDontHaveChild(data.tag)) {
+      this.tagName = data.tag;
+      this.dontHaveContainer = true;
 
-         return super.render([
-            //React.createElement(data.tag, this.props)
-         ]);
-      }*/
+      return super.render([
+        React.createElement(data.tag, this.props)
+      ]);
+    }
 
     return super.render(
       this.elementsDict.length === 0 ? this.props.children : ""

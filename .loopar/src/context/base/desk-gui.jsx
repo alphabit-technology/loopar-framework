@@ -4,6 +4,7 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@custom-hooks";
 import { MoreVertical } from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {useCookies} from "@services/cookie";
 
 const sidebarWidth = 300;
 
@@ -35,21 +36,24 @@ const InnerSidebar = ({toggleSidebar, ...props}) => {
 export default function DeskGUI(props) {
   const docRef = props.docRef;
   const document = useDocument();
-  const {screenSize, headerHeight} = useWorkspace();
+  const {headerHeight} = useWorkspace();
+  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const handleSetSidebarOpen = (value) => {
+    setSidebarOpen(value);
+  }
 
   const toggleSidebar = (e) => {
     e && e.preventDefault();
-    setSidebarOpen(!sidebarOpen);
+    handleSetSidebarOpen(!sidebarOpen);
   }
 
-  useEffect(
+  /*useEffect(
     () => {
-      !sidebarOpen && (setSidebarOpen(document.mode === "editor" || document.mode === "designer"));
+      !sidebarOpen && (handleSetSidebarOpen(document.mode === "editor" || document.mode === "designer"));
     },
     [document.mode, document.editElement]
-  )
+  )*/
 
   return (
     <> 
@@ -63,14 +67,15 @@ export default function DeskGUI(props) {
       </Button>}
       <div className = "flex flex-row">
         <div 
-          className="space-y-4"
-          style={{width: screenSize !== "lg" ? "100%" : sidebarOpen ? `calc(100% - ${ sidebarWidth}px)` : "100%"}}
+          className={`space-y-4 ${sidebarOpen ? `lg:w-[calc(100%-300px)]` : `w-full`}`}
         >
           {docRef.hasHeader && 
             <AppBarr 
               docRef={docRef} 
               meta={docRef.meta} 
               toggleSidebar={toggleSidebar}
+              viewTypeToggle={props.viewTypeToggle}
+              viewType={props.viewType}
               sidebarOpen={sidebarOpen}
             />
           }

@@ -2,43 +2,48 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
 import path from 'path';
-import importDynamicModule from 'vite-plugin-dynamic-import-vars';
-import ssr from "vike/plugin";
+//import importDynamicModule from 'vite-plugin-dynamic-import-vars';
+import vike from "vike/plugin";
 
 const appAlias = {};
-fs.readdirSync('./apps').forEach(app => {
-  if (fs.lstatSync(path.resolve(__dirname, "apps", app)).isDirectory()) {
-    const moduleRoot = path.resolve(__dirname, `./apps/${app}/modules`);
-    const modules = fs.readdirSync(moduleRoot);
+const makeAppsToAlias = (dir) => {
+  fs.readdirSync(dir).forEach(app => {
+    if (fs.lstatSync(path.resolve(__dirname, dir, app)).isDirectory()) {
+      const moduleRoot = path.resolve(__dirname, dir, `${app}/modules`);
+      const modules = fs.readdirSync(moduleRoot);
 
-    modules.forEach(module => {
-      const documentsRoot = path.resolve(`${moduleRoot}/${module}`);
-      const documents = fs.readdirSync(documentsRoot);
+      modules.forEach(module => {
+        const documentsRoot = path.resolve(`${moduleRoot}/${module}`);
+        const documents = fs.readdirSync(documentsRoot);
 
-      documents.forEach(document => {
-        const clientRoot = path.resolve(`${documentsRoot}/${document}/client`);
-        const clientFiles = fs.readdirSync(clientRoot);
+        documents.forEach(document => {
+          const clientRoot = path.resolve(`${documentsRoot}/${document}/client`);
+          const clientFiles = fs.readdirSync(clientRoot);
 
-        clientFiles.forEach(clientFile => {
-          /**
-           * To default import ej: import MyComponent from '$my-component'
-           */
-          appAlias[`$${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
-          appAlias[`@${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+          clientFiles.forEach(clientFile => {
+            /**
+             * To default import ej: import MyComponent from '$my-component'
+             */
+            appAlias[`$${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            appAlias[`@${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
 
-          /**
-           * to dynamic import ej: const myComponent = await import('./my-component.jsx')
-           * But to work you neww use:
-           * import { AppSourceLoader } from "$/app-source-loader";
-           * 
-           * await AppSourceLoader(clientFile): (await import('item-client')).default
-           * */
-          appAlias[`/src/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            /**
+             * to dynamic import ej: const myComponent = await import('./my-component.jsx')
+             * But to work you need use:
+             * import { AppSourceLoader } from "$/app-source-loader";
+             * 
+             * await AppSourceLoader(clientFile): (await import('item-client')).default
+             * */
+            appAlias[`/src/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+          });
         });
       });
-    });
-  }
-});
+    }
+  });
+}
+
+makeAppsToAlias('./apps');
+makeAppsToAlias('./.loopar/apps');
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
@@ -50,6 +55,7 @@ const makeComponentToAlias = (dir) => {
       componentsAlias[`@${file.split(".")[0]}`] = path.resolve(__dirname, dir, file);
       componentsAlias[`$${file.split(".")[0]}`] = path.resolve(__dirname, dir, file);
       componentsAlias[`./${file}`] = path.resolve(__dirname, dir, file);
+      componentsAlias[`/components/${file}`] = path.resolve(__dirname, dir, file);
     }
   })
   return componentsAlias;
@@ -59,6 +65,7 @@ const groupComponentesAlias = {};
 const makeGroupComponentsAlias = (dir) => {
   return fs.readdirSync(dir).forEach(file => {
     groupComponentesAlias[`@${file.split(".")[0]}`] = path.resolve(__dirname, dir, file);
+    //groupComponentesAlias[`./workspace/${file}`] = path.resolve(__dirname, dir, file);
   }, {});
 }
 
@@ -90,7 +97,10 @@ export default defineConfig({
       "@publicSRC": path.resolve(__dirname + '/public/src'),
       '$context': path.resolve(__dirname + '/.loopar/src/context'),
       '@context': path.resolve(__dirname + '/.loopar/src/context'),
+      '@services': path.resolve(__dirname + '/.loopar/services'),
       '$workspace': path.resolve(__dirname + '/.loopar/src/workspace'),
+
+      '/workspace': path.resolve(__dirname + '/.loopar/src/workspace'),
       "$entry-client": path.resolve(__dirname + '/src/entry-client.jsx'),
       "$css": path.resolve(__dirname + '/.loopar/src/css'),
 
@@ -98,6 +108,7 @@ export default defineConfig({
       '$components-loader': path.resolve(__dirname, '/.loopar/src/components-loader.jsx'),
 
       "@styles": path.resolve(__dirname, 'src/app/styles'),
+      "/styles": path.resolve(__dirname, 'src/app/styles'),
       //'@context-loader': path.resolve(__dirname, '/loopar/src/context-loader.jsx'),
     },
   },
@@ -106,9 +117,9 @@ export default defineConfig({
       //jsxImportSource: "@emotion/react",
       //devTarget: "es2022"
     }),
-    importDynamicModule(),
+    vike(),
+    //importDynamicModule(),
     //root: path.resolve(__dirname, './src
-    //ssr(),
   ],
   optimizeDeps: {
     include: ['lucide-react'],

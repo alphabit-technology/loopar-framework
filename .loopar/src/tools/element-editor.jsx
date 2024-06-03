@@ -3,7 +3,7 @@ import DivComponent from "$div";
 import loopar from "$loopar";
 import { elementsDict } from "$global/element-definition";
 import Tabs from "@tabs"
-import { MetaComponent } from "@dynamic-component";
+import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 
@@ -52,8 +52,8 @@ export default class ElementEditorClass extends DivComponent {
   }
 
   getMetaFields() {
-    const previewProps = {}
-    const animationDuration = this.data.aos_animation_duration || 2000;
+    //const previewProps = {}
+    //const animationDuration = this.data.aos_animation_duration || 2000;
     const data = this.formValues
 
     return [
@@ -153,6 +153,12 @@ export default class ElementEditorClass extends DivComponent {
             element: TEXTAREA,
             data: {
               description: "You can use raw css code here",
+            }
+          },
+          display_on: {
+            element: TEXTAREA,
+            data: {
+              description: "Define where the element will be displayed",
             }
           },
           hidden: { element: SWITCH },
@@ -350,7 +356,7 @@ export default class ElementEditorClass extends DivComponent {
     const dontHaveMetaElements = connectedElement.dontHaveMetaElements || [];
 
     const metaFields = this.metaFields().map(({ group, elements }) => {
-      if (group === 'form' && elementsDict[connectedElement.element].def.isWritable) {
+      if (group === 'form' && elementsDict[connectedElement.element]?.def?.isWritable) {
         elements['divider_default'] = (
           <Separator className="my-3"/>
         );
@@ -407,7 +413,8 @@ export default class ElementEditorClass extends DivComponent {
                             data={{
                               ...props.data,
                               name: field,
-                              value: value
+                              value: value,
+                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
                             }}
                             onChange={(e) => {
                               this.formValues[field] = e.target ? e.target.value : e;

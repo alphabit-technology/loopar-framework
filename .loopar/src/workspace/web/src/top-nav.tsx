@@ -5,7 +5,7 @@ import { ThemeToggle } from "@workspace/theme-toggle"
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export function TopNav() {
-  const { headerHeight } = useWorkspace()
+  const { headerHeight } = useWorkspace();
 
   return (
     <header 
@@ -13,8 +13,7 @@ export function TopNav() {
       //className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
     >
       <div 
-        className="container flex h-16 items-center space-x-4 px-2 sm:justify-between sm:space-x-0"
-        style={{height: headerHeight}}
+        className="container flex items-center space-x-4 px-2 sm:justify-between sm:space-x-0 h-webHeaderHeight"
       >
         <MainNav/>
         <div className="flex flex-1 items-center justify-end space-x-4">

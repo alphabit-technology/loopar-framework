@@ -45,8 +45,8 @@ export function Breadcrumbs({ meta }) {
   const getItem = (link, index, attrs={}) => (
     <li class="inline-flex items-center" {...attrs}>
       <Link
-      variant="link"
-      className="px-0"
+        variant="link"
+        className="px-0"
         {...(link.link ? {to:`/desk${link.link}`} : {})}
       >
         {index === 0 ? <HomeIcon className="h-4"/> : <ChevronRight/> }

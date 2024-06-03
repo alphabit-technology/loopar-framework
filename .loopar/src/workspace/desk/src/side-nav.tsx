@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "$link"
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 
@@ -23,16 +22,10 @@ const icons: { [key: string]: any } = {
 };
 
 export function SideNav({ items }: SideNavProps) {
-  const { sidebarWidth, collapseSidebarWidth, screenSize, openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
+  const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
 
-  const baseStyle = {
-    ...(screenSize === "lg" ? {top: 65} : {}), 
-    width: openNav ? sidebarWidth : (screenSize === "lg" ? collapseSidebarWidth : 0)
-  }
-
-  const content = items.map((item, i) => {
-    const { description, href, modules = [] } = item
-    const isCurrent = false //href === pathname
+  const sideNavItems = items.map((item, i) => {
+    const { description, modules = [] } = item
     const hasSubitems = modules && modules.length > 0
 
     if(typeof window !== "undefined") {
@@ -80,28 +73,23 @@ export function SideNav({ items }: SideNavProps) {
     )
   })
 
-  const sidebarClass = screenSize === "lg" ? "" : "bg-popover/90";
-
   return (
     <>
       <div 
-        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in ${sidebarClass} border-r`}
-        style={baseStyle}
+        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-headerHeight ${openNav ? 'w-sidebarWidth lg:w-sidebarWidth p-2' : 'w-0 lg:w-collapseSidebarWidth'}`}
       >
-        {
-          screenSize !== "lg" && openNav && 
-          <div 
-            className="fixed inset-0 backdrop-blur-sm" area-hidden data-headlessui-state
-            onClick={() => setOpenNav(false)}
-          />
-        }
         <div 
-          className={`${openNav ? 'p-2' : 'p-0'}`}
-          style={{ width: openNav ? sidebarWidth : collapseSidebarWidth}}
+          className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}
+          area-hidden 
+          data-headlessui-state
+          onClick={() => setOpenNav(false)}
+        />
+        <div 
+          className="w-full"
         >
-          {openNav && screenSize != "lg" && <button 
+          {openNav && <button 
             type="button" 
-            className="absolute right-5 top-1 z-10 flex h-8 w-8 items-center justify-center text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300" 
+            className="absolute right-5 top-1 z-10 flex h-8 w-8 items-center justify-center text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 lg:hidden" 
             tab-index="0"
             onClick={() => setOpenNav(false)}
           >
@@ -124,7 +112,7 @@ export function SideNav({ items }: SideNavProps) {
               </div>
             </div>}
             <ul>
-              {content}
+              {sideNavItems}
             </ul>
           </div>
         </div>
