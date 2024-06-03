@@ -232,7 +232,7 @@ export default class CoreDocument {
         }
       }
 
-      if(!this.is_single) await updateChild();
+      if (!this.is_single && !loopar.installing) await updateChild();
       await this.updateHistory();
       await this.updateInstaller();
 
