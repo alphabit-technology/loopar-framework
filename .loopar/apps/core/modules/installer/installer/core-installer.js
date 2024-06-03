@@ -327,7 +327,7 @@ export default class CoreInstaller {
   }
 
   async insertRecord(Document, data, app = null, module = null) {
-    if (await loopar.db.getValue(Document, 'name', data.name, { ifNotFound: false, isSingle })) {
+    if (await loopar.db.getValue(Document, 'name', data.name, { ifNotFound: false })) {
       console.log("Updating ..............", Document, data.name);
       const toUpdateDoc = await loopar.getDocument(Document, data.name, data, { app, module });
       toUpdateDoc.save({ validate: false });
