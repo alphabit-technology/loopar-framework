@@ -1,6 +1,8 @@
 import { buttonVariants } from "@/components/ui/button"
 import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
+import { TwitterLogoIcon } from "@radix-ui/react-icons"
+
 
 export function TopNav() {
   return (
