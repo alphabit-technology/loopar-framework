@@ -71,7 +71,8 @@ export const elementsDefinition = {
     { element: "file_input", icon: "FileInput", type: [long_text, ''] },
     { element: "file_uploader", icon: "FileUp", type: [long_text, ''] },
     { element: "image_input", icon: "FileImage", type: [long_text, ''] },
-    { element: "color_picker", icon: "Palette", type: [varchar, varcharLen] }
+    { element: "color_picker", icon: "Palette", type: [varchar, varcharLen] },
+    { element: "icon_input", icon: "Icon", type: [varchar, varcharLen] },
   ]
 }
 

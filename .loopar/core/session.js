@@ -71,9 +71,7 @@ export class Cookie{
   }
 
   get(name) {
-    
     const value = this.cookies[name];
-    console.log(["Get from Cookie Server: " + name, value])
     if (value === 'undefined') {
       return undefined;
     }

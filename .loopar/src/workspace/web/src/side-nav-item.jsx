@@ -1,10 +1,7 @@
 import React, {useEffect} from "react";
 import {Link} from "$link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import {useCookies} from "@services/cookie";
-
-import { buttonVariants } from "@/components/ui/button";
-
 
 export const SideNavItem = (props) => {
   const {
@@ -53,7 +50,7 @@ export const SideNavItem = (props) => {
         </button>
         {children && children.length > 0 && (
           <div className="r-0" onClick={handleToggleCollapse}>
-            {open ? <ChevronDown className="transition-transform transform rotate-0" /> : <ChevronRight className="transition-transform transform rotate-0" />}
+            {open ? <ChevronDownIcon className="transition-transform transform rotate-0" /> : <ChevronRightIcon className="transition-transform transform rotate-0" />}
           </div>
           )}
       </Link>

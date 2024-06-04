@@ -1,6 +1,7 @@
 import {Button} from "@/components/ui/button";
-import { PencilIcon, Trash2Icon } from "lucide-react";
+//import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
 
 export function ElementTitle({element, active, handleEditElement, handleDeleteElement, ...props}) {
 
@@ -17,7 +18,7 @@ export function ElementTitle({element, active, handleEditElement, handleDeleteEl
             onClick={handleEditElement}
             className="h-5 w-8 rounded-none"
           >
-            <PencilIcon className="h-4 w-4"/>
+            <Pencil1Icon className="h-4 w-4"/>
           </Button>
           <Button
             variant="destructive"
@@ -25,7 +26,7 @@ export function ElementTitle({element, active, handleEditElement, handleDeleteEl
             onClick={handleDeleteElement}
             className="h-5 w-8 rounded-none"
           >
-            <Trash2Icon className="h-4 w-4"/>
+            <TrashIcon className="h-4 w-4"/>
           </Button>
         </> 
       )}

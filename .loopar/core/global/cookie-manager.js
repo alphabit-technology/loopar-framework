@@ -10,7 +10,6 @@ export const get = (name, ootions = {}) => {
   
   const value = Cookies.get(name, ootions);
 
-  //console.log(["Get from Cookie Client: " + name, value])
   if(value === 'undefined') {
     return undefined;
   }

@@ -1,12 +1,10 @@
 import { buttonVariants } from "@/components/ui/button"
-import { Icons } from "@/components/icons"
 import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
-import { useWorkspace } from "@workspace/workspace-provider";
+import { TwitterLogoIcon } from "@radix-ui/react-icons"
+
 
 export function TopNav() {
-  const { headerHeight } = useWorkspace();
-
   return (
     <header 
       className="fixed top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
@@ -30,7 +28,7 @@ export function TopNav() {
                   variant: "ghost",
                 })}
               >
-                <Icons.twitter className="h-5 w-5 fill-current" />
+                <TwitterLogoIcon className="h-5 w-5 fill-current" />
                 <span className="sr-only">Twitter</span>
               </div>
             </a>
