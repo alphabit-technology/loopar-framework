@@ -2,6 +2,7 @@
 
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
+import * as LucideIcons from "lucide-react";
 
 export interface DocsSidebarNavProps {
   items: []
@@ -57,7 +58,7 @@ export function SideNav({ items }: SideNavProps) {
                     active={active}
                     disabled={module.disabled}
                     external={module.external}
-                    Icon={icons[module.icon] || ChevronLeftIcon }
+                    Icon={LucideIcons[module.icon] || LucideIcons.ChevronLeftIcon}
                     key={module.description}
                     path={module.link}
                     title={module.description}

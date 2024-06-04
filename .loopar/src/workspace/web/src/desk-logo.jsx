@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 
 export const DeskLogo = (props) => {
-  const { isSideNav, togleSidebarNav, openNav } = props;
 
   const imageProps = {
     src: `/assets/images/logo.svg`,

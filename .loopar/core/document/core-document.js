@@ -397,10 +397,7 @@ export default class CoreDocument {
   }
 
   async __data__() {
-    console.log(["get Data"])
     const doctype = this.__DOCTYPE__;
-
-    
 
     if(doctype.is_single) doctype.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(doctype.doc_structure)));
 

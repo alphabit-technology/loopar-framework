@@ -2,11 +2,8 @@ import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import React from "react";
 import { Link } from "$link";
-import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DotFilledIcon } from "@radix-ui/react-icons";
-
-import { buttonVariants } from "@/components/ui/button";
+import { DotFilledIcon, Cross1Icon } from "@radix-ui/react-icons";
 
 type Item = {
   link: String,
@@ -99,7 +96,7 @@ export function SideNav({ sideMenuItems}) {
                 onClick={() => setOpenNav(false)}
               >
                 <span className="sr-only">Close navigation</span>
-                <XIcon />
+                <Cross1Icon />
               </button>
             </>
           )}

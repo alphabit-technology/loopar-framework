@@ -267,7 +267,7 @@ export default class Router {
     args.action = args.action && args.action.length > 0 ? args.action : controller.default_action;
     //controller.client = args.client || (["update", "create"].includes(args.action) ? "form" : args.action);
 
-    //await this.temporaryLogin();
+    await this.temporaryLogin();
     
     if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || await controller.isAuthenticated() ) {
       this.launchAction(controller, args.action, args.res, args.req);
