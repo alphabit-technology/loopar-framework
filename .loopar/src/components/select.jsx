@@ -30,7 +30,7 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
 
-  options = options.filter(option => !!option);
+  options = options.filter(option => option && option.option);
 
   const PAGE_SIZE = 20;
   const paginatedRows = {};
@@ -94,6 +94,8 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     openHandler(false);
     onSelect(e);
   }, [onSelect]);
+
+  console.log(["Visible Rows", visibleRows])
 
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
@@ -411,7 +413,7 @@ export default class Select extends BaseInput {
           this.optionValue(item).option ===
           this.optionValue(this.assignedValue).option
       )[0]
-      : this.assignedValue;
+      : null//this.assignedValue;
   }
 
   get metaFields() {
