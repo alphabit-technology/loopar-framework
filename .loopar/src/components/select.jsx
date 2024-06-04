@@ -95,8 +95,6 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     onSelect(e);
   }, [onSelect]);
 
-  console.log(["Visible Rows", visibleRows])
-
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild >
