@@ -5,7 +5,6 @@ import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import loopar from "$loopar";
-import {useCookies} from "@services/cookie";
 
 import {
   Command,
@@ -31,28 +30,23 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
 
-  // Filtramos opciones nulas
   options = options.filter(option => !!option);
 
   const PAGE_SIZE = 20;
   const paginatedRows = {};
   
-  // Paginamos las opciones
   for (let i = 0; i < options.length; i += PAGE_SIZE) {
     const pageNumber = i / PAGE_SIZE + 1;
     paginatedRows[pageNumber] = options.slice(i, i + PAGE_SIZE);
   }
 
-  const [currentSearch, setCurrentSearch] = useCookies([data.name]);
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleRows, setVisibleRows] = useState(paginatedRows[1] || []);
 
-  // Función para cargar más filas
   const loadMoreRows = useCallback(() => {
     setCurrentPage(prevPage => prevPage + 1);
   }, []);
 
-  // Actualizamos las filas visibles cuando la página actual cambia
   useEffect(() => {
     if (paginatedRows[currentPage]) {
       setVisibleRows(prevRows => {
@@ -62,7 +56,6 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     }
   }, [currentPage, selected]);
 
-  // Manejamos el evento de scroll en el contenedor
   useEffect(() => {
     if(!containerRef.current) return;
     const handleScroll = () => {
@@ -78,7 +71,6 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     return () => container.removeEventListener('scroll', handleScroll);
   }, [loadMoreRows, containerRef.current]);
 
-  // Aseguramos que la opción seleccionada sea visible
   useEffect(() => {
     if (selected && selected.option) {
       if (!visibleRows.some(option => option.option === selected.option)) {
@@ -87,7 +79,6 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     }
   }, [selected]);
 
-  // Manejamos la apertura del dropdown
   const openHandler = useCallback((e) => {
     setOpen(e);
     search(null, false).then(result => {
@@ -95,17 +86,14 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     });
   }, [search]);
 
-  // Manejamos el evento de búsqueda
   const searchHandler = useCallback((e) => {
     search(e, true);
   }, [search]);
 
-  // Manejamos la selección de una opción
   const setValueHandler = useCallback((e) => {
-    setOpen(false);
+    openHandler(false);
     onSelect(e);
   }, [onSelect]);
-
 
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">

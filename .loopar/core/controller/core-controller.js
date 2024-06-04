@@ -171,13 +171,13 @@ export default class CoreController extends AuthController {
     const appHtml = await renderPage(url, response, this.req, this.res);
     
     let html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
-    /*const _MetaComponents = MetaComponents(response, "client");
+    const _MetaComponents = MetaComponents(response, "client");
 
     html = html.replace(`<!--ssr-modulepreload-->`, `
       <link rel="modulepreload" href="/workspace/${response.W}/${response.W}-workspace.jsx">
       <link rel="modulepreload" href="/src/${response.client_importer.client}.jsx">
       <link rel="modulepreload" href="/src/entry-client.jsx">
-    `);*/
+    `);
 
     //${_MetaComponents.map(c => `<link rel="modulepreload" href="/components/${c.replaceAll("_", "-")}.jsx"/>`).join('\n')}
     /*html = html.replace(`<!--ssr-imported-->`, `
