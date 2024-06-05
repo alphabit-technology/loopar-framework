@@ -86,7 +86,8 @@ export default class BaseInput extends DivComponent {
         name={data.name}
         dontHaveForm={this.props.dontHaveForm}
         render={({ field }) => {
-          field.value ??= data.value;
+          //field.value ??= data.value;
+          if(!this.fieldControl) field.value = data.value;
           this.fieldControl = field;
           const oldChange = field.onChange;
 
@@ -149,9 +150,10 @@ export default class BaseInput extends DivComponent {
   }
 
   value(val) {
-    if(typeof val === "undefined") return this.fieldControl.value;
+    if(typeof val === "undefined") return this.fieldControl?.value;
 
-    console.log(["value", val])
+    if(!this.fieldControl) return;
+    
     this.fieldControl.value = val;
     setTimeout(() => {
       this.fieldControl.onChange({target: {value: val}});
