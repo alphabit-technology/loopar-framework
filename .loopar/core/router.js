@@ -143,9 +143,9 @@ export default class Router {
 
     if (reqWorkspace === "web" && loopar.frameworkInstalled && loopar.databaseServerInitialized && loopar.databaseInitialized) {
       const webApp = loopar.webApp || {menu_items: []};
+      routeStructure.document ??= "Home";
       const menu = webApp.menu_items.find(item => item.link === routeStructure.document);
-
-      //console.log(["routeStructure", routeStructure])
+      
       if(!webApp.name || !menu) {
         Object.assign(routeStructure, {
           module: "core",
@@ -158,7 +158,7 @@ export default class Router {
 
         return await this.#makeController({ ...routeStructure, ...controllerParams });
       }else{
-        routeStructure.document = menu.page
+        routeStructure.document = menu.page;
       }
     }
 
