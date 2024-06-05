@@ -25,7 +25,7 @@ import {
   FormLabel
 } from "@/components/ui/form"
 
-function SelectFn({ search, data, onSelect, options = [], selected }) {
+function SelectFn({ search, data, onSelect, options = [], selected={} }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
@@ -95,6 +95,8 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
     onSelect(e);
   }, [onSelect]);
 
+  const current = selected && typeof selected === "object" ? selected : { option: selected };
+
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild >
@@ -103,7 +105,7 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
           role="combobox"
           className={cn(
             "w-full justify-between pr-1",// max-w-sm
-            !selected && "text-muted-foreground"
+            !current.option && "text-muted-foreground"
           )}
           onClick={(e) => {
             e.preventDefault();
@@ -113,7 +115,7 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
           onMouseEnter={setActive}
           onMouseLeave={() => setActive(false)}
         >
-          {(selected && selected.option) ? (selected.formattedValue || selected.title || selected.option) : (
+          {current.option ? (current.formattedValue || current.title || current.option) : (
             <span className="truncate text-slate-600/70">
               Select {data.label}
             </span>
@@ -155,14 +157,14 @@ function SelectFn({ search, data, onSelect, options = [], selected }) {
                 onSelect={() => setValueHandler(option.option)}
                 className={cn(
                   "flex items-center",
-                  option.option === selected.option && "bg-secondary text-white"
+                  option.option === current.option && "bg-secondary text-white"
                 )}
               >
                 {value}
                 <CheckIcon
                   className={cn(
                     "ml-auto h-4 w-4",
-                    option.option === selected.option
+                    option.option === current.option
                       ? "opacity-100"
                       : "opacity-0"
                   )}
@@ -198,27 +200,28 @@ export default class Select extends BaseInput {
     const data = this.data || { label: "Select", name: "select", value: ""};
 
     const onSelect = (e) => {
-      this.fieldControl.value = e
       this.value(e);
     }
 
     return this.renderInput((field) => {
+      
       return (
-      <div>
-        {!this.props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
-        <SelectFn
-          field={field}
-          options={this.state.rows}
-          search={(delay) => this.#search(delay)}
-          data={data}
-          onSelect={onSelect}
-          selected={this.optionValue()}
-        />
-        {data.description && (
-          <FormDescription>{data.description}</FormDescription>
-        )}
-      </div>
-    )});
+        <div>
+          {!this.props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
+          <SelectFn
+            field={field}
+            options={this.state.rows}
+            search={(delay) => this.#search(delay)}
+            data={data}
+            onSelect={onSelect}
+            selected={this.getCurrentSelection()}
+          />
+          {data.description && (
+            <FormDescription>{data.description}</FormDescription>
+          )}
+        </div>
+      )
+    });
   }
 
   componentDidMount() {
@@ -227,7 +230,7 @@ export default class Select extends BaseInput {
     
     const initialRows = loopar.utils.isJSON(value) ? [JSON.parse(value)] : [{ option: value, title: value}];
 
-    this.setState({ rows: initialRows });
+    this.setState({rows: this.getPrepareOptions(initialRows)});
   }
 
   #search(target, delay = true) {
@@ -319,41 +322,35 @@ export default class Select extends BaseInput {
     this.setState({ rows: this.filteredOptions });
   }
 
-  optionValue(option = this.currentSelection) {
+  optionValue(option) {
     const value = (data) => {
       if (data && typeof data == "object") {
         if (Array.isArray(this.titleFields)) {
-          const values = this.titleFields.map((item) => data[item]);
+          const values = this.titleFields.map((item) => data[item]).filter((item) => item);
 
-          return values
-            .reduce((a, b) => {
-              return [
-                ...a,
-                [...a.map((item) => item.toLowerCase())].includes(
-                  b.toLowerCase()
-                )
-                  ? ""
-                  : b,
-              ];
-            }, [])
-            .join(" ");
+          return values.reduce((a, b) => {
+            return [
+              ...a,
+              [...a.map((item) => item.toLowerCase())].includes(typeof b == "string" ? b.toLowerCase() : b) ? "" : b,
+            ];
+          }, []).join(" ");
         } else {
           return data[this.titleFields];
         }
       }
     };
 
-    return option && typeof option == "object"
+    return option ? (typeof option == "object"
       ? {
         option: option.option || option.name,
         title: value(option), //option[this.titleFields] || option.value || option.option
         formattedValue: this.props.formattedValue
       }
       : {
-        option: option || this.assignedValue,
-        title: option || this.assignedValue,
+        option: option || this.value(),
+        title: option || this.value(),
         formattedValue: this.props.formattedValue
-      };
+      }) : {null: null};
   }
 
   getPrepareOptions(options) {
@@ -376,7 +373,7 @@ export default class Select extends BaseInput {
     }
   }
 */
-  value(val) {
+  /*value(val) {
     if(typeof val != "undefined") {
       super.value(val);
     } else {
@@ -388,30 +385,17 @@ export default class Select extends BaseInput {
         return value;
       }
     }
+  }*/
 
+  getCurrentSelection() {
+    const rows = this.state.rows || [];
+    const optionValue = this.optionValue(this.value());
 
-    /*const value = super.value(val);
+    const filter = rows.filter((item) => {
+      return this.optionValue(item).option === optionValue.option;
+    });
 
-    if(loopar.utils.isJSON(value)) {
-      return JSON.parse(value).option;
-    }else {
-      return value;
-    }*/
-  
-  }
-
-  get assignedValue() {
-    return this.value();
-  }
-
-  get currentSelection() {
-    return Object.keys(this.filteredOptions || {}) > 0
-      ? this.filteredOptions.filter(
-        (item) =>
-          this.optionValue(item).option ===
-          this.optionValue(this.assignedValue).option
-      )[0]
-      : null//this.assignedValue;
+    return filter[0] ? this.optionValue(filter[0]) : optionValue;
   }
 
   get metaFields() {
