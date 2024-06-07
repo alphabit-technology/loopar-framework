@@ -1,6 +1,6 @@
-import React, { useState, useRef, useContext } from "react";
+import React, { useState, useRef, useContext, useEffect } from "react";
 import { elementsDict as baseElementsDict } from "$global/element-definition";
-import { __META_COMPONENTS__ } from "$components-loader";
+import { __META_COMPONENTS__, ComponentsLoader } from "$components-loader";
 import elementManage from "$tools/element-manage";
 import { ElementTitle } from "$element-title";
 import DragAndDropUtils from "$tools/drag-and-drop";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import loopar from "$loopar";
 import { useDocumentContext } from "@context/base/base-context";
 import fileManager from "$tools/file-manager";
+import { useWorkspace } from "@workspace/workspace-provider";
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -310,7 +311,7 @@ function extractFieldNames(condition) {
   return Array.from(matches);
 }
 
-function MetaComponents({ elements = [], parent, className }) {
+/*function MetaComponents({ elements = [], parent, className }) {
   const designer = useDesigner();
   const { docRef, formValues } = useDocumentContext();
   const isDesigner = designer.designerMode;
@@ -378,14 +379,108 @@ function MetaComponents({ elements = [], parent, className }) {
       })}
     </>
   );
-}
+}*/
 
+const MetaComponentFn = ({ el, parent, className }) => {
+  const designer = useDesigner();
+  const { docRef, formValues } = useDocumentContext();
+  const isDesigner = designer.designerMode;
+  const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
+  const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
+  const def = baseElementsDict[el.element]?.def || {};
+  el.def = def;
+  //const Comp = __META_COMPONENTS__[def.element]?.default || __META_COMPONENTS__[def.element];
+  const props = elementProps({ elDict: el, parent, isDesigner });
+  const { ENVIRONMENT } = useWorkspace();
 
-export default function MetaComponentBase({ elements, parent, className }) {
-  return (
-    <MetaComponents elements={elements} parent={parent} className={className} />
-  );
+  if(ENVIRONMENT === "server") {
+    global.__REQUIRE_COMPONENTS__.push(el.element);
+  }
+
+  let display = true;
+  if (props.data?.display_on){
+    const fields = extractFieldNames(props.data?.display_on);
+
+    const values = fields.reduce((acc, field) => {
+      acc[field] = formValues[field];
+      return acc;
+    }, {});
+
+    display = evaluateCondition(props.data?.display_on, values);
+  }
+
+  useEffect(() => {
+    if (!Comp) {
+      ComponentsLoader([el.element], () => {
+        setLoadedComponents(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
+      });
+    }
+  }, []);
+
+  if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
+    const data = props.data || {};
+    props.className = cn("relative", (Comp && Comp.prototype.designerClasses), props.className, data?.class, "rounded-md", el.className, className);
+
+    if (docRef.__META_DEFS__[data.name]) {
+      const newData = { ...data, ...docRef.__META_DEFS__[data.name]?.data || {} };
+      Object.assign(props, docRef.__META_DEFS__[data.name], { data: newData });
+    }
+
+    if (isDesigner && Comp) {
+      return <DesignElement Comp={Comp} element={props} parent={parent} def={def} />;
+    } else if (!data.hidden && display) {
+      const disabled = data.disabled;
+
+      const Fragment = disabled ? "div" : React.Fragment;
+      const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
+
+      if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
+        return <HTMLBlock element={el} {...loopar.utils.renderizableProps(props)} />
+      }
+
+      if (!Comp) return null;
+
+      return (
+        <Fragment {...fragmentProps}>
+          <Comp
+            {...props}
+            key={props.key}
+            ref={ref => {
+              docRef.__REFS__[data.name] = ref;
+              parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
+            }
+            } />
+        </Fragment>
+      );
+    }
+  } else {
+    //console.warn(["Component: " + def.element + " is not loaded yet"]);
+    return null;
+  }
 };
+
+export default function MetaComponentBase ({ elements=[], parent, className }){
+  /*const getComponentsLoaded = () => {
+    return elements.filter(el => __META_COMPONENTS__[el.element]);
+  }
+  
+  const [loadedComponents, setLoadedComponents] = useState(getComponentsLoaded());
+
+  useEffect(() => {
+    if (elements.filter(el => !__META_COMPONENTS__[el.element]).length > 0) {
+      ComponentsLoader(elements.map(e => e.element), () => {
+        setLoadedComponents(getComponentsLoaded());
+      });
+    }
+  }, [elements]);*/
+
+
+  return (
+    <>
+      {elements.map(el => <MetaComponentFn el={el} parent={parent} className={className}/>)}
+    </>
+  )
+}
 
 export const MetaComponent = ({ component = "div", render, parent, ...props }) => {
   const C = __META_COMPONENTS__[component];

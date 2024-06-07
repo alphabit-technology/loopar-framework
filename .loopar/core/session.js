@@ -89,6 +89,6 @@ export class Cookie{
 
   remove(name, options = {}) {
     this.#res.clearCookie(name, options);
-    this.cookies = this.#res.cookies;
+    this.cookies = this.#res.cookies || {};
   }
 }

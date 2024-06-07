@@ -1,5 +1,4 @@
 import React from "react";
-import { MetaComponentsLoader } from "$components-loader";
 import Dialog, { Prompt } from "$dialog";
 import { AppSourceLoader } from "$/app-source-loader";
 import { toast } from "sonner";
@@ -117,7 +116,7 @@ export default class BaseWorkspace extends React.Component {
     if (!documents[res.key]) {
       //MetaComponentsLoader(__META__, this.props.environment).then(() => {
         AppSourceLoader(res.client_importer).then((module) => {
-          MetaComponentsLoader(__META__, this.props.ENVIRONMENT).then(() => {
+          //MetaComponentsLoader(__META__, this.props.ENVIRONMENT).then(() => {
             documents[res.key] = {
               Module: module.default,
               meta: res.meta,
@@ -127,7 +126,7 @@ export default class BaseWorkspace extends React.Component {
             this.setState({ documents }, () => {
               this.progress(102);
             });
-          });
+          //});
         }).catch((e) => {
           res.client_importer.client = "error-view";
           

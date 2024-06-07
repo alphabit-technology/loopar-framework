@@ -28,6 +28,7 @@ const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
 
 export async function renderPage(url, __META__, req, res) {
   const { Workspace, Document } = await Loader(__META__, "server");
+  global.__REQUIRE_COMPONENTS__ = [];
 
   const context = {};
   const appHtml = ReactDOMServer.renderToString(

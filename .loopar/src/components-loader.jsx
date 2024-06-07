@@ -29,31 +29,29 @@ function getComponent(component, pre = "./") {
 
           if (requires.modules) {
             promises.push(
-              loadComponents(requires.modules.filter((m) => m !== component))
+              ComponentsLoader(requires.modules.filter((m) => m !== component))
             );
           }
         }
 
-        Promise.all(promises)
-          .then(() => {
-            __META_COMPONENTS__[component] = c;
-            resolve(c);
-          })
-          .catch((error) => {
-            console.error("Err on load Resourse: " + component, error);
-          });
+        Promise.all(promises).then(() => {
+          __META_COMPONENTS__[component] = c;
+          resolve(c);
+        }).catch((error) => {
+          console.error("Err on load Resourse: " + component, error);
+        });
       });
     }
   });
 }
 
-async function loadComponents(components, callback) {
+async function ComponentsLoader(components, callback) {
   const promises = Array.from(new Set(components)).map((c) => getComponent(c));
   return Promise.all(promises).then(callback);
 }
 
 async function MetaComponentsLoader(__META__, environment) {
-  await loadComponents(MetaComponents(__META__, environment), environment);
+  await ComponentsLoader(environment === "server" ? MetaComponents(__META__, environment) : __META__.__REQUIRE_COMPONENTS__, environment);
 }
 
-export { MetaComponentsLoader, __META_COMPONENTS__ };
+export { MetaComponentsLoader, __META_COMPONENTS__, ComponentsLoader };

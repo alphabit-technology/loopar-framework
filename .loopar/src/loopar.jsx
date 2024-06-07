@@ -23,27 +23,6 @@ class Loopar extends Router {
     this.dateUtils = dateUtils;
   }
 
-  /*getComponent(component, pre = "./") {
-    const cParse = component.replaceAll(/_/g, "-");
-    return new Promise((resolve) => {
-      if (this.Components[component]) {
-        resolve(this.Components[component]);
-      } else {
-        import(`./components/${cParse}.jsx`).then((c) => {
-          this.Components[component] = c;
-          resolve(c);
-        });
-      }
-    });
-  }*/
-
-  /*async loadComponents(components, callback) {
-    const promises = Array.from(new Set(components)).map((c) =>
-      this.getComponent(c)
-    );
-    Promise.all(promises).then(callback);
-  }*/
-
   dialog(dialog) {
     const content = dialog.content || dialog.message;
     dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;

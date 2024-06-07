@@ -2,6 +2,7 @@ export default class ClientManager {
   constructor(props) {
     this.updater = props.updater;
   }
+
   get(name) {
     const cookies = this.getAll();
 
@@ -45,6 +46,6 @@ export default class ClientManager {
     ].join('; ');
 
     document.cookie = chunks;
-    this.updater(date);
+    this.updater && this.updater(date);
   }
 }

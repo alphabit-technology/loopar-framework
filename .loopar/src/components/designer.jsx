@@ -89,7 +89,7 @@ export default class Designer extends Component {
   get requires() {
     return {
       //css: ["/assets/designer"],
-      modules: Object.values(elementsDict).filter((el) => el.def.show_in_design !== false).map((el) => el.def.element)
+      //modules: Object.values(elementsDict).filter((el) => el.def.show_in_design !== false).map((el) => el.def.element)
     };
   }
 

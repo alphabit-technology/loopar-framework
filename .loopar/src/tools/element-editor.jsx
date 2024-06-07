@@ -180,84 +180,7 @@ export default class ElementEditorClass extends DivComponent {
             }
           },
           animation_duration: { element: INPUT, data: { format: 'number' } },
-          animation_delay: { element: INPUT, data: { format: 'number' } },
-          /*easing: {
-             element: "select",
-             data: {
-                options: {
-                   "ease": 'Ease',
-                   "linear": 'Linear',
-                   "ease-in": 'Ease In',
-                   "ease-in-out": 'Ease In Out',
-                   "ease-out": 'Ease Out',
-                   "ease-in-back": 'Ease In Back',
-                   "ease-out-back": 'Ease Out Back',
-                   "ease-in-out-back": 'Ease In Out Back',
-                   "ease-in-sine": 'Ease In Sine',
-                   "ease-out-sine": 'Ease Out Sine',
-                   "ease-in-out-sine": 'Ease In Out Sine',
-                   "ease-in-quad": 'Ease In Quad',
-                   "ease-out-quad": 'Ease Out Quad',
-                   "ease-in-out-quad": 'Ease In Out Quad',
-                   "ease-in-cubic": 'Ease In Cubic',
-                   "ease-out-cubic": 'Ease Out Cubic',
-                   "ease-in-out-cubic": 'Ease In Out Cubic',
-                   "ease-in-quart": 'Ease In Quart',
-                   "ease-out-quart": 'Ease Out Quart',
-                   "ease-in-out-quart": 'Ease In Out Quart',
-                   "ease-in-quint": 'Ease In Quint',
-                   "ease-out-quint": 'Ease Out Quint',
-                   "ease-in-out-quint": 'Ease In Out Quint',
-                   "ease-in-expo": 'Ease In Expo',
-                   "ease-out-expo": 'Ease Out Expo',
-                   "ease-in-out-expo": 'Ease In Out Expo',
-                   "ease-in-circ": 'Ease In Circ',
-                   "ease-out-circ": 'Ease Out Circ',
-                   "ease-in-out-circ": 'Ease In Out Circ',
-                   "ease-out-elastic": 'Ease Out Elastic',
-                   "ease-in-out-elastic": 'Ease In Out Elastic',
-                }
-             }
-          },*/
-          /*preview: div({className: "row"}, [
-             Divider({
-                style: {
-                   marginTop: 10,
-                   marginBottom: 10
-                },
-                label: "Preview"
-             }),
-             div({
-                style: {
-                   backgroundColor: "red",
-                   display: "flex",
-                   justifyContent: "center",
-                   alignItems: "center",
-                   width: "100%",
-                   height: "300px"
-                }
-             }, [
-
-                div({
-                   className: "aos-init",
-                   ...previewProps,
-                   style: {
-                      width: "50%",
-                      height: "50%",
-                      border: '1px solid #ccc',
-                      borderRadius: 5,
-                      background: 'var(--primary)'
-                   },
-                   ref: (ref) => {
-                      setTimeout(() => {
-                         if (ref) {
-                            ref.node.removeAttribute("data-aos");
-                         }
-                      }, animationDuration);
-                   }
-                })
-             ])
-          ]),*/
+          animation_delay: { element: INPUT, data: { format: 'number' } }
         }
       }
     ]
@@ -280,7 +203,6 @@ export default class ElementEditorClass extends DivComponent {
           element: connectedElement.element,
           data: {
             ...connectedElement.data,
-            //id: connectedElement.meta.data.id + "_default",
             key: connectedElement.identifier + "_default",
             label: "Default",
             name: "default_vaule",

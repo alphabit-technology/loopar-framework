@@ -146,16 +146,6 @@ export default class CoreController extends AuthController {
   }
 
   async #send(response) {
-    const url = this.req.originalUrl;
-    //const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + ".ejs"
-    const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + this.engineTemplate
-    const vite = loopar.server.vite;
-    
-    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { 
-      __META__: JSON.stringify(response),
-      THEME: loopar.cookie.get('vite-ui-theme') || 'dark'
-    }));
-
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {
         this.buffer = Buffer.from(buffer);
@@ -166,12 +156,22 @@ export default class CoreController extends AuthController {
     }
     global.theme = 'dark';
     global.getTheme = () => { };
-    
-    const { renderPage } = await vite.ssrLoadModule('/src/entry-server.jsx');
+
+    const url = this.req.originalUrl;
+    const vite = loopar.server.vite;
+    const { renderPage  } = await vite.ssrLoadModule('/src/entry-server.jsx');
     const appHtml = await renderPage(url, response, this.req, this.res);
+
+    const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + this.engineTemplate;
+    response.__REQUIRE_COMPONENTS__ = global.__REQUIRE_COMPONENTS__;
+    
+    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { 
+      __META__: JSON.stringify(response),
+      THEME: loopar.cookie.get('vite-ui-theme') || 'dark'
+    }));
     
     let html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
-    const _MetaComponents = MetaComponents(response, "client");
+    //const _MetaComponents = MetaComponents(response, "client");
 
     html = html.replace(`<!--ssr-modulepreload-->`, `
       <link rel="modulepreload" href="/workspace/${response.W}/${response.W}-workspace.jsx">
