@@ -7,7 +7,7 @@ import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 
-export default class ElementEditorClass extends DivComponent {
+export class ElementEditor extends DivComponent {
   formValues = [];
   hiddenElements = {};
 
@@ -25,7 +25,7 @@ export default class ElementEditorClass extends DivComponent {
 
   metaFields() {
     const genericMetaFields = this.getMetaFields();
-    const selfMetaFields = this.props.connectedElement?.metaFields || [];
+    const selfMetaFields = []// this.props.connectedElement?.metaFields || [];
 
     const mergedObj = {};
 
@@ -186,7 +186,7 @@ export default class ElementEditorClass extends DivComponent {
     ]
   }
 
-  render1() {
+  /*render1() {
     const connectedElement = this.connectedElement || null;
     if (!connectedElement) return null;
     const data = this.formValues;
@@ -267,7 +267,7 @@ export default class ElementEditorClass extends DivComponent {
         </Tabs>
       </div>
     );
-  }
+  }*/
 
   render() {
     const connectedElement = this.connectedElement || null;
@@ -288,7 +288,7 @@ export default class ElementEditorClass extends DivComponent {
           data: {
             ...connectedElement.data,
             //id: connectedElement.meta.data.id + "_default",
-            key: connectedElement.identifier + "_default",
+            key: connectedElement.data.key + "_default",
             label: "Default",
             name: "default_vaule",
             hidden: 0
@@ -306,7 +306,7 @@ export default class ElementEditorClass extends DivComponent {
         </h1>
         <Tabs
           data={{ name: "element_editor_tabs" }}
-          key={connectedElement.identifier + "_tabs"}
+          key={connectedElement.data.key + "_tabs"}
         >
           {metaFields.map(({ group, elements }) => {
             return (
@@ -330,7 +330,7 @@ export default class ElementEditorClass extends DivComponent {
                         component={props.element}
                         render={Component => (
                           <Component
-                            key={connectedElement.identifier + "_" + field}
+                            key={connectedElement.data.key + "_" + field}
                             dontHaveForm={true}
                             data={{
                               ...props.data,
@@ -366,7 +366,7 @@ export default class ElementEditorClass extends DivComponent {
 
   getData() {
     const data = this.formValues;
-    data.key ??= this.connectedElement.identifier;
+    data.key ??= this.connectedElement.data.name;
 
     return data;
   }

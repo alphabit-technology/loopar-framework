@@ -36,9 +36,9 @@ class Dialogs extends React.Component {
           dialog.ref = (ref) => (this.dialogs[dialog.id] = ref);
 
           return dialog.type === "prompt" ? (
-            <Prompt {...dialog} />
+            <Prompt {...dialog} key={dialog.key} />
           ) : (
-            <Dialog {...dialog} />
+            <Dialog {...dialog} key={dialog.key} />
           );
         })}
       </>
@@ -223,7 +223,33 @@ export default class BaseWorkspace extends React.Component {
         if (Object.keys(document).includes(el.data?.name)) {
           const value = document[el.data.name];
 
-          if (el.element === FORM_TABLE) {
+          el.data.value = value;
+        }
+
+        el.elements = updateValue(el.elements || [], document);
+        return el;
+      });
+    };
+
+    const documents = this.state.documents || {};
+    Object.values(documents).forEach((document) => {
+      if (document.meta.__DOCTYPE__ && document.meta.__DOCUMENT__) {
+        document.meta.__DOCTYPE__.STRUCTURE = updateValue(
+          JSON.parse(document.meta.__DOCTYPE__.doc_structure),
+          document.meta.__DOCUMENT__
+        );
+      }
+    });
+  }
+
+  mergeDocument1() {
+    const updateValue = (structure, document) => {
+      return structure.map((el) => {
+        if (Object.keys(document).includes(el.data?.name)) {
+          const value = document[el.data.name];
+
+          /*if (el.element === FORM_TABLE) {
+            console.log(["Form Table value", value])
             if (value.rows) {
               Object.assign(el, value);
             } else {
@@ -231,7 +257,9 @@ export default class BaseWorkspace extends React.Component {
             }
           } else {
             el.data.value = value;
-          }
+          }*/
+
+          el.data.value = value;
         }
 
         el.elements = updateValue(el.elements || [], document);
@@ -261,9 +289,9 @@ export default class BaseWorkspace extends React.Component {
       <>
         <WorkspaceContext
           __META__={this.props.__META__}
-          sidebarWidth={this.sidebarWidth ?? 250}
-          collapseSidebarWidth={this.collapseSidebarWidth ?? 0}
-          headerHeight={this.headerHeight ?? 55}
+          //sidebarWidth={this.sidebarWidth ?? 250}
+          //collapseSidebarWidth={this.collapseSidebarWidth ?? 0}
+          //headerHeight={this.headerHeight ?? 55}
           menuItems={this.menuItems && this.menuItems() || []}
           ENVIRONMENT={this.props.ENVIRONMENT}
           {...props}

@@ -2,9 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
 import path from 'path';
-//import importDynamicModule from 'vite-plugin-dynamic-import-vars';
-import vike from "vike/plugin";
+import importDynamicModule from 'vite-plugin-dynamic-import-vars';
+//import copy from 'rollup-plugin-copy';
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
+
+
+const targets = []
 const appAlias = {};
 const makeAppsToAlias = (dir) => {
   fs.readdirSync(dir).forEach(app => {
@@ -21,11 +25,18 @@ const makeAppsToAlias = (dir) => {
           const clientFiles = fs.readdirSync(clientRoot);
 
           clientFiles.forEach(clientFile => {
+
+            //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `dist/apps/${app}/modules/${module}/${document}/client` });
+            //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `assets/app` });
+            //fs.copyFileSync(path.resolve(`${clientRoot}/${clientFile}`), path.resolve(__dirname, 'src', '__apps__', `${clientFile}`));
             /**
              * To default import ej: import MyComponent from '$my-component'
              */
-            appAlias[`$${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
-            appAlias[`@${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            
+            
+            
+            //appAlias[`$assets/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            appAlias[`@app/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
 
             /**
              * to dynamic import ej: const myComponent = await import('./my-component.jsx')
@@ -34,7 +45,8 @@ const makeAppsToAlias = (dir) => {
              * 
              * await AppSourceLoader(clientFile): (await import('item-client')).default
              * */
-            appAlias[`/src/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            appAlias[`/src/app/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            /////////////appAlias[`/assets/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
           });
         });
       });
@@ -82,7 +94,7 @@ export default defineConfig({
       '@loopar': path.resolve(__dirname, './.loopar/src/'),
       '@': path.resolve(__dirname, './src/'),
       '$': path.resolve(__dirname, 'src'),
-      '$app': path.resolve(__dirname, 'src/App.tsx'),
+      '@app': path.resolve(__dirname, 'src/App.tsx'),
       '$index': path.resolve(__dirname, 'src/pages/index.tsx'),
 
       '$tools': path.resolve(__dirname + '/.loopar/src/tools'),
@@ -109,21 +121,27 @@ export default defineConfig({
 
       "@styles": path.resolve(__dirname, 'src/app/styles'),
       "/styles": path.resolve(__dirname, 'src/app/styles'),
+
+      "/scripts": path.resolve(__dirname, 'src/app/scripts'),
       //'@context-loader': path.resolve(__dirname, '/loopar/src/context-loader.jsx'),
     },
   },
   plugins: [
     react({
-      //jsxImportSource: "@emotion/react",
-      //devTarget: "es2022"
+      devTarget: "es2022",
     }),
-    vike(),
-    //importDynamicModule(),
+    viteStaticCopy({
+      targets: targets,
+      hook: 'writeBundle',
+      transform: {
+        encoding: "buffer",
+      }
+    }),
+    importDynamicModule(),
     //root: path.resolve(__dirname, './src
   ],
   optimizeDeps: {
-    include: ['lucide-react'],
-    //include: ['@emotion/styled', 'lucide-react'],
+    include: ['lucide-react']
   },
   css: {
     preprocessorOptions: {
@@ -137,6 +155,13 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ['lucide-react']
-  }
+  },
+  build: {
+    manifest: true,
+    rollupOptions: {
+      plugins: [importDynamicModule()],
+    },
+    reactRefresh: true,
+  },
   // server.hmr.overlay: false
 });

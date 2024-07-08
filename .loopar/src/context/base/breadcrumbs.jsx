@@ -43,7 +43,7 @@ export function Breadcrumbs({ meta }) {
   const dataLinks = makeLinks();
 
   const getItem = (link, index, attrs={}) => (
-    <li class="inline-flex items-center" {...attrs}>
+    <li className="inline-flex items-center" {...attrs}>
       <Link
         variant="link"
         className="px-0"
@@ -56,8 +56,8 @@ export function Breadcrumbs({ meta }) {
   )
 
   return (
-    <nav class="flex" aria-label="Breadcrumb" className="pb-1">
-      <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+    <nav className="flex pb-1" aria-label="Breadcrumb">
+      <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
         {dataLinks.map((link, index) => {
           return getItem(link, index, index < dataLinks.length - 1 ? {} : {"aria-current": "page"})
         })}

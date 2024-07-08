@@ -4,24 +4,49 @@ import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/componen
 import { useDesigner } from "@custom-hooks";
 import MetaComponent from "@meta-component";
 import { PlusIcon } from "lucide-react";
-import React, { useEffect} from "react";
+import React, { useEffect } from "react";
 import {useCookies} from "@services/cookie";
 
+const TabContent = ({element, parent}) => {
+  if(element.type === "dynamic.component"){
+    return (
+      <>
+        <MetaComponent
+          elements={[
+            {
+              element: "tab",
+              //...element,
+              data: element.data,
+              elements: element.elements,
+            },
+          ]}
+          parent={parent}
+        />
+      </>
+    )
+  }
 
-function TabFn({id, elementsDict, asChild = false, setElements}){
+  return <>{element.content}</>
+}
+
+function TabFn({id, elementsDict, asChild = false, setElements, parent}){
   const designer = useDesigner();
   const getIdentifier = () => {
     return `${id}${designer.designerMode ? '-designer' : ''}`;
   }
+
+  const getKey = (data = {}) => {
+    return data.key + (designer.designerMode ? '-designer' : '');
+  }
   
-  const [currentTab, setCurrentTab] = useCookies(getIdentifier(), elementsDict[0]?.data?.key);
+  const [currentTab, setCurrentTab] = useCookies(getIdentifier(), getKey(elementsDict[0]?.data));
 
   const selectFirstTab = () => {
-    elementsDict.length > 0 &&  setCurrentTab(elementsDict[0].data.key);
+    elementsDict.length > 0 &&  setCurrentTab(getKey(elementsDict[0]?.data));
   }
 
   const checkIfTabExists = (key) => {
-    return elementsDict.some((element) => element.data.key === key);
+    return elementsDict.some((element) => getKey(element.data) === key);
   }
 
   const addTab = () => {
@@ -48,7 +73,7 @@ function TabFn({id, elementsDict, asChild = false, setElements}){
   }
 
   useEffect(() => {
-    if(!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)){ 
+    if(!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)){
       selectFirstTab();
       return;
     }
@@ -56,40 +81,29 @@ function TabFn({id, elementsDict, asChild = false, setElements}){
     elementsDict.length === 0 && !asChild && designer.designerMode && addTab();
   }, [currentTab, elementsDict]);
 
-  const getTabContent = (element) => {
-    if(element.type === "dynamic.component"){
-      return (
-        <MetaComponent
-          elements={[
-            {
-              element: "tab",
-              data: element.data,
-              elements: element.elements,
-            },
-          ]}
-          parent={this}
-        />
-      )
-    }
-
-    return element.content;
-  }
-
   return (
-    <BaseTabs defaultValue={currentTab} className="w-full" key={id + elementsDict.length + currentTab} >
+    <BaseTabs 
+      defaultValue={currentTab} 
+      className="w-full"
+      key={id + elementsDict.length + currentTab}
+    >
       <TabsList className="inline-table align-middle">
         {
           elementsDict.map(({data}) => (
             <TabsTrigger
-              value={data.key}
-              onClick={() => {
-                setCurrentTab(data.key);
+              key={getKey(data)}
+              value={getKey(data)}
+              onMouseUp={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                setCurrentTab(getKey(data));
               }}
             >{data.label}</TabsTrigger>
           ))
         }
         {(designer.designerMode && !asChild)? (
-          <TabsTrigger 
+          <TabsTrigger
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -104,9 +118,9 @@ function TabFn({id, elementsDict, asChild = false, setElements}){
         elementsDict.map((element) => {
           return (
             <TabsContent
-              value={element.data.key}
+              value={getKey(element.data)}
             >
-              {getTabContent(element)}
+              <TabContent element={element} parent={parent}/>
             </TabsContent>
           )
         })
@@ -126,7 +140,7 @@ export default class Tabs extends Component {
     const elements = this.props.children || this.props.elements || [];
 
     return elements.map((element) => {
-      if (element.$$typeof === Symbol.for("react.element")) {
+      if (element.$$typeof === Symbol.for("react.element") || element.$$typeof === Symbol.for("react.fragment")) {
         return {
           element: "tab",
           type: "react.element",
@@ -163,6 +177,7 @@ export default class Tabs extends Component {
           setElements={(elements, callback) => {
             this.setElements(elements, callback);
           }}
+          parent={this}
         />
       </div>
     )

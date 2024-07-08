@@ -1,6 +1,5 @@
 import Component from "$component";
 import { Droppable } from "$droppable";
-import loopar from "$loopar";
 
 export default class Col extends Component {
   dontHaveMetaElements = ["label", "text"];
@@ -8,28 +7,10 @@ export default class Col extends Component {
   render(content = null) {
     return (
       <Droppable
-        {...loopar.utils.renderizableProps(this.props)}
+        {...this.props}
         receiver={this}
-      >
-        {this.props.children}
-        {content}
-        {this.elements}
-      </Droppable>
+      />
     )
-    /*return (
-      <Grid xs={6}>
-        <>
-          {this.props.children}
-          {content}
-          {this.elements}
-        </>
-      </Grid>
-    );*/
-  }
-
-  componentDidMount() {
-    super.componentDidMount();
-    this.props.designer && this.addClass("element draggable");
   }
 
   get metaFields() {

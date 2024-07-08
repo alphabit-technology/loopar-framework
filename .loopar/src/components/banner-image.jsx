@@ -1,6 +1,10 @@
 import Preassembled from "$preassembled";
 import Row from "$row";
 
+import loopar from "$loopar";
+
+import { Droppable } from "$droppable";
+
 export default class BannerImage extends Preassembled {
   blockComponent = true;
   //className = "py-5 h-100";
@@ -86,10 +90,9 @@ export default class BannerImage extends Preassembled {
 
   render() {
     return (
-      <>
-        {this.props.children}
-        {this.elements}
-      </>
+      <Droppable
+        {...this.props}
+      />
     );
   }
 

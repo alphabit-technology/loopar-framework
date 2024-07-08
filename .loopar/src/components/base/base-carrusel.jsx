@@ -5,6 +5,8 @@ import MetaComponent from "@meta-component";
 import { DesignerContext } from "@custom-hooks";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
+import { Droppable } from "$droppable";
+
 export default class BaseCarrusel extends Preassembled {
   static contextType = DesignerContext;
 
@@ -48,7 +50,33 @@ export default class BaseCarrusel extends Preassembled {
             background_color: baseData.background_color,
             background_blend_mode: baseData.background_blend_mode,
             key,
-          };                                                                                                                          
+          };                         
+          
+          return (
+            <Droppable
+              className="absolute w-full h-full"
+              elements={[
+                {
+                  ...element,
+                  element: element.element || "banner",
+                  /*className: !this.props.designer
+                    ? index == 0
+                      ? "hide-time"
+                      : "show-time"
+                    : "",*/
+                  data,
+                  elements: element.elements,
+                  //key: key,
+                  ref: (tab) => {
+                    if (tab) {
+                      this["slider" + index] = tab;
+                    }
+                  },
+                },
+              ]}
+              key={key}
+            />
+          )
 
           return (
             <div

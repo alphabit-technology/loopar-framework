@@ -14,14 +14,6 @@ export interface SideNavProps {
 
 import { Settings2Icon, SlidersIcon, UsersIcon, Globe2Icon, Code2Icon, ChevronLeftIcon} from 'lucide-react';
 
-const icons: { [key: string]: any } = {
-  "fa fa-cog": Settings2Icon,
-  "fa fa-user": UsersIcon,
-  "fa fa-tools": SlidersIcon,
-  "fa fa-globe": Globe2Icon,
-  "fa fa-oi-fork": Code2Icon,
-};
-
 export function SideNav({ items }: SideNavProps) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
 

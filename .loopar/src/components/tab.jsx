@@ -5,10 +5,9 @@ export default class Tab extends Component {
   render() {
     return (
       <Droppable
+        {...this.props}
         receiver={this}
-      >
-        {this.props.children || this.elements}
-      </Droppable>
+      />
     )
   } 
 }

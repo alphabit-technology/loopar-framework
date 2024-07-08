@@ -5,8 +5,8 @@ import { DesignerContext, useDesigner } from "@custom-hooks";
 import React, { useCallback, useMemo } from "react";
 import {marked} from "marked";
 import SimpleMDE from "react-simplemde-editor";
-//import "easymde/dist/easymde.min.css";
-//import "./markdown.css"
+import "easymde/dist/easymde.min.css";
+import "./markdown.css"
 
 function MarkdownEditor({ data, handleChange, ...props }) {
   const {design} = useDesigner();
@@ -25,7 +25,7 @@ function MarkdownEditor({ data, handleChange, ...props }) {
 
   const autofocusNoSpellcheckerOptions = useMemo(() => {
     return {
-      autofocus: true,
+      autofocus: false,
       spellChecker: false,
     };
   }, []);

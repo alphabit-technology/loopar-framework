@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "set NODE_ENV=development && node node_modules/loopar",
-    "start": "npm-run-all -p start-vite start-backend",
+    "start": "set NODE_ENV=production && node node_modules/loopar",
     "start-backend": "node node_modules/loopar",
     "start-vite": "vite clean && vite",
     "build": "npm-run-all build:client build:server",
@@ -82,10 +82,10 @@
     "typeface-jetbrains-mono": "^2.0.1",
     "universal-cookie": "^7.0.1",
     "uuid": "^9.0.1",
-    "vike": "^0.4.171",
     "vite-plugin-dynamic-import-vars": "^1.0.4",
     "vite-plugin-express": "^1.0.3",
     "vite-plugin-ssr": "^0.4.142",
+    "vite-plugin-static-copy": "^1.0.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -98,7 +98,7 @@
     "@types/react": "18.2.43",
     "@types/react-dom": "18.3",
     "@typescript-eslint/parser": "^5.61.0",
-    "@vitejs/plugin-react-swc": "^3.6.0",
+    "@vitejs/plugin-react-swc": "^3.7.0",
     "autoprefixer": "^10.4.17",
     "daisyui": "^4.6.0",
     "eslint": "^8.44.0",
@@ -108,10 +108,11 @@
     "mysql": "^2.18.1",
     "postcss": "^8.4.33",
     "prettier": "^2.8.8",
+    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-critical": "^1.0.13",
-    "tailwindcss": "^3.4.3",
+    "tailwindcss": "^3.4.4",
     "typescript": "^4.9.5",
-    "vite": "^5.2.12",
+    "vite": "^5.3.3",
     "vite-plugin-preload": "^0.4.0"
   }
 }

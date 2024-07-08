@@ -1,9 +1,9 @@
-import DesignElement from "$tools/design-elements";
+import {DesignElement} from "$tools/design-element";
 import { elementsDefinition } from "$global/element-definition";
 import loopar from "$loopar";
 import * as Icons from "lucide-react";
 
-export default function DesignerFormClass() {
+export function DesignerForm() {
   return (
     <>
       {Object.keys(elementsDefinition).map((element) => {

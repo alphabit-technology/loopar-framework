@@ -18,24 +18,24 @@ export default class BaseForm extends BaseDocument {
   }
 
   hydrate() {
-    loopar.rootApp.updateDocument(this.props.key, this.formValues, false);
+    loopar.rootApp.updateDocument(this.props.key, this.getFormValues(), false);
   }
 
   send(options = { action: this.props.action }) {
     options = typeof options === 'string' ? { action: options } : options;
     this.validate();
 
-    //console.log('formValues', JSON.parse(this.formValues.doc_structure));
+    //console.log('getFormValues', JSON.parse(this.getFormValues.doc_structure));
 
     /*console.log({
        isNew: this.props.__IS_NEW__,
        lastData: JSON.parse(this.lastData),
-       formValues: this.formValues,
-       test: (!this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.formValues))))
+       getFormValues: this.getFormValues,
+       test: (!this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues))))
     });*/
 
-    /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.formValues)))) {
-      this.lastData = JSON.stringify(this.formValues);
+    /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
+      this.lastData = JSON.stringify(this.getFormValues);
       loopar.notify("No changes to save", "warning");
       return;
     }*/
@@ -44,10 +44,10 @@ export default class BaseForm extends BaseDocument {
       loopar.send({
         action: options.action,
         params: this.params,
-        body: this.#formData(),
+        body: this.#getFormData(true),
         success: r => {
           if (r && r.success) {
-            //this.lastData = JSON.stringify(this.formValues);
+            //this.lastData = JSON.stringify(this.getFormValues);
             if (loopar.rootApp && loopar.rootApp.refresh) {
               loopar.rootApp.refresh().then(() => {
                 loopar.notify(r.message);
@@ -163,10 +163,10 @@ export default class BaseForm extends BaseDocument {
   }
 
   getValue(name) {
-    return this.formValues[name];
+    return this.getFormValues()[name];
   }
 
-  get formValues() {
+  getFormValues(toSave = false) {
     if(!this.Form)  return this.meta.__DOCUMENT__;
     
     const fields = this.__FIELDS__;
@@ -196,8 +196,8 @@ export default class BaseForm extends BaseDocument {
         return obj
       }
 
-      if([FORM_TABLE].includes(field.def.element)) {
-        obj[name] = JSON.stringify(value.rows);
+      if([FORM_TABLE].includes(field.def.element) && toSave) {
+        obj[name] = JSON.stringify(value.rows || []);
         return obj;
       }
 
@@ -211,14 +211,11 @@ export default class BaseForm extends BaseDocument {
     }, {});
   }
 
-  #formData() {
-    const [data, formData] = [this.formValues, new FormData()];
+  #getFormData(toSave) {
+    const [data, formData] = [this.getFormValues(toSave), new FormData()];
 
     for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        const value = data[key]// (typeof data[key] === 'object' && !(data[key] instanceof File)) ? JSON.stringify(data[key]) : data[key];
-        formData.append(key, value);
-      }
+      data.hasOwnProperty(key) && formData.append(key, data[key]);
     }
 
     return formData;

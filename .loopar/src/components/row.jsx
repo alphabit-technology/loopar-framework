@@ -114,18 +114,13 @@ export default class Row extends Component {
     
     return (
       <Droppable 
-        {...loopar.utils.renderizableProps(this.props)}
-        className={`grid xm:grid-cols-1 sm:grid-cols-1 ${this.colsDistribution} ${this.spacing}`}
+        //{...loopar.utils.renderizableProps(this.props)}
+        {...this.props}
+        elements={cols}
         receiver={this}
+        className={`grid xm:grid-cols-1 sm:grid-cols-1 ${this.colsDistribution} ${this.spacing}`}
       >
-        {this.props.children}
-        {
-          cols.map((el) => {
-            return (
-              <MetaComponent elements={[el]} parent={this} />
-            );
-          })
-        }
+        {/*this.props.children*/}
       </Droppable>
     );
   }

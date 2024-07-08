@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import BaseComponent from "@base-component";
 
+import { useWorkspace } from "@workspace/workspace-provider";
+
 export const makeUrl = (href) => {
   if (href.startsWith("http") || href.startsWith("/")) return href;
 
@@ -36,6 +38,8 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
   const location = useLocation();
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
+  
+  const { menuItems, currentLink, currentPage, setOpenNav, workspace } = useWorkspace();
 
   const handleSetCalled = (called) => {
     setCalled(called);
@@ -95,6 +99,7 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
   const handleOnClick = (e) => {
     handleSetCalled(true);
     props.onClick && props.onClick(e);
+    if(workspace === "web") setOpenNav(false);
   };
 
   function goTo(e) {
@@ -113,7 +118,8 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
     buttonVariants({ variant, size }),
     "justify-normal text-left text-primary cursor-pointer p-2",
     props.className,
-    active === to.split("#")[1] ? "bg-red-600/50" : ""
+    active === to.split("#")[1] ? "bg-red-600/50" : "",
+    currentPage === to ? "bg-red-600/50" : ""
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);

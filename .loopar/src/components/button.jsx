@@ -2,6 +2,7 @@ import Component from "$component";
 import {Button as BaseButton} from "@/components/ui/button";
 import {DocumentContext} from "@context/base/base-context";
 import loopar from "$loopar";
+import { cn } from "@/lib/utils";
 
 const buttons = {
   primary: "primary",
@@ -12,7 +13,6 @@ const buttons = {
 };
 
 export default class Button extends Component {
-  className = "btn";
   droppable = false;
   static contextType = DocumentContext;
 
@@ -38,6 +38,7 @@ export default class Button extends Component {
         {...loopar.utils.renderizableProps(this.props)}
         variant={getVariant()}
         onClick={handleClick}
+        className={this.props.className}
       >
         {data.label || "Button"}
       </BaseButton>

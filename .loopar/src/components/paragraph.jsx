@@ -6,7 +6,7 @@ export function Paragraph(props) {
   const designer = useDesigner();
   const style = {
     ...props.style,
-    ...(designer.designerMode ? {maxHeight: "6em", overflow: "auto", display: "-webkit-box", "-webkit-box-orient": "vertical"} : {})
+    ...(designer.design ? {maxHeight: "6em", overflow: "auto", display: "-webkit-box", "-webkit-box-orient": "vertical"} : {})
   }
 
   return (

@@ -1,7 +1,7 @@
 import Component from "$component";
 import loopar from "$loopar";
 import React from "react";
-import Pagination from "$pagination";
+import {Pagination} from "$pagination";
 
 export default class DocumentHistory extends Component {
   blockComponent = true;
@@ -118,10 +118,10 @@ export default class DocumentHistory extends Component {
               );
             })}
           </ul>
-          {Pagination({
-            pagination: this.pagination,
-            app: this,
-          })}
+          <Pagination
+            pagination={this.pagination}
+            app={this}
+          />
         </div>
       </>
     );

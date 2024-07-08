@@ -152,8 +152,25 @@ class FormTableClass extends BaseTable {
 
 export default class FormTable extends BaseInput {
   render(){
+    const handleChange = (e) => {
+      //console.log(["Form Table Change", e.target.value])
+      this.value(e.target.value);
+    }
     return super.renderInput(field => {
-      return <FormTableClass meta={field.value} onChange={field.onChange} ref={formRefTable => {this.formRefTable = formRefTable}}/>
+      //console.log(["Form Table", field.value])
+      //const meta = JSON.parse(JSON.stringify(this.props));
+      //meta.rows = field.value || [];
+
+
+      return (
+        <FormTableClass
+          //meta={JSON.parse(JSON.stringify(this.props))}
+          meta={field.value}
+          //meta={meta}
+          onChange={handleChange}
+          ref={formRefTable => {this.formRefTable = formRefTable}}
+        />
+      )
     });
   }
 

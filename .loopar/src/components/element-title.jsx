@@ -1,9 +1,23 @@
 import {Button} from "@/components/ui/button";
-//import { PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Pencil1Icon, TrashIcon } from "@radix-ui/react-icons";
 
-export function ElementTitle({element, active, handleEditElement, handleDeleteElement, ...props}) {
+import { useDesigner } from "@custom-hooks";
+
+export function ElementTitle({element, active, ...props}) {
+  const designer = useDesigner();
+
+  const handleEditElement = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    designer.handleEditElement(element);
+  }
+
+  const handleDeleteElement = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    designer.handleDeleteElement(element)
+  }
 
   return (
     <div 
@@ -16,24 +30,24 @@ export function ElementTitle({element, active, handleEditElement, handleDeleteEl
             variant="destructive"
             size="xs"
             onClick={handleEditElement}
-            className="h-5 w-8 rounded-none"
+            className="h-5 w-10 rounded-none rounded-bl-md"
           >
-            <Pencil1Icon className="h-4 w-4"/>
+            <PencilIcon className="h-4 w-4"/>
           </Button>
           <Button
             variant="destructive"
             size="xs"
             onClick={handleDeleteElement}
-            className="h-5 w-8 rounded-none"
+            className="h-5 w-10 rounded-none"
           >
-            <TrashIcon className="h-4 w-4"/>
+            <Trash2Icon className="h-4 w-4"/>
           </Button>
         </> 
       )}
       <Button
-        variant="secondary"
+        variant="ghost"
         size="xs"
-        className="h-5 rounded-none px-2"
+        className="h-5 rounded-none rounded-tr-md px-1 bg-gradient-to-r from-transparent to-slate-900/20"
         onClick={(e) => {e.stopPropagation(); e.preventDefault();}}
       >
         {(element.elementTitle || element.element).toString().split(".")[0].toUpperCase()}

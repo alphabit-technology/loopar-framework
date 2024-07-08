@@ -44,7 +44,7 @@ class Server extends Router {
     const sessionConfig = env.serverConfig.session;
     sessionConfig.maxAge = sessionConfig.maxAge * 1000 * 60 * 60 * 24;
 
-    this.server.set('view engine', 'pug');
+    //this.server.set('view engine', 'pug');
     this.server.use(cookieParser());
     this.server.use(this.express.json());
     this.server.use(this.express.urlencoded({ extended: true }));
@@ -54,7 +54,9 @@ class Server extends Router {
   async #exposePublicDirectories() {
     const publicDirs = [
       'public',
-      'node_modules/particles.js'
+      'node_modules/particles.js',
+      'dist/assets',
+      'dist/client',
       /*'src',
       'public', "public/js",
       'node_modules/loopar/core/global',

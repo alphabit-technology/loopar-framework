@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html class="${THEME}" lang="en">
+  <head>
+    <!--web-head-->
+    <!--desk-head-->
+    <link rel="stylesheet" href="/styles/globals.css">
+    <link rel="stylesheet" href="/styles/custom-scrollbar.css">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Loopar Framework</title>
+
+    <meta property="og:title" content="Loopar Framework">
+    <meta name="author" content="Loopar">
+    <meta property="og:locale" content="en_US">
+    <meta name="description" content="Loopar Framework">
+    <meta property="og:description" content="Loopar Framework">
+    <meta property="og:site_name" content="Loopar Framework">
+
+    <script type="script" src="/scripts/load-scripts1.js"></script>
+    <!--ssr-modulepreload-->
+    <!--app-head-->
+    
+    <script>
+      window.global = window;
+      console.warn = () => {};
+    </script>
+
+    <!--__loopar-meta-data__-->
+
+  </head>
+  <body class="min-h-screen font-sans antialiased theme-stone">
+    <div id="loopar-root">
+      <!--ssr-outlet-->
+      <script type="module" src="/src/entry-client.jsx" async blocking="render"></script>
+    </div>
+    <script>
+      const [DOWN, UP] = ['down', 'up'];
+
+      var verticalDirection = DOWN;
+      var lastY = 0;
+
+      document.addEventListener('mousemove', e => {
+        if (lastY < e.clientY) {
+          verticalDirection = DOWN;
+        } else {
+          verticalDirection = UP;
+        }
+
+        lastY = e.clientY;
+      });
+
+      function loadStylesheet(href, { callback, options } = {}) {
+        const { defer = false, position = "before", target = null } = options || {};
+
+        return new Promise((resolve, reject) => {
+          const existingLink = document.querySelector(`link[href="${href}.css"]`);
+
+          if (existingLink) {
+            return resolve();
+            //callback && callback();
+            //return;
+          }
+
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href + ".css";
+          link.defer = defer;
+
+          link.onload = () => {
+            resolve();
+          }
+          link.onerror = () => {
+            reject();
+          }
+
+          if (target) {
+            const Target = document.head.querySelector(target);
+
+            if (position === "before") {
+              Target.parentNode.insertBefore(link, target);
+            } else {
+              Target.parentNode.insertBefore(link, Target.nextSibling);
+            }
+          } else {
+            document.head.insertBefore(link, document.head.firstChild);
+          }
+        });
+        /*return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet'; 
+            link.href = url;
+            link.onload = resolve;
+            link.onerror = reject;
+
+            document.head.appendChild(link);
+        });*/
+      }
+
+      function loadScript(src, callback, options = { async: true }) {
+        return new Promise((resolve, reject) => {
+          const existingScript = document.querySelector(`script[src="${src}.js"]`);
+          window.scripts ??= {};
+          window.scripts[src] = window.scripts[src] || { loaded: false, callbacks: [] };
+
+          const makeScript = () => {
+            const script = document.createElement('script');
+            script.src = src + ".js";
+            script.async = options.async;
+            script.onload = () => {
+              window.scripts[src].callbacks.forEach((callback) => {
+                callback();
+              });
+
+              window.scripts[src].loaded = true;
+              resolve();
+            }
+            script.onerror = () => {
+              window.scripts[src].loaded = false;
+              reject();
+            }
+            document.head.appendChild(script);
+          }
+
+          if (existingScript) {
+            if (window.scripts[src].loaded) {
+              resolve(callback && callback());
+            } else {
+              resolve(callback && window.scripts[src].callbacks.push(callback));
+            }
+            //resolve();
+          } else {
+            callback && window.scripts[src].callbacks.push(callback);
+            makeScript();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -163,7 +163,7 @@ export default class ${name}${_EXTENDS} {
     try {
       return JSON.parse(fs.readFileSync(path.resolve(loopar.pathRoot, path_file), 'utf8') || {});
     } catch (e) {
-      console.log(['get_config_file err', e, ifError]);
+      console.log(['get_config_file err', path.resolve(loopar.pathRoot, path_file)]);
       if (ifError === "throw") {
         throw new Error(e);
       } else {

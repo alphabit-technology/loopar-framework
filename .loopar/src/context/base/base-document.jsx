@@ -14,7 +14,7 @@ export default class BaseDocument extends BaseComponent {
 
   render(content) {
     return (
-      <DocumentContext.Provider value={{ docRef: this, formValues: this.formValues }}>
+      <DocumentContext.Provider value={{ docRef: this, formValues: this.getFormValues ? this.getFormValues() : {} }}>
         {content}
       </DocumentContext.Provider>
     );

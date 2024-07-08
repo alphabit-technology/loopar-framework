@@ -3,12 +3,8 @@
 import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar";
-import pug from "pug";
-import { MetaComponents } from "loopar";
-
-//import { renderToHtml } from 'some-ui-framework'
-import { escapeInject, dangerouslySkipEscape } from 'vike/server'
-
+import fs from 'fs';
+import pug from 'pug';
 
 export default class CoreController extends AuthController {
   error = {};
@@ -26,34 +22,6 @@ export default class CoreController extends AuthController {
     });*/
 
     loopar.server.use(express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
-  }
-
-  clientImporter(meta) {
-    if(!meta.__DOCTYPE__) return {}
-
-    const getClient = () => {
-      if(this.client) return this.client;
-
-      if(meta.__DOCTYPE__.is_single || this.workspace === "web") {
-        return "view"
-      }
-
-      const action = this.action;
-      if(['create', 'update'].includes(action)) {
-        return "form";
-      }else if(['list', 'index'].includes(action)) {
-        return "list";
-      }else {
-        return "view"
-      }
-    }
-
-    const document = meta.__DOCTYPE__.name;
-
-    return {
-      context: `${this.context}-context`,
-      client: `${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
-    }
   }
 
   getCodeError(code) {
@@ -133,7 +101,7 @@ export default class CoreController extends AuthController {
     if (workspace === "desk") {
       WORKSPACE.menu_data = this.hasSidebar ? await CoreController.sidebarData() : [];
     } else if (workspace === "web") {
-      WORKSPACE.web_app = loopar.webApp;//completedTransaction ? {} : await this.#webApp();
+      WORKSPACE.web_app = loopar.webApp;
     }
     
     return await this.#send({
@@ -145,7 +113,97 @@ export default class CoreController extends AuthController {
     });
   }
 
-  async #send(response) {
+  clientImporter(meta) {
+    if (!meta.__DOCTYPE__) return {}
+
+    const getClient = () => {
+      if (this.client) return this.client;
+
+      if (meta.__DOCTYPE__.is_single || this.workspace === "web") {
+        return "view"
+      }
+
+      const action = this.action;
+      if (['create', 'update'].includes(action)) {
+        return "form";
+      } else if (['list', 'index'].includes(action)) {
+        return "list";
+      } else {
+        return "view"
+      }
+    }
+
+    const document = meta.__DOCTYPE__.name;
+
+    return {
+      context: `${this.context}-context`,
+      client: `app/${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
+    }
+  }
+
+  async #send(response){
+    global.File = class SimulatedFile {
+      constructor(buffer, fileName, options = {}) {
+        this.buffer = Buffer.from(buffer);
+        this.name = fileName || options.filename || 'untitled.txt';
+        this.size = this.buffer.length;
+        this.type = options.contentType || 'application/octet-stream';
+      }
+    }
+
+    const isProduction = false// process.env.NODE_ENV === 'production';
+    const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/index.html' : 'index.html');
+    const serverTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? "dist/server/entry-server.js" : "src/entry-server.jsx");
+
+    const ssrManifest = isProduction
+      ? fs.readFileSync('./dist/client/.vite/manifest.json')
+      : undefined
+
+    const url = this.req.originalUrl;
+    const vite = loopar.server.vite;
+    //const {render} = await (isProduction ? import(serverTemplateRoute) : vite.ssrLoadModule(serverTemplateRoute));
+    const { render } = await vite.ssrLoadModule(loopar.makePath(loopar.pathRoot, "src/entry-server.jsx"));
+    /*let render;
+    if(isProduction) {
+      const module = await import(serverTemplateRoute);
+      render = module.render;
+    }else{
+      const loadModule = await vite.ssrLoadModule(serverTemplateRoute);
+      render = loadModule.render;
+    }*/
+
+    //const {render} = await vite.ssrLoadModule(serverTemplateRoute);
+     
+    const HTML = await render(url, response, this.req, this.res);
+    const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));
+
+    let html=template.replace(`<!--ssr-outlet-->`, HTML.HTML);
+    html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark')
+    html = html.replace(`<!--__loopar-meta-data__-->`, `
+      <script id="__loopar-meta-data__" type="application/json">
+        ${JSON.stringify(response)}
+      </script>
+    `);
+    html = html.replace(`<!--ssr-modulepreload-->`, `
+      <link rel="modulepreload" href="/workspace/${response.W}/${response.W}-workspace.jsx">
+      <link rel="modulepreload" href="/src/${response.client_importer.client}.jsx">
+      <link rel="modulepreload" href="/src/entry-client.jsx">
+    `);
+
+    if(response.W === 'web') {
+      html = html.replace(`<!--web-head-->`, `
+        <link rel="stylesheet" href="/node_modules/aos/dist/aos.css">
+      `);
+    }
+
+    return {
+      status: 200,
+      body: html,
+      headers: { 'Content-Type': 'text/html' }
+    }
+  }
+
+  async #send1(response) {
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {
         this.buffer = Buffer.from(buffer);
@@ -159,18 +217,18 @@ export default class CoreController extends AuthController {
 
     const url = this.req.originalUrl;
     const vite = loopar.server.vite;
-    const { renderPage  } = await vite.ssrLoadModule('/src/entry-server.jsx');
-    const appHtml = await renderPage(url, response, this.req, this.res);
+    const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
+    const appHtml = await render(url, response, this.req, this.res);
 
     const templateRote = loopar.makePath(loopar.pathFramework, "template", "index") + this.engineTemplate;
-    response.__REQUIRE_COMPONENTS__ = global.__REQUIRE_COMPONENTS__;
-    
-    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, { 
+    //response.__REQUIRE_COMPONENTS__ = global.__REQUIRE_COMPONENTS__;
+
+    const template = await vite.transformIndexHtml(url, pug.renderFile(templateRote, {
       __META__: JSON.stringify(response),
       THEME: loopar.cookie.get('vite-ui-theme') || 'dark'
     }));
-    
-    let html = template.replace(`<!--ssr-outlet-->`, appHtml.appHtml);
+
+    let html = template.replace(`<!--ssr-outlet-->`, appHtml.HTML);
     //const _MetaComponents = MetaComponents(response, "client");
 
     html = html.replace(`<!--ssr-modulepreload-->`, `
@@ -178,34 +236,6 @@ export default class CoreController extends AuthController {
       <link rel="modulepreload" href="/src/${response.client_importer.client}.jsx">
       <link rel="modulepreload" href="/src/entry-client.jsx">
     `);
-
-    //${_MetaComponents.map(c => `<link rel="modulepreload" href="/components/${c.replaceAll("_", "-")}.jsx"/>`).join('\n')}
-    /*html = html.replace(`<!--ssr-imported-->`, `
-      <script type="module" async>
-        import Workspace from "/workspace/${response.W}/${response.W}-workspace.jsx";
-        import Document from "/src/${response.client_importer.client}.jsx";
-        ${_MetaComponents.map(c => `import _${c}_ from "/components/${c.replaceAll("_", "-")}.jsx";`).join('\n')}
-
-        window.__LOOPAR__ = {
-          Workspace,
-          Document,
-        };
-
-        window.__META_COMPONENTS__ = {
-          ${_MetaComponents.map(c => `${c}: _${c}_`).join(',')}
-        }
-
-        import("/src/entry-client.jsx");
-      </script>
-    `);*/
-
-    /*html = html.replace(`<!--ssr-imported-->`, `
-      <script type="module" async>
-        import("/src/entry-client.jsx");
-      </script>
-    `);*/
-
-    //this.exposeClientFiles();
 
     return {
       status: 200,

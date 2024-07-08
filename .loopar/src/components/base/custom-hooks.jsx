@@ -5,9 +5,29 @@ export const DesignerContext = createContext({
   designerRef: null,
   toggleDesign: () => {},
   design: false,
+  currentDropZone: null,
+  setCurrentDropZone: () => {},
+  currentDragging: null,
+  setCurrentDragging: () => {},
 });
-
 export const useDesigner = () => useContext(DesignerContext);
+
+
+
+export const DroppableContext = createContext({
+  droppable: false,
+  setDroppable: () => {},
+  __REFS__: {},
+  dragging: false,
+  handleDragging: () => {}
+});
+export const useDroppable = () => useContext(DroppableContext);
+
+export const DraggableContext = createContext({
+  dragging: false,
+  handleDragging: () => {}
+});
+export const useDraggable = () => useContext(DraggableContext);
 
 export const HiddenContext = createContext(false);
 export const useHidden = () => useContext(HiddenContext);

@@ -13,7 +13,7 @@ type Item = {
 }
 
 const SideNavRender = ({items}) => {
-  const { menuItems, currentLink, currentPage } = useWorkspace();
+  const { menuItems, currentLink } = useWorkspace();
 
   const getParentLink = (page: String) => {
     return menuItems.find((item: Item) => item.page === page)?.link;

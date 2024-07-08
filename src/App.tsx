@@ -2,7 +2,8 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';
-import { useCookies } from "@services/cookie";
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
 
 interface RootLayoutProps {
@@ -19,7 +20,7 @@ interface RootLayoutProps {
   cookieManager: any;
 }
 
-const Main = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: RootLayoutProps) => {
+const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
   const workspace = JSON.parse(__META__.workspace);
   const meta = JSON.parse(__META__.meta);
 
@@ -51,7 +52,6 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Roo
 }
 
 const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: RootLayoutProps) => {
-
   const [update, setUpdate] = React.useState(false);
 
   return (

@@ -1,10 +1,9 @@
-import React, { useState, useRef, useContext, useEffect } from "react";
+import React, { useState, useRef, useContext, useEffect, useId } from "react";
 import { elementsDict as baseElementsDict } from "$global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "$components-loader";
 import elementManage from "$tools/element-manage";
 import { ElementTitle } from "$element-title";
-import DragAndDropUtils from "$tools/drag-and-drop";
-import { useDocument, useDesigner, HiddenContext } from "@custom-hooks";
+import { useDesigner, HiddenContext, useDroppable } from "@custom-hooks";
 import { cn } from "@/lib/utils";
 import loopar from "$loopar";
 import { useDocumentContext } from "@context/base/base-context";
@@ -13,7 +12,7 @@ import { useWorkspace } from "@workspace/workspace-provider";
 
 const designElementProps = (el) => {
   if (!el.data) {
-    const names = elementManage.elementName(props.element);
+    const names = elementManage.elementName(el.element);
     el.data = {
       name: names.name,
       label: names.label,
@@ -68,7 +67,7 @@ function prepareMetaData(props, parent, image) {
     if ((data.animation || parent?.data?.static_content)) {
       const animation = parent?.data?.static_content ? loopar.reverseAnimation(parent.data.animation) : loopar.getAnimation(data.animation);
 
-      animations["data-aos"] = animation;
+      animations["data-aos"] = animation; <q></q>
       data.static_content = parent?.data?.static_content;
 
       if (data.animation_delay) {
@@ -163,19 +162,18 @@ const elementProps = ({ elDict, parent = {}, isDesigner }) => {
   };
 };
 
-const DesignElement = ({ parent, element, Comp, def }) => {
+const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
-  const document = useDocument();
-  const designer = useDesigner();
+  const {mode} = useDesigner();
   const parentHidden = useContext(HiddenContext);
-
+  const {currentDragging, setCurrentDragging} = useDesigner();
   const dragginElement = useRef(null);
   const isDroppable = Comp.prototype.droppable || element.fieldDesigner;
   let className = Comp.prototype.designerClasses || "";
 
-  if (document.mode !== "preview") {
+  if (mode !== "preview") {
     if (isDroppable) {
-      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 p-2 pb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg");
+      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 mb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg p-3 pt-5");
     } else {
       className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
     }
@@ -183,23 +181,11 @@ const DesignElement = ({ parent, element, Comp, def }) => {
 
   className = cn(className, element.data?.class, element.className);
 
-  const handleMouseOver = (e) => {
-    e.stopPropagation();
-    setHover(true);
+  const handleMouseOver = (hover) => {
+    !currentDragging && setHover(hover);
   }
 
-  const handleEditElement = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    designer.handleEditElement(dragginElement.current);
-  }
-
-  const handleDeleteElement = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    designer.handleDeleteElement(dragginElement.current)
-  }
-
+  delete element.key;
   if (parentHidden) {
     return (
       <Comp {...element}
@@ -212,54 +198,83 @@ const DesignElement = ({ parent, element, Comp, def }) => {
       />
     )
   }
-  const disabled = element.data.hidden || element.data.disabled;
+  const disabled = element.data && (element.data.hidden || element.data.disabled);
   const Fragment = (disabled && !parentHidden) ? "div" : React.Fragment;
   const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
+  
+  const {__REFS__} = useDroppable();
+  const draggableRef = useRef(null);
+
+  useEffect(() => {
+    __REFS__[element.data.key] = draggableRef.current;
+  }, [__REFS__, draggableRef.current]);
 
   return (
     <HiddenContext.Provider value={disabled}>
       <div
+        key={element.data.key} //necesary for droppable
         className={cn('relative w-full h-auto', className)}
-        style={{ opacity: hover ? 0.8 : 1, ...element.style }}
         draggable={!element.fieldDesigner}
-        onDragStartCapture={(e) => {
-          DragAndDropUtils.elementToDrag = dragginElement.current;
-        }}
-        onDragEnter={e => {
+        ref={draggableRef}
+        onMouseOver={e => {
           e.preventDefault();
           e.stopPropagation();
-
-          if (DragAndDropUtils.lastElementTargetSibling) {
-            if (DragAndDropUtils.currentElementTargetSibling.identifier !== dragginElement.current.identifier) {
-
-              DragAndDropUtils.lastElementTargetSibling = DragAndDropUtils.currentElementTargetSibling;
-            }
-          } else {
-            DragAndDropUtils.lastElementTargetSibling = dragginElement.current;
-          }
-
-          DragAndDropUtils.currentElementTargetSibling = dragginElement.current;
+          handleMouseOver(true);
         }}
+        onMouseOut={e => {
+          handleMouseOver(false);
+        }}
+        onDragStart={(e) => {
+          //e.preventDefault();
+          e.stopPropagation();
+          const img = new Image();
+          img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/axl7kYAAAAASUVORK5CYII=';
+          e.dataTransfer.setDragImage(img, 0, 0);
+          //DragAndDropUtils.dataTransfer = draggableRef.current;
+          //e.dataTransfer.type 
+          e.dataTransfer.effectAllowed = "move"
+          
+          const el = { 
+            data: Object.assign({}, element.data), 
+            element: element.element, 
+            elements: element.elements
+          };
 
-        onMouseOver={handleMouseOver}
-        onMouseOut={() => setHover(false)}
+          //console.log(["target", e.target])
+          setCurrentDragging({
+            el,
+            key: el.data.key,
+            parentKey: parentKey,
+            ref: e.target,
+            rect: e.target.getBoundingClientRect(),
+            mousePosition: {x: e.clientX, y: e.clientY}
+          });
+        }}
+        onDragEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.clearData();
+          //DragAndDropUtils.elementOverDrag = null;
+        }}
       >
         {
-          document.mode !== "preview" &&
+          mode !== "preview" &&
           <ElementTitle
             element={element}
-            active={hover}
-            handleEditElement={handleEditElement}
-            handleDeleteElement={handleDeleteElement}
+            //elementRef={dragginElement.current}
+            active={hover && !currentDragging}
             style={{ top: 0 }}
+
           />
         }
         <Fragment {...fragmentProps}>
           <Comp {...element}
+            
             ref={self => {
               if (self) {
                 self.parentComponent = parent;
                 dragginElement.current = self;
+                //__REFS__[element.key] = self;
               }
             }}
           />
@@ -267,6 +282,7 @@ const DesignElement = ({ parent, element, Comp, def }) => {
       </div>
     </HiddenContext.Provider>
   )
+  /**Old */
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
@@ -381,32 +397,38 @@ function extractFieldNames(condition) {
   );
 }*/
 
-const MetaComponentFn = ({ el, parent, className }) => {
+const MetaComponentFn = ({ el, parent, parentKey, className }) => {
+  if(el && el.$$typeof === Symbol.for("react.element")){
+    return el;
+  }
+
   const designer = useDesigner();
   const { docRef, formValues } = useDocumentContext();
   const isDesigner = designer.designerMode;
+
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
+
   const def = baseElementsDict[el.element]?.def || {};
   el.def = def;
-  //const Comp = __META_COMPONENTS__[def.element]?.default || __META_COMPONENTS__[def.element];
-  const props = elementProps({ elDict: el, parent, isDesigner });
+  const _props = elementProps({ elDict: el, parent, isDesigner });
   const { ENVIRONMENT } = useWorkspace();
 
   if(ENVIRONMENT === "server") {
     global.__REQUIRE_COMPONENTS__.push(el.element);
   }
 
+
   let display = true;
-  if (props.data?.display_on){
-    const fields = extractFieldNames(props.data?.display_on);
+  if (_props.data?.display_on){
+    const fields = extractFieldNames(_props.data?.display_on);
 
     const values = fields.reduce((acc, field) => {
       acc[field] = formValues[field];
       return acc;
     }, {});
 
-    display = evaluateCondition(props.data?.display_on, values);
+    display = evaluateCondition(_props.data?.display_on, values);
   }
 
   useEffect(() => {
@@ -418,16 +440,17 @@ const MetaComponentFn = ({ el, parent, className }) => {
   }, []);
 
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
-    const data = props.data || {};
-    props.className = cn("relative", (Comp && Comp.prototype.designerClasses), props.className, data?.class, "rounded-md", el.className, className);
+    const data = _props.data || {};
+
+    _props.className = cn("relative", (Comp && Comp.prototype.designerClasses), _props.className, data?.class, "rounded-md", el.className, className);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = { ...data, ...docRef.__META_DEFS__[data.name]?.data || {} };
-      Object.assign(props, docRef.__META_DEFS__[data.name], { data: newData });
+      Object.assign(_props, docRef.__META_DEFS__[data.name], { data: newData });
     }
 
     if (isDesigner && Comp) {
-      return <DesignElement Comp={Comp} element={props} parent={parent} def={def} />;
+      return <DesignElement Comp={Comp} element={_props} parent={parent} parentKey={parentKey} def={def}/>;
     } else if (!data.hidden && display) {
       const disabled = data.disabled;
 
@@ -435,21 +458,23 @@ const MetaComponentFn = ({ el, parent, className }) => {
       const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
       if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
-        return <HTMLBlock element={el} {...loopar.utils.renderizableProps(props)} />
+        return <HTMLBlock element={el} {...loopar.utils.renderizableProps(_props)} />
       }
 
       if (!Comp) return null;
+      delete _props.key;
 
       return (
         <Fragment {...fragmentProps}>
           <Comp
-            {...props}
-            key={props.key}
+            {..._props}
+            //key={data.key}
+            //key={_props.key || props.key}
             ref={ref => {
               docRef.__REFS__[data.name] = ref;
               parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
             }
-            } />
+          } />
         </Fragment>
       );
     }
@@ -459,47 +484,36 @@ const MetaComponentFn = ({ el, parent, className }) => {
   }
 };
 
-export default function MetaComponentBase ({ elements=[], parent, className }){
-  /*const getComponentsLoaded = () => {
-    return elements.filter(el => __META_COMPONENTS__[el.element]);
-  }
-  
-  const [loadedComponents, setLoadedComponents] = useState(getComponentsLoaded());
-
-  useEffect(() => {
-    if (elements.filter(el => !__META_COMPONENTS__[el.element]).length > 0) {
-      ComponentsLoader(elements.map(e => e.element), () => {
-        setLoadedComponents(getComponentsLoaded());
-      });
-    }
-  }, [elements]);*/
-
-
-  return (
-    <>
-      {elements.map(el => <MetaComponentFn el={el} parent={parent} className={className}/>)}
-    </>
-  )
+export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
+  return elements.map((el) => <MetaComponentFn el={el} parent={parent} className={className} parentKey={parentKey}/>);
 }
 
 export const MetaComponent = ({ component = "div", render, parent, ...props }) => {
-  const C = __META_COMPONENTS__[component];
-  const isDesigner = useDesigner().designerMode;
+  const isDesigner = useDesigner().design;
   const ref = useRef(null);
 
-  if (C && C.default) {
-    if (isDesigner) {
-      return (
-        <DesignElement Comp={C.default} element={{ ...props, ...{ element: component } }} dragginElement={ref}>
-          {render && render(C.default, ref)}
-        </DesignElement>
-      )
-    }
+  const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === component));
+  const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
+  useEffect(() => {
+    if (!Comp) {
+      ComponentsLoader([component], () => {
+        setLoadedComponents(Object.keys(__META_COMPONENTS__).find(c => c === component));
+      });
+    }
+  }, []);
+
+  if(!Comp) return null;
+
+  if (isDesigner) {
     return (
-      render && render(C.default)
+      <DesignElement Comp={Comp} element={{ ...props, ...{ element: component } }}>
+        {render && render(Comp, ref)}
+      </DesignElement>
     )
-  } else {
-    throw new Error(`Component ${component} not included in the initial bundle`);
   }
+
+  return (
+    render && render(Comp)
+  )
 }

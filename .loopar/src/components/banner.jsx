@@ -32,15 +32,10 @@ export default class Banner extends Preassembled {
     const className = cn(this.props.className, "grid grid-cols-1 gap-4 place-content-center w-full h-full");
     
     return (
-      <div
+      <Droppable
         {...loopar.utils.renderizableProps(this.props)}
         className={className}
-      >
-        <Droppable receiver={this}>
-          {this.props.children}
-          {this.elements}
-        </Droppable>
-      </div>
+      />
     );
   }
 }

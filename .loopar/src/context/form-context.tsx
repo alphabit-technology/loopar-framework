@@ -103,10 +103,6 @@ export default class FormContext extends BaseForm {
     super(props);
   }
 
-  componentDidMount() {
-    super.componentDidMount();
-  }
-
   render(content: React.ReactNode) {
     if (content) return content;
     const meta = this.props.meta;
@@ -119,17 +115,16 @@ export default class FormContext extends BaseForm {
             ...STRUCTURE.map((el: Element) => {
               const e = el.element;
               if (el.hidden) return null;
+
               return (
                 <MetaComponent
                   elements={[
                     {
                       element: e,
                       ...(e === "designer" ? { fieldDesigner: true } : {}),
-                      //key: meta.key + "_" + el.data.id,
                       ...el
                     },
                   ]}
-                //key={el.data.id}
                 />
               );
             })

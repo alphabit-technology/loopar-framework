@@ -16,7 +16,6 @@ type WorkspaceProviderProps = {
   workspace?: string,
   openNav?: boolean,
   menuItems?: [],
-  loaded?: boolean,
   currentPage?: string,
   currentLink?: string,
   ENVIRONMENT?: string,
@@ -27,17 +26,13 @@ type WorkspaceProviderState = {
   setTheme: (theme: Theme) => void,
   openNav?: boolean,
   setOpenNav?: (open: boolean) => void,
-  loaded?: boolean,
-  setLoaded?: (loaded: boolean) => void,
 }
 
 const initialState: WorkspaceProviderState = {
   theme: "system",
   setTheme: () => null,
   openNav: loopar.cookie.get("openNav"),
-  setOpenNav: () => null,
-  loaded: false,
-  setLoaded: () => null,
+  setOpenNav: () => null
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
@@ -74,8 +69,7 @@ export function WorkspaceProvider({
     () => (loopar.cookie.get(storageKey) as Theme) || defaultTheme
   );
 
-  const [openNav, setOpenNav] = useCookies("openNav");
-  const [loaded, setLoaded] = useState<boolean>(false);
+  const [openNav, setOpenNav] = useCookies(props.workspace);
 
   const handleSetOpenNav = useCallback(
     (openNav) => {
@@ -125,7 +119,6 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    loaded,
     currentPage: props.currentPage,
     currentLink: props.currentLink,
     ENVIRONMENT: props.ENVIRONMENT

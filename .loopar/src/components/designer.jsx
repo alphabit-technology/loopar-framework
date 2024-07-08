@@ -2,30 +2,114 @@ import Component from "$component";
 import loopar from "$loopar";
 import { Modal } from "$dialog";
 import elementManage from "$tools/element-manage";
-import MetaComponent from "@meta-component";
-import { BrushIcon, Code2Icon, EyeIcon, StarIcon } from "lucide-react";
+import { BrushIcon, Code2Icon, EyeIcon, SidebarOpen, StarIcon, XIcon } from "lucide-react";
 import { Droppable } from "$droppable";
 import { FormField } from "@form-field";
 import { BaseFormContext } from "@context/form-context";
-import React, { useState } from "react";
-import { useDocument, DesignerContext } from "@custom-hooks";
-import { elementsDict } from "@global/element-definition";
+import React, { useEffect, useState } from "react";
+import { DesignerContext, useDesigner } from "@custom-hooks";
 import {Button} from "@/components/ui/button";
 import {Tailwind} from "@publicSRC/tailwind";
 import Tab from "@tab"
 import Tabs from "@tabs"
+import {DesignerForm} from "$tools/designer-form";
+import {ElementEditor} from "$tools/element-editor";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {useCookies} from "@services/cookie";
+import MetaComponent from "@meta-component";
+import { useId } from "react";
 
-const MetaComponents = ({ metaComponents, name, designerRef}) => {
+const Sidebar = () => {
+  const [, setSidebarOpen] = useCookies("sidebarOpen");
+  const {currentEditElement, handleChangeMode, mode} = useDesigner();
+    //const sidebarOption = mode;
+
+  return (
+    <div 
+      className="w-sidebarWidth mt-headerHeight pb-headerHeight" 
+      style={{position: "fixed", top: 0, right: 0, zIndex: 30, width: 300, height: "100vh"}}
+    >
+      <div className="flex flex-col p-1 w-full h-full">
+        <div className='flex justify-between pb-1'>
+          <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleChangeMode()
+            }}
+          >
+            {mode === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+            <span>{mode === "designer" ? "Preview" : "Design"}</span>
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSidebarOpen(false)
+            }}
+          >
+            <XIcon className="float-right" />
+          </Button>
+        </div>
+        <Separator/>
+        <ScrollArea 
+          className="h-full w-full"
+        >
+          <>
+          {
+            ["designer", "preview"].includes(mode) ? 
+            (
+              <DesignerForm/>
+            ) : currentEditElement && 
+            (
+              <DesignerContext.Provider 
+                value={{}}
+              >
+                <ElementEditor key={currentEditElement?.data?.key} connectedElement={currentEditElement}/>
+              </DesignerContext.Provider>
+            )
+          }
+          </>
+        </ScrollArea>
+      </div>
+    </div>
+  );
+}
+
+const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data, ...props}) => {
   const [design, setDesign] = useState(false);
-  const document = useDocument();
+  const [activeId] = useState(null);
+  const [currentDropZone, setCurrentDropZone] = useState(null);
+  const [currentDragging, setCurrentDragging] = useState(null);
+  const [editElement, setEditElement] = useState(null);
+  const [mode, setMode] = useCookies("designer-mode");
+  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
+  const [IAGenerator, setIAGenerator] = useState(false);
+  /*const [key, setKey] = useState(data?.key || useId());
+  const [elements, setElements] = useState(JSON.parse(metaComponents || "[]") || []);*/
+
+  const handleChangeMode = (opt=null) => {
+    const newMode = opt !== null ? opt
+      : ["preview", "editor"].includes(mode) ? "designer"
+        : "preview";
+
+    handleSetMode(newMode);
+  }
+
+  const handleSetMode = (newMode) => {
+    setMode(newMode);
+  }
 
   const toggleDesign = (mode) => {
     setDesign(mode !== undefined ? mode : !design);
   }
 
   const handleEditElement = (element) => {
-    //Set a component, necesary to get Metadata from the element
-    document.handleSetEditElement(element);
+    handleChangeMode("editor");
+    setEditElement(element);
   }
 
   const handleDeleteElement = (element) => {
@@ -41,45 +125,186 @@ const MetaComponents = ({ metaComponents, name, designerRef}) => {
     });
   }
 
+ useEffect(() => {
+    const handleMouseMove = (event) => {
+      currentDropZone && setCurrentDropZone(null);
+      currentDragging && setCurrentDragging(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [currentDropZone]);
+
+  useEffect(() => {
+    if(editElement){
+      handleChangeMode("editor");
+      setSidebarOpen(true);
+    }
+  }, [editElement]);
+
+  /*useEffect(() => {
+    setElements(JSON.parse(metaComponents || "[]"));
+  }, [metaComponents]);*/
+
+  /*useEffect(() => {
+    setKey(elementManage.getUniqueKey());
+  }, [elements]);*/
+
+
+  const className = mode !== "preview" ? " element designer design true bg-default-100" : "";
+
   return (
-    <DesignerContext.Provider 
+    <DesignerContext.Provider
       value={{ 
-        designerMode: true, designerRef, design: document.mode === "designer", toggleDesign,
-        handleEditElement, handleDeleteElement
+        designerMode: true, 
+        designerRef, 
+        design: mode === "designer",
+        toggleDesign,
+        currentEditElement: editElement,
+        handleEditElement,
+        handleDeleteElement,
+        activeId,
+        onDraggin: false,
+        setOnDragging: () => {},
+        currentDropZone,
+        setCurrentDropZone,
+        currentDragging,
+        setCurrentDragging,
+        handleChangeMode,
+        handleSetMode,
+        mode
       }}
     >
-      <Tailwind/>
-      <MetaComponent
-        className="gap-4"
-        elements={JSON.parse(metaComponents || "[]")}
-        parent={designerRef}
-        ref={(self) => {
-          if (self) self.parentComponent = designerRef;
-        }}
-      />
+      <div className="rounded-sm">
+        <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
+          <div>
+            <h1 className="text-xl">{data.label}</h1>
+          </div>
+          <div className="space-x-1">
+            <Button
+              variant="secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                props.fieldDesigner && handleChangeMode();
+              }}
+            >
+              {mode === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+              {mode === "designer" ? "Preview" : "Design"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                //this.setState({ IAGenerator: true, IAOperation: true });
+              }}
+            >
+              <StarIcon className="mr-2" />
+              Design IA
+            </Button>
+            <Modal
+              title="IA Generator via CHAT GPT-3.5"
+              icon={<span className="fa fa-magic pr-2 text-success" />}
+              size="md"
+              open={IAGenerator}
+              scrollable
+              buttons={[
+                {
+                  name: "send",
+                  label: "Send",
+                  onClick: (e) => {
+                    this.prompt();
+                  },
+                  internalAction: "close",
+                },
+              ]}
+              onClose={(e) => {
+                setIAGenerator(false);
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <div className="relative bg-card/50 rounded-lg border text-card-foreground">
+                  <pre className="relative p-4 h-full">
+                    <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
+                      <p className="pb-2 border-b-2">
+                        Based on the type of API you have contracted with OpenAI,
+                        you may need to wait for a specific
+                      </p>
+                      <p className="pt-2">
+                        Petition example: "Generate a form that allows me to
+                        manage inventory data."
+                      </p>
+                    </code>
+                  </pre>
+                </div>
+                <textarea
+                  name="PROMPT"
+                  rows={20}
+                  onChange={(ref) => {
+                    //this.promptInput = ref.target.value;
+                  }}
+                  className="bg-transparent w-full h-50 border border-input rounded-md p-2"
+                />
+              </div>
+            </Modal>
+          </div>
+        </div>
+
+        <Tabs
+          data={{ name: data.name + (props.fieldDesigner ? "_designer" : "_element")}}
+          key={data.name + (props.fieldDesigner ? "_designer" : "_element")}
+          asChild
+        >
+          <Tab
+            label={<div className="flex"><BrushIcon className="h-6 w-6 pr-2" /> Designer</div>}
+            name={data.name + "designer_tab"}
+            key={data.name + "designer_tab"}
+          >
+            <div
+              className={"design design-area rounded-lg border bg-card/50 text-card-foreground shadow-sm w-full" + className}
+            >
+              <Tailwind/>
+              {props.fieldDesigner && sidebarOpen && <Sidebar/>}
+              <div
+                className="p-2"
+                onDragEnter={e=>{
+                  e.stopPropagation();
+                  e.preventDefault();
+                  props.fieldDesigner && setCurrentDropZone(null);
+                }}
+              >
+                <Droppable
+                  //key={key}
+                  className={mode === "designer" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
+                  elements={JSON.parse(metaComponents || "[]")}
+                  data={data}
+                  fieldDesigner={props.fieldDesigner}
+                />
+              </div>
+            </div>
+          </Tab>
+          <Tab
+            label={<div className="flex"><Code2Icon className="h-6 w-6 pr-2" /> JSON</div>}
+            name={data.name + "model_tab"}
+            key={data.name + "model_tab"}
+          >
+            <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
+              {JSON.stringify(JSON.parse(metaComponents || "[]"), null, 2)}
+            </div>
+          </Tab>
+        </Tabs>
+      </div>
     </DesignerContext.Provider>
-  );
+  )
 }
 
-const DesignerButton = () => {
-  const document = useDocument();
-  return (
-    <Button
-      variant="secondary"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        document.handleChangeMode();
-      }}
-    >
-      {document.mode === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-      {document.mode === "designer" ? "Preview" : "Design"}
-    </Button>
-  );
-}
-
-export default class Designer extends Component {
+export default class MetaDesigner extends Component {
   isWritable = true;
+  //__REFS__ = {};
 
   get droppable() { return false };
   fieldControl = {};
@@ -101,76 +326,6 @@ export default class Designer extends Component {
       IAGenerator: false,
       IAOperation: false
     };
-  }
-
-  header() {
-    return (
-      <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
-        <div>
-          <h1 className="text-xl">{this.data.label}</h1>
-        </div>
-        {this.props.fieldDesigner && <div className="space-x-1">
-          <DesignerButton/>
-          <Button
-            variant="secondary"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              this.setState({ IAGenerator: true, IAOperation: true });
-            }}
-          >
-            <StarIcon className="mr-2" />
-            Design IA
-          </Button>
-          <Modal
-            title="IA Generator via CHAT GPT-3.5"
-            icon={<span className="fa fa-magic pr-2 text-success" />}
-            size="md"
-            open={this.state.IAGenerator}
-            scrollable
-            buttons={[
-              {
-                name: "send",
-                label: "Send",
-                onClick: (e) => {
-                  this.prompt();
-                },
-                internalAction: "close",
-              },
-            ]}
-            onClose={(e) => {
-              this.setState({ IAGenerator: false });
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <div className="relative bg-card/50 rounded-lg border text-card-foreground">
-                <pre className="relative p-4 h-full">
-                  <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
-                    <p className="pb-2 border-b-2">
-                      Based on the type of API you have contracted with OpenAI,
-                      you may need to wait for a specific
-                    </p>
-                    <p className="pt-2">
-                      Petition example: "Generate a form that allows me to
-                      manage inventory data."
-                    </p>
-                  </code>
-                </pre>
-              </div>
-              <textarea
-                name="PROMPT"
-                rows={20}
-                onChange={(ref) => {
-                  this.promptInput = ref.target.value;
-                }}
-                className="bg-transparent w-full h-50 border border-input rounded-md p-2"
-              />
-            </div>
-          </Modal>
-        </div>
-        }
-      </div>
-    );
   }
 
   async prompt() {
@@ -246,58 +401,29 @@ export default class Designer extends Component {
 
   render() {
     const data =this.data || {};
-    const className = loopar.sidebarOption !== "preview" ? " element designer design true bg-red-100" : "";
+    //const className = loopar.sidebarOption !== "preview" ? " element designer design true bg-red-100" : "";
 
     return (
-      <div className="rounded-sm">
-        {this.header()}
-        <FormField
-          name={data.name}
-          //key={elementManage.getUniqueKey()}
-          render={({ field }) => {
-            return (
-              <Tabs
-                data={{ name: data.name + (this.props.fieldDesigner ? "_designer" : "_element")}}
-                key={data.name + (this.props.fieldDesigner ? "_designer" : "_element")}
-                asChild
-              >
-                <Tab
-                  label={<div className="flex"><BrushIcon className="h-6 w-6 pr-2" /> Designer</div>}
-                  name={data.name + "designer_tab"}
-                  key={data.name + "designer_tab"}
-                >
-                  <div
-                    className={"design design-area rounded-lg border bg-card/50 text-card-foreground shadow-sm w-full" + className}
-                  >
-                    <Droppable
-                      className="p-5 space-y-4"
-                      receiver={this}
-                      isDesigner={this.props.fieldDesigner}
-                      isDroppable={this.props.fieldDesigner}
-                    >
-                      <MetaComponents
-                        name={data.name}
-                        metaComponents={field.value}          
-                        designerRef={this}             
-                      />
-                    </Droppable>
-                  </div>
-                </Tab>
-                <Tab
-                  label={<div className="flex"><Code2Icon className="h-6 w-6 pr-2" /> JSON</div>}
-                  name={field.name + "model_tab"}
-                  key={field.name + "model_tab"}
-                >
-                  <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
-                    {JSON.stringify(JSON.parse(field.value || "[]"), null, 2)}
-                  </div>
-                </Tab>
-              </Tabs>
-            )
-          }}
-        />
-      </div>
-    );
+      <FormField
+        name={data.name}
+        ///key={data.name + "_field"}
+        
+        render={({ field }) => {
+          return (
+            <MetaComponents
+              name={data.name}
+              metaComponents={field.value}          
+              designerRef={this}
+              updateElement={(key, data) => this.updateElement(key, data) }
+              data={data}
+              field={field}
+              fieldDesigner={this.props.fieldDesigner}
+              //key={data.name + "_field"}
+            />
+          )}
+        }
+      />
+    )
   }
 
   componentDidMount() {
@@ -325,8 +451,10 @@ export default class Designer extends Component {
     const targetKey = target.data.key;
     const currentKey = current ? current.data.key : null;
 
-    const lastParentKey = current ? current.parentComponent.data.key : null;
+    const lastParentKey = current ? current.parentKey : null;
     const selfKey = this.props.data.key;
+
+    //console.log(["updateElements", targetKey, lastParentKey])
 
     /**Search target in structure and set elements in target*/
     const setElementsInTarget = (structure) => {
@@ -419,7 +547,6 @@ export default class Designer extends Component {
       const exist = this.findElement("name", data.name, selfElements);
 
       if (exist && exist.data.key !== key) {
-        console.log(["On duplicate field", {exist, data,key}])
         loopar.throw(
           "Duplicate field",
           `The field with the name: ${data.name} already exists, your current field will keep the name: ${name} please check your fields and try again.`

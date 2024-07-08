@@ -27,6 +27,11 @@
       ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".loopar/src/**/*.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".loopar/src/**/*.ts", ".loopar/src/**/*.tsx", ".loopar/service/**/*.ts", ".loopar/service/**/*.tsx",
+    "src/**/*.ts", "src/**/*.tsx"
+  ],
   "exclude": ["node_modules"]
 }

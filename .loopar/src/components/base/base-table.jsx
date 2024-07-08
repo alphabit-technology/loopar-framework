@@ -56,7 +56,7 @@ export class BaseTable extends BaseComponent {
   };
 
   rowsRef = {};
-  searchData = {};
+  //searchData = {};
   gridSize = "sm";
   formSearch = {};
 
@@ -64,12 +64,14 @@ export class BaseTable extends BaseComponent {
 
   constructor(props) {
     super(props);
+    const meta = props.meta;
 
     this.state = {
       ...this.state,
-      meta: props.meta,
+      meta: meta,
       selectedRows: [],
       isOpenDropdown: false,
+      searchData: meta && meta.q && typeof meta.q == "object" ? meta.q : {},
     };
   }
 
@@ -155,7 +157,7 @@ export class BaseTable extends BaseComponent {
       {},
       {
         body: {
-          q: this.searchData,
+          q: this.state.searchData,
           page: this.pagination.page || 1,
         },
       }
@@ -417,7 +419,7 @@ export class BaseTable extends BaseComponent {
         <TableBody>
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length+1}>
+              <TableCell colSpan={columns.length+2}>
                 <div className="flex flex-col bg-background w-full p-3 place-items-center">
                   <AlertTriangleIcon className="w-10 h-10"/>
                   <div className="text-lg">No rows to show</div>
@@ -539,7 +541,9 @@ export class BaseTable extends BaseComponent {
                   ...c.data,
                 };
 
-                data.value = this.searchData[c.data.name] ?? "";
+                const searchData = this.state.searchData;
+
+                data.value = searchData[c.data.name] ?? "";
                 data.name = c.data.name;
                 data.label = c.data.label;
                 data.size = "sm";
@@ -558,16 +562,19 @@ export class BaseTable extends BaseComponent {
                             const value = e.target ? e.target.value : e;
 
                             if (value) {
-                              this.searchData[c.data.name] = `${value}`;
+                              searchData[c.data.name] = `${value}`;
                             } else {
-                              delete this.searchData[c.data.name];
+                              delete searchData[c.data.name];
                             }
-                            clearTimeout(this.lastSearch);
-                            this.lastSearch = setTimeout(() => {
-                              this.search();
-                            }, [SELECT, SWITCH, CHECKBOX].includes(c.element) ? 0: 300);
-                          },
-                        },
+
+                            this.setState({ searchData }, () => {
+                              clearTimeout(this.lastSearch);
+                              this.lastSearch = setTimeout(() => {
+                                this.search();
+                              }, [SELECT, SWITCH, CHECKBOX].includes(c.element) ? 0: 300);
+                            });
+                          }
+                        }
                       ]}
                       parent={this}
                     />
@@ -604,7 +611,9 @@ export class BaseTable extends BaseComponent {
     this.conciliateSelectedRows();
     const selectedRowsCount = this.selectedRows.length;
 
-    this.searchData = this.meta.q && typeof this.meta.q == "object" ? this.meta.q : {};
+    //console.log(["meta.q", this.meta.q])
+
+    //this.searchData = this.meta.q && typeof this.meta.q == "object" ? this.meta.q : {};
     this.rowsRef = {};
 
     const setPage = (page) => {

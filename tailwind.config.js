@@ -103,6 +103,9 @@ module.exports = {
         collapseSidebarWidth: "70px",
         headerHeight:  "4rem",
         webHeaderHeight: "5rem",
+        footerHeight: "4rem",
+        webFooterHeight: "5rem"
+
       },
       screens: {
         "2xl": "1400px",

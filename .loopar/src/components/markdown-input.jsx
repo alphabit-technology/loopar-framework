@@ -13,7 +13,7 @@ import "./markdown.css"
 function MarkdownEditor({ field}) {
   const autofocusNoSpellcheckerOptions = useMemo(() => {
     return {
-      autofocus: true,
+      autofocus: false,
       spellChecker: false,
     };
   }, []);
