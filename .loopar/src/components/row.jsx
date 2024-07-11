@@ -117,11 +117,9 @@ export default class Row extends Component {
         //{...loopar.utils.renderizableProps(this.props)}
         {...this.props}
         elements={cols}
-        receiver={this}
+        //receiver={this}
         className={`grid xm:grid-cols-1 sm:grid-cols-1 ${this.colsDistribution} ${this.spacing}`}
-      >
-        {/*this.props.children*/}
-      </Droppable>
+      />
     );
   }
 

@@ -17,12 +17,11 @@ import {ElementEditor} from "$tools/element-editor";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {useCookies} from "@services/cookie";
-import MetaComponent from "@meta-component";
-import { useId } from "react";
+import { cn } from "@/lib/utils";
 
 const Sidebar = () => {
   const [, setSidebarOpen] = useCookies("sidebarOpen");
-  const {currentEditElement, handleChangeMode, mode} = useDesigner();
+  const {currentEditElement, handleChangeMode, designerModeType} = useDesigner();
     //const sidebarOption = mode;
 
   return (
@@ -40,8 +39,8 @@ const Sidebar = () => {
               handleChangeMode()
             }}
           >
-            {mode === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-            <span>{mode === "designer" ? "Preview" : "Design"}</span>
+            {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+            <span>{designerModeType === "designer" ? "Preview" : "Design"}</span>
           </Button>
           <Button
             variant="secondary"
@@ -60,7 +59,7 @@ const Sidebar = () => {
         >
           <>
           {
-            ["designer", "preview"].includes(mode) ? 
+            ["designer", "preview"].includes(designerModeType) ? 
             (
               <DesignerForm/>
             ) : currentEditElement && 
@@ -79,32 +78,36 @@ const Sidebar = () => {
   );
 }
 
-const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data, ...props}) => {
-  const [design, setDesign] = useState(false);
+const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
+  const [designing, setDesigning] = useState(false);
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [editElement, setEditElement] = useState(null);
-  const [mode, setMode] = useCookies("designer-mode");
+
+  const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
+
   const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
+  const {designerMode} = useDesigner();
+  const elements = JSON.parse(metaComponents || "[]")
+  const className = designerModeType !== "preview" ? " element designer design true bg-default-100" : "";
   const [IAGenerator, setIAGenerator] = useState(false);
-  /*const [key, setKey] = useState(data?.key || useId());
-  const [elements, setElements] = useState(JSON.parse(metaComponents || "[]") || []);*/
+
 
   const handleChangeMode = (opt=null) => {
     const newMode = opt !== null ? opt
-      : ["preview", "editor"].includes(mode) ? "designer"
+      : ["preview", "editor"].includes(designerModeType) ? "designer"
         : "preview";
 
     handleSetMode(newMode);
   }
 
   const handleSetMode = (newMode) => {
-    setMode(newMode);
+    setDesignerModeType(newMode);
   }
 
   const toggleDesign = (mode) => {
-    setDesign(mode !== undefined ? mode : !design);
+    setDesigning(mode !== undefined ? mode : !designing)
   }
 
   const handleEditElement = (element) => {
@@ -125,8 +128,10 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
     });
   }
 
- useEffect(() => {
+  useEffect(() => {
     const handleMouseMove = (event) => {
+      //event.preventDefault();
+      //event.stopPropagation();
       currentDropZone && setCurrentDropZone(null);
       currentDragging && setCurrentDragging(null);
     };
@@ -145,23 +150,13 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
     }
   }, [editElement]);
 
-  /*useEffect(() => {
-    setElements(JSON.parse(metaComponents || "[]"));
-  }, [metaComponents]);*/
-
-  /*useEffect(() => {
-    setKey(elementManage.getUniqueKey());
-  }, [elements]);*/
-
-
-  const className = mode !== "preview" ? " element designer design true bg-default-100" : "";
-
   return (
     <DesignerContext.Provider
       value={{ 
-        designerMode: true, 
+        designerMode: true,
+        designerModeType,
         designerRef, 
-        design: mode === "designer",
+        designing: designerModeType === "designer",
         toggleDesign,
         currentEditElement: editElement,
         handleEditElement,
@@ -175,7 +170,7 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
         setCurrentDragging,
         handleChangeMode,
         handleSetMode,
-        mode
+        //mode
       }}
     >
       <div className="rounded-sm">
@@ -189,11 +184,11 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                props.fieldDesigner && handleChangeMode();
+                !designerMode && handleChangeMode();
               }}
             >
-              {mode === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-              {mode === "designer" ? "Preview" : "Design"}
+              {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+              {designerModeType === "designer" ? "Preview" : "Design"}
             </Button>
             <Button
               variant="secondary"
@@ -255,8 +250,8 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
         </div>
 
         <Tabs
-          data={{ name: data.name + (props.fieldDesigner ? "_designer" : "_element")}}
-          key={data.name + (props.fieldDesigner ? "_designer" : "_element")}
+          data={{ name: data.name + (designerMode ? "_designer" : "_element")}}
+          key={data.name + (designerMode ? "_designer" : "_element")}
           asChild
         >
           <Tab
@@ -265,26 +260,19 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
             key={data.name + "designer_tab"}
           >
             <div
-              className={"design design-area rounded-lg border bg-card/50 text-card-foreground shadow-sm w-full" + className}
+              className={cn("rounded-md border bg-card/50 text-card-foreground shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
             >
               <Tailwind/>
-              {props.fieldDesigner && sidebarOpen && <Sidebar/>}
-              <div
-                className="p-2"
-                onDragEnter={e=>{
-                  e.stopPropagation();
-                  e.preventDefault();
-                  props.fieldDesigner && setCurrentDropZone(null);
-                }}
-              >
-                <Droppable
-                  //key={key}
-                  className={mode === "designer" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
-                  elements={JSON.parse(metaComponents || "[]")}
-                  data={data}
-                  fieldDesigner={props.fieldDesigner}
-                />
-              </div>
+              {!designerMode && sidebarOpen && <Sidebar/>}
+              {!designerMode ?
+              
+              <Droppable
+                className={designerModeType !== "preview" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
+                elements={elements}
+                data={data}
+                rootDesigner={!designerMode}
+              /> : <div className="p-6 text-center text-gray-400 bg-slate-800/50"/>
+              }
             </div>
           </Tab>
           <Tab
@@ -293,7 +281,7 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
             key={data.name + "model_tab"}
           >
             <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
-              {JSON.stringify(JSON.parse(metaComponents || "[]"), null, 2)}
+              {JSON.stringify(elements, null, 2)}
             </div>
           </Tab>
         </Tabs>
@@ -301,6 +289,7 @@ const MetaComponents = ({ metaComponents, name, designerRef, updateElement, data
     </DesignerContext.Provider>
   )
 }
+
 
 export default class MetaDesigner extends Component {
   isWritable = true;
@@ -410,15 +399,12 @@ export default class MetaDesigner extends Component {
         
         render={({ field }) => {
           return (
-            <MetaComponents
-              name={data.name}
+            <DesignerContextProvider
               metaComponents={field.value}          
               designerRef={this}
-              updateElement={(key, data) => this.updateElement(key, data) }
+              //updateElement={(key, data) => this.updateElement(key, data) }
               data={data}
               field={field}
-              fieldDesigner={this.props.fieldDesigner}
-              //key={data.name + "_field"}
             />
           )}
         }

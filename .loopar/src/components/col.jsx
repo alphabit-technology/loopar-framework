@@ -8,7 +8,6 @@ export default class Col extends Component {
     return (
       <Droppable
         {...this.props}
-        receiver={this}
       />
     )
   }

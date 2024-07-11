@@ -37,6 +37,23 @@ export default class DynamicField {
       return JSON.parse(value)?.option || ""
     }*/
 
+    /*if(this.element === DESIGNER){
+      let els = value//loopar.utils.isJSON(value) ? JSON.parse(value) : [];
+
+      if(els && els.length > 0  && els[0].element !== 'fragment'){
+        els = [
+          {
+            element: 'fragment',
+            data: {key: "designer-root", name: "designer-root", id: "designer-root", label: "Designer Root"},
+            elements: els
+          }
+        ]
+      }
+
+      return els;
+    }*/
+
+
     return value == null || typeof value == "undefined" ? "" : value;
   }
 

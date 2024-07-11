@@ -121,7 +121,6 @@ export default class FormContext extends BaseForm {
                   elements={[
                     {
                       element: e,
-                      ...(e === "designer" ? { fieldDesigner: true } : {}),
                       ...el
                     },
                   ]}

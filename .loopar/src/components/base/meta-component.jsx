@@ -9,6 +9,7 @@ import loopar from "$loopar";
 import { useDocumentContext } from "@context/base/base-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
+import { use } from "marked";
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -164,16 +165,16 @@ const elementProps = ({ elDict, parent = {}, isDesigner }) => {
 
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
-  const {mode} = useDesigner();
+  const {designerModeType} = useDesigner();
   const parentHidden = useContext(HiddenContext);
   const {currentDragging, setCurrentDragging} = useDesigner();
   const dragginElement = useRef(null);
   const isDroppable = Comp.prototype.droppable || element.fieldDesigner;
   let className = Comp.prototype.designerClasses || "";
 
-  if (mode !== "preview") {
+  if (designerModeType !== "preview") {
     if (isDroppable) {
-      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 mb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg p-3 pt-5");
+      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 mb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg p-1 pt-5");
     } else {
       className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
     }
@@ -212,7 +213,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   return (
     <HiddenContext.Provider value={disabled}>
       <div
-        key={element.data.key} //necesary for droppable
         className={cn('relative w-full h-auto', className)}
         draggable={!element.fieldDesigner}
         ref={draggableRef}
@@ -258,7 +258,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
         }}
       >
         {
-          mode !== "preview" &&
+          designerModeType !== "preview" &&
           <ElementTitle
             element={element}
             //elementRef={dragginElement.current}
@@ -269,7 +269,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
         }
         <Fragment {...fragmentProps}>
           <Comp {...element}
-            
             ref={self => {
               if (self) {
                 self.parentComponent = parent;
@@ -485,7 +484,15 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 };
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
-  return elements.map((el) => <MetaComponentFn el={el} parent={parent} className={className} parentKey={parentKey}/>);
+  return elements.map(el => (
+    <MetaComponentFn 
+      el={el}
+      parent={parent} 
+      className={className} 
+      parentKey={parentKey}
+      key={parentKey + (el.data?.key || useId())}
+    />
+  ));
 }
 
 export const MetaComponent = ({ component = "div", render, parent, ...props }) => {

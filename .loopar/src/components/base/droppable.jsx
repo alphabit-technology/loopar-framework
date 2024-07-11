@@ -1,27 +1,21 @@
-import React, { useState, useEffect, useId, useRef } from "react";
-import { useDesigner, useDocument, useHidden, DroppableContext } from "@custom-hooks";
+import React, { useState, useEffect, useRef } from "react";
+import { useDesigner, useHidden, DroppableContext } from "@custom-hooks";
 import { cn } from "@/lib/utils";
 import loopar from "$loopar";
 import MetaComponent from "@meta-component";
-import elementManage from "$tools/element-manage";
 
-export function Droppable(props) {
+export function Droppable({data={}, children, className, Component="div", ...props}) {
   const [dropping, setDropping] = useState(false);
   const [dropped, setDropped] = useState(false);
-  const [key, setKey] = useState(props.data?.key || useId());
-
-  const { children, className, Component="div"} = props;
-  //const Document = useDocument();
-  const {mode} = useDesigner();
   const hidden = useHidden();
 
   const __REFS__ = {}
   const [elements, setElements] = useState(props.elements || []);
   const [movement, setMovement] = useState();
   const [position, setPosition] = useState();
-  const {currentDropZone, setCurrentDropZone, currentDragging, setCurrentDragging, designerMode, designerRef} = useDesigner();
+  const {currentDropZone, setCurrentDropZone, currentDragging, setCurrentDragging, designerMode, designerModeType, designerRef} = useDesigner();
 
-  const isDesigner = designerMode || props.isDesigner;
+  //const isDesigner = designerMode || props.isDesigner;
   const isDroppable = true// receiver.droppable || receiver.props.droppable || props.isDroppable;
   const droppableEvents = {};
   const dropZoneRef = useRef();
@@ -29,15 +23,13 @@ export function Droppable(props) {
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
 
-    const newElements = JSON.parse(
-      JSON.stringify(
-        elements.filter(el => el.$$typeof !== Symbol.for("react.element") && el.data.key !== current)
-      )
-    );
+    const newElements = elements.filter(el => el.$$typeof !== Symbol.for("react.element") && el.data.key !== current);
+
     element && newElements.splice(afterAt, 0, element);
 
     setElements(newElements);
-  }
+  };
+
 
   const getBrothers = (current) => {
     return Object.keys(__REFS__).filter(e => e !== current).map(key => __REFS__[key].getBoundingClientRect());
@@ -66,7 +58,7 @@ export function Droppable(props) {
   useEffect(() => {
     if(currentDragging){
       const currentKey = currentDragging.key;
-      if(!currentKey || currentKey === props.data?.key) return;
+      if(!currentKey || currentKey === data.key) return;
 
       const i = findInsertIndex(currentDragging.targetRect, currentKey);
       position !== i && setPosition(i);
@@ -80,7 +72,6 @@ export function Droppable(props) {
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
         setElement(
           <div 
-            key={currentDragging.key+"-dragging"} 
             style={{width: rect.width - 35, height: 50}}
             className="mb-4 bg-green-900/40 rounded-sm border-dashed border-secondary-500 transition-all duration-300 drop-shadow-sm p-4"
           />, position
@@ -88,15 +79,9 @@ export function Droppable(props) {
         return;
       }
     }
-
-    setElements((props.elements || []).filter(el => el.data.key !== currentDragging?.key));
+    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for("react.element") &&  el.data && el.data?.key && el.data?.key !== currentDragging?.key));
+    //setElements((elements || []).filter(el => el.data && el.data.key && el.data.key !== currentDragging?.key));
   }, [position, currentDragging, dropping]);
-
-  useEffect(() => {
-    if(!currentDragging || props.fieldDesigner){
-      setKey(elementManage.getUniqueKey());
-    }
-  }, [elements]);
 
   useEffect(() => {
     if(!currentDragging){
@@ -124,22 +109,14 @@ export function Droppable(props) {
   useEffect(() => {
     if(dropped){
       designerRef.updateElements(
-        {data: {key: props.data?.key}}, //Target
+        {data: {key: data.key}}, //Target
         elements, //Elements
         {data: {key: currentDragging?.key}, parentKey: currentDragging?.parentKey}, //Source
-        /*() => {
-          setDropped(false);
-          setCurrentDropZone(null);
-          setCurrentDragging(null);
-        }*/
       );
 
       setDropped(false);
-      setCurrentDropZone(null);
-      setCurrentDragging(null);
-  
-    }else{
-      //setDropping(false);
+      //setCurrentDragging(null);
+      //setCurrentDropZone(null);
     }
   }, [dropped]);
 
@@ -149,12 +126,11 @@ export function Droppable(props) {
     }
   }, [currentDragging, currentDropZone]);
   
-  if (isDesigner && isDroppable && mode !== "preview") {
+  if (designerMode && isDroppable && designerModeType !== "preview") {
     droppableEvents.droppable = true;
     droppableEvents.onDragEnter = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log(["currenDragging", currentDragging]);
       setCurrentDropZone(dropZoneRef.current);
     };
     droppableEvents.onDrop = (e) => {
@@ -194,12 +170,13 @@ export function Droppable(props) {
 
   const ClassNames = cn(
     //mode !== "preview" && "h-full w-full p-3 bg-slate-200/50 dark:bg-red-500/50 pt-4" + isDroppable ? " min-h-20" : "",
-    dropping && mode !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow transition-all duration-300 p-2 h-full' : '',
+    designerModeType !== "preview" && "bg-slate-200/50 dark:bg-slate-900/50 pt-4 h-full w-full p-2",
+    dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow transition-all duration-300 p-4 h-full' : '',
     className
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
-  const C = (isDesigner && isDroppable && !hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
+  const C = (designerMode && isDroppable && !hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
 
   const getCurrentDragKey = () => {
     return currentDragging?.key;
@@ -211,15 +188,14 @@ export function Droppable(props) {
 
   const targetRect = getTargetRect();
 
-  console.log([currentDragging])
   return (
-    (isDesigner && isDroppable && !hidden) ?
+    (designerMode && isDroppable && !hidden) ?
       <>
         {
-          (currentDropZone && currentDragging && dropping && props?.data && props.data && props.data.key !== getCurrentDragKey()) && (
+          (currentDropZone && currentDragging && dropping && data.key && data.key !== getCurrentDragKey()) && (
             <div
               className="fixed bg-secondary rounded-md border-2 pointer-events-none"
-              key={getCurrentDragKey()+"-dragging"}
+              //key={getCurrentDragKey()+"-dragging"}
               style={{
                 width: targetRect.width,
                 height: targetRect.height,
@@ -241,17 +217,15 @@ export function Droppable(props) {
           {children}
           <DroppableContext.Provider value={{droppable: isDroppable, setDroppable: () => {}, __REFS__}}>
             <MetaComponent
-              key={key}
               elements={elements}
-              parentKey={props.data?.key}
+              parentKey={data.key}
             />
           </DroppableContext.Provider>
         </C>
       </>
         :
       <C {...(C.toString() === 'Symbol(react.fragment)' ? {} : {...renderizableProps, className: className})}>
-        {children || <MetaComponent elements={elements} parentKey={props.data?.key} />}
+        {children || <MetaComponent elements={elements} parentKey={data.key} />}
       </C>
   );
-  /**Original */
 }

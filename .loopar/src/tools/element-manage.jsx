@@ -50,12 +50,9 @@ class ElementManage {
    fixElements(elements) {
       return elements.map(el => {
          el.data ??= {};
-
          if (!el.data.name || !el.data.id || !el.data.label || !el.data.key) {
             const names = this.elementName(el.element);
-            //el.data.name ??= names.name;
             el.data.key ??= this.getUniqueKey();
-            //el.data.id ??= names.id;
             el.data.label ??= loopar.utils.Capitalize(names.label.replaceAll('_', ' '));
          }
 

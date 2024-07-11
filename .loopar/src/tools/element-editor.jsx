@@ -278,7 +278,7 @@ export class ElementEditor extends DivComponent {
     const dontHaveMetaElements = connectedElement.dontHaveMetaElements || [];
 
     const metaFields = this.metaFields().map(({ group, elements }) => {
-      if (group === 'form' && elementsDict[connectedElement.element]?.def?.isWritable) {
+      if (group === 'form' && elementsDict[connectedElement.element]?.def?.isWritable && ["designer", "fragment"].includes(connectedElement.element) === false){
         elements['divider_default'] = (
           <Separator className="my-3"/>
         );
