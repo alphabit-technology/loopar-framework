@@ -9,10 +9,13 @@ export const DesignerContext = createContext({
   setCurrentDropZone: () => {},
   currentDragging: null,
   setCurrentDragging: () => {},
+  dropping: false,
+  setDropping: () => {},
+  movement: null,
+  setMovement: () => {},
+  updateElement: () => {},
 });
 export const useDesigner = () => useContext(DesignerContext);
-
-
 
 export const DroppableContext = createContext({
   droppable: false,

@@ -23,13 +23,12 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
 
-    const newElements = elements.filter(el => el.$$typeof !== Symbol.for("react.element") && el.data.key !== current);
+    const newElements = elements.filter(el => el.data && el.data.key && el.data.key !== current);
 
     element && newElements.splice(afterAt, 0, element);
 
     setElements(newElements);
   };
-
 
   const getBrothers = (current) => {
     return Object.keys(__REFS__).filter(e => e !== current).map(key => __REFS__[key].getBoundingClientRect());
@@ -79,15 +78,9 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         return;
       }
     }
-    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for("react.element") &&  el.data && el.data?.key && el.data?.key !== currentDragging?.key));
-    //setElements((elements || []).filter(el => el.data && el.data.key && el.data.key !== currentDragging?.key));
-  }, [position, currentDragging, dropping]);
 
-  useEffect(() => {
-    if(!currentDragging){
-      setElements(props.elements || []);
-    }
-  }, [props.elements]);
+    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.element') && ((el.data?.key || null) !== (currentDragging?.key))));
+  }, [position, currentDragging, currentDropZone]);
 
   useEffect(() => {
     if(movement){
@@ -102,29 +95,36 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     }
   }, [movement]);
   
+  /**TODO: Check optimization on render */
+  useEffect(() => {
+    if(!currentDragging){
+      setElements(props.elements || []);
+    }
+  }, [props.elements]);
+   /**TODO: Check optimization on render */
+  
   useEffect(() => {
     setDropping(currentDropZone && currentDropZone === dropZoneRef.current);
   }, [currentDropZone, dropZoneRef]);
 
   useEffect(() => {
     if(dropped){
+      setElement(currentDragging.el, position, currentDragging?.key);
+
       designerRef.updateElements(
         {data: {key: data.key}}, //Target
         elements, //Elements
         {data: {key: currentDragging?.key}, parentKey: currentDragging?.parentKey}, //Source
       );
-
-      setDropped(false);
-      //setCurrentDragging(null);
-      //setCurrentDropZone(null);
     }
   }, [dropped]);
 
   useEffect(() => {
-    if(!currentDragging){
+    if(dropped){
+      setDropped(false);
       setDropping(false);
     }
-  }, [currentDragging, currentDropZone]);
+  }, [dropped, elements, props.elements]);
   
   if (designerMode && isDroppable && designerModeType !== "preview") {
     droppableEvents.droppable = true;
@@ -192,7 +192,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     (designerMode && isDroppable && !hidden) ?
       <>
         {
-          (currentDropZone && currentDragging && dropping && data.key && data.key !== getCurrentDragKey()) && (
+          (dropping && currentDropZone && currentDropZone === dropZoneRef.current) && (
             <div
               className="fixed bg-secondary rounded-md border-2 pointer-events-none"
               //key={getCurrentDragKey()+"-dragging"}

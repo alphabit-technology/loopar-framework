@@ -9,7 +9,6 @@ import loopar from "$loopar";
 import { useDocumentContext } from "@context/base/base-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { use } from "marked";
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -108,7 +107,6 @@ function prepareMetaData(props, parent, image) {
             title: data.description || "",
             style: {
               display: "none"
-              //paddingTop: loopar.utils.aspectRatio(data.aspect_ratio) + "%",
             }
           });
 
@@ -121,10 +119,7 @@ function prepareMetaData(props, parent, image) {
 
           if (data.aspect_ratio) {
             props.style = {
-              ...props.style || {},
-              ...{
-                //paddingTop: loopar.utils.aspectRatio(data.aspect_ratio) + "%",
-              },
+              ...props.style || {}
             }
           }
         } else {
@@ -225,13 +220,10 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
           handleMouseOver(false);
         }}
         onDragStart={(e) => {
-          //e.preventDefault();
           e.stopPropagation();
           const img = new Image();
           img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/axl7kYAAAAASUVORK5CYII=';
           e.dataTransfer.setDragImage(img, 0, 0);
-          //DragAndDropUtils.dataTransfer = draggableRef.current;
-          //e.dataTransfer.type 
           e.dataTransfer.effectAllowed = "move"
           
           const el = { 
@@ -240,7 +232,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
             elements: element.elements
           };
 
-          //console.log(["target", e.target])
           setCurrentDragging({
             el,
             key: el.data.key,
@@ -254,17 +245,14 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
           e.preventDefault();
           e.stopPropagation();
           e.dataTransfer.clearData();
-          //DragAndDropUtils.elementOverDrag = null;
         }}
       >
         {
           designerModeType !== "preview" &&
           <ElementTitle
             element={element}
-            //elementRef={dragginElement.current}
             active={hover && !currentDragging}
             style={{ top: 0 }}
-
           />
         }
         <Fragment {...fragmentProps}>
@@ -273,7 +261,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
               if (self) {
                 self.parentComponent = parent;
                 dragginElement.current = self;
-                //__REFS__[element.key] = self;
               }
             }}
           />
@@ -281,7 +268,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
       </div>
     </HiddenContext.Provider>
   )
-  /**Old */
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
@@ -325,76 +311,6 @@ function extractFieldNames(condition) {
 
   return Array.from(matches);
 }
-
-/*function MetaComponents({ elements = [], parent, className }) {
-  const designer = useDesigner();
-  const { docRef, formValues } = useDocumentContext();
-  const isDesigner = designer.designerMode;
-
-  return (
-    <>
-      {elements.map((el, index) => {
-        const def = baseElementsDict[el.element]?.def || {};
-        el.def = def;
-        const Comp = __META_COMPONENTS__[def.element]?.default || __META_COMPONENTS__[def.element];
-        const props = elementProps({ elDict: el, parent, isDesigner });
-
-        let display = true;
-        if (props.data?.display_on){
-          const fields = extractFieldNames(props.data?.display_on);
-
-          const values = fields.reduce((acc, field) => {
-            acc[field] = formValues[field];
-            return acc;
-          }, {});
-
-          display = evaluateCondition(props.data?.display_on, values);
-        }
-
-        if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
-          const data = props.data || {};
-          props.className = cn("relative", (Comp && Comp.prototype.designerClasses), props.className, data?.class, "rounded-md", el.className, className);
-
-          if (docRef.__META_DEFS__[data.name]) {
-            const newData = { ...data, ...docRef.__META_DEFS__[data.name]?.data || {} };
-            Object.assign(props, docRef.__META_DEFS__[data.name], { data: newData });
-          }
-
-          if (isDesigner && Comp) {
-            return <DesignElement key={index} Comp={Comp} element={props} parent={parent} def={def} />;
-          } else if (!data.hidden && display) {
-            const disabled = data.disabled;
-
-            const Fragment = disabled ? "div" : React.Fragment;
-            const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
-
-            if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
-              return <HTMLBlock key={index} element={el} {...loopar.utils.renderizableProps(props)} />
-            }
-
-            if (!Comp) return null;
-
-            return (
-              <Fragment {...fragmentProps}>
-                <Comp
-                  {...props}
-                  key={props.key || index}
-                  ref={ref => {
-                    docRef.__REFS__[data.name] = ref;
-                    parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
-                  }
-                  } />
-              </Fragment>
-            );
-          }
-        } else {
-          //console.warn(["Component: " + def.element + " is not loaded yet"]);
-          return null;
-        }
-      })}
-    </>
-  );
-}*/
 
 const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   if(el && el.$$typeof === Symbol.for("react.element")){
@@ -449,7 +365,15 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
     }
 
     if (isDesigner && Comp) {
-      return <DesignElement Comp={Comp} element={_props} parent={parent} parentKey={parentKey} def={def}/>;
+      return (
+        <DesignElement 
+          Comp={Comp} 
+          element={_props} 
+          parent={parent} 
+          parentKey={parentKey}
+          def={def}
+        />
+      )
     } else if (!data.hidden && display) {
       const disabled = data.disabled;
 
@@ -467,8 +391,6 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         <Fragment {...fragmentProps}>
           <Comp
             {..._props}
-            //key={data.key}
-            //key={_props.key || props.key}
             ref={ref => {
               docRef.__REFS__[data.name] = ref;
               parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
@@ -484,15 +406,18 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 };
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
-  return elements.map(el => (
-    <MetaComponentFn 
-      el={el}
-      parent={parent} 
-      className={className} 
-      parentKey={parentKey}
-      key={parentKey + (el.data?.key || useId())}
-    />
-  ));
+  return elements.map((el) => {
+    const key = parentKey + (el.data?.key || useId());
+    return (
+      <MetaComponentFn 
+        el={el}
+        parent={parent} 
+        className={className} 
+        parentKey={parentKey}
+        key={key}
+      />
+    )
+  });
 }
 
 export const MetaComponent = ({ component = "div", render, parent, ...props }) => {

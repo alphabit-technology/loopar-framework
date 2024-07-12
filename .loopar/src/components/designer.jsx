@@ -14,12 +14,12 @@ import Tab from "@tab"
 import Tabs from "@tabs"
 import {DesignerForm} from "$tools/designer-form";
 import {ElementEditor} from "$tools/element-editor";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {Separator} from "@/components/ui/separator";
+import {ScrollArea} from "@/components/ui/scroll-area";
 import {useCookies} from "@services/cookie";
-import { cn } from "@/lib/utils";
+import {cn} from "@/lib/utils";
 
-const Sidebar = () => {
+const Sidebar = ({updateElement}) => {
   const [, setSidebarOpen] = useCookies("sidebarOpen");
   const {currentEditElement, handleChangeMode, designerModeType} = useDesigner();
     //const sidebarOption = mode;
@@ -67,7 +67,7 @@ const Sidebar = () => {
               <DesignerContext.Provider 
                 value={{}}
               >
-                <ElementEditor key={currentEditElement?.data?.key} connectedElement={currentEditElement}/>
+                <ElementEditor key={currentEditElement?.data?.key} connectedElement={currentEditElement} updateElement={updateElement}/>
               </DesignerContext.Provider>
             )
           }
@@ -78,12 +78,13 @@ const Sidebar = () => {
   );
 }
 
-const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
+const DesignerContextProvider = ({designerRef, metaComponents, data, updateElement}) => {
   const [designing, setDesigning] = useState(false);
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [editElement, setEditElement] = useState(null);
+  const [dropping, setDropping] = useState(false);
 
   const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
 
@@ -130,16 +131,18 @@ const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
 
   useEffect(() => {
     const handleMouseMove = (event) => {
-      //event.preventDefault();
-      //event.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
       currentDropZone && setCurrentDropZone(null);
       currentDragging && setCurrentDragging(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseMove);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseMove);
     };
   }, [currentDropZone]);
 
@@ -152,10 +155,10 @@ const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
 
   return (
     <DesignerContext.Provider
-      value={{ 
+      value={{
         designerMode: true,
         designerModeType,
-        designerRef, 
+        designerRef,
         designing: designerModeType === "designer",
         toggleDesign,
         currentEditElement: editElement,
@@ -170,6 +173,9 @@ const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
         setCurrentDragging,
         handleChangeMode,
         handleSetMode,
+        dropping,
+        setDropping,
+        updateElement
         //mode
       }}
     >
@@ -263,14 +269,13 @@ const DesignerContextProvider = ({designerRef, metaComponents, data}) => {
               className={cn("rounded-md border bg-card/50 text-card-foreground shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
             >
               <Tailwind/>
-              {!designerMode && sidebarOpen && <Sidebar/>}
+              {!designerMode && sidebarOpen && <Sidebar updateElement={updateElement}/>}
               {!designerMode ?
               
               <Droppable
                 className={designerModeType !== "preview" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
                 elements={elements}
                 data={data}
-                rootDesigner={!designerMode}
               /> : <div className="p-6 text-center text-gray-400 bg-slate-800/50"/>
               }
             </div>
@@ -402,7 +407,7 @@ export default class MetaDesigner extends Component {
             <DesignerContextProvider
               metaComponents={field.value}          
               designerRef={this}
-              //updateElement={(key, data) => this.updateElement(key, data) }
+              updateElement={(key, data) => this.updateElement(key, data)}
               data={data}
               field={field}
             />
@@ -439,8 +444,6 @@ export default class MetaDesigner extends Component {
 
     const lastParentKey = current ? current.parentKey : null;
     const selfKey = this.props.data.key;
-
-    //console.log(["updateElements", targetKey, lastParentKey])
 
     /**Search target in structure and set elements in target*/
     const setElementsInTarget = (structure) => {
