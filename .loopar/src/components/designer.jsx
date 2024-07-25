@@ -19,7 +19,7 @@ import {ScrollArea} from "@/components/ui/scroll-area";
 import {useCookies} from "@services/cookie";
 import {cn} from "@/lib/utils";
 
-const Sidebar = ({updateElement}) => {
+const Sidebar = ({updateElement, getElement}) => {
   const [, setSidebarOpen] = useCookies("sidebarOpen");
   const {currentEditElement, handleChangeMode, designerModeType} = useDesigner();
     //const sidebarOption = mode;
@@ -67,7 +67,12 @@ const Sidebar = ({updateElement}) => {
               <DesignerContext.Provider 
                 value={{}}
               >
-                <ElementEditor key={currentEditElement?.data?.key} connectedElement={currentEditElement} updateElement={updateElement}/>
+                <ElementEditor 
+                  key={currentEditElement?.data?.key} 
+                  element={currentEditElement} 
+                  updateElement={updateElement} 
+                  getElement={getElement}
+                />
               </DesignerContext.Provider>
             )
           }
@@ -78,12 +83,12 @@ const Sidebar = ({updateElement}) => {
   );
 }
 
-const DesignerContextProvider = ({designerRef, metaComponents, data, updateElement}) => {
+const DesignerContextProvider = ({designerRef, metaComponents, data, updateElement, getElement}) => {
   const [designing, setDesigning] = useState(false);
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
-  const [editElement, setEditElement] = useState(null);
+  const [editElement, setEditElement] = useCookies("editElement");
   const [dropping, setDropping] = useState(false);
 
   const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
@@ -146,12 +151,15 @@ const DesignerContextProvider = ({designerRef, metaComponents, data, updateEleme
     };
   }, [currentDropZone]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     if(editElement){
       handleChangeMode("editor");
       setSidebarOpen(true);
     }
-  }, [editElement]);
+  }, [editElement]);*/
+
+  //console.log(["EditElement", editElement])
+
 
   return (
     <DesignerContext.Provider
@@ -159,7 +167,7 @@ const DesignerContextProvider = ({designerRef, metaComponents, data, updateEleme
         designerMode: true,
         designerModeType,
         designerRef,
-        designing: designerModeType === "designer",
+        designing: designerModeType === "designer" || designerModeType === "editor",
         toggleDesign,
         currentEditElement: editElement,
         handleEditElement,
@@ -175,122 +183,124 @@ const DesignerContextProvider = ({designerRef, metaComponents, data, updateEleme
         handleSetMode,
         dropping,
         setDropping,
-        updateElement
+        //updateElement
         //mode
       }}
     >
-      <div className="rounded-sm">
-        <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
-          <div>
-            <h1 className="text-xl">{data.label}</h1>
-          </div>
-          <div className="space-x-1">
-            <Button
-              variant="secondary"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                !designerMode && handleChangeMode();
-              }}
-            >
-              {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-              {designerModeType === "designer" ? "Preview" : "Design"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                //this.setState({ IAGenerator: true, IAOperation: true });
-              }}
-            >
-              <StarIcon className="mr-2" />
-              Design IA
-            </Button>
-            <Modal
-              title="IA Generator via CHAT GPT-3.5"
-              icon={<span className="fa fa-magic pr-2 text-success" />}
-              size="md"
-              open={IAGenerator}
-              scrollable
-              buttons={[
-                {
-                  name: "send",
-                  label: "Send",
-                  onClick: (e) => {
-                    this.prompt();
+      <BaseFormContext.Provider value={{}}>
+        <div className="rounded-sm">
+          <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
+            <div>
+              <h1 className="text-xl">{data.label}</h1>
+            </div>
+            <div className="space-x-1">
+              <Button
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  !designerMode && handleChangeMode();
+                }}
+              >
+                {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+                {designerModeType === "designer" ? "Preview" : "Design"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  //this.setState({ IAGenerator: true, IAOperation: true });
+                }}
+              >
+                <StarIcon className="mr-2" />
+                Design IA
+              </Button>
+              <Modal
+                title="IA Generator via CHAT GPT-3.5"
+                icon={<span className="fa fa-magic pr-2 text-success" />}
+                size="md"
+                open={IAGenerator}
+                scrollable
+                buttons={[
+                  {
+                    name: "send",
+                    label: "Send",
+                    onClick: (e) => {
+                      this.prompt();
+                    },
+                    internalAction: "close",
                   },
-                  internalAction: "close",
-                },
-              ]}
-              onClose={(e) => {
-                setIAGenerator(false);
-              }}
-            >
-              <div className="flex flex-col gap-2">
-                <div className="relative bg-card/50 rounded-lg border text-card-foreground">
-                  <pre className="relative p-4 h-full">
-                    <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
-                      <p className="pb-2 border-b-2">
-                        Based on the type of API you have contracted with OpenAI,
-                        you may need to wait for a specific
-                      </p>
-                      <p className="pt-2">
-                        Petition example: "Generate a form that allows me to
-                        manage inventory data."
-                      </p>
-                    </code>
-                  </pre>
+                ]}
+                onClose={(e) => {
+                  setIAGenerator(false);
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="relative bg-card/50 rounded-lg border text-card-foreground">
+                    <pre className="relative p-4 h-full">
+                      <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
+                        <p className="pb-2 border-b-2">
+                          Based on the type of API you have contracted with OpenAI,
+                          you may need to wait for a specific
+                        </p>
+                        <p className="pt-2">
+                          Petition example: "Generate a form that allows me to
+                          manage inventory data."
+                        </p>
+                      </code>
+                    </pre>
+                  </div>
+                  <textarea
+                    name="PROMPT"
+                    rows={20}
+                    onChange={(ref) => {
+                      //this.promptInput = ref.target.value;
+                    }}
+                    className="bg-transparent w-full h-50 border border-input rounded-md p-2"
+                  />
                 </div>
-                <textarea
-                  name="PROMPT"
-                  rows={20}
-                  onChange={(ref) => {
-                    //this.promptInput = ref.target.value;
-                  }}
-                  className="bg-transparent w-full h-50 border border-input rounded-md p-2"
-                />
-              </div>
-            </Modal>
+              </Modal>
+            </div>
           </div>
-        </div>
 
-        <Tabs
-          data={{ name: data.name + (designerMode ? "_designer" : "_element")}}
-          key={data.name + (designerMode ? "_designer" : "_element")}
-          asChild
-        >
-          <Tab
-            label={<div className="flex"><BrushIcon className="h-6 w-6 pr-2" /> Designer</div>}
-            name={data.name + "designer_tab"}
-            key={data.name + "designer_tab"}
+          <Tabs
+            data={{ name: data.name + (designerMode ? "_designer" : "_element")}}
+            key={data.name + (designerMode ? "_designer" : "_element")}
+            asChild
           >
-            <div
-              className={cn("rounded-md border bg-card/50 text-card-foreground shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
+            <Tab
+              label={<div className="flex"><BrushIcon className="h-6 w-6 pr-2" /> Designer</div>}
+              name={data.name + "designer_tab"}
+              key={data.name + "designer_tab"}
             >
-              <Tailwind/>
-              {!designerMode && sidebarOpen && <Sidebar updateElement={updateElement}/>}
-              {!designerMode ?
-              
-              <Droppable
-                className={designerModeType !== "preview" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
-                elements={elements}
-                data={data}
-              /> : <div className="p-6 text-center text-gray-400 bg-slate-800/50"/>
-              }
-            </div>
-          </Tab>
-          <Tab
-            label={<div className="flex"><Code2Icon className="h-6 w-6 pr-2" /> JSON</div>}
-            name={data.name + "model_tab"}
-            key={data.name + "model_tab"}
-          >
-            <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
-              {JSON.stringify(elements, null, 2)}
-            </div>
-          </Tab>
-        </Tabs>
-      </div>
+              <div
+                className={cn("rounded-md border bg-card/50 text-card-foreground shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
+              >
+                <Tailwind/>
+                {!designerMode && sidebarOpen && <Sidebar updateElement={updateElement} getElement={getElement}/>}
+                {!designerMode ?
+                
+                <Droppable
+                  className={designerModeType !== "preview" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
+                  elements={elements}
+                  data={data}
+                /> : <div className="p-6 text-center text-gray-400 bg-slate-800/50"/>
+                }
+              </div>
+            </Tab>
+            <Tab
+              label={<div className="flex"><Code2Icon className="h-6 w-6 pr-2" /> JSON</div>}
+              name={data.name + "model_tab"}
+              key={data.name + "model_tab"}
+            >
+              <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
+                {JSON.stringify(elements, null, 2)}
+              </div>
+            </Tab>
+          </Tabs>
+        </div>
+      </BaseFormContext.Provider>
     </DesignerContext.Provider>
   )
 }
@@ -393,21 +403,20 @@ export default class MetaDesigner extends Component {
       });
   }
 
+ 
   render() {
     const data =this.data || {};
-    //const className = loopar.sidebarOption !== "preview" ? " element designer design true bg-red-100" : "";
 
     return (
       <FormField
         name={data.name}
-        ///key={data.name + "_field"}
-        
         render={({ field }) => {
           return (
             <DesignerContextProvider
               metaComponents={field.value}          
               designerRef={this}
-              updateElement={(key, data) => this.updateElement(key, data)}
+              updateElement={(key, data) => {this.updateElement(key, data)}}
+              getElement={(key) => this.getElement(key)}
               data={data}
               field={field}
             />
@@ -419,11 +428,6 @@ export default class MetaDesigner extends Component {
 
   componentDidMount() {
     super.componentDidMount();
-    if (this.props.fieldDesigner) {
-      loopar.Designer = this;
-    } else {
-      return;
-    }
 
     const fixElements = JSON.stringify(elementManage.fixElements(
       this.#elements
@@ -488,17 +492,22 @@ export default class MetaDesigner extends Component {
         }
       }
     }
+    
     return null;
   }
 
+  getElement(key){
+    return this.findElement("key", key);
+  }
+
   get #elements() {
-    return JSON.parse(this.context.getValues(this.props.data.name) || "[]");
+    return JSON.parse(this.context.getValues && this.context.getValues(this.props.data.name) || "[]");
   }
 
   makeElements(elements, callback) {
     const data = this.data;
-    data.value = JSON.stringify(elementManage.fixElements(elements));
-
+    const fixed = elementManage.fixElements(elements);
+    data.value = JSON.stringify(fixed);
     this.hydrateForm(data.value, callback);
   }
 
@@ -554,12 +563,12 @@ export default class MetaDesigner extends Component {
         }
 
         if (el.data.background_image) {
+          //if(el.data.label === "Image2") console.log(["background_image", el.data.background_image])
           /*el.data.background_image = JSON.stringify(
             fileManager.getMappedFiles(el.data.background_image)
-          );*/
+          );
 
-          //el.data.background_image = fileManager.getMappedFiles(el.data.background_image);
-          //console.log(["updateElement", el.data.background_image])
+          el.data.background_image = fileManager.getMappedFiles(el.data.background_image);*/
         }
 
         /**Purify Data */

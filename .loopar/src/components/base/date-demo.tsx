@@ -14,17 +14,22 @@ interface PropsInterface {
 }
 
 const getTime = (time: string) => {
-  if(typeof time == "object") return dayjs(time).format("HH:mm");
+  if(!time || typeof time == "object") return dayjs(time).format("HH:mm");
+  time = dayjs(time).format("HH:mm");
 
   const date = new Date();
-  const [hours, minutes] = time.split(":").map((value) => parseInt(value));
+  const [hours=0, minutes=0] = time.split(":").map((value) => parseInt(value) || 0);
+  console.log("Time",time)
   date.setHours(hours);
   date.setMinutes(minutes);
+
+  console.log(["date", hours, minutes, date])
   return loopar.utils.formatTime(date);
 }
 
 const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
   const { handleChange, value } = props;
+  console.log(["getTime(value)", getTime(value)])
   const [hours, minutes] = getTime(value).split(":").map((value) => parseInt(value));
 
   const [AmPm, setAmPm] = useState<string>(hours > 12 ? "PM" : "AM");

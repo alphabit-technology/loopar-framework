@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import loopar from "$loopar";
 global.dialogsCount ??= 0;
 
 import {
-  Dialog as BaseDialog,
+  Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -15,95 +15,42 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+const MetaDialog = (props) => {
+  const [state, setState] = useState({
+    type: props.type,
+    title: props.title,
+    open: props.open !== undefined ? props.open : true,
+    ok: props.ok,
+    cancel: props.cancel,
+    value: null,
+  });
 
-export default class Dialog extends React.Component {
-  constructor(props) {
-    super(props);
+  const okButton = useRef(null);
 
-    this.state = {
-      type: props.type,
-      title: props.title,
-      //content: props.children || props.content || props.message,
-      //buttons: props.buttons,
-      open: this.props.open !== "undefined" ? this.props.open : true,
-      ok: props.ok,
-      cancel: props.cancel,
-      value: null,
-    };
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (prevProps.content !== this.props.content) {
-      this.setState({
-        content: this.props.content,
-      });
+   const handleUpdate = () => {
+    if (props.content !== state.content) {
+      setState((prevState) => ({
+        ...prevState,
+        content: props.content,
+      }));
     }
 
-    if (prevProps.open !== this.props.open) {
-      this.setState({
-        open: this.props.open,
-      });
+    if (props.open !== state.open) {
+      setState((prevState) => ({
+        ...prevState,
+        open: props.open,
+      }));
     }
+  };
 
-    this.type !== "prompt" && this.button_ok?.focus();
-    //this.button_ok?.focus();
-  }
+  // useEffect para ejecutar la función de actualización condicional
+  useEffect(() => {
+    handleUpdate();
+  }, [props.content, props.open]); // Dependencias para el useEffect
 
-  get buttons() {
-    if(Array.isArray(this.props.buttons) && this.props.buttons.length === 0) return [];
-    const buttons = this.state.buttons || [];
-    if (buttons.length === 0) {
-      buttons.push({
-        name: "ok",
-        text: "OK",
-        onClick: () => {
-          this.state.ok && this.state.ok(this.state.value);
-          this.close();
-        },
-        dismiss: true,
-      });
 
-      this.state.type === "confirm" &&
-        buttons.push({
-          name: "cancel",
-          text: "Cancel",
-          onClick: () => {
-            this.state.cancel && this.state.cancel();
-            this.close();
-          },
-          dismiss: true,
-        });
-    } else {
-      const okButton = buttons.find((b) => b.name === "ok");
-
-      if (okButton) {
-        const okFunc = okButton.onClick;
-        okButton.onClick = () => {
-          okFunc && okFunc();
-          this.state.ok && this.state.ok();
-          this.close();
-        };
-        //okButton.dismiss = true;
-      }
-
-      const cancelButton = buttons.find((b) => b.name === "cancel");
-
-      if (cancelButton) {
-        const cancelFunc = cancelButton.onClick;
-        cancelButton.onClick = () => {
-          cancelFunc && cancelFunc();
-          this.state.cancel && this.state.cancel();
-          this.close();
-        };
-        //cancelButton.dismiss = true;
-      }
-    }
-
-    return buttons;
-  }
-
-  getIcon() {
-    const { type } = this.state;
+  const getIcon = () => {
+    const { type } = state;
     const icons = {
       info: "fa-info-circle",
       alert: "fa-exclamation-circle",
@@ -113,7 +60,7 @@ export default class Dialog extends React.Component {
       prompt: "fa-question-circle",
     };
 
-    const icon = this.props.icon || "fa " + icons[type];
+    const icon = props.icon || "fa " + icons[type];
 
     const textColors = {
       info: "text-blue",
@@ -129,129 +76,90 @@ export default class Dialog extends React.Component {
     ) : (
       icon
     );
-  }
+  };
 
-  render(body) {
-    const { open, type = "info", zIndex } = this.state;
-    const size = this.props.size || "sm";
-
-    const hasFooter = this.props.hasFooter !== false;
-    const content = body || this.props.children || this.props.content || this.props.message;
-    const contentType = typeof content === "string" ? "text" : "react";
-
-    const setOpen = (open) => {
-      this.setState({ open }, () => {
-        if (!open) {
-          this.props.onClose && this.props.onClose();
-        }
-      });
-    }
-
-    const sizes = {
-      sm: "md:min-w-[45%] lg:min-w-[40%] xl:min-w-[35%]",
-      md: "md:min-w-[60%] lg:min-w-[50%] xl:min-w-[45%]",
-      lg: "md:min-w-[75%] lg:min-w-[70%] xl:min-w-[60%]",
-      full: "min-w-[100%] min-h-[100%] max-w-[100%] max-h-[100%]",
-    }
-
-    return (
-      <BaseDialog
-        open={open}
-        onOpenChange={setOpen}
-        key={this.props.id}
-      >
-        <DialogContent
-         className={`sm:max-w-md ${sizes[size]}`}
-        >
-          <DialogHeader>
-            <DialogTitle><h1 className="text-2xl">{this.props.title}</h1></DialogTitle>
-            <DialogDescription>
-             {
-                contentType === "text" ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
-                  />
-                ) : (
-                  <div>{content}</div>
-                )
-             }
-            </DialogDescription>
-            {hasFooter ? (
-              <DialogFooter className="pt-5">
-                {this.buttons.map((b) => {
-                  return (
-                    <button
-                      type="button"
-                      className={
-                        b.className || `rounded bg-blue-900/50 px-4 py-2 font-bold text-white hover:bg-blue-900/80`
-                      }
-                      onClick={() => {
-                        b.dismiss && this.close();
-                        b.onClick();
-                      }}
-                      ref={(ref) => {
-                        if (ref) {
-                          this[`button_${b.name}`] = ref;
-                        }
-                      }}
-                    >
-                      {b.content || b.text || b.label}
-                    </button>
-                  );
-                })}
-              </DialogFooter>
-            ) : null}
-          </DialogHeader>
-        </DialogContent>
-      </BaseDialog>
-    )
-  }
-
-  show(props) {
-    global.dialogsCount++;
-    this.setState(
-      {
-        ...props,
-        open: true,
-        zIndex: this.state.zIndex || 10000 + window.dialogsCount,
-      },
-      () => {
-        this.state.onShow && this.state.onShow();
+  const setDialogOpen = (open) => {
+    setState((prevState) => ({
+      ...prevState,
+      open,
+    }), () => {
+      if (!open) {
+        props.onClose && props.onClose();
       }
-    );
-  }
-
-  close() {
-    this.setState({ open: false }, () => {
-      this.props.onClose && this.props.onClose();
     });
-  }
-}
+  };
 
-export class Prompt extends Dialog {
-  type="prompt";
-  constructor(props) {
-    super(props);
-  }
+  const sizes = {
+    sm: "md:min-w-[45%] lg:min-w-[40%] xl:min-w-[35%]",
+    md: "md:min-w-[60%] lg:min-w-[50%] xl:min-w-[45%]",
+    lg: "md:min-w-[75%] lg:min-w-[70%] xl:min-w-[60%]",
+    full: "min-w-[100%] min-h-[100%] max-w-[100%] max-h-[100%]",
+  };
 
-  render() {
-    return super.render(
+  const content = props.children || props.content || props.message;
+  const contentType = typeof content === "string" ? "text" : "react";
+
+  return (
+    <Dialog open={state.open} onOpenChange={setDialogOpen} key={props.id}>
+      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`}>
+        <DialogHeader>
+          <DialogTitle><h1 className="text-2xl">{props.title}</h1></DialogTitle>
+          <DialogDescription>
+            {
+              contentType === "text" ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
+                />
+              ) : (
+                <div>{content}</div>
+              )
+            }
+          </DialogDescription>
+          {props.hasFooter !== false && (
+            <DialogFooter className="pt-5">
+              {(props.buttons || []).map((b) => (
+                <button
+                  key={b.name}
+                  type="button"
+                  className={b.className || `rounded bg-blue-900/50 px-4 py-2 font-bold text-white hover:bg-blue-900/80`}
+                  onClick={() => {
+                    b.dismiss && setDialogOpen(false);
+                    b.onClick();
+                  }}
+                  ref={b.name === "ok" ? okButton : null}
+                >
+                  {b.content || b.text || b.label}
+                </button>
+              ))}
+            </DialogFooter>
+          )}
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default MetaDialog;
+
+
+export function Prompt (props) {
+  return (
+    <MetaDialog
+      {...props}
+      type="prompt"
+    >
       <div className="grid w-full items-center gap-1.5">
-        <Label htmlFor="form-control">{this.props.label || ""}</Label>
+        <Label htmlFor="form-control">{props.label || ""}</Label>
         <Input 
           type="text"
             id="prompt-input"
-            placeholder={this.props.placeholder || ""}
+            placeholder={props.placeholder || ""}
             className="w-full"
-            onChange={(e) => {
-              this.setState({
-                value: e.target.value,
-              });
-            }}
+            onChange={props.onChange}
         />
       </div>
-    )
-  }
+    </MetaDialog>
+  )
 }
 
 export const Modal = (props, content) => {

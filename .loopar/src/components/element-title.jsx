@@ -10,7 +10,7 @@ export function ElementTitle({element, active, ...props}) {
   const handleEditElement = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    designer.handleEditElement(element);
+    designer.handleEditElement(element.data.key);
   }
 
   const handleDeleteElement = (e) => {

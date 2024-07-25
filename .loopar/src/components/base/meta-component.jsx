@@ -21,7 +21,7 @@ const designElementProps = (el) => {
     }
   }
 
-  el.data.key ??= elementManage.getUniqueKey();
+  if(el.data.name && !el.data.name.includes("--design--")) el.data.name += "--design--";
 
   const newProps = {
     ...{
@@ -38,6 +38,7 @@ const designElementProps = (el) => {
 
 function prepareMetaData(props, parent, image) {
   const data = props.data || {};
+  
   if (image && (!data || !data.background_image || data.background_image === '[]')) {
     props.src = "/uploads/empty-image.svg"
   }
@@ -84,8 +85,9 @@ function prepareMetaData(props, parent, image) {
     }
 
     if (data.background_image && data.background_image !== '[]') {
+      
       const src = getSrc();
-
+      
       if (src && src.length > 0) {
         const imageUrl = src[0].src || "/uploads/empty-image.svg";
 
@@ -164,12 +166,12 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const parentHidden = useContext(HiddenContext);
   const {currentDragging, setCurrentDragging} = useDesigner();
   const dragginElement = useRef(null);
-  const isDroppable = Comp.prototype.droppable || element.fieldDesigner;
-  let className = Comp.prototype.designerClasses || "";
+  const isDroppable = Comp.droppable || element.fieldDesigner;
+  let className = "";
 
   if (designerModeType !== "preview") {
     if (isDroppable) {
-      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-800/70 mb-4 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:hover:border-gray-600 dark:hover:shadow-lg p-1 pt-5");
+      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-900/70 mb-4 dark:border-gray-600 dark:text-gray-200 p-1 pt-5");
     } else {
       className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
     }
@@ -257,12 +259,8 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
         }
         <Fragment {...fragmentProps}>
           <Comp {...element}
-            ref={self => {
-              if (self) {
-                self.parentComponent = parent;
-                dragginElement.current = self;
-              }
-            }}
+            key={element.key}
+            ref={dragginElement}
           />
         </Fragment>
       </div>
@@ -357,19 +355,23 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
     const data = _props.data || {};
 
-    _props.className = cn("relative", (Comp && Comp.prototype.designerClasses), _props.className, data?.class, "rounded-md", el.className, className);
+    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, data?.class, "rounded-md", el.className, className);
 
     if (docRef.__META_DEFS__[data.name]) {
-      const newData = { ...data, ...docRef.__META_DEFS__[data.name]?.data || {} };
+      const newData = {
+        ...data,
+        ...docRef.__META_DEFS__[data.name]?.data || {}
+      };
+
       Object.assign(_props, docRef.__META_DEFS__[data.name], { data: newData });
     }
 
     if (isDesigner && Comp) {
       return (
-        <DesignElement 
-          Comp={Comp} 
-          element={_props} 
-          parent={parent} 
+        <DesignElement
+          Comp={Comp}
+          element={_props}
+          parent={parent}
           parentKey={parentKey}
           def={def}
         />
@@ -406,13 +408,15 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 };
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
+  //const {designerMode} = useDesigner();
   return elements.map((el) => {
     const key = parentKey + (el.data?.key || useId());
+
     return (
       <MetaComponentFn 
         el={el}
-        parent={parent} 
-        className={className} 
+        parent={parent}
+        className={className}
         parentKey={parentKey}
         key={key}
       />
@@ -421,7 +425,7 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
 }
 
 export const MetaComponent = ({ component = "div", render, parent, ...props }) => {
-  const isDesigner = useDesigner().design;
+  const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
 
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === component));
@@ -445,7 +449,5 @@ export const MetaComponent = ({ component = "div", render, parent, ...props }) =
     )
   }
 
-  return (
-    render && render(Comp)
-  )
+  return render(Comp, ref);
 }

@@ -1,6 +1,6 @@
 import BaseInput from "$base-input";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useContext} from "react";
 import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   FormDescription,
   FormLabel
 } from "@/components/ui/form"
+
 
 function SelectFn({ search, data, onSelect, options = [], selected={} }) {
   const [open, setOpen] = useState(false);
@@ -178,102 +179,40 @@ function SelectFn({ search, data, onSelect, options = [], selected={} }) {
   )
 }
 
-export default class Select extends BaseInput {
-  #model = null;
-  filteredOptions = [];
-  titleFields = ["value"];
+const Select = (props) => {
+  const [rows, setRows] = useState(props.rows || []);
+  const [filteredOptions, setFilteredOptions] = useState([]);
+  const titleFields = useRef(["value"]);
+  const model = useRef(null);
+  const lastSearch = useRef(null);
 
-  constructor(props) {
-    super(props);
+  const { renderInput, value, validate } = BaseInput(props);
 
-    this.state = {
-      ...this.state,
-      rows: props.rows || [],
-    };
-  }
+  const data = props.data || { label: "Select", name: "select", value: "" };
 
-  get data(){
-    return this.props.data;
-  }
-
-  render() {
-    const data = this.data || { label: "Select", name: "select", value: ""};
-
-    const onSelect = (e) => {
-      this.value(e);
+  /*const handleInputChange = useCallback((event) => {
+    if (event && typeof event === "object") {
+      event.target ??= {};
+      event.target.value = (event.target.files || event.target.value);
+    } else {
+      event = { target: { value: event } };
     }
 
-    return this.renderInput((field) => {
-      
-      return (
-        <div>
-          {!this.props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
-          <SelectFn
-            field={field}
-            options={this.state.rows}
-            search={(delay) => this.#search(delay)}
-            data={data}
-            onSelect={onSelect}
-            selected={this.getCurrentSelection()}
-          />
-          {data.description && (
-            <FormDescription>{data.description}</FormDescription>
-          )}
-        </div>
-      )
-    });
-  }
+    setTimeout(() => {
+      validate();
+      props.onChange && props.onChange(event);
+      props.onChanged && props.onChanged(event);
+    }, 0);
+  }, [props]);*/
 
-  componentDidMount() {
-    super.componentDidMount();
-    const value = this.value();
-    
-    const initialRows = loopar.utils.isJSON(value) ? [JSON.parse(value)] : [{ option: value, title: value}];
+  useEffect(() => {
+    const value = data.value;
+    const initialRows = loopar.utils.isJSON(value) ? [JSON.parse(value)] : [{ option: value, title: value }];
+    setRows(getPrepareOptions(initialRows));
+  }, []);
 
-    this.setState({rows: this.getPrepareOptions(initialRows)});
-  }
-
-  #search(target, delay = true) {
-    const q = target?.target?.value || "";
-    return new Promise((resolve, reject) => {
-      if (this.isLocal) {
-        this.filteredOptions = this.optionsSelect
-          .filter((row) => {
-            return (typeof row == "object" ? `${row.option} ${row.title}` : row)
-              .toLowerCase()
-              .includes(q);
-          })
-          .map((row) => {
-            return typeof row == "object" ? row : { option: row, title: row };
-          });
-
-        resolve(this.renderResult());
-      } else {
-        this.#model = this.optionsSelect[0];
-        if (delay) {
-          clearTimeout(this.lastSearch);
-          this.lastSearch = setTimeout(() => {
-            this.getServerData(q).then(resolve);
-          }, 200);
-        } else {
-          this.getServerData(q).then(resolve);
-        }
-      }
-    });
-  }
-
-  get isLocal() {
-    return this.optionsSelect.length > 1;
-  }
-
-  get model() {
-    return this.#model.option || this.#model.name;
-  }
-
-  get options() { }
-
-  get optionsSelect() {
-    const opts = this.data.options || "";
+  const optionsSelect = () => {
+    const opts = data.options || "";
 
     if (typeof opts == "object") {
       if (Array.isArray(opts)) {
@@ -295,19 +234,52 @@ export default class Select extends BaseInput {
          opts.split(/\r?\n/).map(item => ({option: item, value: item}));*/
   }
 
-  get searchQuery() {
-    return this.inputSearch?.node?.value || "";
+  const search = useCallback((target, delay = true) => {
+    const q = target?.target?.value || "";
+    return new Promise((resolve, reject) => {
+      if (isLocal()) {
+        setFilteredOptions(optionsSelect()
+          .filter((row) => {
+            return (typeof row == "object" ? `${row.option} ${row.title}` : row)
+              .toLowerCase()
+              .includes(q);
+          })
+          .map((row) => {
+            return typeof row == "object" ? row : { option: row, title: row };
+          }));
+
+        resolve();
+      } else {
+        model.current = optionsSelect()[0];
+        if (delay) {
+          clearTimeout(lastSearch.current);
+          lastSearch.current = setTimeout(() => {
+            getServerData(q).then(resolve);
+          }, 200);
+        } else {
+          getServerData(q).then(resolve);
+        }
+      }
+    });
+  }, []);
+
+  const isLocal = () => {
+    return optionsSelect().length > 1;
+  };
+
+  const getModel = () => {
+    return model.current?.option || model.current?.name;
   }
 
-  getServerData(q) {
-    return new Promise((resolve, reject) => {
+  const getServerData = (q) => {
+    return new Promise((resolve) => {
       loopar.send({
-        action: `/api/${this.model}/search`,
+        action: `/api/${getModel()}/search`,
         params: { q },
         success: (r) => {
-          this.titleFields = r.titleFields;
-          this.filteredOptions = this.getPrepareOptions(r.rows);
-          resolve(this.renderResult());
+          titleFields.current = r.titleFields;
+          setFilteredOptions(getPrepareOptions(r.rows));
+          resolve();
         },
         error: (r) => {
           console.log(r);
@@ -315,100 +287,90 @@ export default class Select extends BaseInput {
         freeze: false,
       });
     });
-  }
+  };
 
-  renderResult() {
-    //return this.filteredOptions;
-    this.setState({ rows: this.filteredOptions });
-  }
+  useEffect(() => {
+    setRows(filteredOptions);
+  }, [filteredOptions]);
 
-  optionValue(option) {
-    const value = (data) => {
-      if (data && typeof data == "object") {
-        if (Array.isArray(this.titleFields)) {
-          const values = this.titleFields.map((item) => data[item]).filter((item) => item);
+  const optionValue = (option) => {
+    const getValue = (data) => {
+      if (data && typeof data === "object") {
+        if (Array.isArray(titleFields.current)) {
+          const values = titleFields.current.map((item) => data[item]).filter((item) => item);
 
           return values.reduce((a, b) => {
             return [
               ...a,
-              [...a.map((item) => item.toLowerCase())].includes(typeof b == "string" ? b.toLowerCase() : b) ? "" : b,
+              [...a.map((item) => item.toLowerCase())].includes(typeof b === "string" ? b.toLowerCase() : b) ? "" : b,
             ];
           }, []).join(" ");
         } else {
-          return data[this.titleFields];
+          return data[titleFields.current];
         }
       }
     };
 
-    return option ? (typeof option == "object"
+    return option ? (typeof option === "object"
       ? {
         option: option.option || option.name,
-        title: value(option), //option[this.titleFields] || option.value || option.option
-        formattedValue: this.props.formattedValue
+        title: getValue(option),
+        formattedValue: props.formattedValue
       }
       : {
-        option: option || this.value(),
-        title: option || this.value(),
-        formattedValue: this.props.formattedValue
-      }) : {null: null};
-  }
+        option: option || value(),
+        title: option || value(),
+        formattedValue: props.formattedValue
+      }) : { null: null };
+  };
 
-  getPrepareOptions(options) {
-    return options.map((item) => this.optionValue(item));
-  }
+  const getPrepareOptions = (options) => {
+    return options.map((item) => optionValue(item));
+  };
 
-  /**
-   *
-   * #param {string || object} val
-   * #param {boolean} trigger_change
-   * #returns
-   */
-  /*val(val = null, { trigger_change = true } = {}) {
-    if (val != null) {
-      //this.assignedValue = val;
-      this.renderValue(trigger_change);
-      return this;
-    } else {
-      return this.data.value;
-    }
-  }
-*/
-  /*value(val) {
-    if(typeof val != "undefined") {
-      super.value(val);
-    } else {
-      let value = super.value();
-      if(loopar.utils.isJSON(value)) {
-        value = JSON.parse(value);
-        return value?.option || value;
-      }else {
-        return value;
-      }
-    }
-  }*/
+  const getCurrentSelection = () => {
+    const currentRows = rows || [];
+    const currentOptionValue = optionValue(value());
 
-  getCurrentSelection() {
-    const rows = this.state.rows || [];
-    const optionValue = this.optionValue(this.value());
-
-    const filter = rows.filter((item) => {
-      return this.optionValue(item).option === optionValue.option;
+    const filter = currentRows.filter((item) => {
+      return optionValue(item).option === currentOptionValue.option;
     });
 
-    return filter[0] ? this.optionValue(filter[0]) : optionValue;
-  }
+    return filter[0] ? optionValue(filter[0]) : currentOptionValue;
+  };
 
-  get metaFields() {
-    const data = super.metaFields[0];
+   return renderInput((field) => (
+    <div>
+      {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
+      <SelectFn
+        field={field}
+        options={rows}
+        search={(delay) => search(delay)}
+        data={data}
+        onSelect={(e) => value(e)}
+        selected={getCurrentSelection()}
+      />
+      {data.description && (
+        <FormDescription>{data.description}</FormDescription>
+      )}
+    </div>
+  ));
 
-    data.elements.options = {
-      element: TEXTAREA,
-      data: {
-        description:
-          "For simple select insert the options separated by enter. For Document Select insert the Document Name",
-      },
-    };
+  //return renderInput(customRenderInput);
+};
 
-    return [data];
-  }
+Select.metaFields = () =>  {
+  const data = BaseInput.metaFields()[0];
+
+  data.elements.options = {
+    element: TEXTAREA,
+    data: {
+      description:
+        "For simple select insert the options separated by enter. For Document Select insert the Document Name",
+    },
+  };
+
+  return [data];
 }
+
+export default Select;

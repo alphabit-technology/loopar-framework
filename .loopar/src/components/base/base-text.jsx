@@ -1,8 +1,6 @@
-import Component from "$component";
+export default function BaseText(props) {
+  const defaultText = "Text here";
 
-export default class BaseText extends Component {
-  dontHaveMetaElements = ["label"];
-  defaultText = "Text here";
 
   /*componentDidMount(prevProps, prevState, snapshot) {
       super.componentDidMount(prevProps, prevState, snapshot);
@@ -17,7 +15,11 @@ export default class BaseText extends Component {
       }, 100);
    }*/
 
-  getText() {
-    return this.props.data.text || this.defaultText;
+  const getText = () => {
+    return props.data.text || defaultText;
   }
+
+  return {getText}
 }
+
+BaseText.dontHaveMetaElements = ["label"];

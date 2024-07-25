@@ -1,58 +1,57 @@
-import React from "react";
+import React, {useEffect} from "react";
 import fileManager from "$tools/file-manager";
 import loopar from "$loopar";
 import { FileIcon } from "lucide-react";
 import { ImageIcon } from "lucide-react";
 import LazyLoad from 'react-lazy-load';
 
-class ImageWithFallback extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      imageLoaded: false,
-      isValidImage: false,
-      isImageLoading: true
-    };
+function ImageWithFallback({ src, fallbackSrc, alt }) {
+ const [state, setState] = React.useState({
+    imageLoaded: false,
+    isValidImage: false,
+    isImageLoading: true
+  });
+
+  const handleImageError = (e) => {
+    setState({imageLoaded: false, isValidImage: false, isImageLoading: false });
   }
 
-  handleImageError(e) {
-    this.setState({imageLoaded: false, isValidImage: false, isImageLoading: false });
+  const handleImageLoad=()=>{
+    setState({imageLoaded: true, isImageLoading: false, isValidImage: true});
   }
 
-  handleImageLoad() {
-    this.setState({imageLoaded: true, isImageLoading: false, isValidImage: true});
-  }
+  useEffect(() => {
+    setState({imageLoaded: false, isValidImage: false, isImageLoading: true });
+  }, [src]);
 
-  render() {
-    const { imageLoaded } = this.state;
+  const { imageLoaded } = state;
 
-    return (
-      <LazyLoad height={120} offset={100} debounce={false} throttle={100} once
-        className="rounded-md inset-0 bg-gradient-to-b from-slate-900/70 to-slate-500/80 bg-no-repeat mb-10"
-      >
-        <>
-        <ImageIcon 
-          height={100} 
-          className={`h-120 w-full object-cover transition-all ease-in text-slate-600/50  duration-300 hover:scale-105 aspect-square ${imageLoaded ? "hidden" : "block"}`}
+  return (
+    <LazyLoad height={120} offset={100} debounce={false} throttle={100} once
+      className="rounded-md inset-0 bg-gradient-to-b from-slate-900/70 to-slate-500/80 bg-no-repeat mb-10"
+    >
+      <>
+      <ImageIcon 
+        height={100} 
+        className={`h-120 w-full object-cover transition-all ease-in text-slate-600/50 duration-300 hover:scale-105 aspect-square ${imageLoaded ? "hidden" : "block"}`}
+      />
+      <div className="overflow-hidden rounded-md w-full">
+        <img 
+          alt="React Rendezvous" 
+          loading="lazy"
+          //height={!imageLoaded ? 0 : "150"} 
+          decoding="async" 
+          data-nimg="1" 
+          className={`h-auto w-auto object-cover transition-all hover:scale-105 aspect-square`}
+          srcSet={src}
+          style={{color: "transparent", ...(!imageLoaded ? {width: 0, height: 0} : {})}}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
         />
-        <div className="overflow-hidden rounded-md w-full">
-          <img 
-            alt="React Rendezvous" 
-            loading="lazy"
-            height={!imageLoaded ? 0 : "150"} 
-            decoding="async" 
-            data-nimg="1" 
-            className={`h-auto w-auto object-cover transition-all hover:scale-105 aspect-square`}
-            srcSet={this.props.src}
-            style={{color: "transparent", ...(!imageLoaded ? {width: 0, height: 0} : {})}}
-            onLoad={() => this.handleImageLoad()}
-            onError={this.handleImageError}
-          />
-        </div>
-        </>
-      </LazyLoad>
-     )
-  }
+      </div>
+      </>
+    </LazyLoad>
+  )
 }
 
 export default class FilePreview extends React.Component {

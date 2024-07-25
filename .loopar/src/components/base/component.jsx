@@ -8,15 +8,7 @@ export default class Component extends BaseComponent {
   get droppable() {return true};
   get draggable() {return true};
 
-  render(content) {
-    (!this.dontHaveBackground && !this.dontHaveContainer) && this.backGround(false);
 
-    return super.render(
-      <Droppable receiver={this}>
-        {content || this.props.children}
-       </Droppable>
-    );
-  }
 
   rerender(content) {
     this.setState({ children: content });

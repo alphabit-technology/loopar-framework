@@ -1,62 +1,35 @@
-import BaseComponent from "$base-component";
+import * as LucideIcons from "lucide-react";
+import ComponentDefaults from "$component-defaults";
+import {loopar} from "$loopar";
+import {cn} from "@/lib/utils";
 
-const icons = {
-  edit: "fas fa-pen",
-  [COL]: "fas fa-columns",
-  [ROW]: "fas fa-plus",
-  [PANEL]: "fa fa-window-maximize",
-  [CARD]: "fa fa-id-card",
-  [BUTTON]: "fas fa-bold",
-  [INPUT]: "fa fa-italic",
-  [PASSWORD]: "fa fa-key",
-  [INTEGER]: "fa-duotone fa-input-numeric",
-  [DECIMAL]: "fa fa-00",
-  [CURRENCY]: "fa fa-dollar-sign",
-  [TEXTAREA]: "fa fa-text-height",
-  [TEXT_EDITOR]: "fa fa-text-height",
-  [MARKDOWN]: "fa fa-text-height",
-  [CHECKBOX]: "far fa-check-square",
-  [SWITCH]: "fas fa-toggle-on",
-  //[FORM]: "fa fa-id-card",
-  trash: "far fa-trash-alt",
-  search: "fas fa-search",
-  [SELECT]: "fas fa-search",
-  [TABLE]: "fa fa-table",
-  [DATE]: "fa fa-calendar-plus",
-  [DATE_TIME]: "fa fa-calendar-plus",
-  [TIME]: "fa fa-calendar-plus",
-  //[TAG]: "fa solid fa-code",
-};
+export default function MetaIcon(props) {
+  const newProps = loopar.utils.renderizableProps(props);
+  const {getSize} = ComponentDefaults(props);
+  const data = props.data || {};
+  const Icon = LucideIcons[data?.icon] || LucideIcons.HelpCircle;
+  const rounded = data?.rounded ? "rounded-full" : "rounded-md";
+  const size = getSize();
+  
+  const className = cn("border-white p-2", size, newProps.className, rounded);
 
-export default class Icon extends BaseComponent {
-  icon(props = {}, type = "primary") {
-    Object.assign(this, props);
-
-    this.data.type = type;
-
-    this.props = this.props || {};
-    this.props.class = this.props.class || "";
-    this.props.style = this.props.style || "";
-
-    this.props.class += " " + icons[type];
-
-    super.tag("i");
-
-    return this;
-  }
+  return (
+    <div {...newProps} className={className} >
+      <Icon className="w-full h-full"/>
+    </div>
+  )
 }
 
-Object.keys(icons).forEach((icon) => {
-  Object.defineProperties(Icon.prototype, {
-    [icon]: {
-      value: function (props) {
-        return this.icon(props, icon);
+MetaIcon.metaFields =()=>{
+  return {
+    group: "form",
+    elements: {
+      icon: {
+        element: ICON_INPUT,
       },
-    },
-  });
-});
-
-export const icon = (options = {}) => {
-  options.data = options.data || {};
-  return new Icon(options);
-};
+      rounded: {
+        element: SWITCH,
+      },
+    }
+  };
+}

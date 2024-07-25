@@ -3,6 +3,8 @@ import BaseInput from "@base-input"
 import MetaComponent from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
+import { useRef } from "react";
+import { DesignerContext } from "@custom-hooks";
 
 import {
   TableCell
@@ -150,62 +152,41 @@ class FormTableClass extends BaseTable {
   }*/
 }
 
-export default class FormTable extends BaseInput {
-  render(){
-    const handleChange = (e) => {
-      //console.log(["Form Table Change", e.target.value])
-      this.value(e.target.value);
-    }
-    return super.renderInput(field => {
-      //console.log(["Form Table", field.value])
-      //const meta = JSON.parse(JSON.stringify(this.props));
-      //meta.rows = field.value || [];
+export default function FormTable (props) {
+  const { renderInput, value } = BaseInput(props);
+  const formRefTable = useRef();
 
+  const handleChange = (e) => {
+    value(e.target.value);
+  }
 
-      return (
+  return renderInput(field => {
+    return (
+      <DesignerContext.Provider value={{}}>
         <FormTableClass
-          //meta={JSON.parse(JSON.stringify(this.props))}
           meta={field.value}
-          //meta={meta}
           onChange={handleChange}
-          ref={formRefTable => {this.formRefTable = formRefTable}}
+          //ref={formRefTable}
+          //ref={formRefTable => {this.formRefTable = formRefTable}}
         />
-      )
-    });
-  }
-
-  validate() {
-    return this.formRefTable?.validate();
-  }
+      </DesignerContext.Provider>
+    )
+  });
 
   /*validate() {
-    return Object.entries(this.rowsRef).reduce((acc, [key, row]) => {
-      return acc.concat(
-        Object.values(row)
-          .map((el) => {
-            return el?.validate();
-          })
-          .filter((el) => !el?.valid)
-          .map((el) => {
-            return {
-              message: "Row " + key + " " + el.message,
-              valid: el.valid,
-            };
-          })
-      );
-    }, []);
+    return this.formRefTable?.validate();
   }*/
-
-  get metaFields() {
-    return [
-      {
-        group: "form",
-        elements: {
-          options: {
-            element: TEXTAREA,
-          },
+}
+ 
+FormTable.metaFields = ()=>{
+  return [
+    {
+      group: "form",
+      elements: {
+        options: {
+          element: TEXTAREA,
         },
       },
-    ];
-  }
+    },
+  ];
 }

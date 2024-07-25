@@ -1,10 +1,7 @@
-import Component from "$component";
-import { Droppable } from "$droppable";
+import { Droppable } from "@droppable";
 
-export default class Fragment extends Component {
-  render() {
-    return (
-      <Droppable Component="fragment" {...this.props}/>
-    );
-  }
+export default function Fragment(props){
+  return (
+    <Droppable Component="fragment" {...props}/>
+  );
 }

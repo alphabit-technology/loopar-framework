@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { useDesigner } from "@custom-hooks";
 
 function TextEditor({initialValue, onChange}) {
   const [value, setValue] = useState(initialValue);
@@ -44,17 +45,16 @@ function TextEditor({initialValue, onChange}) {
   )
 }
 
-export default class HtmlBlockClass extends BaseInput {
-  constructor(props) {
-    super(props);
+export default function HtmlBlockClass(props) {
+  const { renderInput, data } = BaseInput(props);
+  const {updateElement} = useDesigner();
+
+  const handleChange = (content) => {
+    updateElement(data.key, {value: content});
+    //this.set("value", content);
   }
 
-  render() {
-    const handleChange = (content) => {
-      this.set("value", content);
-    }
-
-    return this.renderInput(field => {
+    return renderInput(field => {
       return (
       <>
       <style>{`
@@ -107,14 +107,13 @@ export default class HtmlBlockClass extends BaseInput {
       </>
     )
   });
-  }
 
-  val(val = null) {
+  /*val(val = null) {
     if (val != null) {
       this.editor.setContents(JSON.parse(val || "{}"));
       this.trigger("change");
     } else {
       return JSON.stringify(this.editor.getContents());
     }
-  }
+  }*/
 }

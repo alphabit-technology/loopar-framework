@@ -4,9 +4,9 @@ export default class HTTP {
   #jsonParams = {};
   #options = {};
 
-  send(options) {
+  async send(options) {
     this.#options = options;
-    this.#sendPetition(options);
+    return await this.#sendPetition(options);
   }
 
   get __method__() { return this.#options.method || "POST" }
@@ -66,38 +66,42 @@ export default class HTTP {
     const self = this;
     options.freeze && self.freeze(true);
 
-    fetch(self.url, self.options).then(async response => {
-      return new Promise(async (resolve, reject) => {
-        if (response.redirected) {
-          window.location.href = response.url;
-          return;
-        }
-
-        const isJson = response.headers.get('content-type')?.includes('application/json');
-        const data = isJson ? await response.json() : null;
-
-        if (!response.ok) {
-          const error = data || { error: response.status, message: response.statusText };
-          reject(error);
-        } else {
-          options.success && options.success(data);
-
-          if (data && data.notify) {
-            self.notify(data.notify);
+    return new Promise((resolve, reject) => {
+      fetch(self.url, self.options).then(async response => {
+        //return new Promise(async (resolve, reject) => {
+          if (response.redirected) {
+            window.location.href = response.url;
+            return;
           }
-          resolve(data);
-        }
+
+          const isJson = response.headers.get('content-type')?.includes('application/json');
+          const data = isJson ? await response.json() : null;
+
+          if (!response.ok) {
+            const error = data || { error: response.status, message: response.statusText };
+            reject(error);
+          } else {
+            options.success && options.success(data);
+
+            /*if (data && data.notify) {
+              self.notify(data.notify);
+            }*/
+            resolve(data);
+          }
+       // });
+      }).catch(error => {
+        reject(error);
+        /*options.error && options.error(error);
+        self.rootApp?.progress(102);
+        self.throw({
+          title: error.title || error.code || 'Undefined Error',
+          message: error.message || error.description || 'Undefined Error',
+        });*/
+      }).finally(() => {
+        resolve();
+        /*options.freeze && self.freeze(false);
+        options.always && options.always();*/
       });
-    }).catch(error => {
-      options.error && options.error(error);
-      self.rootApp?.progress(102);
-      self.throw({
-        title: error.title || error.code || 'Undefined Error',
-        message: error.message || error.description || 'Undefined Error',
-      });
-    }).finally(() => {
-      options.freeze && self.freeze(false);
-      options.always && options.always();
     });
   }
 

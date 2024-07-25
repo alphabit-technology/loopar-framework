@@ -2,9 +2,10 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DialogContextProvider } from "@workspace/base/base-workspace";
+import { WorkspaceProvider } from "@workspace/workspace-provider";
 
 interface RootLayoutProps {
   __META__: {
@@ -32,10 +33,11 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
     >
       <div className="relative flex min-h-screen flex-col">
         <div className="flex-1">
-          <Workspace
-            {...workspace}
+          <WorkspaceProvider
             __META__={__META__}
-            documents={{
+            ENVIRONMENT={ENVIRONMENT}
+            workspace={__META__.W}
+            Documents={{
               [__META__.key]: {
                 Module: Document,
                 __META__,
@@ -43,8 +45,12 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
                 active: true,
               },
             }}
-            ENVIRONMENT={ENVIRONMENT}
-          />
+          >
+            <Workspace
+              {...workspace}
+              __META__={__META__}
+            />
+          </WorkspaceProvider>
         </div>
       </div>
     </main>
@@ -57,13 +63,15 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
   return (
     <>
       <CookiesProvider manager={cookieManager} updater={setUpdate}>
-        <Main
-          __META__={__META__}
-          Workspace={Workspace}
-          Document={Document}
-          ENVIRONMENT={ENVIRONMENT}
-          cookieManager={cookieManager}
-        />
+        <DialogContextProvider>
+          <Main
+            __META__={__META__}
+            Workspace={Workspace}
+            Document={Document}
+            ENVIRONMENT={ENVIRONMENT}
+            cookieManager={cookieManager}
+          />
+        </DialogContextProvider>
       </CookiesProvider>
     </>
   )

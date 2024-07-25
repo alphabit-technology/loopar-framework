@@ -1,6 +1,7 @@
 import BaseInput from "$base-input";
 import elementManage from "$tools/element-manage";
 import { XIcon } from "lucide-react";
+import { useRef } from "react";
 
 import {
   FormControl,
@@ -8,10 +9,11 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 
-export default class ColorPicker extends BaseInput {
-  initialColor = {}
+export default function ColorPicker(props) {
+  const { renderInput, data } = BaseInput(props);
+  const selector = useRef(null);
 
-  getColor(value) {
+  const getColor = (value)=>{
     if (value && typeof value === 'string' && elementManage.isJSON(value)) {
       return JSON.parse(value);
     } else if (value && typeof value === 'object') {
@@ -24,17 +26,15 @@ export default class ColorPicker extends BaseInput {
     };
   }
 
-  render() {
     const handleOpenColorPicker = (e) => {
       e.preventDefault();
       e.stopPropagation()
-      this.selector.click();
+      selector.current.click();
     }
-    const data = this.data;
 
-    return this.renderInput((field) => {
-      const rgbaSection = (color, index) => parseInt(color.slice(index, index + 2), 16);
-      const { color, alpha } = this.getColor(field.value);
+    return renderInput((field) => {
+      const rgbaSection = (color="", index=1) => parseInt(color.slice(index, index + 2), 16);
+      const { color, alpha } = getColor(field.value);
 
       const startLinearGradient = `rgba(${rgbaSection(color, 1)}, ${rgbaSection(color, 3)}, ${rgbaSection(color, 5)}, 0)`; // #000000
       const endLinearGradient = `rgba(${rgbaSection(color, 1)}, ${rgbaSection(color, 3)}, ${rgbaSection(color, 5)}, 1)`; // #ffffff
@@ -83,7 +83,7 @@ export default class ColorPicker extends BaseInput {
                   type="color"
                   value={color}
                   onChange={(e) => handleColorChange(e.target.value, alpha)}
-                  ref={(selector) => (this.selector = selector)}
+                  ref={selector}
                   className="w-0 h-0 overflow-hidden pointer-events-none opacity-0"
                 />
                 <div 
@@ -124,7 +124,6 @@ export default class ColorPicker extends BaseInput {
         </div>
       );
     }, "flex flex-row gap-2");
-  }
 
   /*componentDidMount() {
     super.componentDidMount();
@@ -155,11 +154,11 @@ export default class ColorPicker extends BaseInput {
     this.setColor("", 1);
   }*/
 
-  val() {
+  /*val() {
     const color = this.getColor();
     return {
       color: color.color,
       alpha: color.alpha
     }
-  }
+  }*/
 }

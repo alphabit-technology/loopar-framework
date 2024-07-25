@@ -1,4 +1,4 @@
-export default function noData(props) {
+export default function noData() {
   return (
     <div className="empty-state">
       <div className="empty-state-container">

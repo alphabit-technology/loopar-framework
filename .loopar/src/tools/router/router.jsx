@@ -99,12 +99,12 @@ export default class Router extends HTTP {
 
   change() {
     this.#route = global.location;
-    return this.loadDocument();
+   // return this.loadDocument();
   }
 
   async loadDocument() {
-    this.rootApp.progress(20);
-    this.rootApp.setDocument(await this.#fetch())
+    //this.rootApp.progress(20);
+    //this.rootApp.setDocument(await this.#fetch())
   }
   #fetch() {
     return new Promise((resolve, reject) => {

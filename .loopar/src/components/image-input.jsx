@@ -1,13 +1,6 @@
 import FileInput from "$file-input";
 
-export default class ImageInput extends FileInput {
-   constructor(props) {
-      super(props);
-
-      this.state = {
-         ...this.state,
-         multiple: props.data.multiple || false,
-         accept: props.data.accept || 'image/*',
-      }
-   }
+export default function ImageInput(props) {
+  const data = props.data || {};
+  return <FileInput {...props} multiple={data.multiple || false} accept={data.accept || "image/*"} />;
 }

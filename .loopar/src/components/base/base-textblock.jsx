@@ -1,25 +1,26 @@
 import Component from "$component";
+import { useEffect } from "react";
+import ComponentDefaults from "@component-defaults";
 
-export default class BaseTextBlock extends Component {
-   dontHaveMetaElements = [];
-   defaultLabel = "Text block";
-   defaultText = "I'm a awesome Text Block widget, you can customize in edit button in design mode.";
+export default function BaseTextBlock(props) {
+  const {set} = ComponentDefaults(props);
+  const defaultLabel = "Text block";
+  const defaultText = "I'm a awesome Text Block widget, you can customize in edit button in design mode.";
 
-   componentDidMount(prevProps, prevState, snapshot) {
-      super.componentDidMount(prevProps, prevState, snapshot);
-      const meta = this.props;
+  useEffect(() => {
+    const data = props;
+    if (!data.text) {
+      set({
+        label: defaultLabel,
+        text: defaultText,
+      })
+    }
+  }
+  , [props.data])
 
-      /*setTimeout(() => {
-         if (!meta.data.text) {
-            this.props.designerRef.updateElement(meta.data.key, {
-               label: this.defaultLabel,
-               text: this.defaultText,
-            }, true);
-         }
-      }, 100);*/
-   }
-
-   getText() {
-      return this.props.data.text || this.defaultText;
-   }
+  return (
+    <>{props.children}</>
+  )
 }
+
+BaseTextBlock.dontHaveMetaElements = [];

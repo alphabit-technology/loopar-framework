@@ -1,4 +1,3 @@
-import Component from "$component";
 import {
   Card as CardComponent,
   CardContent,
@@ -6,55 +5,38 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {Droppable} from "$droppable";
+import {Droppable} from "@droppable";
 import {cn} from "@/lib/utils";
 import loopar from "$loopar";
 
-export default class Card extends Component {
-  dontHaveMetaElements = ["text"];
+export default function Card(props) {
+  const data = props.data || {};
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      collapsed: false,
-      hover: false,
-    };
-  }
-
-  render() {
-    const data = this.data;
-
-    return (
-      <>
-      <CardHover
-        {...loopar.utils.renderizableProps(this.props)}
-      >
-        <CardHeader>
-          <CardTitle>{data.label}</CardTitle>
-          <CardDescription>{data.description}</CardDescription>
-        </CardHeader>
-        <Droppable
-          receiver={this}
-          Component={CardContent}
-        >
-          {this.props.children || this.elements}
-        </Droppable>
-        {this.props.footer && (
-          <CardFooter className="flex justify-between">
-            {this.props.footer}
-          </CardFooter>
-        )}
-      </CardHover>
-      </>
-    )
-  }
-
-  toggleHide() {
-    this.setState({ collapsed: !this.state.collapsed });
-  }
+  return (
+    <>
+    <CardHover
+      {...loopar.utils.renderizableProps(props)}
+    >
+      <CardHeader>
+        <CardTitle>{data.label}</CardTitle>
+        <CardDescription>{data.description}</CardDescription>
+      </CardHeader>
+      <Droppable
+        Component={CardContent}
+        {...props}
+        className="p-4"
+      />
+      {props.footer && (
+        <CardFooter className="flex justify-between">
+          {props.footer}
+        </CardFooter>
+      )}
+    </CardHover>
+    </>
+  )
 }
+
+Card.dontHaveMetaElements = ["text"];
 
 function CardHover(props){
   return (

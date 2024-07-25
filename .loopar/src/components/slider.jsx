@@ -1,8 +1,8 @@
 import elementManage from "$tools/element-manage";
 import BaseCarrusel from "$base-carrusel";
 
-export default class Slider extends BaseCarrusel {
-  defaultElements = [
+export default function Slider(props) {
+  const defaultElements = [
     {
       element: "banner",
       data: {
@@ -24,7 +24,7 @@ export default class Slider extends BaseCarrusel {
     },
   ];
 
-  addSlide() {
+  const addSlide = () => {
     const id = elementManage.uuid();
     const sliderCount = this.sliderCount();
 
@@ -43,4 +43,12 @@ export default class Slider extends BaseCarrusel {
       this.showSlide(this.sliderCount() - 1);
     });
   }
+
+  return (
+    <BaseCarrusel
+      {...props}
+      defaultElements={defaultElements}
+      addSlide={addSlide}
+    />
+  );
 }

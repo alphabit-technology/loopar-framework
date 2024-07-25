@@ -10,19 +10,17 @@ import {useCookies} from "@services/cookie";
 const TabContent = ({element, parent}) => {
   if(element.type === "dynamic.component"){
     return (
-      <>
-        <MetaComponent
-          elements={[
-            {
-              element: "tab",
-              //...element,
-              data: element.data,
-              elements: element.elements,
-            },
-          ]}
-          parent={parent}
-        />
-      </>
+      <MetaComponent
+        elements={[
+          {
+            element: "tab",
+            //...element,
+            data: element.data,
+            elements: element.elements,
+          },
+        ]}
+        parent={parent}
+      />
     )
   }
 

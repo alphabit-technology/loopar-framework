@@ -1,6 +1,5 @@
 import React from "react";
 import loopar from "$loopar";
-import DragAndDropUtils from "$tools/drag-and-drop";
 import elementManage, { styleToObject } from "$tools/element-manage";
 import MetaComponent from "@meta-component";
 
@@ -338,76 +337,6 @@ export default class BaseComponent extends React.Component {
   }
 
   onUpdate() { }
-
-  drop(event) {
-    event.preventDefault();
-    const self = this.Component || this;
-    const { elementToCreate, elementToDrag, lastElementTargetSibling } = DragAndDropUtils;
-    let elements = self.elementsDict;
-    let newElements = null;
-
-    if (elementToCreate) {
-      if (elementToCreate.element) {
-        elements.push(elementToCreate);
-        newElements = this.sortElements(elements, elementToCreate, lastElementTargetSibling, "create");
-      }
-    } else if (elementToDrag && elementToDrag !== self) {
-      if (!elementToDrag.isParentOf(this)) {
-        const element = { data: Object.assign({}, elementToDrag.data), element: elementToDrag.element, elements: elementToDrag.elementsDict };
-
-        if (elementToDrag.parentComponent !== self) {
-          elements = elements.filter(e => {
-            return e.data.key !== elementToDrag.data.key;
-          });
-          elements.push(element);
-        }
-
-        newElements = this.sortElements(elements, element, lastElementTargetSibling);
-      }
-    }
-
-    newElements && loopar.Designer?.updateElements(self, newElements, elementToDrag);
-
-    DragAndDropUtils.elementToCreate = null;
-    DragAndDropUtils.elementToDrag = null;
-    DragAndDropUtils.lastElementTargetSibling = null;
-  }
-
-  sortElements(elements, movedElement, targetElement, type, direction = vertical_direction) {
-    /**before moving the element, we need to check if the target element is in the elements array*/
-    const targetInElements = elements.some(element => element.data.key === targetElement?.data?.key);
-
-    if (targetInElements && targetElement.data.key !== movedElement.data.key) {
-      elements = elements.filter(element => {
-        return element.data.key !== movedElement.data.key;
-      });
-    }
-
-    /**if the target element is in the elements array, we need to move the element to the target element position*/
-    if (movedElement && targetElement && targetElement.data.key !== movedElement.data.key && targetInElements) {
-      return elements.reduce((acc, element) => {
-        const data = element.data;
-
-        /**if the element is the target element, we need to add the moved element before or after the target element*/
-        if (data.key === targetElement.data.key) {
-          acc = direction === UP ? [...acc, movedElement, element] : [...acc, element, movedElement];
-        } else if (data.key !== movedElement.data.key) {
-          acc = [...acc, element];
-        }
-
-        return acc;
-      }, []);
-    }
-
-    /**if the target element is not in the elements array, we need to move the element to the last position*/
-    return elements;
-  }
-
-  isParentOf(element) {
-    if (!element) return false;
-    if (element.parentComponent === this) return true;
-    return this.isParentOf(element.parentComponent);
-  }
 
   get app() {
     return (this.parentComponent || this).options.app;

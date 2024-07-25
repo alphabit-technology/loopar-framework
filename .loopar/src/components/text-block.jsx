@@ -1,15 +1,16 @@
 import Preassembled from "$preassembled";
-import { v4 as uuidv4 } from "uuid";
+import { useId } from "react";
 
-export default class TextBlock extends Preassembled {
-  droppable = true;
-  defaultElements = [
+export default function TextBlock(props) {
+  const id = useId();
+  const defaultElements = [
     {
       element: "subtitle",
       data: {
         class: "font-bold text-2xl mb-2",
         text: "Text Block",
-        name: uuidv4(),
+        name: id + "-title",
+        //key: id + "-title",
       }
     },
     {
@@ -17,8 +18,16 @@ export default class TextBlock extends Preassembled {
       data: {
         class: "text-muted font-size-lg mb-4",
         text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante.",
-        name: uuidv4(),
+        name: id + "-paragraph",
+        //key: id + "-paragraph",
       },
     },
   ];
+
+  return (
+    <Preassembled
+      {...props}
+      defaultElements={defaultElements}
+    />
+  );
 }

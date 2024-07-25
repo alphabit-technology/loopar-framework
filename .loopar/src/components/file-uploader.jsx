@@ -1,92 +1,74 @@
-import { Modal } from "$dialog";
+import { Modal } from "@dialog";
 import loopar from "$loopar";
-import Div from "$div";
-import FileInput from "$file-input";
-import { FormWrapper } from "$context/form";
+import FileInput from "@file-input";
+import { FormWrapper } from "@context/form";
 import {Button} from "@/components/ui/button";
 import { UploadIcon } from "lucide-react";
+import { useRef } from "react";
 
-export default class FileUploader extends Div {
-  origins = ["Local", "Trash"]
+export default function FileUploader(props){
+  const origins = ["Local", "Trash"];
+  const fileInput = useRef(null);
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      multiple: true,
-      accept: "*",
-      withoutLabel: true,
-    };
+  const getFiles = () => {
+    return fileInput.current.files || [];
   }
 
-  FileInput() {
-    return (
-      <FormWrapper>
-        <FileInput
-          dontHaveForm={true}
-          data={{
-            name: "file_upload_input",
-            label: "Upload",
-            multiple: this.state.multiple,
-            accept: this.state.accept,
-          }}
-          withoutLabel={true}
-          origins={this.origins}
-          ref={(ref) => {
-            this.fileInput = ref;
-          }}
-        />
-      </FormWrapper>
-    );
-  }
-
-  render() {
-    return super.render(
-      this.props.inModal ? (
-        <Modal
-          icon="fas fa-folder-open"
-          position="top"
-          size="lg"
-          title="File Uploader"
-          open={true}
-          onClose={() => {
-            this.props.onClose && this.props.onClose();
-          }}
-          buttons={[]}
-        >
-          <div>{this.FileInput()}</div>
-          <div>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                this.upload();
-              }}
-            >
-              <UploadIcon className="w-10 pr-3"/>
-              Upload
-            </Button>
-          </div>
-        </Modal>
-      ) : (
-        this.FileInput()
-      )
-    );
-  }
-
-  get files() {
-    return this.fileInput?.files || [];
-  }
-
-  upload() {
+  const upload = () => {
     const formData = new FormData();
 
-    this.files.forEach((file) => {
+    getFiles().forEach((file) => {
       formData.append("files[]", file.rawFile);
     });
 
     loopar.method("File Manager", "upload", formData).then((r) => {
-      this.props.onUpload && this.props.onUpload();
+      props.onUpload && props.onUpload();
     });
   }
+
+  const FileInputFn = () => (
+    <FormWrapper>
+      <FileInput
+        dontHaveForm={true}
+        data={{
+          name: "file_upload_input",
+          label: "Upload",
+          multiple: true,
+          accept: "*",
+        }}
+        withoutLabel={true}
+        origins={origins}
+        ref={fileInput}
+      />
+    </FormWrapper>
+  )
+
+  return (
+    props.inModal ? (
+      <Modal
+        icon="fas fa-folder-open"
+        position="top"
+        size="lg"
+        title="File Uploader"
+        open={true}
+        onClose={() => {
+          props.onClose && props.onClose();
+        }}
+        buttons={[]}
+      >
+        <div>{FileInputFn()}</div>
+        <div>
+          <Button
+            variant="secondary"
+            onClick={upload}
+          >
+            <UploadIcon className="w-10 pr-3"/>
+            Upload
+          </Button>
+        </div>
+      </Modal>
+    ) : (
+      FileInputFn()
+    )
+  );
 }

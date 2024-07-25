@@ -1,46 +1,49 @@
 import BaseCarrusel from "@base-carrusel";
-import elementManage from "$tools/element-manage";
+import Preassembled from "@preassembled";
 
-export default class Slider extends BaseCarrusel {
-  defaultElements = [
+export default function MetaGalery(props) {
+  const defaultElements = [
     {
       element: "image",
 
       data: {
-        color_overlay: "rgba(0,0,0,0.3)",
         background_image:
-          "https://fastly.picsum.photos/id/174/800/600.jpg?hmac=cfaSWlI7126OpICaFPhVjWRVaaGrLtpZ7Ly9SksvbTM",
-        key: elementManage.uuid(),
+          "https://fastly.picsum.photos/id/174/800/600.jpg?hmac=cfaSWlI7126OpICaFPhVjWRVaaGrLtpZ7Ly9SksvbTM"
       },
     },
     {
       element: "image",
       data: {
-        color_overlay: "rgba(0,0,0,0.3)",
         background_image:
-          "https://img.freepik.com/free-photo/digital-painting-mountain-with-colorful-tree-foreground_1340-25699.jpg",
-        key: elementManage.uuid(),
+          "https://img.freepik.com/free-photo/digital-painting-mountain-with-colorful-tree-foreground_1340-25699.jpg"
       },
     },
   ];
 
-  addSlide() {
-    const id = elementManage.uuid();
-    const sliderCount = this.sliderCount();
+  const mewItem = () => {
+    const count = (props.elements || []).filter((element) => element.element === "banner").length;
 
-    const newSlide = {
+    return {
       element: "image",
       data: {
-        key: `slider_${id}`,
-        label: `Slide ${sliderCount + 1}`,
+        label: `Slide ${count + 1}`,
         background_image:
           "https://img.freepik.com/free-photo/digital-painting-mountain-with-colorful-tree-foreground_1340-25699.jpg",
         color_overlay: "rgba(0,0,0,0.3)",
       },
     };
-
-    this.setElements([newSlide], () => {
-      this.showSlide(this.sliderCount() - 1);
-    });
   }
+
+  return (
+    <Preassembled 
+      {...props} 
+      notDroppable={true} 
+      defaultElements={defaultElements}
+    >
+      <BaseCarrusel
+        {...props}
+        newItem={mewItem}
+      />
+    </Preassembled>
+  );
 }

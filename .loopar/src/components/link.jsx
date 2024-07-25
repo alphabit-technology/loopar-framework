@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link as ReactLink, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import BaseComponent from "@base-component";
 
 import { useWorkspace } from "@workspace/workspace-provider";
 
@@ -39,7 +38,7 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
   
-  const { menuItems, currentLink, currentPage, setOpenNav, workspace } = useWorkspace();
+  const { menuItems, currentLink, currentPage, setOpenNav, workspace, navigate } = useWorkspace();
 
   const handleSetCalled = (called) => {
     setCalled(called);
@@ -79,7 +78,7 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
       if (to.startsWith("#")) {
         goTo({ target: { getAttribute: () => to } });
       } else {
-        loopar.rootApp.navigate(url);
+        //navigate(url);
       }
       handleSetCalled(false);
     }
@@ -162,43 +161,45 @@ const variants = {
   destructive: "destructive",
 };
 
-export default class LinkComponent extends BaseComponent {
-  render() {
-    const data = this.props.data;
+export default function MetaLink(props) {
+    const data = props.data;
     const className = data.class || "";
     delete data.class;
 
-    return <Link {...this.props} {...data} className={className} key={this.props.key || data.key || this.props.to} >{data.label}</Link>;
-  }
+    return (
+      <Link {...props} {...data} className={className} key={props.key || data.key || props.to} >
+        {data.label}
+      </Link>
+    );
+}
 
-  get metaFields() {
-    return {
-      group: "form",
-      elements: {
-        to: {
-          element: INPUT,
-        },
-        _target: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "self", value: "_self" },
-              { option: "blank", value: "_blank" },
-            ],
-          },
-        },
-        variant: {
-          element: SELECT,
-          data: {
-            options: Object.keys(variants).map((button) => {
-              return {
-                option: button,
-                value: variants[button],
-              };
-            }),
-          },
+MetaLink.metaFields = () => {
+  return {
+    group: "form",
+    elements: {
+      to: {
+        element: INPUT,
+      },
+      _target: {
+        element: SELECT,
+        data: {
+          options: [
+            { option: "self", value: "_self" },
+            { option: "blank", value: "_blank" },
+          ],
         },
       },
-    };
-  }
+      variant: {
+        element: SELECT,
+        data: {
+          options: Object.keys(variants).map((button) => {
+            return {
+              option: button,
+              value: variants[button],
+            };
+          }),
+        },
+      },
+    },
+  };
 }

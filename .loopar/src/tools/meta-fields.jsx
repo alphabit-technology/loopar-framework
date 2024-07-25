@@ -64,7 +64,7 @@ export const getMetaFields = (data) => {
             selected: 'cover'
           }
         },
-        text_align: {
+        align: {
           element: SELECT,
           data: {
             options: [

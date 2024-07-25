@@ -1,18 +1,16 @@
 import Component from "$component";
 import {Droppable} from "$droppable";
-import {WorkspaceProviderContext} from "@workspace/workspace-provider";  
-import MetaComponent from "./base/meta-component";
-import loopar from "$loopar";
+import {WorkspaceProviderContext} from "@workspace/workspace-provider";
 
-export default class Row extends Component {
-  blockComponent = true;
+export default function Row(props) {
+  /*blockComponent = true;
   dontHaveMetaElements = ["label", "text"];
-  droppable = true;
+  droppable = true;*/
 
-  static contextType = WorkspaceProviderContext;  
+  //static contextType = WorkspaceProviderContext;  
 
-  setLayout(layout) {
-    const meta = this.props;
+  const setLayout = (layout) => {
+    /*const meta = this.props;
 
     this.props.designerRef.updateElement(
       meta.data.key,
@@ -20,10 +18,10 @@ export default class Row extends Component {
         layout: JSON.stringify(layout),
       },
       true
-    );
+    );*/
   }
 
-  getLayout() {
+  const getLayout = () => {
     /*const meta = this.props || {};
     meta.data ??= {};
     return meta.data.layout && loopar.utils.isJSON(meta.data.layout)
@@ -31,7 +29,7 @@ export default class Row extends Component {
       : [];*/
   }
 
-  getColumnsSelector() {
+  const getColumnsSelector = () => {
     const sizes = [
       [100],
       [50, 50],
@@ -85,7 +83,7 @@ export default class Row extends Component {
     });*/
   }
 
-  get spacing() {
+  const spacing = () => {
     return {
       0: "gap-0",
       1: "gap-1",
@@ -93,11 +91,11 @@ export default class Row extends Component {
       3: "gap-3",
       4: "gap-4",
       5: "gap-5",
-    }[this.props?.data?.spacing || 3]
+    }[props?.data?.spacing || 3]
   }
 
-  get colsDistribution() {
-    let columsCount = this.props.elements?.length || 1;
+  const colsDistribution = () => {
+    let columsCount = props.elements?.length || 1;
     columsCount = columsCount > 6 ? 6 : columsCount;
     return {
       1: "md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1",
@@ -109,86 +107,85 @@ export default class Row extends Component {
     }[columsCount]
   }
 
-  render() {
-    const cols = (this.props.elements || []);
-    
-    return (
-      <Droppable 
-        //{...loopar.utils.renderizableProps(this.props)}
-        {...this.props}
-        elements={cols}
-        //receiver={this}
-        className={`grid xm:grid-cols-1 sm:grid-cols-1 ${this.colsDistribution} ${this.spacing}`}
-      />
-    );
-  }
-
-  get metaFields() {
-    return {
-      group: "custom",
-      elements: {
-        layout: {
-          element: INPUT,
-          data: {
-            disabled: true,
-          },
-        },
-        horizontal_alignment: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "left", value: "left" },
-              { option: "center", value: "center" },
-              { option: "right", value: "right" },
-            ],
-          },
-        },
-        vertical_alignment: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "top", value: "top" },
-              { option: "center", value: "center" },
-              { option: "bottom", value: "bottom" },
-            ],
-          },
-        },
-        row_height: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "auto", value: "auto" },
-              { option: "100", value: "100%" },
-              { option: "75", value: "75%" },
-              { option: "50", value: "50%" },
-              { option: "25", value: "25%" },
-            ],
-            description:
-              "Define the height of the row based on the screen height.",
-          },
-        },
-        full_height: {
-          element: SWITCH,
-          data: {
-            description:
-              "If enabled the slider will have the height of the screen.",
-          },
-        },
-        spacing: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "0", value: 0 },
-              { option: "1", value: 1 },
-              { option: "2", value: 2 },
-              { option: "3", value: 3 },
-              { option: "4", value: 4 },
-              { option: "5", value: 5 },
-            ],
-            description: "Spacing between columns in rem.",
-          },
+  const cols = (props.elements || []);
+  
+  return (
+    <Droppable 
+      //{...loopar.utils.renderizableProps(this.props)}
+      {...props}
+      elements={cols}
+      //receiver={this}
+      className={`grid xm:grid-cols-1 sm:grid-cols-1 ${colsDistribution()} ${spacing()}`}
+    />
+  );
+}
+ 
+Row.droppable = true;
+Row.metaFields = () => {
+  return {
+    group: "custom",
+    elements: {
+      layout: {
+        element: INPUT,
+        data: {
+          disabled: true,
         },
       },
-    };
-  }
+      horizontal_alignment: {
+        element: SELECT,
+        data: {
+          options: [
+            { option: "left", value: "left" },
+            { option: "center", value: "center" },
+            { option: "right", value: "right" },
+          ],
+        },
+      },
+      vertical_alignment: {
+        element: SELECT,
+        data: {
+          options: [
+            { option: "top", value: "top" },
+            { option: "center", value: "center" },
+            { option: "bottom", value: "bottom" },
+          ],
+        },
+      },
+      row_height: {
+        element: SELECT,
+        data: {
+          options: [
+            { option: "auto", value: "auto" },
+            { option: "100", value: "100%" },
+            { option: "75", value: "75%" },
+            { option: "50", value: "50%" },
+            { option: "25", value: "25%" },
+          ],
+          description:
+            "Define the height of the row based on the screen height.",
+        },
+      },
+      full_height: {
+        element: SWITCH,
+        data: {
+          description:
+            "If enabled the slider will have the height of the screen.",
+        },
+      },
+      spacing: {
+        element: SELECT,
+        data: {
+          options: [
+            { option: "0", value: 0 },
+            { option: "1", value: 1 },
+            { option: "2", value: 2 },
+            { option: "3", value: 3 },
+            { option: "4", value: 4 },
+            { option: "5", value: 5 },
+          ],
+          description: "Spacing between columns in rem.",
+        },
+      },
+    },
+  };
 }

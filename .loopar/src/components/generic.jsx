@@ -1,6 +1,7 @@
 import Component from "$component";
 import loopar from "$loopar";
 import React from "react";
+import { Droppable } from "$droppable";
 
 export default class Generic extends Component {
   //blockComponent = true;
@@ -104,7 +105,6 @@ export default class Generic extends Component {
       this.tagName = "div";
     }
 
-    console.log(["Generic Component"])
     if (this.tagDontHaveChild(data.tag)) {
       this.tagName = data.tag;
       this.dontHaveContainer = true;
@@ -114,9 +114,12 @@ export default class Generic extends Component {
       ]);
     }
 
-    return super.render(
+    return (
+      <Droppable Component={data.tag} {...this.props}/>
+    )
+    /*return super.render(
       this.elementsDict.length === 0 ? this.props.children : ""
-    );
+    );*/
   }
 
   get metaFields() {

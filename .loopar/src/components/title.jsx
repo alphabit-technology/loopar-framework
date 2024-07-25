@@ -1,30 +1,30 @@
 import BaseText from "$base-text";
+import ComponentDefaults from "$component-defaults";
+import {useDesigner} from "@custom-hooks";
 
-export default class Title extends BaseText {
-  droppable = false;
-  draggable = true;
-  dontHaveContainer = true;
+export default function Title(props) {
+  const {designing} = useDesigner();
+  const {getText} = BaseText(props);
+  const {getTextSize, getTextAlign} = ComponentDefaults(props);
 
-  render() {
-    return super.render(
-      <div className="flex">
-        <h1 
-          className={`${this.getAlign()} ${this.getSize()} w-full font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]`}
-          {...(this.props.designer
-            ? {
-                style: {
-                  maxHeight: "3em",
-                  overflow: "auto",
-                  display: "-webkit-box",
-                  "-webkit-line-clamp": 5,
-                  "-webkit-box-orient": "vertical",
-                },
-              }
-            : {})}
-        >
-          {this.getText()}
-        </h1>
-      </div>
-    );
-  }
+  return (
+    <div className="flex">
+      <h1 
+        className={`${getTextAlign()} ${getTextSize()} w-full font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]`}
+        {...(designing
+          ? {
+              style: {
+                maxHeight: "3em",
+                overflow: "auto",
+                display: "-webkit-box",
+                "-webkit-line-clamp": 5,
+                "-webkit-box-orient": "vertical",
+              },
+            }
+          : {})}
+      >
+        {getText()}
+      </h1>
+    </div>
+  )
 }

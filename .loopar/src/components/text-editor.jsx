@@ -45,74 +45,70 @@ function TextEditor({onChange}) {
   )
 }
 
-export default class TextEditorClass extends BaseInput {
-  constructor(props) {
-    super(props);
-  }
+export default function MetaTextEditor(props){
+  const { renderInput, data } = BaseInput(props);
 
-  render() {
-    return this.renderInput(field => {
-      
-      return (
-      <>
-      <style>{`
+  return renderInput(field => {
+    
+    return (
+    <>
+    <style>{`
 .ql-editor {
-  min-height: 300px;
+min-height: 300px;
 }
 .quill > * {
-  border-color: inherit !important;
-  color: inherit !important;
+border-color: inherit !important;
+color: inherit !important;
 }
 .quill > .ql-toolbar {
-  /* border radius of the toolbar */
-  border-radius: 10px 10px 0 0;
+/* border radius of the toolbar */
+border-radius: 10px 10px 0 0;
 }
 .quill > .ql-container {
-  /* border radius of the container and for font size*/
-  font-size: inherit;
-  border-radius: 0 0 10px 10px;
+/* border radius of the container and for font size*/
+font-size: inherit;
+border-radius: 0 0 10px 10px;
 }
 .ql-toolbar.ql-snow .ql-picker-label {
-  color: inherit !important;
-  opacity: 0.76;
+color: inherit !important;
+opacity: 0.76;
 }
 .ql-snow .ql-picker {
-  color: inherit !important;
+color: inherit !important;
 }
 .quill > .ql-container > .ql-editor.ql-blank::before {
-  /* for placeholder */
-  color: inherit;
+/* for placeholder */
+color: inherit;
 }
 .ql-snow.ql-toolbar button svg {
-  opacity: 0.76;
-  color: currentColor;
+opacity: 0.76;
+color: currentColor;
 }
 .ql-snow .ql-stroke {
-  /* for the border of the editor */
-  stroke: currentColor !important;
+/* for the border of the editor */
+stroke: currentColor !important;
 }
 .ql-snow .ql-fill {
-  /* for the bg color */
-  fill: currentColor !important;
+/* for the bg color */
+fill: currentColor !important;
 }
 .ql-picker-item {
-  /* for dropdown */
-  color: #444 !important;
+/* for dropdown */
+color: #444 !important;
 }
-      `}
-      </style>
-        <TextEditor onChange={field.onChange}/>
-      </>
-    )
+    `}
+    </style>
+      <TextEditor onChange={field.onChange}/>
+    </>
+  )
   });
-  }
 
-  val(val = null) {
+  /*val(val = null) {
     if (val != null) {
       this.editor.setContents(JSON.parse(val || "{}"));
       this.trigger("change");
     } else {
       return JSON.stringify(this.editor.getContents());
     }
-  }
+  }*/
 }

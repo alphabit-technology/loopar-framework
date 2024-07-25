@@ -105,10 +105,6 @@ class FileManager {
   }
 
   getMappedFiles(files = []) {
-    /*if(files instanceof FileList){
-       return files;
-    }*/
-
     if (typeof files === "string" && !elementManage.isJSON(files)) {
       if (this.isURL(files)) {
         files = [{

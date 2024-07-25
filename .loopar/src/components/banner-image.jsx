@@ -1,21 +1,9 @@
-import Preassembled from "$preassembled";
-import Row from "$row";
-
-import loopar from "$loopar";
-
-import { Droppable } from "$droppable";
-
-export default class BannerImage extends Preassembled {
-  blockComponent = true;
-  //className = "py-5 h-100";
-  defaultDescription =
+import Preassembled from "@preassembled";
+export default function BannerImage(props){
+  const defaultDescription =
     "This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.";
-  /*style = {
-      height: "80vh"
-   };*/
 
-
-  defaultElements = [
+  const defaultElements = [
     {
       element: "row",
       elements: [
@@ -51,31 +39,21 @@ export default class BannerImage extends Preassembled {
                 {
                   element: "subtitle",
                   data: {
-                    class: "lead text-muted mb-5",
+                    class: "lead mb-5",
                     text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante.",
                   },
                 },
                 {
                   element: "button",
                   data: {
-                    class:
-                      "btn btn-lg btn-primary d-block d-sm-inline-block mr-sm-2 my-3",
+                    class: "d-block sm:inline-block sm:mr-2 my-3",
                     label: "Let's Try ",
-                    elements: [
-                      {
-                        element: "i",
-                        data: {
-                          class: "fa fa-angle-right ml-2",
-                        },
-                      },
-                    ],
                   },
                 },
                 {
                   element: "button",
                   data: {
-                    class:
-                      "btn btn-lg btn-subtle-primary d-block d-sm-inline-block my-3",
+                    class: "d-block sm:inline-block my-3",
                     target: "_blank",
                     label: "Documentation",
                   },
@@ -88,28 +66,29 @@ export default class BannerImage extends Preassembled {
     }
   ];
 
-  render() {
-    return (
-      <Droppable
-        {...this.props}
-      />
-    );
-  }
+  return (
+    <Preassembled
+      {...props}
+      defaultDescription={defaultDescription}
+      defaultElements={defaultElements}
+    />
+  );
+}
 
-  get metaFields() {
-    return [
-      {
-        group: "general",
-        elements: {
-          full_height: {
-            element: SWITCH,
-            data: {
-              description:
-                "If enabled the slider will have the height of the screen.",
-            },
+BannerImage.droppable = true;
+BannerImage.metaFields = () => {
+  return [
+    {
+      group: "general",
+      elements: {
+        full_height: {
+          element: SWITCH,
+          data: {
+            description:
+              "If enabled the slider will have the height of the screen.",
           },
         },
       },
-    ];
-  }
-}
+    },
+  ];
+};

@@ -10,7 +10,9 @@ import {
 import "easymde/dist/easymde.min.css";
 import "./markdown.css"
 
-function MarkdownEditor({ field}) {
+export default function MarkdownInput(props){
+  const {renderInput, data} = BaseInput(props);
+
   const autofocusNoSpellcheckerOptions = useMemo(() => {
     return {
       autofocus: false,
@@ -18,30 +20,20 @@ function MarkdownEditor({ field}) {
     };
   }, []);
 
-  return (
-    <SimpleMDE
-      options={autofocusNoSpellcheckerOptions}
-      value={field.value}  
-      onChange={field.onChange}
-    />
-  );
-}
-
-export default class MarkdownInput extends BaseInput {
-  render() {
-    const data = this.data;
-
-    return this.renderInput((field) => {
-      return (
-      <>
-        {!this.props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
-        <FormControl>
-          <MarkdownEditor field={field}/>
-        </FormControl>
-        {data.description && <FormDescription>
-          {data.description}
-        </FormDescription>}
-      </>
-    )});
-  }
+  return renderInput((field) => {
+    return (
+    <>
+      {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
+      <FormControl>
+        <SimpleMDE
+          options={autofocusNoSpellcheckerOptions}
+          value={field.value}  
+          onChange={field.onChange}
+        />
+      </FormControl>
+      {data.description && <FormDescription>
+        {data.description}
+      </FormDescription>}
+    </>
+  )});
 }

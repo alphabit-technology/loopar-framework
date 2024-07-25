@@ -246,7 +246,7 @@ function renderizableProps(props) {
         typeof props[key] != 'object' || 
         (typeof props[key] === 'function' || key === "children" || key === "style")
       ) && 
-      ["element", "elements", "type", "key", "id", "className", "style", "children"].indexOf(key) == -1 &&
+      ["element", "elements", "type", "key", "id"].indexOf(key) == -1 &&
       !key.startsWith("on")
     ) {
       acc[key] = props[key];

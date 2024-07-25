@@ -15,7 +15,7 @@ import {
 }*/
 
 export const FormField = ({render, onChange, data={}, ...props}) => {
-  const isDesigner = useDesigner().designerMode;
+  const {designerMode} = useDesigner();
   const control = useFormContext().control;
 
   /**If fields is not controller by Form */
@@ -36,7 +36,7 @@ export const FormField = ({render, onChange, data={}, ...props}) => {
   }
 
   return (
-    isDesigner || dontHaveForm ? (
+    designerMode || dontHaveForm ? (
       render({
         field: field
       })

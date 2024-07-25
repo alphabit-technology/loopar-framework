@@ -11,36 +11,35 @@ import loopar from "$loopar";
 
 let timerId;
 
-export default class Tailwind extends BaseInput {
-  render() {
-    const data = this.data;
-    const type = this.props.type || data.type || "input";
+export default function Tailwind(props){
+  const { renderInput, data } = BaseInput(props);
 
-    const handleKeyUp = (e) => {
-      clearTimeout(timerId);
+  const type = props.type || data.type || "input";
 
-      timerId = setTimeout(() => {
-        loopar.method("Document", "setTailwind", {to_element: data.to_element, classes: e.target.value })
-      }, 500);
-    }
+  const handleKeyUp = (e) => {
+    clearTimeout(timerId);
 
-    return this.renderInput((field) => (
-      <>
-        <FormLabel>{data.label}</FormLabel>
-        <FormControl className="p-2">
-          <Textarea
-            {...data} placeholder={data.placeholder || data.label} type={type} {...field}
-            className="bg-transparent border border-input rounded-sm"
-            onKeyUp={handleKeyUp}
-            rows={6}
-          />
-        </FormControl>
-        <FormDescription>
-          Here you can set Tailwind classes to style the document, for example: bg-red-500 text-white
-          if you want to set another class, you need to add your custom class in your uwn css file.
-        </FormDescription>
-        <FormMessage />
-      </>
-    ));
+    timerId = setTimeout(() => {
+      loopar.method("Document", "setTailwind", {to_element: data.to_element, classes: e.target.value })
+    }, 500);
   }
+
+  return renderInput((field) => (
+    <>
+      <FormLabel>{data.label}</FormLabel>
+      <FormControl className="p-2">
+        <Textarea
+          {...data} placeholder={data.placeholder || data.label} type={type} {...field}
+          className="bg-transparent border border-input rounded-sm"
+          onKeyUp={handleKeyUp}
+          rows={6}
+        />
+      </FormControl>
+      <FormDescription>
+        Here you can set Tailwind classes to style the document, for example: bg-red-500 text-white
+        if you want to set another class, you need to add your custom class in your uwn css file.
+      </FormDescription>
+      <FormMessage />
+    </>
+  ));
 }

@@ -1,250 +1,209 @@
-import DivComponent from "$div";
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { dataInterface } from "$global/element-definition";
+import { FormItem, FormMessage } from "@/components/ui/form";
+import { FormField } from "@form-field";
+import { cn } from "@/lib/utils";
 import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
-import { FormField } from "@form-field";
-import {
-  FormItem,FormMessage
-} from "@/components/ui/form"
-import { cn } from "@/lib/utils"
-import { BaseFormContext } from "@context/form-context";
+import { DesignerContext, useDesigner } from "@custom-hooks";
+//import BaseInput from './base-input copy';
 
-export default class BaseInput extends DivComponent {
-  get droppable(){return false};
+const BaseInput = (props) => {
+  const [isInvalid, setIsInvalid] = useState(false);
+  const fieldControl = useRef(null);
+  const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
+  const {designerMode} = useDesigner();
 
-  inputTagName = "input";
-  inputType = "text";
-  autocomplete = "off";
-  groupElement = INPUT;
-  isWritable = true;
-  droppable = false;
-  names = null;
-  dontHaveMetaElements = ["text"];
-  visibleInput = true;
-  dontHaveContainer = true;
-  static contextType = BaseFormContext;
+  const getData = () => {
+    //const names ??= elementManage.elementName(this.props.element);
+    if(props.element) {
+      const data = props.data || {};
 
-  constructor(props) {
-    super(props);
-    this.handleInputChange = this.handleInputChange.bind(this);
-
-    this.state = {
-      ...this.state,
-      focus: props.focus,
-      isInvalid: false,
-      data: props.data || {}
-    };
+      data.id ??= names.id;
+      data.name ??= names.name;
+      data.label ??= loopar.utils.Capitalize(data.name.replaceAll("_", " "));
+      return data;
+    } else {
+      return props.data || {};
+    }
   }
 
-  handleInputChange(event) {
-    if(event && typeof event === "object") {
+  const [data, setData] = useState(getData());
+  const [val, setVal] = useState(data.value);
+
+  useEffect(() => {
+    setData(getData());
+  }, [props.data]);
+
+  useEffect(() => {
+    data.value = val;
+    setData(data);
+  }, [val]);
+
+  //const data = getData();
+
+  const handleInputChange = useCallback((event) => {
+    if (event && typeof event === "object") {
       event.target ??= {};
       event.target.value = (event.target.files || event.target.value);
-    }else{
-      event = { target: { value: event}};
+    } else {
+      event = { target: { value: event } };
     }
 
     setTimeout(() => {
-      this.validate();
-      this.props.onChange && this.props.onChange(event);
-      
-      //setTimeout necessary to witing for the onChange event to be called
-      this.onChange && this.onChange(event);
-      this.props.onChanged && this.props.onChanged(event);
+      validate();
+      props.onChange && props.onChange(event);
+      props.onChanged && props.onChanged(event);
     }, 0);
-  }
+  }, [props]);
 
-  set data(data) {
-    this.setState({ data });
-  }
+  /*useEffect(() => {
+    if (props.onChange && !props.prevProps?.onChange) {
+      handleInputChange(value());
+    }
+  }, [props.onChange, handleInputChange]);*/
 
-  get data() {
-    this.names ??= elementManage.elementName(this.props.element);
-    const data = this.state.data || this.props.data || {};
+  /*useEffect(() => {
+    setNames(elementManage.elementName(props.element));
+  }, [props.element]);*/
 
-    data.id ??= this.names.id;
-    data.name ??= this.names.name;
-    data.label ??= loopar.utils.Capitalize(data.name.replaceAll("_", " "));
+  const validate = () => {
+    const validation = dataInterface({ data }, value()).validate();
+    setIsInvalid(!validation.valid);
+    return validation;
+  };
 
-    return data;
-  }
+  const value = (val) => {
+    if (typeof val === "undefined") return fieldControl.current?.value;
 
-  get readOnly() {
-    return this.props.readOnly || this.data.readOnly;
-  }
+    if (!fieldControl.current) return;
 
-  hasLabel(){
-    return !(this.props.withoutLabel === true);
-  }
+    fieldControl.current.value = val;
+    setTimeout(() => {
+      fieldControl.current.onChange({ target: { value: val } });
+    }, 0);
+  };
 
-  renderInput(input, className=""){
-    const data = this.data;
-  
-    const invalidClassName = this.state.isInvalid ? "border border-red-500 p-2" : "";
+  const readOnly = props.readOnly || data.readOnly;
+
+  const hasLabel = () => !(props.withoutLabel === true);
+
+  /*useEffect(() => {
+    fieldControl.current?.onChange({ target: { value: data.value } }  )
+  }, [fieldControl.current]);*/
+
+  /*useEffect(() => {
+    fieldControl.current?.onChange({ target: { value: data.value } }  )
+    setData(getData());
+  }, [fieldControl?.current?.value]);*/
+
+  const renderInput = (input, className = "") => {
+    //const currentData = data;
+    const invalidClassName = isInvalid ? "border border-red-500 p-2" : "";
+    
     return (
       <FormField
         name={data.name}
-        dontHaveForm={this.props.dontHaveForm}
+        dontHaveForm={props.dontHaveForm}
         render={({ field }) => {
-          //field.value ??= data.value;
-          if(!this.fieldControl) field.value = data.value;
-          this.fieldControl = field;
+          if (!fieldControl.current) field.value = data.value;
+          if(field.value !== val){
+            //setVal(field.value);
+          }
+
+          fieldControl.current = field;
           const oldChange = field.onChange;
 
           field.onChange = (e) => {
-            this.handleInputChange(e);
+            if(props.handleChange){
+              handleInputChange(props.handleChange(e));
+            }else{
+              handleInputChange(e);
+            }
+            
             oldChange(e);
-          }
+          };
 
-          //field.refObject = this;
-          return <FormItem className={cn("flex flex-col mb-2 rounded-lg shadow-sm", invalidClassName, className)}>
-            {input(field)}
-            <FormMessage>
-              {field.message || (this.state.isInvalid && this.state.invalidMessage)}
-            </FormMessage>
-          </FormItem>}
-        }
-        onChange={this.handleInputChange}
+          return (
+            <FormItem className={cn("flex flex-col mb-2 rounded-lg shadow-sm", invalidClassName, className)}>
+              {input(field, data)}
+              <FormMessage>
+                {field.message || (isInvalid && field.invalidMessage)}
+              </FormMessage>
+            </FormItem>
+          );
+        }}
+        onChange={handleInputChange}
         data={data}
       />
-    )
+    );
+  };
+
+  if(props.render){
+    return renderInput(props.render);
   }
 
-  focus() {
-    this.input?.node?.focus();
-  }
+  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange};
+};
 
-  on(event, callback) {
-    this.input?.on(event, callback);
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    super.componentDidUpdate(prevProps, prevState);
-
-    if (this.props.onChange && !prevProps.onChange) {
-      this.handleInputChange(this.value());
-    }
-  }
-
-  disable(on_disable = true) {
-    super.disable(on_disable);
-    this.input.prop("disabled", true);
-  }
-
-  enable(on_enable = true) {
-    super.enable(on_enable);
-    this.input.prop("disabled", true);
-  }
-
-  val(val = null, { event_change = true, focus = false } = {}) {
-    if(val === null) {
-      return this.fieldControl.value;
-    }else {
-      this.fieldControl.onChange({target: {value: val}});
-    }
-    /*if (val === null) {
-      return this.input ? this.data.value : null;
-    } else {
-      this.handleInputChange({ target: { value: val } });
-    }*/
-  }
-
-  value(val) {
-    if(typeof val === "undefined") return this.fieldControl?.value;
-
-    if(!this.fieldControl) return;
-    
-    this.fieldControl.value = val;
-    setTimeout(() => {
-      this.fieldControl.onChange({target: {value: val}});
-    },0);
-  }
-
-  get #datatype() {
-    const type = (
-      this.element === INPUT ? this.data.format || this.element : this.element
-    ).toLowerCase();
-
-    return type;
-  }
-
-  getName() {
-    return this.data.name;
-  }
-
-  validate() {
-    const validation = dataInterface(this, this.value()).validate();
-    this.setState({ isInvalid: !validation.valid, invalidMessage: validation.message});
-    return validation;
-  }
-
-  setSize(size = "md") {
-    this.input
-      .removeClass(`form-control-${this.data.size}`)
-      .addClass(`form-control-${size}`);
-    //this.label.removeClass(`col-form-label-${this.data.size}`).addClass(`col-form-label-${size}`);
-    this.data.size = size;
-
-    return this;
-  }
-
-  /*focus() {
-      this.input?.focus();
-   }*/
-
-  get metaFields() {
-    return [
-      {
-        group: "form",
-        elements: {
-          //tag: {element: INPUT},
-          label: { element: INPUT },
-          name: { element: INPUT },
-          description: { element: TEXTAREA },
-          placeholder: { element: TEXTAREA },
-          format: {
-            element: SELECT,
-            data: {
-              options: [
-                { option: "data", value: "Data" },
-                { option: "text", value: "Text" },
-                { option: "email", value: "Email" },
-                { option: "decimal", value: "Decimal" },
-                { option: "percent", value: "Percent" },
-                { option: "currency", value: "Currency" },
-                { option: "int", value: "Int" },
-                { option: "long_int", value: "Long Int" },
-                { option: "password", value: "Password" },
-                { option: "read_only", value: "Read Only" },
-              ],
-              selected: "data",
-            },
+BaseInput.metaFields = () =>{
+  return [
+    {
+      group: "form",
+      elements: {
+        //tag: {element: INPUT},
+        label: { element: INPUT },
+        name: { element: INPUT },
+        description: { element: TEXTAREA },
+        placeholder: { element: TEXTAREA },
+        format: {
+          element: SELECT,
+          data: {
+            options: [
+              { option: "data", value: "Data" },
+              { option: "text", value: "Text" },
+              { option: "email", value: "Email" },
+              { option: "decimal", value: "Decimal" },
+              { option: "percent", value: "Percent" },
+              { option: "currency", value: "Currency" },
+              { option: "int", value: "Int" },
+              { option: "long_int", value: "Long Int" },
+              { option: "password", value: "Password" },
+              { option: "read_only", value: "Read Only" },
+            ],
+            selected: "data",
           },
-          type: {
-            element: SELECT,
-            data: {
-              options: [
-                { option: "default", value: "Default" },
-                { option: "primary", value: "Primary" },
-                { option: "success", value: "Success" },
-                { option: "info", value: "Info" },
-                { option: "link", value: "link" },
-              ],
-              selected: "default",
-              description: "Valid for not preformated inputs",
-            },
-          },
-          //action: { element: INPUT },
-
-          not_validate_type: { element: SWITCH },
-          required: { element: SWITCH },
-          unique: { element: SWITCH },
-          set_only_time: { element: SWITCH },
-          readonly: { element: SWITCH },
-          in_list_view: { element: SWITCH },
-          searchable: { element: SWITCH },
         },
+        type: {
+          element: SELECT,
+          data: {
+            options: [
+              { option: "default", value: "Default" },
+              { option: "primary", value: "Primary" },
+              { option: "success", value: "Success" },
+              { option: "info", value: "Info" },
+              { option: "link", value: "link" },
+            ],
+            selected: "default",
+            description: "Valid for not preformated inputs",
+          },
+        },
+        //action: { element: INPUT },
+
+        not_validate_type: { element: SWITCH },
+        required: { element: SWITCH },
+        unique: { element: SWITCH },
+        set_only_time: { element: SWITCH },
+        readonly: { element: SWITCH },
+        in_list_view: { element: SWITCH },
+        searchable: { element: SWITCH },
       },
-    ];
-  }
+    },
+  ];
 }
+
+BaseInput.donHaveMetaFields = () => {
+  return ["text"];
+}
+
+export default BaseInput;

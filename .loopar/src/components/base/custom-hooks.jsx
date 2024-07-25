@@ -13,7 +13,7 @@ export const DesignerContext = createContext({
   setDropping: () => {},
   movement: null,
   setMovement: () => {},
-  updateElement: () => {},
+  //updateElement: () => {},
 });
 export const useDesigner = () => useContext(DesignerContext);
 

@@ -24,7 +24,7 @@ class Loopar extends Router {
   }
 
   dialog(dialog) {
-    const content = dialog.content || dialog.message;
+    /*const content = dialog.content || dialog.message;
     dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;
     dialog.open = dialog.open !== false;
     this.rootApp && this.rootApp.setDialog(dialog);
@@ -33,7 +33,7 @@ class Loopar extends Router {
       setTimeout(() => {
         resolve(this.rootApp && this.rootApp.dialogs.dialogs[dialog.id]);
       }, 0);
-    });
+    });*/
   }
 
   prompt(dialog) {

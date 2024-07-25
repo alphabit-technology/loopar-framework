@@ -1,40 +1,24 @@
-import elementManage from "$tools/element-manage";
-import Component from "$component";
+import ComponentDefaults from "$component-defaults";
+import {Droppable} from "@droppable";
+import {useDesigner} from "@custom-hooks";
+import { useEffect, useId } from "react";
 
-export default class Preassembled extends Component {
-  defaultText = "I'm a awesome Text Block widget, you can customize in edit button in design mode.";
-  tagName = "div";
-  /*defaultElements = [
-     {
-        element: "title",
-        meta:{
-           data: {
-              name: "text_block_title",
-              id: "text_block_title",
-              label: "Text Block Title",
-              key: "text_block_title",
-           }
-        },
-        //key: elementName.id,
-        designer: true,
-        hasTitle: true,
-     }
-  ]*/
+export default function Preassembled(props) {
+  const { designerMode } = useDesigner();
+  const { setElements } = ComponentDefaults(props);
+  const data = props.data || {};
+  const id = useId();
 
-  constructor(props) {
-    super(props);
-  }
+  useEffect(() => {
+    if(!designerMode) return;
+    let counter = 0;
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    super.componentDidUpdate(prevProps, prevState, snapshot);
-
-    if ((!this.props.elements || this.props.elements?.length === 0) && this.props.designer) {
+    if (!props.elements || props.elements?.length === 0) {
       const prepareElements = (elements) => {
         return elements.map(el => {
+          counter ++;
           el.data ??= {};
-          el.designer = true;
-          el.hasTitle = true;
-          el.data.key ??= elementManage.getUniqueKey();
+          el.data.key ??= id + counter;
 
           if (el.elements?.length > 0) {
             el.elements = prepareElements(el.elements);
@@ -43,7 +27,9 @@ export default class Preassembled extends Component {
         });
       }
 
-      this.setElements(prepareElements(this.defaultElements || []), null, false);
+      setElements(prepareElements(props.defaultElements || []), null, false);
     }
-  }
+  }, [data])
+
+  return props.notDroppable ? <div {...props}>{props.children}</div> : <Droppable {...props}/>
 }

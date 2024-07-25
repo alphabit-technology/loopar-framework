@@ -68,11 +68,12 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     if(typeof position != "undefined" && currentDragging){
       const rect = currentDragging.targetRect;
 
+      
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
         setElement(
-          <div 
-            style={{width: rect.width - 35, height: 50}}
-            className="mb-4 bg-green-900/40 rounded-sm border-dashed border-secondary-500 transition-all duration-300 drop-shadow-sm p-4"
+          <div
+            style={{maxHeight: rect.height}}
+            className="mb-4 bg-blue-900/40 rounded-sm transition-all duration-300 shadow-sm shadow-red-500/50 p-4 w-full h-20"
           />, position
         );
         return;
@@ -148,6 +149,8 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
       if(!currentDragging) return;
 
+      if(currentDragging.ref === dropZoneRef.current) return;
+
       const rect = currentDragging.rect;
       const mouse = currentDragging.mousePosition;
 
@@ -170,7 +173,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
   const ClassNames = cn(
     //mode !== "preview" && "h-full w-full p-3 bg-slate-200/50 dark:bg-red-500/50 pt-4" + isDroppable ? " min-h-20" : "",
-    designerModeType !== "preview" && "bg-slate-200/50 dark:bg-slate-900/50 pt-4 h-full w-full p-2",
+    designerModeType !== "preview" && "bg-slate-200/50 dark:bg-slate-800/50 pt-4 h-full min-h-20 w-full p-2",
     dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow transition-all duration-300 p-4 h-full' : '',
     className
   );
@@ -178,9 +181,9 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   const renderizableProps = loopar.utils.renderizableProps(props);
   const C = (designerMode && isDroppable && !hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
 
-  const getCurrentDragKey = () => {
+  /*const getCurrentDragKey = () => {
     return currentDragging?.key;
-  }
+  }*/
 
   const getTargetRect = () => {
     return currentDragging?.targetRect || {};
@@ -192,10 +195,9 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     (designerMode && isDroppable && !hidden) ?
       <>
         {
-          (dropping && currentDropZone && currentDropZone === dropZoneRef.current) && (
+          (dropping && currentDropZone && currentDropZone === dropZoneRef.current && currentDragging && !currentDragging.new) && (
             <div
               className="fixed bg-secondary rounded-md border-2 pointer-events-none"
-              //key={getCurrentDragKey()+"-dragging"}
               style={{
                 width: targetRect.width,
                 height: targetRect.height,
