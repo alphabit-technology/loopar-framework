@@ -1,7 +1,7 @@
 import ComponentDefaults from "$component-defaults";
 import elementManage from "$tools/element-manage";
 import MetaComponent from "@meta-component";
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
 import {useEffect} from "react";
 

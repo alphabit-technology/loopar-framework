@@ -51,7 +51,7 @@ async function ComponentsLoader(components, callback) {
 }
 
 async function MetaComponentsLoader(__META__, environment) {
-  await ComponentsLoader(environment === "server" ? MetaComponents(__META__, environment) : __META__.__REQUIRE_COMPONENTS__, environment);
+  await ComponentsLoader(environment === "server" ? MetaComponents(__META__, environment) : __META__.__REQUIRE_COMPONENTS__);
 }
 
 export { MetaComponentsLoader, __META_COMPONENTS__, ComponentsLoader };

@@ -11,7 +11,7 @@ export const makeUrl = (href) => {
   if (href.startsWith("http") || href.startsWith("/")) return href;
 
   const location = useLocation();
-  const currentURL = location.pathname;
+  const currentURL = global.url || location.pathname;
 
   const urlStructure = ["workspace", "module", "document", "action"];
   const urlArray = currentURL.split("/");
@@ -38,7 +38,7 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
   
-  const { menuItems, currentLink, currentPage, setOpenNav, workspace, navigate } = useWorkspace();
+  const { menuItems, currentLink, currentPage, setOpenNav, workspace } = useWorkspace();
 
   const handleSetCalled = (called) => {
     setCalled(called);
@@ -77,8 +77,6 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
     if (called) {
       if (to.startsWith("#")) {
         goTo({ target: { getAttribute: () => to } });
-      } else {
-        //navigate(url);
       }
       handleSetCalled(false);
     }

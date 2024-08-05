@@ -19,7 +19,7 @@ export default class StripeEmbebedClass extends Component {
   render() {
     const data = this.props.data;
 
-    return super.render([
+    return ([
       React.createElement("stripe-pricing-table", {
         "pricing-table-id": data.pricing_table_id,
         "publishable-key": data.publishable_key,

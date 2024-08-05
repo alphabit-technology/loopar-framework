@@ -1,6 +1,7 @@
 import loopar from '$loopar';
 import BaseDocument from "$context/base/base-document";
 import { dataInterface } from '@global/element-definition';
+import {useWorkspace} from "@workspace/workspace-provider"; 
 
 export default class BaseForm extends BaseDocument {
   tagName = "form";
@@ -8,6 +9,7 @@ export default class BaseForm extends BaseDocument {
   hasSidebar = true;
   lastData = null;
   #Form = null;
+  static contextType = useWorkspace;
 
   constructor(props) {
     super(props);
@@ -23,24 +25,15 @@ export default class BaseForm extends BaseDocument {
 
   send(options = { action: this.props.action }) {
     options = typeof options === 'string' ? { action: options } : options;
-    this.validate();
-
-    //console.log('getFormValues', JSON.parse(this.getFormValues.doc_structure));
-
-    /*console.log({
-       isNew: this.props.__IS_NEW__,
-       lastData: JSON.parse(this.lastData),
-       getFormValues: this.getFormValues,
-       test: (!this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues))))
-    });*/
-
+    //this.validate();
+    
     /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
       this.lastData = JSON.stringify(this.getFormValues);
       loopar.notify("No changes to save", "warning");
       return;
     }*/
 
-    return new Promise((resolve, reject) => {
+    //return new Promise((resolve, reject) => {
       loopar.send({
         action: options.action,
         params: this.params,
@@ -48,26 +41,27 @@ export default class BaseForm extends BaseDocument {
         success: r => {
           if (r && r.success) {
             //this.lastData = JSON.stringify(this.getFormValues);
-            if (loopar.rootApp && loopar.rootApp.refresh) {
+            //this.context.refresh();
+            /*if (loopar.rootApp && loopar.rootApp.refresh) {
               loopar.rootApp.refresh().then(() => {
                 loopar.notify(r.message);
-              });
-            } else {
+              });*/
+            //} else {
               //window.location.reload();
-            }
+           // }
           } else {
             loopar.notify(r.message, "error");
           }
 
           options.success && options.success(r);
-          resolve(r);
+          //resolve(r);
         },
         error: r => {
           options.error && options.error(r);
         },
-        freeze: true
+        //freeze: true
       });
-    });
+    //});
   }
 
   get params() {
@@ -215,7 +209,11 @@ export default class BaseForm extends BaseDocument {
     const [data, formData] = [this.getFormValues(toSave), new FormData()];
 
     for (const key in data) {
-      data.hasOwnProperty(key) && formData.append(key, data[key]);
+      if (data.hasOwnProperty(key)) {
+        const value = (typeof data[key] === 'object' && !(data[key] instanceof File)) ? JSON.stringify(data[key]) : data[key];
+        formData.append(key, value);
+      }
+      //data.hasOwnProperty(key) && formData.append(key, data[key]);
     }
 
     return formData;

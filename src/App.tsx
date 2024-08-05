@@ -2,9 +2,6 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { DialogContextProvider } from "@workspace/base/base-workspace";
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 
 interface RootLayoutProps {
@@ -63,15 +60,13 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
   return (
     <>
       <CookiesProvider manager={cookieManager} updater={setUpdate}>
-        <DialogContextProvider>
-          <Main
-            __META__={__META__}
-            Workspace={Workspace}
-            Document={Document}
-            ENVIRONMENT={ENVIRONMENT}
-            cookieManager={cookieManager}
-          />
-        </DialogContextProvider>
+        <Main
+          __META__={__META__}
+          Workspace={Workspace}
+          Document={Document}
+          ENVIRONMENT={ENVIRONMENT}
+          cookieManager={cookieManager}
+        />
       </CookiesProvider>
     </>
   )

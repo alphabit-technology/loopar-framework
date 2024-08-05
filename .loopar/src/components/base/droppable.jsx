@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useDesigner, useHidden, DroppableContext } from "@custom-hooks";
+import { useHidden } from "@context/@/hidden-context";
+import { DroppableContext } from "@context/@/droppable-context";
+import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
 import loopar from "$loopar";
 import MetaComponent from "@meta-component";
@@ -128,7 +130,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   }, [dropped, elements, props.elements]);
   
   if (designerMode && isDroppable && designerModeType !== "preview") {
-    droppableEvents.droppable = true;
+    droppableEvents.droppable = "true";
     droppableEvents.onDragEnter = (e) => {
       e.preventDefault();
       e.stopPropagation();

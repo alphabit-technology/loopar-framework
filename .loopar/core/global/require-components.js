@@ -8,7 +8,6 @@ export const extractElements = (__META__, elements, environment) => {
 
   const extract = (elements, environment) => {
     for (const el of elements || []) {
-
       const element = typeof el === "string" ? { element: el } : el;
 
       const def = elementsDict[element.element]?.def || {};
@@ -29,7 +28,7 @@ export const extractElements = (__META__, elements, environment) => {
 }
 
 export function requireComponents(__META__) {
-  const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta)
+  const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta);
   const action = ["update", "create", "form"].includes(__META__.action) ? "form" : __META__.action;
 
   const filterByWritable = (structure) => {
@@ -44,18 +43,24 @@ export function requireComponents(__META__) {
 
       return acc;
     }, []);
-    
   }
 
   const DOCTYPE = meta?.__DOCTYPE__ || {};
+  const DOCUMENT = meta?.__DOCUMENT__ || {};
 
   if(action === "list"){
-    return filterByWritable(JSON.parse(DOCTYPE.doc_structure || "[]"));
+    return [
+      ...filterByWritable(JSON.parse(DOCTYPE.doc_structure || "[]")),
+      ...filterByWritable(JSON.parse(DOCUMENT.doc_structure || "[]"))
+    ];
   }else{
-    return JSON.parse(DOCTYPE.doc_structure || "[]");
+    return [
+      ...JSON.parse(DOCTYPE.doc_structure || "[]"),
+      ...JSON.parse(DOCUMENT.doc_structure || "[]")
+    ];
   }
 }
 
 export function MetaComponents(__META__, environment){
-  return extractElements(__META__, [...requireComponents(__META__), "fragment"], environment)
+  return extractElements(__META__, [...requireComponents(__META__), "fragment"], environment);
 }

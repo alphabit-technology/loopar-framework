@@ -1,6 +1,6 @@
 
 import fileManager from "$tools/file-manager";
-import {useDesigner} from "@custom-hooks";
+import {useDesigner} from "@context/@/designer-context";
 
 export default function ComponentDefaults(props) {
   const data = props.data || {};

@@ -52,7 +52,7 @@ export default class DocumentHistory extends Component {
       label: "History",
     };
 
-    super.render(
+    return (
       <>
         <div className="card-header">
           <h6>

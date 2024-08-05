@@ -5,6 +5,7 @@ import * as Helpers from "$global/helper";
 import * as dateUtils from "$global/date-utils";
 import scriptManager from "$tools/script-manager";
 import { elementsDict } from "@global/element-definition";
+import Emitter from '@services/emitter/emitter';
 
 class Loopar extends Router {
   //ui = GuiManage;
@@ -24,35 +25,22 @@ class Loopar extends Router {
   }
 
   dialog(dialog) {
-    /*const content = dialog.content || dialog.message;
+    const content = dialog.content || dialog.message;
     dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;
     dialog.open = dialog.open !== false;
-    this.rootApp && this.rootApp.setDialog(dialog);
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.rootApp && this.rootApp.dialogs.dialogs[dialog.id]);
-      }, 0);
-    });*/
+    this.emit('dialog', dialog);
   }
 
   prompt(dialog) {
-    //const content = dialog.content || dialog.message;
     dialog.id = "test-dialog"// dialog.title;
     dialog.open = true;
     dialog.type = "prompt";
     dialog.content = <></>
-    this.rootApp && this.rootApp.setDialog(dialog);
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.rootApp.dialogs.dialogs[dialog.id]);
-      }, 0);
-    });
+    this.emit('dialog', dialog);
   }
 
   confirm(message, callback) {
-    this.dialog({
+    this.emit('dialog', {
       type: "confirm",
       title: "Confirm",
       content: message,
@@ -61,7 +49,7 @@ class Loopar extends Router {
   }
 
   alert(message, callback) {
-    this.dialog({
+    this.emit('dialog', {
       type: "alert",
       title: "Alert",
       content: message,
@@ -70,33 +58,31 @@ class Loopar extends Router {
   }
 
   closeDialog(id) {
-    this.rootApp && this.rootApp.closeDialog(id);
+    this.handleOpenCloseDialog(id, false);
+  }
+
+  handleOpenCloseDialog(id, open) {
+    this.emit('handle-open-close-dialog', id, open);
   }
 
   throw(error, m) {
-    const { title, content, message } =
+    const { type, title, content, message } =
       typeof error === "object"
         ? error
         : { title: error, content: m, message: m };
-    this.dialog({
-      type: "error",
+
+    this.emit('dialog', {
+      type: type || "error",
       title: title,
       content: content || message,
-      open: true,
     });
 
-    throw new Error(error.content || error.message || error);
+    //throw new Error(message);
   }
 
   notify(message, type = "success") {
     const data = typeof message === "object" ? message : { message, type };
-    this.rootApp && this.rootApp.setNotify(data);
-  }
-
-  toggleTheme() {
-    window.toggleTheme();
-
-    this.rootApp && this.rootApp.setState({});
+    this.emit('notify', data);
   }
 
   sidebar() {
@@ -112,7 +98,7 @@ class Loopar extends Router {
   }
 
   emit(event, data) {
-    this.rootApp && this.rootApp.emit(event, data);
+    Emitter.emit(event, data);
   }
 
   bgColor(name, alpha = 0.8) {
@@ -177,10 +163,10 @@ class Loopar extends Router {
     this.rootApp?.freeze(freeze);
   }
 
-  async method(Document, method, params = {}, options = {}) {
+  method(Document, method, params = {}, options = {}) {
     const url = `/desk/method/${Document}/${method}`;
     params = typeof params === "string" ? { documentName: params } : params;
-    return await this.post(url, params, { freeze: false, ...options });
+    return this.post(url, params, { freeze: false, ...options });
   }
 
   async getMeta(Document, action, params = {}, options = {}) {
@@ -304,6 +290,10 @@ class Loopar extends Router {
     } else {
       return animation;
     }
+  }
+
+  render() {
+    return <></>
   }
 }
 

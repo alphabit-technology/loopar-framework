@@ -2,13 +2,33 @@
 import loopar from "$loopar";
 import fileManager from "$tools/file-manager";
 import ErrorBoundary from "$error-boundary";
-import BaseComponent from "$base-component";
-import { Droppable } from "$droppable";
-export default class Component extends BaseComponent {
+import React from "react";
+
+export default class Component extends React.Component {
   get droppable() {return true};
   get draggable() {return true};
 
+  constructor(props) {
+    super(props);
 
+    this.state = {
+      data: props.data,
+    };
+  }
+
+  render(){
+    return <></>
+  }
+
+  get identifier() {
+    const { key, id, name } = this.data;
+    return key ?? id ?? name ?? elementManage.getUniqueKey();
+  }
+
+
+  get data() {
+    return this.state.data || this.props.data || {};
+  }
 
   rerender(content) {
     this.setState({ children: content });
@@ -20,6 +40,20 @@ export default class Component extends BaseComponent {
       return fileManager.getMappedFiles(data.background_image || this.props.src, data.name);
     }
     return [];
+  }
+
+  componentDidMount() {
+    if (this.props.Component) {
+      this.Component = this.props.Component;
+    }
+
+    this.onMake && this.onMake();
+    this.onUpdate && this.onUpdate();
+    this.onMount && this.onMount();
+  }
+
+  componentDidUpdate() {
+    this.onUpdate && this.onUpdate();
   }
 
   backGround(image) {

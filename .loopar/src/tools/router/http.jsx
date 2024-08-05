@@ -1,12 +1,10 @@
-//import this from '$this';
-
 export default class HTTP {
   #jsonParams = {};
   #options = {};
 
-  async send(options) {
+  send(options) {
     this.#options = options;
-    return await this.#sendPetition(options);
+    this.#sendPetition(options);
   }
 
   get __method__() { return this.#options.method || "POST" }
@@ -62,100 +60,75 @@ export default class HTTP {
     }, {});
   }
 
-  #sendPetition(options) {
-    const self = this;
-    options.freeze && self.freeze(true);
+  async fetchWithInterceptors(url, options) {
+    try {
+      const response = await fetch(url, options);
 
-    return new Promise((resolve, reject) => {
-      fetch(self.url, self.options).then(async response => {
-        //return new Promise(async (resolve, reject) => {
-          if (response.redirected) {
-            window.location.href = response.url;
-            return;
-          }
+      if (response.redirected) {
+        window.location.href = response.url;
+        return;
+      }
 
-          const isJson = response.headers.get('content-type')?.includes('application/json');
-          const data = isJson ? await response.json() : null;
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await response.json() : null;
 
-          if (!response.ok) {
-            const error = data || { error: response.status, message: response.statusText };
-            reject(error);
-          } else {
-            options.success && options.success(data);
-
-            /*if (data && data.notify) {
-              self.notify(data.notify);
-            }*/
-            resolve(data);
-          }
-       // });
-      }).catch(error => {
-        reject(error);
-        /*options.error && options.error(error);
-        self.rootApp?.progress(102);
-        self.throw({
+      if (!response.ok) {
+        const error = data || { error: response.status, message: response.statusText };
+        this.throw({
           title: error.title || error.code || 'Undefined Error',
           message: error.message || error.description || 'Undefined Error',
-        });*/
-      }).finally(() => {
-        resolve();
-        /*options.freeze && self.freeze(false);
-        options.always && options.always();*/
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.log(error);
+      this.throw({
+        title: "Internal Server Error",
+        message: "An unexpected error occurred, please try again later.",
       });
-    });
-  }
-
-  async get(url, params, options = {}) {
-    return new Promise((resolve, reject) => {
-      return this.send({
-        method: 'GET',
-        action: url,
-        params: params,
-        success: resolve,
-        error: reject,
-        ...options,
-      });
-    });
-  }
-
-  async post(url, params, options = {}) {
-    return new Promise((resolve, reject) => {
-      this.send({
-        method: 'POST',
-        action: url,
-        params: params,
-        body: options.body || params,
-        success: resolve,
-        error: reject,
-        ...options,
-      });
-    });
-  }
-
-  json_parse(json) { return this.if_json(json) ? JSON.parse(json) : json }
-
-  if_json(json) {
-    try {
-      JSON.parse(json);
-      return true;
-    } catch (e) {
-      return false;
     }
   }
+
+  async #sendPetition(options) {
+    const self = this;
+    try {
+      const data = await this.fetchWithInterceptors(self.url, self.options);
+
+      options.success && options.success(data);
+
+      if (data && data.notify) {
+        this.notify(data.notify.message, data.notify.type);
+      }
+
+      return data;
+    } catch (error) {
+      options.error && options.error(error);
+    } finally {
+      options.always && options.always();
+    }
+  }
+
+  get(url, params, options = {}) {
+    return this.send({
+      method: 'GET',
+      action: url,
+      params: params,
+      //success: resolve,
+      //error: reject,
+      ...options,
+    });
+  }
+
+  post(url, params, options = {}) {
+    this.send({
+      method: 'POST',
+      action: url,
+      params: params,
+      body: options.body || params,
+      //success: resolve,
+      //error: reject,
+      ...options,
+    });
+  }
 }
-
-//export default new HTTP();
-
-/*fetch(self.url, {
-    method: 'POST', // *GET, POST, PUT, DELETE, etc.
-    mode: 'no-cors', // no-cors, *cors, same-origin
-    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-    credentials: 'same-origin', // include, *same-origin, omit
-    headers: {
-        'Content-Type': 'application/json'
-        // 'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    redirect: 'follow', // manual, *follow, error
-    referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-    body: JSON.stringify(this.#params.data) // body data type must match "Content-Type" header),
-})*/

@@ -5,14 +5,13 @@ import { FormField } from "@form-field";
 import { cn } from "@/lib/utils";
 import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
-import { DesignerContext, useDesigner } from "@custom-hooks";
-//import BaseInput from './base-input copy';
+//import { useDesigner } from "@context/@/designer-context";
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
   const fieldControl = useRef(null);
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
-  const {designerMode} = useDesigner();
+  //const {designerMode} = useDesigner();
 
   const getData = () => {
     //const names ??= elementManage.elementName(this.props.element);
@@ -31,9 +30,9 @@ const BaseInput = (props) => {
   const [data, setData] = useState(getData());
   const [val, setVal] = useState(data.value);
 
-  useEffect(() => {
+  /*useEffect(() => {
     setData(getData());
-  }, [props.data]);
+  }, [props.data]);*/
 
   useEffect(() => {
     data.value = val;
@@ -143,7 +142,7 @@ const BaseInput = (props) => {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange};
+  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange, fieldControl };
 };
 
 BaseInput.metaFields = () =>{

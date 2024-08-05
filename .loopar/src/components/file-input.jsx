@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import BaseInput from "@base-input";
 import { FileBrowserModal } from "@file-browser";
 import FilePreview from "@file-preview";
 import FileContainer from "@file-container";
 import fileManager from "@tools/file-manager";
-import loopar from "$loopar";
 import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon } from "lucide-react";
+import loopar from "$loopar";
+
 import {
   FormControl,
   FormDescription,
@@ -21,13 +22,7 @@ const origins = [
 ];
 
 const FileInput = (props) => {
-  const { value, data, renderInput } = BaseInput(props);
-
-  //const [val, setVal] = useState(value());
-
-  /*const groupElement = 'FILE_INPUT';
-  const inputType = 'file';
-  const visibleInput = false;*/
+  const { value, data, renderInput, fieldControl, handleInputChange } = BaseInput(props);
 
   const [state, setState] = useState({
     dropping: false,
@@ -40,45 +35,6 @@ const FileInput = (props) => {
 
   const accept = data.accept || "/*";
   const [files, setFiles] = useState(fileManager.getMappedFiles(value()));
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prevState => ({ ...prevState, dropping: true }));
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prevState => ({ ...prevState, dropping: false }));
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const droppedFiles = e.dataTransfer.files;
-    handleChange({ target: { files: droppedFiles } });
-  };
-
-  const handleChange = (e) => {
-    const f = mergeFiles(files, Array.from(e.target.files));
-    makePreviews(f, value);
-  };
-
-  const handleClearFiles = () => {
-    loopar.confirm('Are you sure you want to delete all files?', () => {
-      value([]);
-    });
-  };
-  
-  const mergeFiles = (files = [], newFiles) => {
-    if (data.multiple) {
-      return [...files, ...newFiles].filter((file, index, self) => (
-        index === self.findIndex((f) => f.name === file.name && f.size === file.size)
-      ));
-    }
-    return Array.isArray(newFiles) ? [newFiles[0]] : Array.isArray(files) ? [files[0]] : [];
-  };
 
   const makePreviews = (files = [], callback) => {
     const promises = files.map((file) => new Promise((resolve, reject) => {
@@ -118,6 +74,39 @@ const FileInput = (props) => {
     });
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setState(prevState => ({ ...prevState, dropping: true }));
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setState(prevState => ({ ...prevState, dropping: false }));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFiles = e.dataTransfer.files;
+    handleChange({ target: { files: droppedFiles } });
+  };
+
+  const handleChange = (e) => {
+    const f = mergeFiles(files, Array.from(e.target.files));
+    makePreviews(f, value);
+  };
+  
+  const mergeFiles = (files = [], newFiles) => {
+    if (data.multiple) {
+      return [...files, ...newFiles].filter((file, index, self) => (
+        index === self.findIndex((f) => f.name === file.name && f.size === file.size)
+      ));
+    }
+    return Array.isArray(newFiles) ? [newFiles[0]] : Array.isArray(files) ? [files[0]] : [];
+  };
+
   const getSrc = (file, preview = false) => (
     file ? `/uploads/${preview ? 'thumbnails/' : ''}${file.name}` : ''
   );
@@ -133,6 +122,12 @@ const FileInput = (props) => {
   useEffect(() => {
     makePreviews(files);
   }, [files]);
+
+  const handleClearFiles = () => {
+    loopar.confirm('Are you sure you want to delete all files?', () => {
+      makePreviews([], value);
+    });
+  };
 
   const hasFiles = state.previews.length > 0;
 
@@ -166,14 +161,14 @@ const FileInput = (props) => {
                 const size = !hasFiles ? "w-16" : "w-12";
                 return (
                   <button
-                    //key={origin.name}
                     className={`flex ${size} flex-col items-center rounded-sm border bg-card p-2 shadow cursor-pointer transition-colors hover:bg-muted/50`}
                     onClick={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       if (origin.name === "Local") return inputRef.current.click();
                       if (origin.name === "Server") return setState(prevState => ({ ...prevState, fileBrowserOpen: true }));
                       if (origin.name === "Web") {
-                        return loopar.prompt({
+                        loopar.prompt({
                           title: "Web file",
                           label: "Enter the URL of the file",
                           placeholder: "https://",

@@ -1,7 +1,7 @@
 import Component from "$component";
 import elementManage from "$tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 import MetaComponent from "@meta-component";
 import { PlusIcon } from "lucide-react";
 import React, { useEffect } from "react";

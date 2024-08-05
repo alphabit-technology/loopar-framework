@@ -3,10 +3,12 @@ import { elementsDict as baseElementsDict } from "$global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "$components-loader";
 import elementManage from "$tools/element-manage";
 import { ElementTitle } from "$element-title";
-import { useDesigner, HiddenContext, useDroppable } from "@custom-hooks";
+import { HiddenContext, useHidden } from "@context/@/hidden-context";
+import { useDroppable } from "@context/@/droppable-context";
+import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
 import loopar from "$loopar";
-import { useDocumentContext } from "@context/base/base-context";
+import { useDocument } from "@context/@/document-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
 
@@ -21,7 +23,7 @@ const designElementProps = (el) => {
     }
   }
 
-  if(el.data.name && !el.data.name.includes("--design--")) el.data.name += "--design--";
+  //if(el.data.name && !el.data.name.includes("--design--") && fieldIsWritable(el.element)) el.data.name += "--design--";
 
   const newProps = {
     ...{
@@ -163,7 +165,7 @@ const elementProps = ({ elDict, parent = {}, isDesigner }) => {
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
   const {designerModeType} = useDesigner();
-  const parentHidden = useContext(HiddenContext);
+  const parentHidden = useHidden();
   const {currentDragging, setCurrentDragging} = useDesigner();
   const dragginElement = useRef(null);
   const isDroppable = Comp.droppable || element.fieldDesigner;
@@ -316,7 +318,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   }
 
   const designer = useDesigner();
-  const { docRef, formValues } = useDocumentContext();
+  const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode;
 
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
@@ -327,9 +329,9 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const _props = elementProps({ elDict: el, parent, isDesigner });
   const { ENVIRONMENT } = useWorkspace();
 
-  if(ENVIRONMENT === "server") {
+  /*if(ENVIRONMENT === "server") {
     global.__REQUIRE_COMPONENTS__.push(el.element);
-  }
+  }*/
 
 
   let display = true;
@@ -344,8 +346,12 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
     display = evaluateCondition(_props.data?.display_on, values);
   }
 
+  if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
+    global.__REQUIRE_COMPONENTS__.push(el.element);
+  }
+
   useEffect(() => {
-    if (!Comp) {
+    if (!Comp && (isDesigner || def.designerOnly !== true)) {
       ComponentsLoader([el.element], () => {
         setLoadedComponents(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
       });
@@ -408,7 +414,6 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 };
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
-  //const {designerMode} = useDesigner();
   return elements.map((el) => {
     const key = parentKey + (el.data?.key || useId());
 

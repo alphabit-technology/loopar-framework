@@ -3,8 +3,6 @@ import { loopar } from "loopar";
 import { useLocation } from 'react-router-dom';
 import {useCookies} from "@services/cookie";
 import { AppSourceLoader } from "$/app-source-loader";
-import { getSubPath } from "@tools/router/http-helper";
-import { use } from "marked";
 
 const usePathname = () => {
   return useLocation().pathname;
@@ -67,8 +65,7 @@ type WorkspaceProviderProps = {
   menuItems?: [],
   currentPage?: string,
   currentLink?: string,
-  ENVIRONMENT?: string,
-  navigate: (url: string) => void,
+  ENVIRONMENT?: string
 }
 
 type WorkspaceProviderState = {
@@ -77,8 +74,7 @@ type WorkspaceProviderState = {
   openNav?: boolean,
   setOpenNav?: (open: boolean) => void,
   Documents: Documents,
-  setDocuments: (Documents: Documents) => void,
-  navigate: (url: string) => void,
+  setDocuments: (Documents: Documents) => void
 }
 
 const initialState: WorkspaceProviderState = {
@@ -87,8 +83,7 @@ const initialState: WorkspaceProviderState = {
   openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
   Documents: {},
-  setDocuments: () => null,
-  navigate: () => null,
+  setDocuments: () => null
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
@@ -106,6 +101,7 @@ export function WorkspaceProvider({
   );
 
   const [Documents, setDocuments] = useState(props.Documents || {} as Documents);
+  const [loaded, setLoaded] = useState(false);
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
@@ -192,10 +188,6 @@ export function WorkspaceProvider({
     setDocuments(Documents);
   }
 
-  useEffect(() => {
-    //console.log(["Workspace context documents change", Documents]);
-  }, [Documents]);
-
   const setDocument = (__META__: Meta) => {
     const copyDocuments = { ...Documents };
     const res = __META__ || {} as Meta;
@@ -244,10 +236,6 @@ export function WorkspaceProvider({
     }
   }
 
-  const getActiveDocument = () => {
-    return Object.values(Documents || []).find(Document => Document.active);
-  }
-
   const fetch = (url) => {
     const route = window.location;
 
@@ -256,32 +244,12 @@ export function WorkspaceProvider({
       params: route.search, 
       success: r => {
         setDocument(r)
-      },
-      error: r => {
-        //reject(r);
-      },
-      //freeze: true
+      }
     });
   }
 
-  const sendNavigate = (route:String, query:{}) => {
-    const isLoggedIn = true//this.isLoggedIn();
-    const isAuthRoute = route.split('/')[1] === 'auth' && !isLoggedIn;
-    const isDeskRoute = route.split('/')[1] === 'desk' && isLoggedIn;
-
-    const ROUTE = isAuthRoute ? route : route.split('/')[0] === '' ? props.workspace + route : route;
-
-    if (isAuthRoute && isLoggedIn) return;
-
-    fetch(getSubPath(ROUTE), query);
-  }
-
-  const navigate = (url: String, query = {}) => {
-    sendNavigate(url, query);
-  }
-
   useEffect(() => {
-    fetch(pathname);
+    loaded ? fetch(pathname) : setLoaded(true);
   }, [pathname]);
 
   const value = {
@@ -305,8 +273,7 @@ export function WorkspaceProvider({
     currentLink: props.currentLink,
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
-    getDocuments: getDocuments,
-    navigate: navigate,
+    getDocuments: getDocuments
   }
 
   return (

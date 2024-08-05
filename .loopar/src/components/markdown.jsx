@@ -1,7 +1,7 @@
 'use client';
 
 import ComponentDefaults from "$component-defaults";
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 import React, { useCallback, useMemo } from "react";
 import {marked} from "marked";
 import SimpleMDE from "react-simplemde-editor";

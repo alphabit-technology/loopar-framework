@@ -218,7 +218,7 @@ export default class DataBase {
 
           connection.query(query, (err, result) => {
             if(err) console.log(["_______________QUERY ERROR_______________",query, err]);
-            err ? reject(err) : resolve(result);
+            return err ? reject(err) : resolve(result);
           });
         } catch (err) {
           reject(err);
@@ -542,8 +542,6 @@ export default class DataBase {
         if (field.data.name !== 'name' || !dbFields["name"]) {
           const pre = Object.keys(dbFields).length > 0 ? dbFields[field.data.name] ? 'MODIFY' : 'ADD' : '';
           const column = `${pre} ${field.data.name} ${this.datatype(field)}`;
-
-          console.log(["COLUMN", column])
 
           acc.push(column);
         }

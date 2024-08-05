@@ -60,7 +60,11 @@ export default class CoreDocument {
     //this.__DOCTYPE__.STRUCTURE = JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
 
     if (this.__DOCUMENT__ && this.__DOCUMENT__[this.fieldDocStructure]) {
-      this.__DOCUMENT__[this.fieldDocStructure] = JSON.stringify(JSON.parse(this.__DOCUMENT__[this.fieldDocStructure]).filter(field => (field.data || {}).name !== ID));
+      this.__DOCUMENT__[this.fieldDocStructure] = JSON.stringify(
+        JSON.parse(
+          this.__DOCUMENT__[this.fieldDocStructure]).filter(field => (field.data || {}).name !== ID
+        )
+      );
     }
 
     await this.setApp();
@@ -182,11 +186,33 @@ export default class CoreDocument {
   }
 
   async save() {
-    return true;
     const args = arguments[0] || {};
     const validate = args.validate !== false;
 
-    return new Promise(async resolve => {
+    async function deleteChildRecords(childValuesReq, parentDocumentId, parentId) {
+      for (const [key, value] of Object.entries(childValuesReq)) {
+        const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${parentDocumentId}' AND parent_id = '${parentId}'`;
+        await loopar.db.execute(deleteQuery, false);
+      }
+    }
+
+    async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
+      for (const [key, value] of Object.entries(childValuesReq)) {
+        const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
+
+        const documentsPromises = rows.map(async (row) => {
+          row.parent_document = parentDocumentId;
+          row.parent_id = parentId;
+
+          const document = await loopar.newDocument(key, row);
+          return document.save();
+        });
+
+        await Promise.all(documentsPromises);
+      }
+    }
+
+    return new Promise(async (resolve) => {
       this.setUniqueName();
       if (validate) await this.validate();
 
@@ -205,35 +231,16 @@ export default class CoreDocument {
         }
       }
 
-      const updateChild = async () => {
-        
+      if (!this.is_single && !loopar.installing) {
         const ID = await this.__ID__();
         const childValuesReq = this.childValuesReq;
 
         if (Object.keys(childValuesReq).length) {
-          const promises = [];
-
-          for (const [key, value] of Object.entries(childValuesReq)) {
-            const deletePromise = loopar.db.execute(`DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__DOCTYPE__.id}' AND parent_id = '${ID}'`, false);
-
-            const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
-
-            const documentsPromises = rows.map(async (row) => {
-              row.parent_document = this.__DOCTYPE__.id;
-              row.parent_id = ID;
-
-              const document = await loopar.newDocument(key, row);
-              return document.save();
-            });
-
-            promises.push(deletePromise, ...documentsPromises);
-          }
-
-          await Promise.all(promises);
+          await deleteChildRecords(childValuesReq, this.__DOCTYPE__.id, ID);
+          await updateChildRecords(childValuesReq, this.__DOCTYPE__.id, ID);
         }
       }
 
-      if (!this.is_single && !loopar.installing) await updateChild();
       await this.updateHistory();
       await this.updateInstaller();
 
@@ -290,14 +297,14 @@ export default class CoreDocument {
         data = await this.rawValues();
       }
 
-      await loopar.updateInstaller({
+      /*await loopar.updateInstaller({
         doctype: this.__DOCTYPE__,
         document: this.__DOCTYPE__.name,
         documentName: this.name,
         appName: this.__APP__,
         record: data,
         deleteRecord: deleteDocument
-      });
+      });*/
     }
   }
 
@@ -316,13 +323,14 @@ export default class CoreDocument {
     const errors = [];
     for (const field of Object.values(this.#fields)) {
       if (field.element === SELECT && field.options && typeof field.options === 'string') {
+        const value = field.formattedValue;
         const options = (field.options || "").split("\n");
 
-        if (!field.value || field.value === "") continue;
+        if (!value || value === "") continue;
 
         if (options.length > 1) {
-          if (!options.includes(field.value)) {
-            errors.push(`The value ${field.value} for ${field.name} can only be one of the list of options`);
+          if (!options.includes(value)) {
+            errors.push(`The value ${value} for ${field.name} can only be one of the list of options`);
           }
         } else {
           const errForNotValidDocument = `The field ${field.name} does not have a valid document configured, please check the document metadata or contact an Administrator.`;
@@ -333,10 +341,10 @@ export default class CoreDocument {
             if (await loopar.db.count(options[0]) === 0) {
               errors.push(errForNotValidDocument);
             } else {
-              const link = await loopar.db.count(field.options, field.value);
+              const link = await loopar.db.count(field.options, value);
 
               if (link === 0) {
-                errors.push(`The value ${field.value} for ${field.name} does not exist in ${field.options} Document`);
+                errors.push(`The value ${value} for ${field.name} does not exist in ${field.options} Document`);
               }
             }
           }

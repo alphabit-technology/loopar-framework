@@ -7,7 +7,7 @@ import { Droppable } from "$droppable";
 import { FormField } from "@form-field";
 import { BaseFormContext } from "@context/form-context";
 import React, { useEffect, useState } from "react";
-import { DesignerContext, useDesigner } from "@custom-hooks";
+import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
 import {Tailwind} from "@publicSRC/tailwind";
 import Tab from "@tab"
@@ -22,7 +22,6 @@ import {cn} from "@/lib/utils";
 const Sidebar = ({updateElement, getElement}) => {
   const [, setSidebarOpen] = useCookies("sidebarOpen");
   const {currentEditElement, handleChangeMode, designerModeType} = useDesigner();
-    //const sidebarOption = mode;
 
   return (
     <div 
@@ -59,11 +58,9 @@ const Sidebar = ({updateElement, getElement}) => {
         >
           <>
           {
-            ["designer", "preview"].includes(designerModeType) ? 
-            (
+            ["designer", "preview"].includes(designerModeType) ? (
               <DesignerForm/>
-            ) : currentEditElement && 
-            (
+            ) : (currentEditElement) && (
               <DesignerContext.Provider 
                 value={{}}
               >
@@ -88,22 +85,32 @@ const DesignerContextProvider = ({designerRef, metaComponents, data, updateEleme
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
-  const [editElement, setEditElement] = useCookies("editElement");
+  const [savedEditElement, setSavedEditElement] = useCookies("editElement");
+  const [editElement, setEditElement] = useState(null);
   const [dropping, setDropping] = useState(false);
+  const [, setSidebarOpen] = useCookies("sidebarOpen");
+
+  useEffect(() => {
+    if(savedEditElement && designerModeType === "editor"){
+      setTimeout(() => {
+        handleEditElement(savedEditElement);
+      }, 200);
+    }
+  }, []);
 
   const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
 
-  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
+  const [sidebarOpen] = useCookies("sidebarOpen");
   const {designerMode} = useDesigner();
   const elements = JSON.parse(metaComponents || "[]")
-  const className = designerModeType !== "preview" ? " element designer design true bg-default-100" : "";
+  //const className = designerModeType !== "preview" ? " element designer design true bg-default-100" : "";
   const [IAGenerator, setIAGenerator] = useState(false);
 
 
   const handleChangeMode = (opt=null) => {
-    const newMode = opt !== null ? opt
-      : ["preview", "editor"].includes(designerModeType) ? "designer"
-        : "preview";
+    const newMode = opt !== null ? opt : (
+      ["preview", "editor"].includes(designerModeType) ? "designer": "preview"
+    );
 
     handleSetMode(newMode);
   }
@@ -117,21 +124,38 @@ const DesignerContextProvider = ({designerRef, metaComponents, data, updateEleme
   }
 
   const handleEditElement = (element) => {
-    handleChangeMode("editor");
+    //handleChangeMode("editor");
     setEditElement(element);
   }
 
+  useEffect(() => {
+    setSavedEditElement(editElement);
+    if(editElement) handleChangeMode("editor");
+  }, [editElement]);
+
+  useEffect(() => {
+    if(editElement && designerModeType == "editor"){
+      setSidebarOpen(true);
+    }
+  }, [editElement, designerModeType]);
+
+  /*useEffect(() => {
+    if(designerModeType !== "editor") setSavedEditElement(null);
+  }, [designerModeType]);*/
+
   const handleDeleteElement = (element) => {
-    loopar.dialog({
+    loopar.confirm("Are you sure you want to delete this element?", () => {
+      designerRef.deleteElement(element.data.key);
+    })
+    /*Dialog({
       type: "confirm",
       title: "Delete element",
       message: "Are you sure you want to delete this element?",
       open: true,
       ok: () => {
-        //Delete the element from the designer
         designerRef.deleteElement(element.data.key);
       },
-    });
+    });*/
   }
 
   useEffect(() => {
@@ -364,13 +388,12 @@ export default class MetaDesigner extends Component {
       ],
     });
 
-    loopar
-      .method("GPT", "prompt", {
+    loopar.method("GPT", "prompt", {
         prompt: this.promptInput,
         document_type: this.context.getValues("type"),
       })
       .then((r) => {
-        dialog.close();
+        //dialog.close();
         if (!this.state.IAOperation) return;
 
         const evaluateResponse = (message, start, end = start) => {
@@ -399,7 +422,7 @@ export default class MetaDesigner extends Component {
         }
       })
       .catch((e) => {
-        dialog.close();
+        //dialog.close();
       });
   }
 

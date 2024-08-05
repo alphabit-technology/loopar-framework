@@ -1,5 +1,5 @@
 import {Button} from "@/components/ui/button";
-import {useDocumentContext} from "@context/base/base-context";
+import {useDocument} from "@context/@/document-context";
 import loopar from "$loopar";
 
 const buttons = {
@@ -12,7 +12,7 @@ const buttons = {
 
 export default function MetaButton(props){
   const data = props.data;
-  const docRef = useDocumentContext();
+  const docRef = useDocument();
 
   const handleClick = (e) => {
     e.preventDefault();

@@ -34,6 +34,7 @@
     "@radix-ui/react-toggle-group": "^1.0.4",
     "@tinymce/tinymce-react": "^5.0.1",
     "aos": "^3.0.0-beta.6",
+    "axios": "^1.7.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^1.2.1",
     "cmdk": "^0.2.0",
@@ -44,6 +45,7 @@
     "dayjs": "^1.11.10",
     "decamelize": "^6.0.0",
     "easymde": "^2.18.0",
+    "eventemitter3": "^5.0.1",
     "express-session": "^1.17.3",
     "express-useragent": "^1.0.15",
     "file-type": "^18.5.0",
@@ -110,9 +112,9 @@
     "prettier": "^2.8.8",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-critical": "^1.0.13",
-    "tailwindcss": "^3.4.4",
+    "tailwindcss": "^3.4.7",
     "typescript": "^4.9.5",
-    "vite": "^5.3.3",
+    "vite": "^5.3.5",
     "vite-plugin-preload": "^0.4.0"
   }
 }

@@ -1,8 +1,8 @@
-import BaseComponent from "$base-component";
 import loopar from "$loopar";
-import {DocumentContext} from "@context/base/base-context";
+import {DocumentContext} from "@context/@/document-context";
+import React from "react";
 
-export default class BaseDocument extends BaseComponent {
+export default class BaseDocument extends React.Component {
   dontHaveContainer = true;
   customActions = {};
   __REFS__ = {};
@@ -10,6 +10,10 @@ export default class BaseDocument extends BaseComponent {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+      meta: props.meta
+    };
   }
 
   render(content) {
@@ -98,7 +102,6 @@ export default class BaseDocument extends BaseComponent {
   }
 
   componentDidMount() {
-    super.componentDidMount();
     this.initScroll();
     this.initActions();
   }
@@ -124,7 +127,6 @@ export default class BaseDocument extends BaseComponent {
   }
 
   componentWillUnmount() {
-    super.componentWillUnmount();
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
     this.setScrollPosition();
   }

@@ -7,7 +7,6 @@ import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";
-import elementManage from "@tools/element-manage";
 
 export function ElementEditor({updateElement, element, getElement}) {
   const [connectedElement, setConnectedElement] = useState(getElement(element));
@@ -107,20 +106,15 @@ export function ElementEditor({updateElement, element, getElement}) {
 
               const value = data[field];
 
-              /*if(props.element === IMAGE_INPUT && data.label === "Image2") {
-                console.log("image", data);
-              }*/
-
               return (
                 <MetaComponent
                   component={props.element}
                   render={Component => (
                     <Component
-                      //key={data.key + "_" + field}
                       dontHaveForm={true}
                       data={{
                         ...props.data,
-                        name: data.key + field ,
+                        name: data.key + field,
                         value: value,
                         label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
                       }}
@@ -129,19 +123,6 @@ export function ElementEditor({updateElement, element, getElement}) {
                         saveData();
                       }}
                     />
-                    /*<Component
-                      dontHaveForm={true}
-                      data={{
-                        ...props.data,
-                        name: data.key + "_" + field + "_field",
-                        value: value,
-                        label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
-                      }}
-                      onChange={(e) => {
-                        data[field] = e.target ? e.target.value : e;
-                        saveData();
-                      }}
-                    />*/
                   )}
                 />
               )

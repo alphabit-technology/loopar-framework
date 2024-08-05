@@ -4,7 +4,7 @@ import MetaComponent from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
 import { useRef } from "react";
-import { DesignerContext } from "@custom-hooks";
+import { DesignerContext } from "@context/@/designer-context";
 
 import {
   TableCell

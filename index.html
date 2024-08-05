@@ -29,7 +29,17 @@
     
     <script>
       window.global = window;
-      console.warn = () => {};
+      //console.warn = () => {};
+
+      class LooparError extends Error {
+        constructor({ title, type, message, ...rest }) {
+          super(message);
+          this.name = "LooparError";
+          this.title = title;
+          this.type = type;
+          Object.assign(this, rest);
+        }
+      }
     </script>
 
     <!--__loopar-meta-data__-->

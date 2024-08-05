@@ -1,4 +1,4 @@
-import BaseComponent from "$base-component";
+import Component from "$component";
 import elementManage from "$tools/element-manage";
 import {Pagination} from "$pagination";
 import loopar from "$loopar";
@@ -47,7 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export class BaseTable extends BaseComponent {
+export class BaseTable extends Component {
   selectors = {};
   selectorId = elementManage.uuid();
   dataExample = {
@@ -160,17 +160,27 @@ export class BaseTable extends BaseComponent {
           q: this.state.searchData,
           page: this.pagination.page || 1,
         },
+        success: (res) => {
+          this.setState(
+            {
+              meta: res.meta,
+            },
+            () => {
+              this.setSelectorsStatus();
+            }
+          );
+        }
       }
     );
 
-    this.setState(
+    /*this.setState(
       {
         meta: res.meta,
       },
       () => {
         this.setSelectorsStatus();
       }
-    );
+    );*/
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {

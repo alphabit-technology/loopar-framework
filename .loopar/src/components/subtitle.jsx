@@ -1,6 +1,6 @@
 import BaseText from "$base-text";
 import ComponentDefaults from "@component-defaults";
-import {useDesigner} from "@custom-hooks";
+import {useDesigner} from "@context/@/designer-context";
 
 export default function SubTitle(props) {
   const {designing} = useDesigner();

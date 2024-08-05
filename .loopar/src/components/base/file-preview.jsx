@@ -4,6 +4,8 @@ import loopar from "$loopar";
 import { FileIcon } from "lucide-react";
 import { ImageIcon } from "lucide-react";
 import LazyLoad from 'react-lazy-load';
+import MetaImage from "@image"
+import MetaComponent from "@meta-component"
 
 function ImageWithFallback({ src, fallbackSrc, alt }) {
  const [state, setState] = React.useState({
@@ -158,11 +160,11 @@ export default class FilePreview extends React.Component {
               </a>
             </div> : null*/
           }
-          {
+          {/*
             type !== "image" ? 
             <FileIcon className="w-full h-20"/>
             : null
-          }
+          */}
         </>
         <div className="space-y-1 text-sm w-full flex flex-col absolute bottom-0 p-1">
           <h3 className="font-medium leading-none truncate w-full">{data.name}</h3>

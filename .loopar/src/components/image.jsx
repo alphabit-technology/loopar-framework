@@ -2,28 +2,39 @@ import loopar from "$loopar";
 import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 import { useEffect } from "react";
-import AOS from "aos";
+import AOS from "aos"
 
 export function Image ({imageProps={}, coverProps={}, ...props}) {
-  const [state, setState] = useState({
-    imageLoaded: false,
-    isValidImage: false,
-    isImageLoading: true
-  });
+  const data = props.data || {};
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
+  const [visibleIcon, setVisibleIcon] = useState(false);
   const [renderProps] = useState(loopar.utils.renderizableProps(props));
 
-  const handleImageError = (e) => {
-    setState({imageLoaded: false, isValidImage: false, isImageLoading: false });
+  const handleImageLoad = () => {
+    setImageLoaded(true);
   }
 
-  const handleImageLoad = () => {
-    setState({imageLoaded: true, isImageLoading: false, isValidImage: true});
+  const handleImageError = () => {
+    setImageLoaded(false);
+    setIsImageLoading(false);
   }
+
+  useEffect(() => {
+    AOS.refresh();
+    if(imageLoaded) {
+      setIsImageLoading(false);
+    }
+  }, [imageLoaded]);
+
+  useEffect(() => {
+    setVisibleIcon(!isImageLoading && !imageLoaded);
+  }, [isImageLoading, imageLoaded]);
 
   const aspectRatio = () => {
-    if(props.aspect) {
-      const [w=1, h=1] = props.aspect.split("/");
+    if(data.aspect_ratio) {
+      const [w=1, h=1] = data.aspect_ratio.split(":");
       return (h / w) * 100;
     }
 
@@ -31,24 +42,27 @@ export function Image ({imageProps={}, coverProps={}, ...props}) {
   }
 
   useEffect(() => {
-    AOS.refresh();
-  }, [state.imageLoaded]);
-  
-  const { isValidImage, isImageLoading } = state;
+    if(!imageProps.src) {
+      setVisibleIcon(true);
+    }
+  }, [imageProps.src]);
 
   return (
     <div 
       className="top-0"
       style={{paddingTop: `${aspectRatio()}%`}}
     >
-      <ImageIcon 
-        style={{marginTop: `-${aspectRatio()}%`, ...(!isValidImage ? {} : {display: "none"})}}
-        className={`h-full w-full object-cover transition-all ease-in text-slate-600/50 duration-300 hover:scale-105 aspect-square`}
+      <ImageIcon
+        style={{
+          marginTop: `-${aspectRatio()}%`, 
+          display: visibleIcon ? "block" : "none",
+          border: "12px solid #fff"
+        }}
+        className={`h-full w-full transition-all ease-in opacity-5 duration-300 hover:scale-105 aspect-square border-4 rounded-lg`}
       />
       <img
-        key={imageProps.src}
         {...renderProps}
-        className={`absolute aspect-auto top-0 left-0 right-0 bottom-0 w-full h-full rounded-sm ${isImageLoading ? "opacity-0" : "opacity-100"}`}
+        className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-sm ${isImageLoading ? "opacity-0" : "opacity-100"}`}
         {...imageProps}
         onLoad={handleImageLoad}
         onError={handleImageError}
@@ -85,6 +99,7 @@ export default function MetaImage(props) {
               { option: "9:16", value: "9:16" },
               { option: "9:21", value: "9:21" },
             ],
+            default: "16:9",
           },
         },
       },

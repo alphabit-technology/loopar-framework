@@ -163,5 +163,8 @@ export default defineConfig({
     },
     reactRefresh: true,
   },
+  server: {
+    hmr: false,
+  },
   // server.hmr.overlay: false
 });

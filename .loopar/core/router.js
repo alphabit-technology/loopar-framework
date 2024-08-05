@@ -65,6 +65,7 @@ export default class Router {
 
     this.server.use((req, res, next) => {
       loopar.session.req = req;
+      global.url = req._parsedUrl.pathname;
 
       if (this.#isAssetUrl(req._parsedUrl.pathname)) {
         next();

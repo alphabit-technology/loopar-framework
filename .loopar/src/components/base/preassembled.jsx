@@ -1,6 +1,6 @@
 import ComponentDefaults from "$component-defaults";
 import {Droppable} from "@droppable";
-import {useDesigner} from "@custom-hooks";
+import {useDesigner} from "@context/@/designer-context";
 import { useEffect, useId } from "react";
 
 export default function Preassembled(props) {

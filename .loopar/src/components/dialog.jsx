@@ -1,6 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useId } from "react";
 import loopar from "$loopar";
-global.dialogsCount ??= 0;
+import {Button} from "@/components/ui/button";
+import { AlertCircle, InfoIcon, TriangleIcon, HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils"
+
+//global.dialogsCount ??= 0;
 
 import {
   Dialog,
@@ -12,82 +16,32 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
+const Icon = ({type, size, ...props}) => {
+  const icons = {
+    alert: [AlertCircle, "text-red-500"],
+    info: [InfoIcon, "text-blue-500"],
+    confirm: [HelpCircle, "text-yellow-500"],
+    error: [AlertCircle, "text-red-500"],
+  }
+
+  const icon = icons[type] || icons.info;
+  const [Icon, color] = icon
+
+  return <Icon size={size || 24} className={cn(color, props.className)} />;
+}
 const MetaDialog = (props) => {
-  const [state, setState] = useState({
-    type: props.type,
-    title: props.title,
-    open: props.open !== undefined ? props.open : true,
-    ok: props.ok,
-    cancel: props.cancel,
-    value: null,
-  });
-
-  const okButton = useRef(null);
-
-   const handleUpdate = () => {
-    if (props.content !== state.content) {
-      setState((prevState) => ({
-        ...prevState,
-        content: props.content,
-      }));
-    }
-
-    if (props.open !== state.open) {
-      setState((prevState) => ({
-        ...prevState,
-        open: props.open,
-      }));
-    }
-  };
-
-  // useEffect para ejecutar la función de actualización condicional
-  useEffect(() => {
-    handleUpdate();
-  }, [props.content, props.open]); // Dependencias para el useEffect
-
-
-  const getIcon = () => {
-    const { type } = state;
-    const icons = {
-      info: "fa-info-circle",
-      alert: "fa-exclamation-circle",
-      confirm: "fa-question-circle",
-      error: "fa-exclamation-triangle",
-      success: "fa-check-circle",
-      prompt: "fa-question-circle",
-    };
-
-    const icon = props.icon || "fa " + icons[type];
-
-    const textColors = {
-      info: "text-blue",
-      alert: "text-dark",
-      confirm: "text-orange",
-      error: "text-red",
-      success: "text-green",
-      prompt: "text-blue",
-    };
-
-    return typeof icon === "string" ? (
-      <i className={`${icon} ${textColors[type]} mr-2`} />
-    ) : (
-      icon
-    );
+  const handleSetOpenClose = (open) => {
+    loopar.handleOpenCloseDialog(props.id, open);
   };
 
   const setDialogOpen = (open) => {
-    setState((prevState) => ({
-      ...prevState,
-      open,
-    }), () => {
-      if (!open) {
-        props.onClose && props.onClose();
-      }
-    });
+    handleSetOpenClose(open);
   };
+
+  const okButton = useRef(null);
 
   const sizes = {
     sm: "md:min-w-[45%] lg:min-w-[40%] xl:min-w-[35%]",
@@ -99,12 +53,72 @@ const MetaDialog = (props) => {
   const content = props.children || props.content || props.message;
   const contentType = typeof content === "string" ? "text" : "react";
 
+  const getButtons = () => {
+    if(Array.isArray(props.buttons) && props.buttons.length === 0) return [];
+
+    const buttons = props.buttons || [];
+    if (buttons.length === 0) {
+      buttons.push({
+        name: "ok",
+        text: "OK",
+        variant: "primary",
+        onClick: () => {
+          props.ok && props.ok(props.value);
+          setDialogOpen(false);
+        },
+        dismiss: true,
+      });
+
+      props.type === "confirm" &&
+        buttons.push({
+          name: "cancel",
+          text: "Cancel",
+          variant: "secondary",
+          onClick: () => {
+            props.cancel && props.cancel();
+            setDialogOpen(false);
+          },
+          dismiss: true,
+        });
+    } else {
+      const okButton = buttons.find((b) => b.name === "ok");
+
+      if (okButton) {
+        const okFunc = okButton.onClick;
+        okButton.onClick = () => {
+          okFunc && okFunc();
+          props.ok && props.ok();
+          setDialogOpen(false);
+        };
+        //okButton.dismiss = true;
+      }
+
+      const cancelButton = buttons.find((b) => b.name === "cancel");
+
+      if (cancelButton) {
+        const cancelFunc = cancelButton.onClick;
+        cancelButton.onClick = () => {
+          cancelFunc && cancelFunc();
+          props.cancel && props.cancel();
+          setDialogOpen(false);
+        };
+        //cancelButton.dismiss = true;
+      }
+    }
+
+    return buttons;
+  }
+
   return (
-    <Dialog open={state.open} onOpenChange={setDialogOpen} key={props.id}>
+    <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
       <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`}>
         <DialogHeader>
-          <DialogTitle><h1 className="text-2xl">{props.title}</h1></DialogTitle>
+          <DialogTitle className="flex space-x-2">
+            <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
+            <h1 className="text-2xl">{props.title}</h1>
+          </DialogTitle>
           <DialogDescription>
+            <>
             {
               contentType === "text" ? (
                 <div
@@ -114,22 +128,25 @@ const MetaDialog = (props) => {
                 <div>{content}</div>
               )
             }
+            <div className="fixed bottom-5 right-5 z-0 opacity-5" style={{zIndex:"-1"}}><Icon type={props.type} size={130}/></div>
+            </>
           </DialogDescription>
           {props.hasFooter !== false && (
             <DialogFooter className="pt-5">
-              {(props.buttons || []).map((b) => (
-                <button
+              {(getButtons() || []).map((b) => (
+                <Button
                   key={b.name}
-                  type="button"
-                  className={b.className || `rounded bg-blue-900/50 px-4 py-2 font-bold text-white hover:bg-blue-900/80`}
-                  onClick={() => {
+                  variant={b.variant || "primary"}
+                  onClick={(e) => {
+                    e.preventDefault();
+
                     b.dismiss && setDialogOpen(false);
                     b.onClick();
                   }}
                   ref={b.name === "ok" ? okButton : null}
                 >
                   {b.content || b.text || b.label}
-                </button>
+                </Button>
               ))}
             </DialogFooter>
           )}
@@ -141,24 +158,49 @@ const MetaDialog = (props) => {
 
 export default MetaDialog;
 
-
 export function Prompt (props) {
+  const id = useId();
+  const [value, setValue] = React.useState("");
+
+  const handleChange = (e) => {
+    setValue(e.target.value);
+  }
+
   return (
     <MetaDialog
       {...props}
       type="prompt"
+      ok={() => props.ok(value)}
     >
       <div className="grid w-full items-center gap-1.5">
         <Label htmlFor="form-control">{props.label || ""}</Label>
         <Input 
           type="text"
-            id="prompt-input"
-            placeholder={props.placeholder || ""}
-            className="w-full"
-            onChange={props.onChange}
+          id={`prompt-input-${id}`}
+          placeholder={props.placeholder || ""}
+          className="w-full"
+          onChange={handleChange}
         />
       </div>
     </MetaDialog>
+  )
+}
+
+export function Confirm (props) {
+  return (
+    <MetaDialog
+      {...props}
+      type="confirm"
+    />
+  )
+}
+
+export function Alert (props) {
+  return (
+    <MetaDialog
+      {...props}
+      type="alert"
+    />
   )
 }
 

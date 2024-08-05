@@ -2,20 +2,20 @@ import {Button} from "@/components/ui/button";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 
 export function ElementTitle({element, active, ...props}) {
   const designer = useDesigner();
 
   const handleEditElement = (e) => {
     e.preventDefault();
-    e.stopPropagation();
+    //e.stopPropagation();
     designer.handleEditElement(element.data.key);
   }
 
   const handleDeleteElement = (e) => {
     e.preventDefault();
-    e.stopPropagation();
+    //e.stopPropagation();
     designer.handleDeleteElement(element)
   }
 

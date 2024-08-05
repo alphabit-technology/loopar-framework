@@ -1,21 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import loopar from "$loopar";
 import AOS from "aos";
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Droppable } from "$droppable";
 import { Button } from "@/components/ui/button";
 
 const BaseCarrusel = (props) => {
+  const data = props.data || {};
   const {designerMode} = useDesigner();
-  const [currentIndex, setCurrentIndex] = useState(loopar.cookie.get(props.data.key) || 0);
+  const [currentIndex, setCurrentIndex] = useState(loopar.cookie.get(data.key) || 0);
   const [prevIndex, setPrevIndex] = useState(0);
   const [focus, setFocus] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const intervalRef = useRef(null);
 
   const getTransition = () => {
-    return loopar.getAnimation(props.data.transition, "flip");
+    return loopar.getAnimation(data.transition, "flip");
   };
 
   const getItems = () => {
@@ -33,13 +34,13 @@ const BaseCarrusel = (props) => {
   const nextSlide = () => {
     setPrevIndex(currentIndex);
     setCurrentIndex(getNextSlideIndex());
-    loopar.cookie.set(props.data.key, getNextSlideIndex());
+    loopar.cookie.set(data.key, getNextSlideIndex());
   };
 
   const prevSlide = () => {
     setPrevIndex(currentIndex);
     setCurrentIndex(getPrevSlideIndex());
-    loopar.cookie.set(props.data.key, getPrevSlideIndex());
+    loopar.cookie.set(data.key, getPrevSlideIndex());
   };
 
   const getElementsDict = () => { 
@@ -48,7 +49,7 @@ const BaseCarrusel = (props) => {
 
   const getItemsRender = () => {
     const elementsDict = getElementsDict();
-    const baseData = props.data || {};
+    const baseData = data || {};
 
     if (!elementsDict.length) return [];
 
@@ -60,6 +61,8 @@ const BaseCarrusel = (props) => {
     return (
       <div className={`relative w-full h-full ${designerMode ? "pt-3" : ""}`}>
         {items.map((element, index) => {
+          if(element.$$typeof === Symbol.for("react.element")) return element;
+
           const key = element.data.key;
 
           const data = {
@@ -182,7 +185,6 @@ const BaseCarrusel = (props) => {
   };
 
   const startInterval = () => {
-    const data = props.data;
     const interval = (parseInt(data.interval) || 5) * 1000;
     intervalRef.current = setInterval(() => {
       nextSlide();
@@ -206,7 +208,7 @@ const BaseCarrusel = (props) => {
   }, []);
 
   const style = {};
-  if (props.data.full_height) {
+  if (data.full_height) {
     style.height = "100vh";
   } else {
     style.paddingTop = "60%";

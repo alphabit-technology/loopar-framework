@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { useDesigner } from "@custom-hooks";
+import { useDesigner } from "@context/@/designer-context";
 
 function TextEditor({initialValue, onChange}) {
   const [value, setValue] = useState(initialValue);

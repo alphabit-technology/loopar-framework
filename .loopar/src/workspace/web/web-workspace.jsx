@@ -59,34 +59,25 @@ const Layout = (({ webApp={}, ...props }) => {
   );
 });
 
-export default class WebWorkspace extends BaseWorkspace {
-  menuItems() {
-    const app = this.webApp();
-    return app.menu_items || [];
-  }
+export default function WebWorkspace(props) {
+  const { getDocuments, __META__} = useWorkspace();
 
-  webApp() {
-    const __META__ = this.props.__META__;
+  const getWebApp = () => {
     const workspace = JSON.parse(__META__.workspace);
     return workspace.web_app || {};
   }
 
-  render() {
-    const meta = this.meta || {};
-    const webApp = meta.web_app || {};
+  const webApp = getWebApp();
 
-    const activeDocument = this.getActiveDocument();
-    const currentLink = activeDocument?.meta?.__DOCTYPE__.name;
-    const currentPage = activeDocument?.meta?.parentPage || currentLink;
-
-    return super.render(
-      <Layout {...this.props} webApp={webApp}>
-        {super.documents}
-      </Layout>
-      , {
-        currentLink,
-        currentPage,
-      }
-    )
+  const menuItems = () => {
+    return webApp.menu_items || [];
   }
+
+  return (
+    <BaseWorkspace menuItems={menuItems}>
+      <Layout {...props} webApp={webApp}>
+        {getDocuments()}
+      </Layout>
+    </BaseWorkspace>
+  )
 }

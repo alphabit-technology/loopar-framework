@@ -72,39 +72,21 @@ export class ListGrid extends BaseTable {
   }
 
   deleteRow = (row) => {
-    loopar.dialog({
-      type: "confirm",
-      title: "Confirm",
-      message: `Are you sure you want to delete ${row.name}?`,
-      ok: async () => {
-        await loopar.method(this.meta.__DOCTYPE__.name, "delete", {
-          documentName: row.name,
-        });
-
-        loopar.rootApp.refresh().then(() => {
-          loopar.navigate(window.location.pathname);
-        });
-
-        loopar.notify({
-          type: "success",
-          title: "Success",
-          message: `Document ${row.name} deleted`,
-        });
-      },
+    loopar.confirm(`Are you sure you want to delete ${row.name}?`, () => {
+      loopar.method(this.meta.__DOCTYPE__.name, "delete", {
+        documentName: row.name,
+      });
     });
   };
 
   bulkRemove() {
     const rowsSelected = this.selectedRows;
 
-    loopar.confirm(
-      `Are you sure you want to delete ${rowsSelected.join(", ")} documents?`,
-      async () => {
-        await loopar.method(this.meta.__DOCTYPE__.name, "bulkDelete", {
-          documentNames: JSON.stringify(rowsSelected),
-        });
-        this.search();
-      }
-    );
+    loopar.confirm(`Are you sure you want to delete ${rowsSelected.join(", ")} documents?`, () => {
+      loopar.method(this.meta.__DOCTYPE__.name, "bulkDelete", {
+        documentNames: JSON.stringify(rowsSelected),
+      });
+      //this.search();
+  });
   }
 }

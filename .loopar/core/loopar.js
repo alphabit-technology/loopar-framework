@@ -540,15 +540,16 @@ export class Loopar {
       installerData[document].documents ??= {};
 
       if (record instanceof Array) {
-        record.forEach(rec => {
+        for(const rec of record){
           installerData[document].documents[rec.name] = rec;
-        });
+        }
       } else {
         installerData[document].documents[record.name] = record;
       }
     }
 
-    await fileManage.setConfigFile('installer', installerData, appPath);
+    console.log(["Update Installer", installerData])
+    //await fileManage.setConfigFile('installer', installerData, appPath);
   }
 
   async appStatus(appName) {

@@ -21,7 +21,8 @@ export function AppBarr({docRef, meta, sidebarOpen, toggleSidebar, viewTypeToggl
         <Button
           variant="secondary"
           tabIndex="0"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             docRef.save();
           }}
         >

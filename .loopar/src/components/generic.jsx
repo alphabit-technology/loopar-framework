@@ -1,14 +1,17 @@
-import Component from "$component";
+import ComponentDefaults from "$component-defaults";
 import loopar from "$loopar";
 import React from "react";
 import { Droppable } from "$droppable";
+import {useDialog} from "@context/@/dialog-context";
 
-export default class Generic extends Component {
+export default function Generic({ ...props }) {
+  const {elementsDict, data} = ComponentDefaults(props)
+  const {Dialog} = useDialog();
   //blockComponent = true;
   //dontHaveContainer = true;
-  dontHaveMetaElements = ["label"];
+  //dontHaveMetaElements = ["label"];
 
-  validateTag(tag) {
+  const validateTag=(tag)=>{
     const validTags = [
       "div",
       "span",
@@ -82,54 +85,44 @@ export default class Generic extends Component {
     return validTags.includes(tag);
   }
 
-  render(content) {
-    const data = this.props.data;
-    const tag = this.props.tag || data.tag;
-    this.tagName = this.validateTag(tag) ? tag : "div";
+  const tag = props.tag || data.tag;
+  let tagName = validateTag(tag) ? tag : "div";
 
-    if (this.tagDontHaveChild(tag) && this.elementsDict.length > 0) {
-      loopar.dialog({
-        title: "Warning",
-        message: `This element have a child element, but the tag "${this.tagName}" don't have child elements. will be used the tag "div" instead.`,
-        buttons: [
-          {
-            label: "Ok",
-            className: "btn btn-primary",
-            onClick: () => {
-              loopar.closeDialog();
-            },
+  if (tagDontHaveChild(tagName) && elementsDict.length > 0) {
+    Dialog({
+      title: "Warning",
+      message: `This element have a child element, but the tag "${tagName}" don't have child elements. will be used the tag "div" instead.`,
+      buttons: [
+        {
+          label: "Ok",
+          className: "btn btn-primary",
+          onClick: () => {
+            loopar.closeDialog();
           },
-        ],
-      });
-
-      this.tagName = "div";
-    }
-
-    if (this.tagDontHaveChild(data.tag)) {
-      this.tagName = data.tag;
-      this.dontHaveContainer = true;
-
-      return super.render([
-        React.createElement(data.tag, this.props)
-      ]);
-    }
-
-    return (
-      <Droppable Component={data.tag} {...this.props}/>
-    )
-    /*return super.render(
-      this.elementsDict.length === 0 ? this.props.children : ""
-    );*/
-  }
-
-  get metaFields() {
-    return [
-      {
-        group: "HTML",
-        elements: {
-          tag: { element: INPUT },
         },
-      },
-    ];
+      ],
+    });
+
+    tagName = "div";
   }
+
+  if (tagDontHaveChild(tagName)) {
+    return React.createElement(tagName, props);
+  }
+
+  return (
+    <Droppable Component={tagName} {...props}/>
+  )
+}
+
+
+Generic.getMetaFields = () => {
+  return [
+    {
+      group: "HTML",
+      elements: {
+        tag: { element: INPUT },
+      },
+    },
+  ];
 }

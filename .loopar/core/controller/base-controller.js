@@ -42,14 +42,17 @@ export default class BaseController extends CoreController {
     }
   }
 
-  async actionUpdate() {
-    const document = await loopar.getDocument(this.document, this.documentName, this.hasData() ? this.data : null);
+  async actionUpdate(document) {
+    document ??= await loopar.getDocument(this.document, this.documentName, this.hasData() ? this.data : null);
 
     if (this.hasData()) {
+      const isSingle = document.__DOCTYPE__.is_single;
       await document.save();
-      return await this.success(`Document ${document.name} saved successfully`, { documentName: document.name });
+      return await this.success(
+        `${document.__DOCTYPE__.name } ${isSingle ? '' : document.name} saved successfully...`, { documentName: document.name }
+      );
     } else {
-      return this.render({ ...await document.__data__(), ...this.response || {} });
+      return await this.render({ ...await document.__data__(), ...this.response || {} });
     }
   }
 

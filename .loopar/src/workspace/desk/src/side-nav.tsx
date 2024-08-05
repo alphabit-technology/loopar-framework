@@ -13,6 +13,7 @@ export interface SideNavProps {
 };
 
 import { Settings2Icon, SlidersIcon, UsersIcon, Globe2Icon, Code2Icon, ChevronLeftIcon} from 'lucide-react';
+import { useEffect } from "react";
 
 export function SideNav({ items }: SideNavProps) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
@@ -20,17 +21,6 @@ export function SideNav({ items }: SideNavProps) {
   const sideNavItems = items.map((item, i) => {
     const { description, modules = [] } = item
     const hasSubitems = modules && modules.length > 0
-
-    if(typeof window !== "undefined") {
-      window.addEventListener("keydown", (e) => {
-        if(e.ctrlKey && e.key === "k") {
-          toogleSidebarNav()
-        }
-        if(e.key === "Escape") {
-          setOpenNav()
-        }
-      })
-    }
 
     return (
       <>
@@ -65,6 +55,23 @@ export function SideNav({ items }: SideNavProps) {
       </>
     )
   })
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "k") {
+          toogleSidebarNav()
+        }
+        if (e.key === "Escape") {
+          setOpenNav()
+        }
+      })
+
+      return () => {
+        window.removeEventListener("keydown", () => {})
+      }
+    }
+  }, [])
 
   return (
     <>
