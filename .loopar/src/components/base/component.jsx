@@ -1,8 +1,8 @@
 
 import loopar from "$loopar";
 import fileManager from "$tools/file-manager";
-import ErrorBoundary from "$error-boundary";
 import React from "react";
+import elementManage from "@tools/element-manage";
 
 export default class Component extends React.Component {
   get droppable() {return true};

@@ -173,18 +173,18 @@ export default class BaseWorkspace extends React.Component {
       (document) => document.active
     );
     const meta = activeDocument?.meta;
-    const doctype = meta?.__DOCTYPE__;
+    const entity = meta?.__ENTITY__;
 
-    if (!doctype) return;
+    if (!entity) return;
 
     const action = ["update", "create"].includes(meta.action)
       ? "form"
       : meta.action;
-    const resources = (doctype?.resources?.rows || []).filter(
+    const resources = (entity?.resources?.rows || []).filter(
       (resource) => resource.apply_on === "all" || resource.apply_on === action
     );
 
-    if (resources.length && this.state.resourcesLoaded !== doctype.id) {
+    if (resources.length && this.state.resourcesLoaded !== entity.id) {
       const arrayResources = Object.values(resources).map((resource) => {
         if (resource.type === "CSS") {
           return loopar.includeCSS(resource.path);
@@ -194,7 +194,7 @@ export default class BaseWorkspace extends React.Component {
       });
 
       Promise.all(arrayResources).then(() => {
-        this.setState({ resourcesLoaded: doctype.id });
+        this.setState({ resourcesLoaded: entity.id });
       });
     }
     /*if(Object.entries(this.state.notifies || {}).length) {
@@ -222,9 +222,9 @@ export default class BaseWorkspace extends React.Component {
 
     const documents = this.state.documents || {};
     Object.values(documents).forEach((document) => {
-      if (document.meta.__DOCTYPE__ && document.meta.__DOCUMENT__) {
-        document.meta.__DOCTYPE__.STRUCTURE = updateValue(
-          JSON.parse(document.meta.__DOCTYPE__.doc_structure),
+      if (document.meta.__ENTITY__ && document.meta.__DOCUMENT__) {
+        document.meta.__ENTITY__.STRUCTURE = updateValue(
+          JSON.parse(document.meta.__ENTITY__.doc_structure),
           document.meta.__DOCUMENT__
         );
       }

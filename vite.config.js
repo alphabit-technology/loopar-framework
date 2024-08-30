@@ -17,36 +17,41 @@ const makeAppsToAlias = (dir) => {
       const modules = fs.readdirSync(moduleRoot);
 
       modules.forEach(module => {
-        const documentsRoot = path.resolve(`${moduleRoot}/${module}`);
-        const documents = fs.readdirSync(documentsRoot);
+        const coresRoot = path.resolve(`${moduleRoot}/${module}`);
+        const cores = fs.readdirSync(coresRoot);
 
-        documents.forEach(document => {
-          const clientRoot = path.resolve(`${documentsRoot}/${document}/client`);
-          const clientFiles = fs.readdirSync(clientRoot);
+        cores.forEach(core => {
+          const entitiesRoot = path.resolve(`${coresRoot}/${core}`);
+          const entities = fs.readdirSync(entitiesRoot);
 
-          clientFiles.forEach(clientFile => {
+          entities.forEach(entity => {
+            const clientRoot = path.resolve(`${entitiesRoot}/${entity}/client`);
+            const clientFiles = fs.readdirSync(clientRoot);
 
-            //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `dist/apps/${app}/modules/${module}/${document}/client` });
-            //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `assets/app` });
-            //fs.copyFileSync(path.resolve(`${clientRoot}/${clientFile}`), path.resolve(__dirname, 'src', '__apps__', `${clientFile}`));
-            /**
-             * To default import ej: import MyComponent from '$my-component'
-             */
-            
-            
-            
-            //appAlias[`$assets/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
-            appAlias[`@app/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            clientFiles.forEach(clientFile => {
 
-            /**
-             * to dynamic import ej: const myComponent = await import('./my-component.jsx')
-             * But to work you need use:
-             * import { AppSourceLoader } from "$/app-source-loader";
-             * 
-             * await AppSourceLoader(clientFile): (await import('item-client')).default
-             * */
-            appAlias[`/src/app/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
-            /////////////appAlias[`/assets/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+              //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `dist/apps/${app}/modules/${module}/${entity}/client` });
+              //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `assets/app` });
+              //fs.copyFileSync(path.resolve(`${clientRoot}/${clientFile}`), path.resolve(__dirname, 'src', '__apps__', `${clientFile}`));
+              /**
+               * To default import ej: import MyComponent from '$my-component'
+               */
+
+
+
+              //appAlias[`$assets/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+              appAlias[`@app/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
+
+              /**
+               * to dynamic import ej: const myComponent = await import('./my-component.jsx')
+               * But to work you need use:
+               * import { AppSourceLoader } from "$/app-source-loader";
+               * 
+               * await AppSourceLoader(clientFile): (await import('item-client')).default
+               * */
+              appAlias[`/src/app/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+              /////////////appAlias[`/assets/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
+            });
           });
         });
       });
@@ -164,7 +169,7 @@ export default defineConfig({
     reactRefresh: true,
   },
   server: {
-    hmr: false,
+    hmr: true,
   },
   // server.hmr.overlay: false
 });

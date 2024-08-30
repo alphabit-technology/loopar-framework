@@ -85,11 +85,11 @@ export default class DataBase {
     }*/
 
     if ([DATE, DATE_TIME, TIME].includes(field.element)) {
-      if(field.element === DATE) {
+      if (field.element === DATE) {
         defaultValue = loopar.utils.formatDate(defaultValue, 'YYYY-MM-DD');
-      } else if(field.element === DATE_TIME) {
+      } else if (field.element === DATE_TIME) {
         defaultValue = loopar.utils.formatDateTime(defaultValue, 'YYYY-MM-DD HH:mm:ss');
-      }else{
+      } else {
         defaultValue = loopar.utils.formatTime(defaultValue, 'HH:mm:ss');
       }
     }
@@ -165,37 +165,21 @@ export default class DataBase {
     const execute = query => {
       return new Promise(resolve => {
         connection.query(query, (err, rows, fields) => {
-          if (err) {
-            connection.rollback(() => {
-              this.throw(e);
-            });
-          } else {
-            resolve();
-          }
+          err ? connection.rollback(() => this.throw(err)) : resolve();
         });
       });
     }
 
     return new Promise(resolve => {
       connection.beginTransaction(async err => {
-        if (err) {
-          this.throw(err);
-        }
-
+        err && this.throw(err);
+        
         for (const query of this.transactions) {
           await execute(query);
         }
 
         this.transactions = [];
-        connection.commit(err => {
-          if (err) {
-            connection.rollback(() => {
-              this.throw(err);
-            });
-          } else {
-            resolve();
-          }
-        });
+        connection.commit(err =>  err ? connection.rollback(() => this.throw(err)) : resolve());
       });
     });
   }
@@ -217,7 +201,10 @@ export default class DataBase {
           const connection = await this.connection();
 
           connection.query(query, (err, result) => {
-            if(err) console.log(["_______________QUERY ERROR_______________",query, err]);
+            if (err) console.log(["_______________QUERY ERROR_______________", query, err]);
+            if (err && err.code === 'ER_NO_SUCH_TABLE') {
+              return reject(err);
+            }
             return err ? reject(err) : resolve(result);
           });
         } catch (err) {
@@ -252,12 +239,12 @@ export default class DataBase {
   example() {
     const filter = {
       "=": {
-        from_document: this.__DOCTYPE__.name,
+        from_document: this.__ENTITY__.name,
         from_id: 8
       },
       "AND": {
         "=": {
-          from_document: this.__DOCTYPE__.name,
+          from_document: this.__ENTITY__.name,
           from_id: 8
         },
         "OR": {
@@ -290,7 +277,7 @@ export default class DataBase {
           if (["IN", "NOT IN", "BETWEEN", "NOT BETWEEN", "IS", "IS NOT", "LIKE", "NOT LIKE"].includes(operand)) {
             let [FIELD, VALUE] = Object.entries(DEF)[0];
 
-            if(!VALUE || (Array.isArray(VALUE) && VALUE.length === 0)) VALUE = [null]
+            if (!VALUE || (Array.isArray(VALUE) && VALUE.length === 0)) VALUE = [null]
 
             if (["IN", "NOT IN"].includes(operand)) {
               return [...acc, `${FIELD} ${operand} (${VALUE.map(v => con.escape(v)).join(',')})`];
@@ -367,7 +354,7 @@ export default class DataBase {
   }
 
   async insertRow(document, data = {}, isSingle = false) {
-    return new Promise (async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const con = await this.connection();
 
       if (isSingle) {
@@ -402,15 +389,15 @@ export default class DataBase {
     }).join(',');
   }
 
-  async setValue(document, field, value, documentName, { distinctToId = null, ifNotFound = "throw" } = {}) {
-    return await this.#setValueTo(document, field, value, documentName, { distinctToId, ifNotFound });
+  async setValue(document, field, value, name, { distinctToId = null, ifNotFound = "throw" } = {}) {
+    return await this.#setValueTo(document, field, value, name, { distinctToId, ifNotFound });
   }
 
-  async #setValueTo(document, field, value, documentName, { distinctToId = null, ifNotFound = "throw" } = {}) {
+  async #setValueTo(document, field, value, name, { distinctToId = null, ifNotFound = "throw" } = {}) {
     const connection = await this.connection();
 
     const condition = {
-      ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
+      ...(typeof name === 'object' ? name : { '=': { name: name } }),
     };
 
     if (distinctToId) {
@@ -589,8 +576,8 @@ export default class DataBase {
     });
   }
 
-  async #getDbValue(document, field, documentName) {
-    const where = typeof documentName === 'object' ? `WHERE 1=1 ${await this.WHERE(documentName)}` : `WHERE \`name\` = ${await this.#escape(documentName)}`;
+  async #getDbValue(document, field, name) {
+    const where = typeof name === 'object' ? `WHERE 1=1 ${await this.WHERE(name)}` : `WHERE \`name\` = ${await this.#escape(name)}`;
 
     return new Promise(async (resolve, reject) => {
       this.execute(`SELECT ${await this.#escapeId(field)} FROM ${await this.tableName(document)} ${where}`, false).then(async result => {
@@ -601,10 +588,10 @@ export default class DataBase {
     });
   }
 
-  async getValue(document, field, documentName, { distinctToId = null, ifNotFound = "throw", includeDeleted = false } = {}) {
+  async getValue(document, field, name, { distinctToId = null, ifNotFound = "throw", includeDeleted = false } = {}) {
     try {
       const condition = {
-        ...(typeof documentName === 'object' ? documentName : { '=': { name: documentName } }),
+        ...(typeof name === 'object' ? name : { '=': { name: name } }),
       };
 
       if (distinctToId) {
@@ -623,10 +610,11 @@ export default class DataBase {
     }
   }
 
-  async getDoc(document, documentName, fields = ['*'], { isSingle, includeDeleted = false } = {}) {
-    const doctypeIsSingle = typeof isSingle != "undefined" ? isSingle : await this.#getDbValue("Document", 'is_single', document, { includeDeleted });
-    
-    return await this.getRow(document, documentName, fields, { isSingle: doctypeIsSingle, includeDeleted });
+  async getDoc(document, name, fields = ['*'], { isSingle, includeDeleted = false } = {}) {
+    document = document === "Document" ? "Entity" : document;
+    const entityIsSingle = typeof isSingle != "undefined" ? isSingle : await this.#getDbValue("Entity", 'is_single', document, { includeDeleted });
+
+    return await this.getRow(document, name, fields, { isSingle: entityIsSingle, includeDeleted });
   }
 
   async getRow(table, id, fields = ['*'], { isSingle = false, includeDeleted = false } = {}) {
@@ -711,6 +699,7 @@ export default class DataBase {
 
   async _count(document, params = { field_name: 'name', field_value: null }, condition = null) {
     if (!params) return 0;
+    document = document === "Document" ? "Entity" : document;
     const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
     return new Promise(async resolve => {
@@ -730,7 +719,7 @@ export default class DataBase {
         }
       }
 
-      const WHERE = await this.WHERE(c)
+      const WHERE = await this.WHERE(c);
 
       this.execute(`SELECT COUNT(*) as count FROM ${await this.tableName(document)} WHERE 1=1 ${WHERE}`, false).then(async res => {
         resolve(res[0].count);
@@ -765,11 +754,11 @@ export default class DataBase {
 
   async testFramework() {
     const tablesTest = [];
-    for (const table of ['Document', 'Module', 'Module Group']) {
+    for (const table of ['Entity', 'Module', 'Module Group']) {
       tablesTest.push(await this.tableName(table, true))
     }
     //
-    //const tables_test = ['Document', 'Module', 'Module Group'].map(table => this.tableName(table, true));
+    //const tables_test = ['Entity', 'Module', 'Module Group'].map(table => this.tableName(table, true));
 
     const q = `
 SELECT COUNT(table_name) as count

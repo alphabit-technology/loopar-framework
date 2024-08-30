@@ -1,4 +1,4 @@
-import {DesignElement} from "$tools/design-element";
+import {DesignElement} from "./design-element";
 import { elementsDefinition } from "$global/element-definition";
 import loopar from "$loopar";
 import * as Icons from "lucide-react";

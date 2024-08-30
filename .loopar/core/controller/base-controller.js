@@ -4,7 +4,7 @@ import { loopar } from "../loopar.js";
 import CoreController from './core-controller.js';
 
 export default class BaseController extends CoreController {
-  default_action = 'list';
+  defaultAction = 'list';
   hasSidebar = true;
 
   constructor(props) {
@@ -26,7 +26,7 @@ export default class BaseController extends CoreController {
   async actionCreate() {
     const document = await loopar.newDocument(this.document, this.data);
 
-    if (document.__DOCTYPE__.is_single) {
+    if (document.__ENTITY__.is_single) {
       return loopar.throw({
         code: 404,
         message: "This document is single, you can't create new"
@@ -35,7 +35,7 @@ export default class BaseController extends CoreController {
 
     if (this.hasData()) {
       await document.save();
-      this.redirect('update?documentName=' + document.name);
+      this.redirect('update?name=' + document.name);
     } else {
       Object.assign(this.response, await document.__data__());
       return this.render(this.response);
@@ -43,13 +43,14 @@ export default class BaseController extends CoreController {
   }
 
   async actionUpdate(document) {
-    document ??= await loopar.getDocument(this.document, this.documentName, this.hasData() ? this.data : null);
+    document ??= await loopar.getDocument(this.document, this.name, this.hasData() ? this.data : null);
 
     if (this.hasData()) {
-      const isSingle = document.__DOCTYPE__.is_single;
+      const Entity = document.__ENTITY__;
+      const isSingle = Entity.is_single;
       await document.save();
       return await this.success(
-        `${document.__DOCTYPE__.name } ${isSingle ? '' : document.name} saved successfully...`, { documentName: document.name }
+        `${(Entity.name === "Entity") ? document.type : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
       );
     } else {
       return await this.render({ ...await document.__data__(), ...this.response || {} });
@@ -57,13 +58,13 @@ export default class BaseController extends CoreController {
   }
 
   async actionView() {
-    const document = await loopar.getDocument(this.document, this.documentName);
+    const document = await loopar.getDocument(this.document, this.name);
 
-    if (document.__DOCTYPE__.side_menu) {
-      //const menuId = await loopar.db.getValue('Menu Item', 'name', { "=": {page: document.__DOCTYPE__.name}});
+    if (document.__ENTITY__.side_menu) {
+      //const menuId = await loopar.db.getValue('Menu Item', 'name', { "=": {page: document.__ENTITY__.name}});
 
       //console.log(["Menu Id", menuId])
-      //document.side_menu = document.__DOCTYPE__.side_menu;
+      //document.side_menu = document.__ENTITY__.side_menu;
       //document.side_menu_items = await loopar.db.getList('Menu Item', ["page", "link", "parent_menu"], {"=": {parent_menu: menuId}});
     }
 
@@ -71,22 +72,22 @@ export default class BaseController extends CoreController {
   }
 
   async actionDelete() {
-    const document = await loopar.getDocument(this.document, this.documentName);
+    const document = await loopar.getDocument(this.document, this.name);
     const result = await document.delete();
 
     this.res.send(result);
   }
 
   async actionBulkDelete() {
-    const documentNames = loopar.utils.isJSON(this.documentNames) ? JSON.parse(this.documentNames) : [];
+    const names = loopar.utils.isJSON(this.names) ? JSON.parse(this.names) : [];
 
-    if (Array.isArray(documentNames)) {
-      for (const documentName of documentNames) {
-        const document = await loopar.getDocument(this.document, documentName);
+    if (Array.isArray(names)) {
+      for (const name of names) {
+        const document = await loopar.getDocument(this.document, name);
         await document.delete();
       }
     }
 
-    return this.success(`Documents ${documentNames.join(', ')} deleted successfully`, { documentName: documentNames.join(', ') });
+    return this.success(`Documents ${names.join(', ')} deleted successfully`, { name: names.join(', ') });
   }
 }

@@ -21,6 +21,8 @@ export default function Input(props){
     return acc;
   }, {});
 
+  delete _props.key;
+
   return renderInput((field) => {
     return (
     <>

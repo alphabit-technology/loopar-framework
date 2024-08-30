@@ -24,9 +24,10 @@ class ElementManage {
       const id = base_name + "_" + this.uuid();
 
       return {
-         id: id,
-         name: id,
-         label: loopar.utils.Capitalize(base_name)
+         //id: id,
+         //name: id,
+         label: loopar.utils.Capitalize(base_name),
+         key: id
       };
    }
 

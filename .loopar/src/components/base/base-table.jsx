@@ -110,7 +110,7 @@ export class BaseTable extends Component {
       ].flat(); //.filter(e => e.isWritable);
     };
 
-    const STRUCTURE = JSON.parse(meta.__DOCTYPE__?.doc_structure || "[]");
+    const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
 
     return els(STRUCTURE || []);
   }
@@ -151,8 +151,8 @@ export class BaseTable extends Component {
   }
 
   async search() {
-    const res = await loopar.method(
-      this.meta.__DOCTYPE__.name,
+    await loopar.method(
+      this.meta.__ENTITY__.name,
       this.docRef.action || this.meta.action,
       {},
       {
@@ -240,7 +240,7 @@ export class BaseTable extends Component {
    * {
    *   fields: [],
    *   labels: [],
-   *   __DOCTYPE__: {}
+   *   __ENTITY__: {}
    *   rows: []
    * }
    */
@@ -501,7 +501,7 @@ export class BaseTable extends Component {
                     </Button>
                     <Link
                       variant="outline"
-                      to={`update?documentName=${row.name}`}
+                      to={`update?name=${row.name}`}
                     >
                       <PencilIcon className="mr-2" />
                       Update
@@ -516,8 +516,8 @@ export class BaseTable extends Component {
     );
   }
 
-  get documentName() {
-    return this.props.meta.__DOCTYPE__.name;
+  get name() {
+    return this.props.meta.__ENTITY__.name;
   }
 
   get hiddenColumns() {

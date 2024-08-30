@@ -23,7 +23,9 @@
     "paths": {
       "@/*": [
         "./src/*",
-        "./.loopar/*"
+        "./.loopar/*",
+        "./.loopar/service/*",
+        "./apps/loopar/modules/core/entities/*"
       ]
     }
   },

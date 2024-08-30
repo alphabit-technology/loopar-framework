@@ -1,10 +1,10 @@
-import {loopar, elementsDict} from "loopar";
+import { loopar, elementsDict } from "loopar";
 
 
 export const extractElements = (__META__, elements, environment) => {
   let extractedElements = [];
   const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta)
-  const DOCTYPE = meta?.__DOCTYPE__ || {};
+  const ENTITY = meta?.__ENTITY__ || {};
 
   const extract = (elements, environment) => {
     for (const el of elements || []) {
@@ -12,7 +12,7 @@ export const extractElements = (__META__, elements, environment) => {
 
       const def = elementsDict[element.element]?.def || {};
 
-      if ((environment !== "server" || !def.clientOnly) && (!def.designerOnly || DOCTYPE.name === "Document" )) {
+      if ((environment !== "server" || !def.clientOnly) && (!def.designerOnly || ENTITY.name === "Document")) {
         element.element && extractedElements.push(element.element);
 
         if (element.elements) {
@@ -37,7 +37,7 @@ export function requireComponents(__META__) {
         acc.push(element);
       }
 
-      if(element.elements) {
+      if (element.elements) {
         acc.push(...filterByWritable(element.elements));
       }
 
@@ -45,22 +45,22 @@ export function requireComponents(__META__) {
     }, []);
   }
 
-  const DOCTYPE = meta?.__DOCTYPE__ || {};
+  const ENTITY = meta?.__ENTITY__ || {};
   const DOCUMENT = meta?.__DOCUMENT__ || {};
 
-  if(action === "list"){
+  if (action === "list") {
     return [
-      ...filterByWritable(JSON.parse(DOCTYPE.doc_structure || "[]")),
+      ...filterByWritable(JSON.parse(ENTITY.doc_structure || "[]")),
       ...filterByWritable(JSON.parse(DOCUMENT.doc_structure || "[]"))
     ];
-  }else{
+  } else {
     return [
-      ...JSON.parse(DOCTYPE.doc_structure || "[]"),
+      ...JSON.parse(ENTITY.doc_structure || "[]"),
       ...JSON.parse(DOCUMENT.doc_structure || "[]")
     ];
   }
 }
 
-export function MetaComponents(__META__, environment){
+export function MetaComponents(__META__, environment) {
   return extractElements(__META__, [...requireComponents(__META__), "fragment"], environment);
 }

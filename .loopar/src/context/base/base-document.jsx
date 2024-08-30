@@ -43,12 +43,12 @@ export default class BaseDocument extends React.Component {
     this.setState({});
   }
 
-  get __DOCTYPE__() {
-    return this.meta.__DOCTYPE__;
+  get __ENTITY__() {
+    return this.meta.__ENTITY__;
   }
 
   get __STRUCTURE__() {
-    return JSON.parse(this.__DOCTYPE__.doc_structure || "{}");
+    return JSON.parse(this.__ENTITY__.doc_structure || "{}");
   }
 
   get __FIELDS__() {

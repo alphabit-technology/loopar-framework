@@ -36,12 +36,12 @@ export function AppsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="grid grid-cols-2 p-2">
-          <MakeButton Icon={FileJson2Icon} text="Documents" link="/desk/core/Document/list" />
-          <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/core/Module/list" />
-          <MakeButton Icon={CircuitBoardIcon} text="Apps" link="/desk/developer/App Manager/view"/>
-          <MakeButton Icon={FileArchiveIcon} text="Files" link="/desk/core/File Manager/list" />
-          <MakeButton Icon={Settings2Icon} text="Settings" link="/desk/core/System Settings/update" />
-          <MakeButton Icon={User2Icon} text="Users" link="/desk/auth/user/list" />
+          <MakeButton Icon={FileJson2Icon} text="Documents" link="/desk/Document/list" />
+          <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/Module/list" />
+          <MakeButton Icon={CircuitBoardIcon} text="Apps" link="/desk/App Manager/view"/>
+          <MakeButton Icon={FileArchiveIcon} text="Files" link="/desk/File Manager/list" />
+          <MakeButton Icon={Settings2Icon} text="Settings" link="/desk/System Settings/update" />
+          <MakeButton Icon={User2Icon} text="Users" link="/desk/user/list" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

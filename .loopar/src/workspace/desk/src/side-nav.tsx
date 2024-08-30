@@ -12,7 +12,6 @@ export interface SideNavProps {
   items: []
 };
 
-import { Settings2Icon, SlidersIcon, UsersIcon, Globe2Icon, Code2Icon, ChevronLeftIcon} from 'lucide-react';
 import { useEffect } from "react";
 
 export function SideNav({ items }: SideNavProps) {

@@ -23,7 +23,7 @@ export class ListGrid extends BaseTable {
   }
 
   getDocumentTitle(row){
-    const titleFields = this.meta.__DOCTYPE__.title_fields?.split(",");
+    const titleFields = this.meta.__ENTITY__.title_fields?.split(",");
 
     if(titleFields){
       return titleFields.map((field) => row[field]).join(" ");
@@ -34,7 +34,7 @@ export class ListGrid extends BaseTable {
 
   get mappedColumns() {
     const base = super.mappedColumns.filter((col) => col.data.name !== "name");
-    const titleDocument = this.meta.__DOCTYPE__.title_fields;
+    const titleDocument = this.meta.__ENTITY__.title_fields;
 
     //console.log(["mappedColumns", this.meta])
 
@@ -49,7 +49,7 @@ export class ListGrid extends BaseTable {
             const color = loopar.bgColor(row.name);
             return (
               <Link
-                to={`update?documentName=${row.name}`}
+                to={`update?name=${row.name}`}
                 className="justify-left flex gap-3 align-middle"
               >
                 <Avatar className={`rounded-3 h-11 w-11`} style={{ backgroundColor: color }}>
@@ -73,8 +73,8 @@ export class ListGrid extends BaseTable {
 
   deleteRow = (row) => {
     loopar.confirm(`Are you sure you want to delete ${row.name}?`, () => {
-      loopar.method(this.meta.__DOCTYPE__.name, "delete", {
-        documentName: row.name,
+      loopar.method(this.meta.__ENTITY__.name, "delete", {
+        name: row.name,
       });
     });
   };
@@ -83,8 +83,8 @@ export class ListGrid extends BaseTable {
     const rowsSelected = this.selectedRows;
 
     loopar.confirm(`Are you sure you want to delete ${rowsSelected.join(", ")} documents?`, () => {
-      loopar.method(this.meta.__DOCTYPE__.name, "bulkDelete", {
-        documentNames: JSON.stringify(rowsSelected),
+      loopar.method(this.meta.__ENTITY__.name, "bulkDelete", {
+        names: JSON.stringify(rowsSelected),
       });
       //this.search();
   });

@@ -68,9 +68,9 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
   useEffect(() => {
     if(typeof position != "undefined" && currentDragging){
+      
       const rect = currentDragging.targetRect;
 
-      
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
         setElement(
           <div

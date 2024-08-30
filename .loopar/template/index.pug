@@ -1,9 +1,9 @@
-doctype html
+entity html
 html(class=`${THEME}`, lang='en')
   head
-    link(rel="stylesheet", href="/node_modules/aos/dist/aos.css")
+    link(rel="stylesheet" href="/node_modules/aos/dist/aos.css")
     link(rel="stylesheet" href="/styles/globals.css")
-    
+
     include base/base-css
     include base/fonts
     include base/fav-icon
@@ -25,12 +25,12 @@ html(class=`${THEME}`, lang='en')
 
     script.
       window.global = window;
-    script(id="__loopar-meta-data__", type="application/json").
+    script(id="__loopar-meta-data__" type="application/json").
       !{__META__}
 
   body(class="min-h-screen font-sans antialiased theme-stone")
     #loopar-root
       //ssr-outlet
-      script(type="module", src="/src/entry-client.jsx", async, blocking="render")
+      script(type="module" src="/src/entry-client.jsx", async, blocking="render")
 
     include base/footer-scripts

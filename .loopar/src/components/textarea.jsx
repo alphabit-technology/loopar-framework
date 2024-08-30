@@ -18,6 +18,7 @@ export default function TextArea(props) {
         <Textarea
           {...data}
           {...field}
+          key={null}
           placeholder={data.placeholder || data.label} type={type} 
           className="border border-input rounded-sm bg-transparent"
           rows={6}

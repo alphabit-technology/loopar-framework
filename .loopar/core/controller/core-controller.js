@@ -11,8 +11,8 @@ export default class CoreController extends AuthController {
   defaultImporterFiles = ['index', 'form'];
   response = {};
   #engineTemplate = 'pug';
-  
-  hasData() { 
+
+  hasData() {
     return Object.keys(this.data || {}).length > 0;
   }
 
@@ -33,7 +33,7 @@ export default class CoreController extends AuthController {
 
   async sendAction(action) {
     action = `action${loopar.utils.Capitalize(action)}`
-    if(typeof this[action] !== 'function') {
+    if (typeof this[action] !== 'function') {
       return await this.notFound(`Action ${action} not found`);
     }
     return await this[action]();
@@ -103,7 +103,7 @@ export default class CoreController extends AuthController {
     } else if (workspace === "web") {
       WORKSPACE.web_app = loopar.webApp;
     }
-    
+
     return await this.#send({
       ...response,
       action: this.action,
@@ -114,12 +114,12 @@ export default class CoreController extends AuthController {
   }
 
   clientImporter(meta) {
-    if (!meta.__DOCTYPE__) return {}
+    if (!meta.__ENTITY__) return {}
 
     const getClient = () => {
       if (this.client) return this.client;
 
-      if (meta.__DOCTYPE__.is_single || this.workspace === "web") {
+      if (meta.__ENTITY__.is_single || this.workspace === "web") {
         return "view"
       }
 
@@ -133,7 +133,7 @@ export default class CoreController extends AuthController {
       }
     }
 
-    const document = meta.__DOCTYPE__.name;
+    const document = meta.__ENTITY__.name;
 
     return {
       context: `${this.context}-context`,
@@ -141,7 +141,7 @@ export default class CoreController extends AuthController {
     }
   }
 
-  async #send(response){
+  async #send(response) {
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {
         this.buffer = Buffer.from(buffer);
@@ -173,11 +173,11 @@ export default class CoreController extends AuthController {
     }*/
 
     //const {render} = await vite.ssrLoadModule(serverTemplateRoute);
-     
+
     const HTML = await render(url, response, this.req, this.res);
     const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));
 
-    let html=template.replace(`<!--ssr-outlet-->`, HTML.HTML);
+    let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark')
     html = html.replace(`<!--__loopar-meta-data__-->`, `
       <script id="__loopar-meta-data__" type="application/json">
@@ -190,7 +190,7 @@ export default class CoreController extends AuthController {
       <link rel="modulepreload" href="/src/entry-client.jsx">
     `);
 
-    if(response.W === 'web') {
+    if (response.W === 'web') {
       html = html.replace(`<!--web-head-->`, `
         <link rel="stylesheet" href="/node_modules/aos/dist/aos.css">
       `);
@@ -248,7 +248,7 @@ export default class CoreController extends AuthController {
     const query = route.search ? route.search.split('?') : '';
     route.query = query[1] || '';
 
-    const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'documentName').join();
+    const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'name').join();
 
     return loopar.utils.hash(`${route.pathname}${key}`.toLowerCase());
   }

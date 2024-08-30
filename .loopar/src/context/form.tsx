@@ -26,7 +26,7 @@ export function FormWrapper(props:any = {}) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="">
         {props.children}
       </form>
     </Form>

@@ -39,7 +39,7 @@ interface Element {
 
 interface MetaInterface {
   key: String,
-  __DOCTYPE__: {
+  __ENTITY__: {
     STRUCTURE: Array<Element>
   },
   __DOCUMENT__: {}
@@ -106,7 +106,7 @@ export default class FormContext extends BaseForm {
   render(content: React.ReactNode) {
     if (content) return content;
     const meta = this.props.meta;
-    const { STRUCTURE } = meta.__DOCTYPE__;
+    const { STRUCTURE } = meta.__ENTITY__;
 
     return super.render(
       <FormWrapper meta={meta} docRef={this}>

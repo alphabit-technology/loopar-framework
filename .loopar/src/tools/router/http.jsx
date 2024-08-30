@@ -61,52 +61,62 @@ export default class HTTP {
   }
 
   async fetchWithInterceptors(url, options) {
-    try {
-      const response = await fetch(url, options);
+    const response = await fetch(url, options);
 
-      if (response.redirected) {
-        window.location.href = response.url;
-        return;
-      }
+    if (response.redirected) {
+      window.location.href = response.url;
+      return;
+    }
 
-      const isJson = response.headers.get('content-type')?.includes('application/json');
-      const data = isJson ? await response.json() : null;
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    const data = isJson ? await response.json() : null;
 
-      if (!response.ok) {
-        const error = data || { error: response.status, message: response.statusText };
-        this.throw({
-          title: error.title || error.code || 'Undefined Error',
-          message: error.message || error.description || 'Undefined Error',
-        });
-      }
-
-      return data;
-    } catch (error) {
-      console.log(error);
+    if (!response.ok) {
+      const error = data || { error: response.status, message: response.statusText };
       this.throw({
-        title: "Internal Server Error",
-        message: "An unexpected error occurred, please try again later.",
+        title: error.title || error.code || 'Undefined Error',
+        message: error.message || error.description || 'Undefined Error',
       });
     }
+
+    return data;
   }
 
-  async #sendPetition(options) {
+  #sendPetition(options) {
     const self = this;
-    try {
-      const data = await this.fetchWithInterceptors(self.url, self.options);
+    options.freeze && self.freeze(true);
 
-      options.success && options.success(data);
+    fetch(self.url, self.options).then(async response => {
+      return new Promise(async (resolve, reject) => {
+        if (response.redirected) {
+          window.location.href = response.url;
+          return;
+        }
 
-      if (data && data.notify) {
-        this.notify(data.notify.message, data.notify.type);
-      }
+        const isJson = response.headers.get('content-type')?.includes('application/json');
+        const data = isJson ? await response.json() : null;
 
-      return data;
-    } catch (error) {
+        if (!response.ok) {
+          const error = data || { error: response.status, message: response.statusText };
+          reject(error);
+        } else {
+          options.success && options.success(data);
+          data && data.notify && self.notify(data.notify);
+
+          resolve(data);
+        }
+      });
+    }).catch(error => {
       options.error && options.error(error);
-    } finally {
+      console.log(["Catch Error", error]);
+      self.throw({
+        title: error.title || error.code || 'Undefined Error',
+        message: error.message || error.description || 'Undefined Error',
+      });
+    }).finally(() => {
+      options.freeze && self.freeze(false);
       options.always && options.always();
-    }
+    });
   }
 
   get(url, params, options = {}) {

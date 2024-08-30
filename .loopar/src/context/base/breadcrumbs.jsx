@@ -7,24 +7,24 @@ export function Breadcrumbs({ meta }) {
   const makeLinks = () => {
     const dataLinks = [];
 
-    if (meta.__DOCTYPE__.module) {
+    if (meta.__ENTITY__.module) {
       const text = loopar.utils.Capitalize(
-        context === "module" ? "Home" : meta.__DOCTYPE__.module
+        context === "module" ? "Home" : meta.__ENTITY__.module
       );
       const link =
-        context === "module" ? "/" : `/${meta.__DOCTYPE__.module}`;
+        context === "module" ? "/" : `/${meta.__ENTITY__.module}`;
 
       dataLinks.push({ text: text, link: link, has_icon: true });
     }
 
     if (
-      meta.__DOCTYPE__.name &&
+      meta.__ENTITY__.name &&
       context !== "module" &&
-      !meta.__DOCTYPE__.is_single
+      !meta.__ENTITY__.is_single
     ) {
       dataLinks.push({
-        text: loopar.utils.Capitalize(meta.__DOCTYPE__.name),
-        link: `/${meta.__DOCTYPE__.module}/${meta.__DOCTYPE__.name}/list`,
+        text: loopar.utils.Capitalize(meta.__ENTITY__.name),
+        link: `/${meta.__ENTITY__.name}/list`,
         has_icon: false,
       });
     }

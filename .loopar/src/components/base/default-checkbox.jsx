@@ -9,18 +9,19 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 
-export const handleChange = (event) => {
-  if (typeof event === "object") {
-    event.target.value = loopar.utils.trueToBinary(event.target.checked);
-  } else {
-    event = { target: { value: loopar.utils.trueToBinary(event) } };
-  }
-
-  return event;
-}
-
 export default function DefaultCheckbox(props) {
   const Comp = props.Comp || Checkbox;
+
+  const handleChange = (event) => {
+    if (typeof event === "object") {
+      event.target.value = loopar.utils.trueToBinary(event.target.checked);
+    } else {
+      event = { target: { value: loopar.utils.trueToBinary(event) } };
+    }
+
+    return event;
+  }
+
   return (
     <BaseInput
       {...props}

@@ -33,7 +33,7 @@ interface Element {
 
 interface MetaInterface {
   key: String,
-  __DOCTYPE__: {
+  __ENTITY__: {
     STRUCTURE: Array<Element>
   },
   __DOCUMENT__: {}

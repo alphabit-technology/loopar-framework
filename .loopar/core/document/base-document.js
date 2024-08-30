@@ -10,7 +10,7 @@ export default class BaseDocument extends CoreDocument {
 
   getFieldProperties(field_name) {
     const fields = Object.values(this.fields)
-      .filter(k => k.name !== "__DOCTYPE__" && k.in_list_view).map(k => k[field_name]).filter(k => loopar.utils.lowercase(k) !== ID);
+      .filter(k => k.name !== "__ENTITY__" && k.in_list_view).map(k => k[field_name]).filter(k => loopar.utils.lowercase(k) !== ID);
 
     return fields.length === 0 ? ['name'] : fields;
   }
@@ -104,7 +104,7 @@ export default class BaseDocument extends CoreDocument {
   }
 
   async getList({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
-    if (this.__DOCTYPE__.is_single) {
+    if (this.__ENTITY__.is_single) {
       return loopar.throw({
         code: 404,
         message: "This document is single, you can't get list"
@@ -112,21 +112,21 @@ export default class BaseDocument extends CoreDocument {
     }
 
     const pagination = {
-      page: loopar.session.get(this.__DOCTYPE__.name + "_page") || 1,
+      page: loopar.session.get(this.__ENTITY__.name + "_page") || 1,
       pageSize: 10,
       totalPages: 4,
       totalRecords: 1,
       sortBy: "id",
       sortOrder: "asc",
-      __DOCTYPE__: this.__DOCTYPE__.name
+      __ENTITY__: this.__ENTITY__.name
     };
 
     const listFields = fields || this.getFieldListNames();
-    /*if (this.__DOCTYPE__.name === 'Document' && currentController.document !== "Document") {
+    /*if (this.__ENTITY__.name === 'Document' && currentController.document !== "Document") {
        listFields.push('is_single');
     }*/
 
-    if (this.__DOCTYPE__.name === 'Document') {
+    if (this.__ENTITY__.name === 'Entity') {
       listFields.push('is_single');
     }
 
@@ -138,10 +138,10 @@ export default class BaseDocument extends CoreDocument {
     const selfPagination = JSON.parse(JSON.stringify(pagination));
     loopar.db.pagination = pagination;
 
-    const rows = await loopar.db.getList(this.__DOCTYPE__.name, listFields, condition);
+    const rows = await loopar.db.getList(this.__ENTITY__.name, listFields, condition);
 
     if (rows.length === 0 && pagination.page > 1) {
-      await loopar.session.set(this.__DOCTYPE__.name + "_page", 1);
+      await loopar.session.set(this.__ENTITY__.name + "_page", 1);
       return await this.getList({ fields, filters, q, rowsOnly });
     }
 
@@ -159,7 +159,7 @@ export default class BaseDocument extends CoreDocument {
   }
 
   getSearchedFields() {
-    return this.__DOCTYPE__?.search_fields || 'name';
+    return this.__ENTITY__?.search_fields || 'name';
   }
 
   getFieldSelectNames() {
@@ -184,7 +184,7 @@ export default class BaseDocument extends CoreDocument {
 
     const listFields = this.getFieldSelectLabels();
 
-    const rows = await loopar.db.getList(this.__DOCTYPE__.name, listFields, this.buildConditionToSelect(q));
+    const rows = await loopar.db.getList(this.__ENTITY__.name, listFields, this.buildConditionToSelect(q));
 
     pagination.totalRecords = await this.records();
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
@@ -196,6 +196,6 @@ export default class BaseDocument extends CoreDocument {
   }
 
   async records(condition = null) {
-    return await loopar.db._count(this.__DOCTYPE__.name, {}, condition);
+    return await loopar.db._count(this.__ENTITY__.name, {}, condition);
   }
 }

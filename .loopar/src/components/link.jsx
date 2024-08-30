@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Link as ReactLink, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export const makeUrl = (href) => {
@@ -13,7 +12,7 @@ export const makeUrl = (href) => {
   const location = useLocation();
   const currentURL = global.url || location.pathname;
 
-  const urlStructure = ["workspace", "module", "document", "action"];
+  const urlStructure = ["workspace", "document", "action"];
   const urlArray = currentURL.split("/");
 
   const urlObject = {};
@@ -160,8 +159,8 @@ const variants = {
 };
 
 export default function MetaLink(props) {
-    const data = props.data;
-    const className = data.class || "";
+    const data = props.data || {};
+    const className = cn(props.className, data.class || "");
     delete data.class;
 
     return (

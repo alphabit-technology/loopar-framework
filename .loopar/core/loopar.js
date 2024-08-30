@@ -18,6 +18,8 @@ import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
+import { singularize, titleize } from "inflection";
+import { elementsDict } from "loopar";
 //import pug from "pug";
 
 
@@ -27,11 +29,10 @@ export class Loopar {
   pathRoot = process.env.PWD;
   pathFramework = process.argv[1];
   pathCore = process.argv[1];
-  baseDocumentFields = ["id", "name", "type", "module", "doc_structure", "title_fields", "search_fields", "is_single", "is_static"];
   session = new Session();
   cookie = new Cookie();
   tailwindClasses = {}
-  #server={};
+  #server = {};
 
   constructor() { }
 
@@ -41,12 +42,12 @@ export class Loopar {
     }
   }
 
-  set server(server){
+  set server(server) {
     this.#server = server;
     this.session.req = server.req;
   }
 
-  get server(){
+  get server() {
     return this.#server;
   }
 
@@ -80,23 +81,115 @@ export class Loopar {
   async initialize() {
     console.log('......Initializing Loopar.......');
     this.utils = Helpers;
-    this.dateUtils = dateUtils; 
+    this.dateUtils = dateUtils;
     await this.GlobalEnvironment();
     await this.#loadConfig();
     this.db = new DataBase();
 
     //this.db = new DataBaseSqlLite();
     await this.db.initialize();
-    await this.makeConfig();
+    await this.build();
+
     this.tailwindClasses = {};
     this.setTailwind();
   }
 
-  makeClientImporter(){
+  getApps() {
+    return this.getDirList(this.makePath(this.pathRoot, "apps"));
+  }
+
+  getEntities() {
+    const basePath = this.pathRoot;
+
+    return this.getApps().reduce((acc, app) => {
+      const moduleRoot = path.resolve(basePath, "apps", app.name, `modules`);
+      const modules = this.getDirList(moduleRoot);
+
+      modules.forEach(module => {
+        const coresRoot = path.resolve(`${moduleRoot}/${module.name}`);
+        const cores = this.getDirList(coresRoot) || [];
+
+        cores.forEach(core => {
+          const entitiesRoot = path.resolve(`${coresRoot}/${core.name}`);
+          const entities = this.getDirList(entitiesRoot);
+
+          entities.forEach(entity => {
+            let data = this.getFile(this.makePath(entitiesRoot, entity.name, entity.name) + ".json");
+
+            if (data) {
+              data = this.utils.isJSON(data) ? JSON.parse(data) : null;
+              data.entityRoot = this.makePath("apps", app.name, "modules", module.name, core.name, entity.name);
+
+              acc.push(data);
+            } else {
+              console.log([`Entity [${entity.name}] not found`]);
+            }
+          });
+        });
+      });
+
+      return acc;
+    }, []);
+  }
+
+  async buildRefs() {
+    let types = {};
+    const docs = this.getEntities();
+
+    const getEntityFields = (fields) => {
+      const getFields = fields => fields.reduce((acc, field) => acc.concat(field, ...getFields(field.elements || [])), []);
+      
+      return getFields(fields).filter(field => {
+        const def = elementsDict[field.element]?.def || {};
+        return def.isWritable
+      }).map(field => field.data.name);
+    }
+
+    const refs = Object.values(docs).reduce((acc, doc) => {
+      if (doc.__document_status__ !== "Active") return acc;
+      const isBuilder = doc.is_builder || doc.build;
+
+      if (isBuilder) {
+        types[doc.name] = {
+          __ENTITY__: doc.name,
+          __BUILD__: doc.build || doc.name,
+          fields: getEntityFields(JSON.parse(doc.doc_structure || "[]"))
+        }
+      }
+      
+      acc[doc.name] = {
+        __ENTITY__: doc.__ENTITY__ || "Entity",
+        entityRoot: doc.entityRoot,
+        is_single: (!isBuilder && doc.is_single !== 0) ? 1 : 0,
+        is_builder: (isBuilder) ? 1 : 0
+      }
+
+      return acc;
+    }, {});
+
+    await fileManage.setConfigFile('refs', {
+      types,
+      refs
+    });
+  }
+
+  getRef(entity) {
+    return fileManage.getConfigFile('refs', null, {}).refs[entity];
+  }
+
+  getType(type) {
+    return fileManage.getConfigFile('refs', null, {}).types[type];
+  }
+
+  getTypes() {
+    return fileManage.getConfigFile('refs', null, {}).types;
+  }
+
+  makeClientImporter() {
 
     /*const fn = `
-    import {Document}
-    export default {Document}
+    import {Entity}
+    export default {Entity}
     `
     fileManage.makeFile('apps', 'index', fn, 'jsx', true);*/
 
@@ -123,8 +216,8 @@ export class Loopar {
 
     fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
   }
-  
-  eachApps(fn) {
+
+  eachAppsSync(fn) {
     fs.readdirSync(this.makePath(this.pathRoot, "apps")).forEach(app => {
       if (fs.lstatSync(this.makePath(this.pathRoot, "apps", app)).isDirectory()) {
         fn(app);
@@ -132,8 +225,15 @@ export class Loopar {
     });
   }
 
-  async copyAppFilesToSrc() {
+  getDirList(path) {
+    return fs.readdirSync(path, { withFileTypes: true });
+  }
 
+  getFile(path) {
+    return !fs.existsSync(path) ? null : fs.readFileSync(path, 'utf8');
+  }
+
+  async copyAppFilesToSrc() {
     if (await fileManage.existFolder(this.makePath("src", "__apps-source__"))) {
       await fileManage.deleteFolder("src", "__apps-source__");
     }
@@ -141,39 +241,45 @@ export class Loopar {
     await fileManage.makeFolder("src", "__apps-source__");
     const basePath = this.pathRoot;
 
-    //fs.readdirSync(this.makePath(this.pathRoot, "apps")).forEach(app => {
     this.eachApps(app => {
-      const modules = fs.readdirSync(`${basePath}/apps/${app}/modules`);
+      const moduleRoot = path.resolve(basePath, app, `modules`);
+      const modules = fs.readdirSync(moduleRoot);
+
       modules.forEach(module => {
-        const documents = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}`);
-        documents.forEach(document => {
-          const clientFiles = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}/${document}/client`);
+        const coresRoot = path.resolve(`${moduleRoot}/${module}`);
+        const cores = fs.readdirSync(coresRoot);
 
-          clientFiles.forEach(clientFile => {
-            if (clientFile.split(".")[1] !== "jsx") return;
+        cores.forEach(core => {
+          const entitiesRoot = path.resolve(`${coresRoot}/${core}`);
+          const entities = fs.readdirSync(entitiesRoot);
 
-            const source = this.makePath(this.pathRoot, "apps", app, "modules", module, document, "client", clientFile);
-            const destiny = this.makePath(this.pathRoot, "src", "__apps-source__", clientFile);
+          entities.forEach(entity => {
+            const clientFiles = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}/${entity}/client`);
 
-            fs.readFile(source, (err, data) => {
-              if (err) {
-                console.error('Err on read file:', err);
-                return;
-              }
+            clientFiles.forEach(clientFile => {
+              if (clientFile.split(".")[1] !== "jsx") return;
 
-              fs.writeFile(destiny, data, (err) => {
+              const source = this.makePath(this.pathRoot, "apps", app, "modules", module, entity, "client", clientFile);
+              const destiny = this.makePath(this.pathRoot, "src", "__apps-source__", clientFile);
+
+              fs.readFile(source, (err, data) => {
                 if (err) {
-                  console.error('Err on write file:', err);
+                  console.error('Err on read file:', err);
                   return;
                 }
+
+                fs.writeFile(destiny, data, (err) => {
+                  if (err) {
+                    console.error('Err on write file:', err);
+                    return;
+                  }
+                });
               });
             });
-
           });
         });
       });
     });
-    //});
   }
 
   async #loadConfig(data = null) {
@@ -184,7 +290,8 @@ export class Loopar {
     }
   }
 
-  async makeConfig() {
+  async build() {
+    await this.buildRefs();
     await fileManage.makeFolder('', "apps");
     await fileManage.makeFolder('public/uploads', "thumbnails");
     await fileManage.makeFolder('public/js', 'components');
@@ -216,7 +323,7 @@ export class Loopar {
         for (const m of moduleList) {
           const module = { link: m.name, icon: m.icon, description: m.description, routes: [] };
 
-          const routeList = await this.db.getList("Document", ['name', 'is_single'], {
+          const routeList = await this.db.getList("Entity", ['name', 'is_single'], {
             '=': { module: m.name }
           });
 
@@ -246,10 +353,6 @@ export class Loopar {
     data.frameworkInstalled = data.databaseInitialized && await this.db.testFramework();
 
     if (data.frameworkInstalled) {
-      data.baseDocumentFields = this.#makeDoctypeFields(
-        JSON.parse(await this.db.getValue('Document', 'doc_structure', 'Document')) || []
-      ).filter(field => fieldIsWritable(field)).map(field => field.data.name);
-
       const activeWebApp = await this.db.getDoc('System Settings');
       const webApp = await this.db.getDoc('App', activeWebApp.active_web_app);
 
@@ -257,14 +360,14 @@ export class Loopar {
         ...(webApp || {}),
         menu_items: webApp ? await this.db.getList("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : []
       }
-      
+
       await writeModules(data);
     } else {
       await writeFile(data);
     }
   }
 
-  async systemsSettings(){
+  async systemsSettings() {
     return await this.getDocument("System Settings");
   }
 
@@ -317,23 +420,22 @@ export class Loopar {
       error.code = httpError.code;
       error.description = httpError.description;
 
-      
+
       if (this.db) {
         this.db.transaction = false;
         this.db.transactions = [];
       }
 
-      const {res,req} = this.lastController || {};
-      if(this.lastController && !this.lastController.completedTransaction){
+      const { res, req } = this.lastController || {};
+      if (this.lastController && !this.lastController.completedTransaction) {
         this.lastController.completedTransaction = true;
         this.lastController.sendError(error).then(response => {
-          console.log(["On send Error", response])
           this.server.sendResponse(res, req, response);
         });
-      }else if(res){
+      } else if (res) {
         this.lastController = null;
         this.server.sendResponse(res, req, error);
-      }else{
+      } else {
         try {
           this.res.status(500).send(`
             <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
@@ -362,13 +464,7 @@ export class Loopar {
     env.serverConfig = fileManage.getConfigFile('server.config');
   }
 
-  #makeDoctypeFields(fields = JSON.parse(this.__DOCTYPE__.doc_structure) || []) {
-    return fields.reduce((acc, field) => {
-      return acc.concat(field, ...this.#makeDoctypeFields(field.elements || []));
-    }, []);
-  }
-
-  parseDocStructure(doc_structure){
+  parseDocStructure(doc_structure) {
     return doc_structure.map(field => {
       field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
 
@@ -380,47 +476,51 @@ export class Loopar {
     });
   }
 
-  async #GET_DOCTYPE(document, { app = null, module = null } = {}) {
-    let { appName, moduleName } = { appName: app, moduleName: module };
-
-    if (["Document", "Module", "Module Group", "App"].includes(document)) {
-      appName = "loopar";
-      moduleName = "core";
-    }
-
-    const DOCTYPE = (appName && moduleName) ?
-      fileManage.getConfigFile(document, loopar.makePath("apps", appName, "modules", moduleName, document)) :
-      await loopar.db.getDoc("Document", document, ["doc_structure", ...this.baseDocumentFields]);
-
-    if (!DOCTYPE) {
+  async #GET_ENTITY(document, { fromFile } = {}) {
+    const throwError = (type) => {
       this.throw({
         code: 404,
-        message: `Document ${document} not found`,
+        message: `${(type || "Entity")} ${document} not found`,
       });
     }
 
-    appName && (DOCTYPE.__APP__ = appName);
-    moduleName && (DOCTYPE.__MODULE__ = moduleName);
+    let ENTITY = null;
+    const ref = this.getRef(document);
+    if(!ref) return throwError();
 
-    if(DOCTYPE.is_single){
-      DOCTYPE.doc_structure = JSON.stringify(this.parseDocStructure(JSON.parse(DOCTYPE.doc_structure)));
-    }
+    const entity = ref.__ENTITY__;
 
-    return DOCTYPE;
+    /**Testing get fileRef only */
+    ENTITY = await fileManage.getConfigFile(document, ref.entityRoot);
+
+    /*if (fromFile || this.installing) {
+      ENTITY = await fileManage.getConfigFile(document, ref.entityRoot);
+    } else {
+      const entityFields = this.getType(entity).fields;
+      ENTITY = await loopar.db.getDoc(entity, document, entityFields);
+    }*/
+
+    if (!ENTITY) return throwError(entity);
+    ENTITY.is_single ??= ref.is_single;
+    ENTITY.__REF__ = ref;
+
+    ENTITY.is_single && (ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(JSON.parse(ENTITY.doc_structure))));
+
+    return ENTITY;
   }
 
   /**
    * 
    * @param {*} document DocumentType name
-   * @param {*} documentName Document name
+   * @param {*} name Document name
    * @param {*} data
    * @param {*} moduleRoute Path to app root folder 
    * @returns 
    */
-  async getDocument(document, documentName, data = null, { app = null, module = null } = {}) {
-    const DOCTYPE = await this.#GET_DOCTYPE(document, { app, module });
+  async getDocument(document, name, data = null, { fromFile = false } = {}) {
+    const ENTITY = await this.#GET_ENTITY(document, { fromFile });
 
-    return await documentManage.getDocument(DOCTYPE, documentName, data, app);
+    return await documentManage.getDocument(ENTITY, name, data);
   }
 
   /**
@@ -428,33 +528,33 @@ export class Loopar {
    * @param {*} document 
    * @param {*} data 
    * @param {*} moduleRoute 
-   * @param {*} documentName 
+   * @param {*} name 
    * @returns 
    */
-  async newDocument(document, data = {}, { app, module, documentName = null } = {}) {
-    const DOCTYPE = await this.#GET_DOCTYPE(document, { app, module });
-    return await documentManage.newDocument(DOCTYPE, data, documentName);
+  async newDocument(document, data = {}, { app, module, name = null } = {}) {
+    const ENTITY = await this.#GET_ENTITY(document, { app, module });
+    return await documentManage.newDocument(ENTITY, data, name);
   }
 
-  async getErrDocument(){
+  async getErrDocument() {
     return await this.newDocument("Error", {}, { app: "loopar", module: "core" });
   }
 
-  async deleteDocument(document, documentName, { updateInstaller = true, sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
-    const Doc = await this.getDocument(document, documentName);
+  async deleteDocument(document, name, { updateInstaller = true, sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
+    const Doc = await this.getDocument(document, name);
     await Doc.delete({ updateInstaller, sofDelete, force, updateHistory });
   }
 
   /*async getForm(formName, data = {}) {
-     const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
+     const ENTITY = await this.#GET_ENTITY(formName, 'Form', 'form_structure');
 
-     return documentManage.getForm(DOCTYPE, data);
+     return documentManage.getForm(ENTITY, data);
   }
 
   async newForm(formName, data = {}) {
-     const DOCTYPE = await this.#GET_DOCTYPE(formName, 'Form', 'form_structure');
+     const ENTITY = await this.#GET_ENTITY(formName, 'Form', 'form_structure');
 
-     return await documentManage.newForm(DOCTYPE, data);
+     return await documentManage.newForm(ENTITY, data);
   }*/
 
   exist(path) {
@@ -467,7 +567,6 @@ export class Loopar {
 
   async getList(document, { fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null, rowsOnly = false } = {}, ifNotFound = null) {
     const doc = await this.newDocument(document);
-
     return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
   }
 
@@ -488,7 +587,7 @@ export class Loopar {
   }*/
 
   throw(error) {
-    error = typeof error === 'string' ? {code: 400, message: error} : error
+    error = typeof error === 'string' ? { code: 400, message: error } : error
     const err = new Error(error.message);
     err.code = error.code;
 
@@ -524,8 +623,8 @@ export class Loopar {
   }
 
   async updateInstaller() {
-    const { doctype, appName, record, deleteRecord = false } = arguments[0];
-    const document = doctype.name;
+    const { entity, appName, record, deleteRecord = false } = arguments[0];
+    const docName = entity.name;
 
     const appPath = loopar.makePath("apps", appName);
     if (this.installing) return;
@@ -533,18 +632,18 @@ export class Loopar {
     const installerData = fileManage.getConfigFile('installer', appPath, {});
 
     if (deleteRecord) {
-      delete installerData[document][record.name];
+      delete installerData[docName][record.name];
     } else {
-      installerData[document] ??= {};
-      installerData[document].doctypeId = doctype.id;
-      installerData[document].documents ??= {};
+      installerData[docName] ??= {};
+      installerData[docName].entityId = entity.id;
+      installerData[docName].documents ??= {};
 
       if (record instanceof Array) {
-        for(const rec of record){
-          installerData[document].documents[rec.name] = rec;
+        for (const rec of record) {
+          installerData[docName].documents[rec.name] = rec;
         }
       } else {
-        installerData[document].documents[record.name] = record;
+        installerData[docName].documents[record.name] = record;
       }
     }
 
@@ -576,7 +675,7 @@ export class Loopar {
       const Installer = new installer({ app_name: appName });
 
       return Installer.unInstall().then(async r => {
-        await this.makeConfig();
+        await this.build();
         this.installingApp = null;
         resolve(r);
       }).catch((error) => {
@@ -607,7 +706,7 @@ export class Loopar {
   }
 
   async getSettings() {
-    this.systemSettings ??= await this.db.getDoc("System Settings", null, ["*"], {isSingle: 1});
+    this.systemSettings ??= await this.db.getDoc("System Settings", null, ["*"], { isSingle: 1 });
     return this.systemSettings;
   }
 }

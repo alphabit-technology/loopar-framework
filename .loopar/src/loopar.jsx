@@ -6,6 +6,7 @@ import * as dateUtils from "$global/date-utils";
 import scriptManager from "$tools/script-manager";
 import { elementsDict } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
+import { decodeComponent } from "./tools/router/http-helper";
 
 class Loopar extends Router {
   //ui = GuiManage;
@@ -77,7 +78,7 @@ class Loopar extends Router {
       content: content || message,
     });
 
-    //throw new Error(message);
+    throw new Error(message);
   }
 
   notify(message, type = "success") {
@@ -160,13 +161,21 @@ class Loopar extends Router {
   }
 
   freeze(freeze = true) {
-    this.rootApp?.freeze(freeze);
+    Emitter.emit('freeze', freeze);
   }
 
   method(Document, method, params = {}, options = {}) {
-    const url = `/desk/method/${Document}/${method}`;
-    params = typeof params === "string" ? { documentName: params } : params;
-    return this.post(url, params, { freeze: false, ...options });
+    const curUrl = window.location.href;
+    const curParams = new URLSearchParams(curUrl.split('?')[1]);
+
+    const curParamsObject = {};
+    curParams.forEach((value, key) => {
+      curParamsObject[key] = value;
+    });
+
+    const url = `/desk/${Document}/${method}`;
+    params = typeof params === "string" ? { name: params } : params;
+    return this.post(url, {...params, ...curParamsObject }, { freeze: false, ...options });
   }
 
   async getMeta(Document, action, params = {}, options = {}) {

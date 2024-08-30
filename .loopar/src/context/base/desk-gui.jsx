@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from "react";
 import {AppBarr} from "$context/base/app-barr";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { useDocument } from "@context/@/document-context";
 import { MoreVertical } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {useCookies} from "@services/cookie";
@@ -35,7 +34,6 @@ const InnerSidebar = ({toggleSidebar, ...props}) => {
 
 export default function DeskGUI(props) {
   const docRef = props.docRef;
-  const document = useDocument();
   const {headerHeight} = useWorkspace();
   const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
 
@@ -47,13 +45,6 @@ export default function DeskGUI(props) {
     e && e.preventDefault();
     handleSetSidebarOpen(!sidebarOpen);
   }
-
-  /*useEffect(
-    () => {
-      !sidebarOpen && (handleSetSidebarOpen(document.mode === "editor" || document.mode === "designer"));
-    },
-    [document.mode, document.editElement]
-  )*/
 
   return (
     <> 

@@ -1,20 +1,17 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { dataInterface } from "$global/element-definition";
 import { FormItem, FormMessage } from "@/components/ui/form";
 import { FormField } from "@form-field";
 import { cn } from "@/lib/utils";
 import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
-//import { useDesigner } from "@context/@/designer-context";
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
   const fieldControl = useRef(null);
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
-  //const {designerMode} = useDesigner();
 
   const getData = () => {
-    //const names ??= elementManage.elementName(this.props.element);
     if(props.element) {
       const data = props.data || {};
 
@@ -27,19 +24,7 @@ const BaseInput = (props) => {
     }
   }
 
-  const [data, setData] = useState(getData());
-  const [val, setVal] = useState(data.value);
-
-  /*useEffect(() => {
-    setData(getData());
-  }, [props.data]);*/
-
-  useEffect(() => {
-    data.value = val;
-    setData(data);
-  }, [val]);
-
-  //const data = getData();
+  const data = getData();
 
   const handleInputChange = useCallback((event) => {
     if (event && typeof event === "object") {
@@ -56,16 +41,6 @@ const BaseInput = (props) => {
     }, 0);
   }, [props]);
 
-  /*useEffect(() => {
-    if (props.onChange && !props.prevProps?.onChange) {
-      handleInputChange(value());
-    }
-  }, [props.onChange, handleInputChange]);*/
-
-  /*useEffect(() => {
-    setNames(elementManage.elementName(props.element));
-  }, [props.element]);*/
-
   const validate = () => {
     const validation = dataInterface({ data }, value()).validate();
     setIsInvalid(!validation.valid);
@@ -79,7 +54,7 @@ const BaseInput = (props) => {
 
     fieldControl.current.value = val;
     setTimeout(() => {
-      fieldControl.current.onChange({ target: { value: val } });
+      fieldControl.current.onChange({ target: { value: value() } });
     }, 0);
   };
 
@@ -87,28 +62,15 @@ const BaseInput = (props) => {
 
   const hasLabel = () => !(props.withoutLabel === true);
 
-  /*useEffect(() => {
-    fieldControl.current?.onChange({ target: { value: data.value } }  )
-  }, [fieldControl.current]);*/
-
-  /*useEffect(() => {
-    fieldControl.current?.onChange({ target: { value: data.value } }  )
-    setData(getData());
-  }, [fieldControl?.current?.value]);*/
-
   const renderInput = (input, className = "") => {
-    //const currentData = data;
     const invalidClassName = isInvalid ? "border border-red-500 p-2" : "";
-    
+
     return (
       <FormField
         name={data.name}
         dontHaveForm={props.dontHaveForm}
         render={({ field }) => {
           if (!fieldControl.current) field.value = data.value;
-          if(field.value !== val){
-            //setVal(field.value);
-          }
 
           fieldControl.current = field;
           const oldChange = field.onChange;
@@ -132,7 +94,7 @@ const BaseInput = (props) => {
             </FormItem>
           );
         }}
-        onChange={handleInputChange}
+        //onChange={handleInputChange}
         data={data}
       />
     );
@@ -142,7 +104,7 @@ const BaseInput = (props) => {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange, fieldControl };
+  return { renderInput, value, validate, readOnly, hasLabel, data:getData(), handleInputChange, fieldControl };
 };
 
 BaseInput.metaFields = () =>{
@@ -150,7 +112,6 @@ BaseInput.metaFields = () =>{
     {
       group: "form",
       elements: {
-        //tag: {element: INPUT},
         label: { element: INPUT },
         name: { element: INPUT },
         description: { element: TEXTAREA },

@@ -1,12 +1,11 @@
 'use strict'
 
-import Installer from "../../apps/core/modules/installer/entities/installer/core-installer.js";
+import Installer from "../../modules/core/entities/installer/installer.js";
 import BaseController from "./base-controller.js";
 import { loopar } from "../loopar.js";
-import { fileManage } from "../file-manage.js";
 
 
-export default class InstallerController extends BaseController {
+export default class CoreInstallerController extends BaseController {
   constructor(props) {
     super(props);
   }
@@ -18,40 +17,29 @@ export default class InstallerController extends BaseController {
       Object.assign(model, this.data);
 
       if (await model.connect()) {
-        return this.redirect('/desk');
+        this.res.redirect('/desk');
       }
     } else {
       const response = await model.__dataConnect__();
-      return await this.render(response);
+      await this.render(response);
     }
   }
 
-  getAppName() {
-    return this.app_name || null;
-  }
-
-  async getInstallerModel() {
-    const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js');
-
-    return await fileManage.importClass(installerRoute, Installer);
-  }
-
   async actionInstall() {
-    this.client = "form";
-    const installerModel = await this.getInstallerModel();
-    const model = new installerModel(this.data);
+    const model = new Installer();
 
     if (this.hasData()) {
+      Object.assign(model, this.data);
+
       if (loopar.frameworkInstalled && await loopar.appStatus(model.app_name) === 'installed') {
         loopar.throw("App already installed please refresh page");
       }
 
-      return this.success(await model.install());
-      /*const install = await model.install();
+      const install = await model.install();
       if (install) {
-         await loopar.build
-         return this.success("App installed successfully");
-      }*/
+        await loopar.build
+        return this.success("App installed successfully");
+      }
     } else {
       const response = await model.__dataInstall__();
       return await this.render(response);
@@ -65,7 +53,7 @@ export default class InstallerController extends BaseController {
       Object.assign(model, this.data);
 
       if (await model.update()) {
-        await loopar.build();
+        await lloopar.build
         return this.success("App updated successfully");
       }
     } else {
@@ -85,13 +73,8 @@ export default class InstallerController extends BaseController {
   }
 
   async actionUninstall() {
-    const appStatus = await loopar.appStatus(this.data.app_name);
-
-    if (appStatus === 'uninstalled') {
-      loopar.throw(`App ${this.data.app_name} is not installed, please refresh page.`);
-    }
-
     const app = await loopar.getDocument("App", this.data.app_name);
+
     return this.success(await app.unInstall());
   }
 }

@@ -84,7 +84,7 @@ export default class CoreInstaller {
       }
     ]
     return {
-      __DOCTYPE__: {
+      __ENTITY__: {
         doc_structure: JSON.stringify(STRUCTURE),
         STRUCTURE,
         name: "Installer",
@@ -211,7 +211,7 @@ export default class CoreInstaller {
     const dbConfig = await fileManage.getConfigFile('db.config');
     dbConfig.doc_structure = JSON.stringify(this.formConnectStructure)
     return {
-      __DOCTYPE__: {
+      __ENTITY__: {
         doc_structure: JSON.stringify(this.formConnectStructure),
         STRUCTURE: this.formConnectStructure,
         name: "Installer"
@@ -260,10 +260,10 @@ export default class CoreInstaller {
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = await fileManage.getConfigFile('installer', moduleRoute);
 
-    for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].doctypeId - a[1].doctypeId)) {
+    for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].entityId - a[1].entityId)) {
       for (const document of Object.values(records.documents).sort((a, b) => b.id - a.id)) {
         if (document.__document_status__ === "Deleted") continue;
-        if(!await loopar.db._count(doc_name, document.name)) continue;
+        if (!await loopar.db._count(doc_name, document.name)) continue;
         console.warn("Uninstalling", doc_name, document.name);
 
         await loopar.deleteDocument(doc_name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
@@ -304,18 +304,18 @@ export default class CoreInstaller {
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const installerData = await fileManage.getConfigFile('installer', moduleRoute);
 
-    for (const [doctype, records] of Object.entries(installerData).sort((a, b) => a[1].doctypeId - b[1].doctypeId)) {
+    for (const [entity, records] of Object.entries(installerData).sort((a, b) => a[1].entityId - b[1].entityId)) {
       for (const document of Object.values(records.documents).sort((a, b) => a.id - b.id)) {
         if (document.__document_status === "Deleted") continue;
 
-        if (doctype === "Document") {
+        if (entity === "Entity") {
           const data = await this.getDocumentData(this.app_name, document.module, document.name);
           const app = this.getAppFromData(installerData, document.module);
           data.__APP__ = app;
 
-          await this.insertRecord(doctype, data, this.app_name, document.module);
+          await this.insertRecord(entity, data, this.app_name, document.module);
         } else {
-          await this.insertRecord(doctype, document);
+          await this.insertRecord(entity, document);
         }
       }
     }
@@ -382,7 +382,7 @@ export default class CoreInstaller {
     env.dbConfig = dbConfig;
 
     await loopar.db.initialize();
-    await loopar.makeConfig();
+    await loopar.build();
 
     if (await loopar.db.testServer()) {
       return true;

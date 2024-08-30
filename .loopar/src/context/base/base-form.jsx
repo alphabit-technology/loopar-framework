@@ -1,7 +1,7 @@
 import loopar from '$loopar';
 import BaseDocument from "$context/base/base-document";
 import { dataInterface } from '@global/element-definition';
-import {useWorkspace} from "@workspace/workspace-provider"; 
+import { useWorkspace } from "@workspace/workspace-provider"; 
 
 export default class BaseForm extends BaseDocument {
   tagName = "form";
@@ -34,39 +34,36 @@ export default class BaseForm extends BaseDocument {
     }*/
 
     //return new Promise((resolve, reject) => {
-      loopar.send({
-        action: options.action,
-        params: this.params,
-        body: this.#getFormData(true),
-        success: r => {
-          if (r && r.success) {
-            //this.lastData = JSON.stringify(this.getFormValues);
-            //this.context.refresh();
-            /*if (loopar.rootApp && loopar.rootApp.refresh) {
-              loopar.rootApp.refresh().then(() => {
-                loopar.notify(r.message);
-              });*/
-            //} else {
-              //window.location.reload();
-           // }
-          } else {
-            loopar.notify(r.message, "error");
-          }
+    loopar.send({
+      action: options.action,
+      params: this.params,
+      body: this.#getFormData(true),
+      success: r => {
+        if (r && r.success) {
+          //this.lastData = JSON.stringify(this.getFormValues);
+          //this.context.refresh();
+          /*if (loopar.rootApp && loopar.rootApp.refresh) {
+            loopar.rootApp.refresh().then(() => {
+              loopar.notify(r.message);
+            });*/
+          //} else {
+            //window.location.reload();
+          // }
+        }
 
-          options.success && options.success(r);
-          //resolve(r);
-        },
-        error: r => {
-          options.error && options.error(r);
-        },
-        //freeze: true
-      });
-    //});
+        options.success && options.success(r);
+        //resolve(r);
+      },
+      error: r => {
+        options.error && options.error(r);
+      },
+      freeze: true
+    });
   }
 
   get params() {
     return {
-      documentName: this.props.meta.__DOCUMENT_NAME__,
+      name: this.props.meta.__DOCUMENT_NAME__,
     }
   }
 

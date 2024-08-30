@@ -16,9 +16,9 @@ const designElementProps = (el) => {
   if (!el.data) {
     const names = elementManage.elementName(el.element);
     el.data = {
-      name: names.name,
+      //name: names.name,
       label: names.label,
-      id: names.id,
+      //id: names.id,
       key: names.id
     }
   }
@@ -30,8 +30,8 @@ const designElementProps = (el) => {
       ...el,
       key: 'design-element' + el.data.key,
       //readOnly: selfProps.readOnly,
-      hasTitle: true,
-      dragabble: true
+      //hasTitle: true,
+      //dragabble: true
     }
   }
 
@@ -164,28 +164,28 @@ const elementProps = ({ elDict, parent = {}, isDesigner }) => {
 
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
-  const {designerModeType} = useDesigner();
+  const {designerModeType, currentDragging, setCurrentDragging, designing} = useDesigner();
   const parentHidden = useHidden();
-  const {currentDragging, setCurrentDragging} = useDesigner();
   const dragginElement = useRef(null);
-  const isDroppable = Comp.droppable || element.fieldDesigner;
+  //const isDroppable = false// Comp.droppable || element.fieldDesigner;
   let className = "";
 
-  if (designerModeType !== "preview") {
-    if (isDroppable) {
-      className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-900/70 mb-4 dark:border-gray-600 dark:text-gray-200 p-1 pt-5");
-    } else {
+  if (designing) {
+    //if (isDroppable) {
+     // className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-900/70 mb-4 dark:border-gray-600 dark:text-gray-200 p-1 pt-5");
+    //} else {
       className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
-    }
+    //}
   }
 
-  className = cn(className, element.data?.class, element.className);
+  className = cn(className, element.className);
 
   const handleMouseOver = (hover) => {
     !currentDragging && setHover(hover);
   }
 
   delete element.key;
+
   if (parentHidden) {
     return (
       <Comp {...element}
@@ -263,6 +263,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
           <Comp {...element}
             key={element.key}
             ref={dragginElement}
+            //className={className}
           />
         </Fragment>
       </div>
@@ -325,7 +326,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
   const def = baseElementsDict[el.element]?.def || {};
-  el.def = def;
+  //el.def = def;
   const _props = elementProps({ elDict: el, parent, isDesigner });
   const { ENVIRONMENT } = useWorkspace();
 
@@ -361,7 +362,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
     const data = _props.data || {};
 
-    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, data?.class, "rounded-md", el.className, className);
+    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, "rounded-md", el.className, className, data?.class);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {
@@ -413,7 +414,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   }
 };
 
-export default function MetaComponentBase ({ elements=[], parent, className, parentKey }){
+export default function MetaComponentBase ({ elements=[], parent, className, parentKey }) {
   return elements.map((el) => {
     const key = parentKey + (el.data?.key || useId());
 

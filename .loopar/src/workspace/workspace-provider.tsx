@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router-dom';
-import {useCookies} from "@services/cookie";
+import { useCookies } from "@services/cookie";
 import { AppSourceLoader } from "$/app-source-loader";
 
 const usePathname = () => {
-  return useLocation().pathname;
+  return useLocation();
 };
 
 type Theme = "dark" | "light" | "system"
@@ -15,7 +15,7 @@ type Module = {
 }
 
 interface Meta {
-  __DOCTYPE__: {},
+  __ENTITY__: {},
   __DOCUMENT__: {},
   __META__: {},
   key: string,
@@ -120,9 +120,9 @@ export function WorkspaceProvider({
     };
 
     toMergeDocuments.forEach((Document: Document): void => {
-      if (Document.meta.__DOCTYPE__ && Document.meta.__DOCUMENT__) {
-        Document.meta.__DOCTYPE__.STRUCTURE = updateValue(
-          JSON.parse(Document.meta.__DOCTYPE__.doc_structure),
+      if (Document.meta.__ENTITY__ && Document.meta.__DOCUMENT__) {
+        Document.meta.__ENTITY__.STRUCTURE = updateValue(
+          JSON.parse(Document.meta.__ENTITY__.doc_structure),
           Document.meta.__DOCUMENT__
         );
       }
@@ -136,7 +136,7 @@ export function WorkspaceProvider({
       <>
         {getMergeDocument().map((Document: Document) => {
           const { Module, meta, active } = Document;
-          return active && Module ? <Module meta={meta} key={meta.key}/> : null;
+          return active && Module ? <Module meta={meta} key={meta.key} /> : null;
         })}
       </>
     );
@@ -241,7 +241,7 @@ export function WorkspaceProvider({
 
     loopar.send({
       action: route.pathname,
-      params: route.search, 
+      params: route.search,
       success: r => {
         setDocument(r)
       }

@@ -7,16 +7,19 @@ import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";
+import { DesignerContext, useDesigner } from "@context/@/designer-context";
 
-export function ElementEditor({updateElement, element, getElement}) {
-  const [connectedElement, setConnectedElement] = useState(getElement(element));
+export function ElementEditor({element}) {
+  const {designerRef} = useDesigner();
+  const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
   if(!connectedElement) return null;
+  
 
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   
   useEffect(() => {
-    setConnectedElement(getElement(element));
+    setConnectedElement(designerRef.getElement(element));
   }, [element]);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function ElementEditor({updateElement, element, getElement}) {
   };
 
   const saveData = () => {
-    updateElement(data.key, data, false);
+    designerRef.updateElement(data.key, data, false);
   };
 
   if (!connectedElement) return null;
@@ -70,7 +73,7 @@ export function ElementEditor({updateElement, element, getElement}) {
           ...data,
           key: data.key + "_default",
           label: "Default",
-          name: "default_value",
+          //name: "default_value",
           hidden: 0
         }
       };
@@ -80,56 +83,60 @@ export function ElementEditor({updateElement, element, getElement}) {
   });
 
   return (
-    <div className="flex flex-col">
-      <h1 className="pt-2 text-xl">
-        {loopar.utils.Capitalize(elementName)} Editor
-      </h1>
-      <Tabs
-        data={{ name: "element_editor_tabs" }}
-        key={data.key + "_tabs"}
-      >
-        {metaFieldsData.map(({ group, elements }) => (
-          <Tab
-            label={loopar.utils.Capitalize(group)}
-            name={group + "_tab"}
-            key={group + "_tab"}
-          >
-            {Object.entries(elements).map(([field, props]) => {
-              if (dontHaveMetaElements.includes(field)) return null;
-              if (!props.element) {
-                return props;
-              }
+    <DesignerContext.Provider 
+      value={{}}
+    >
+      <div className="flex flex-col">
+        <h1 className="pt-2 text-xl">
+          {loopar.utils.Capitalize(elementName)} Editor
+        </h1>
+        <Tabs
+          data={{ name: "element_editor_tabs" }}
+          key={data.key + "_tabs"}
+        >
+          {metaFieldsData.map(({ group, elements }) => (
+            <Tab
+              label={loopar.utils.Capitalize(group)}
+              name={group + "_tab"}
+              key={group + "_tab"}
+            >
+              {Object.entries(elements).map(([field, props]) => {
+                if (dontHaveMetaElements.includes(field)) return null;
+                if (!props.element) {
+                  return props;
+                }
 
-              if(!data[field]) {
-                data[field] = props.data?.value;
-              }
+                if(!data[field]) {
+                  data[field] = props.data?.value;
+                }
 
-              const value = data[field];
+                const value = data[field];
 
-              return (
-                <MetaComponent
-                  component={props.element}
-                  render={Component => (
-                    <Component
-                      dontHaveForm={true}
-                      data={{
-                        ...props.data,
-                        name: data.key + field,
-                        value: value,
-                        label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
-                      }}
-                      onChange={(e) => {
-                        data[field] = e.target ? e.target.value : e;
-                        saveData();
-                      }}
-                    />
-                  )}
-                />
-              )
-            })}
-          </Tab>
-        ))}
-      </Tabs>
-    </div>
+                return (
+                  <MetaComponent
+                    component={props.element}
+                    render={Component => (
+                      <Component
+                        dontHaveForm={true}
+                        data={{
+                          ...props.data,
+                          name: data.key + field,
+                          value: value,
+                          label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
+                        }}
+                        onChange={(e) => {
+                          data[field] = e.target ? e.target.value : e;
+                          saveData();
+                        }}
+                      />
+                    )}
+                  />
+                )
+              })}
+            </Tab>
+          ))}
+        </Tabs>
+      </div>
+    </DesignerContext.Provider>
   );
 };

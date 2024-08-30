@@ -101,7 +101,7 @@ export default class TopBarClass extends Div {
                                  </a>
                               </div>
                               <div className="dropdown-sheet-item">
-                                 <a className="tile-wrapper" href="/core/document/list">
+                                 <a className="tile-wrapper" href="/core/entity/list">
                                     <span className="tile tile-lg bg-teal">
                                        <i className="oi oi-document" />
                                     </span>

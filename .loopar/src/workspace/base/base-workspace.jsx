@@ -1,19 +1,45 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import BaseDialog, {Prompt} from "$dialog";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
 import { useWorkspace, WorkspaceProviderContext } from "@workspace/workspace-provider";
 import loopar from "$loopar";
 import Emitter from '@services/emitter/emitter';
+import { Loader2Icon } from "lucide-react";
 
 const Notify = () => {
   const { theme } = useWorkspace();
   return <Toaster richColors theme={theme} />;
 }
 
+const Loading = () => {
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleLoading = (freeze) => {
+      setLoading(freeze);
+    };
+
+    Emitter.on('freeze', handleLoading);
+    return () => {
+      Emitter.off('freeze', handleLoading);
+    };
+  }, []);
+
+  return loading ? (
+    <div 
+      style={{ zIndex: 1000 }}
+      className="fixed backdrop-blur-sm top-0 left-0 w-full h-full transition-all ease-in-out duration-600"
+    >
+      <div className="flex justify-center items-center w-full h-full">
+        <Loader2Icon className="text-slate-500 w-10 h-10 animate-spin" />
+      </div>
+    </div>
+  ) : null;
+};
+
 export function DialogContextProvider() {
   const [dialogs, setDialogs] = useState({});
-  const [notifications, setNotifications] = useState([]);
 
   const setDialog = (dialog) => {
     const currentDialogs = { ...dialogs || {} }
@@ -22,22 +48,11 @@ export function DialogContextProvider() {
   }
 
   const setNotify = ({ title, message, type = "info", timeout = 5000 }) => {
-    const newNotifications = [...notifications];
-    if (newNotifications[message]) return;
-
-    newNotifications[message] = true;
-
-    setTimeout(() => {
-      delete newNotifications[message];
-    }, timeout);
-
     (toast[type] || toast)(title || loopar.utils.Capitalize(type), {
       description: message,
       duration: timeout,
       theme: "light"
     });
-
-    setNotifications(newNotifications);
   }
 
   const Dialog = (_dialog) => {
@@ -69,16 +84,12 @@ export function DialogContextProvider() {
 
     Emitter.on('notify', handleNotify);
     Emitter.on('dialog', handleDialog);
-    Emitter.on('handle-open-close-dialog', (id, open) => {
-      setDialogOpen(id, open);
-    });
+    Emitter.on('handle-open-close-dialog', setDialogOpen);
 
     return () => {
       Emitter.off('notify', handleNotify);
       Emitter.off('dialog', handleDialog);
-      Emitter.off('handle-open-close-dialog', (id, open) => {
-        setDialogOpen(id, open);
-      });
+      Emitter.off('handle-open-close-dialog', setDialogOpen);
     };
   }, []);
 
@@ -91,9 +102,7 @@ export function DialogContextProvider() {
           <BaseDialog {...dialog} key={dialog.id} open={dialog.open} />
         );
       })}
-      {Object.values(notifications || {}).map((notify) => {
-        return Notify(notify);
-      })}
+      <Notify />
     </>
   );
 }
@@ -104,6 +113,7 @@ export default function BaseWorkspace(props) {
   return (
     <>
       <DialogContextProvider/>
+      <Loading/>
       <WorkspaceProviderContext.Provider
         value={
           {

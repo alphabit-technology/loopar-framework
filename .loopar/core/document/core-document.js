@@ -6,7 +6,7 @@ import { marked } from "marked";
 
 export default class CoreDocument {
   #fields = {};
-  documentType = "Document";
+  documentType = "Entity";
   fieldDocStructure = 'doc_structure';
   protectedPassword = "********";
 
@@ -34,36 +34,36 @@ export default class CoreDocument {
       return;
     }
 
-    if (this.__DOCTYPE__.name === "App") {
+    if (this.__ENTITY__.name === "App") {
       /**
-       * If is an Document type App, the app name is the same as the document name
+       * If is an Entity type App, the app name is the same as the document name
        */
       this.__APP__ = this.name;
-    } else if (this.__DOCTYPE__.name === "Document") {
+    } else if (this.__ENTITY__.name === "Entity") {
       /**
-       * If is a Document type Document, the app name is the same as the module name
+       * If is a Entity type Entity, the app name is the same as the module name
        */
-      if (this.name === "Document") {
+      if (this.name === "Entity") {
         this.__APP__ = "loopar";
       } else {
         this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.module);
       }
-    } else if (this.__DOCTYPE__.name === "Module") {
+    } else if (this.__ENTITY__.name === "Module") {
       this.__APP__ = this.app_name;
     } else {
-      this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__DOCTYPE__.module);
+      this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__ENTITY__.module);
     }
   }
 
   async __init__() {
-    await this.#makeFields(JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]));
-    //this.__DOCTYPE__.STRUCTURE = JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
+    await this.#makeFields(JSON.parse(this.__ENTITY__[this.fieldDocStructure]));
+    //this.__ENTITY__.STRUCTURE = JSON.parse(this.__ENTITY__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
 
     if (this.__DOCUMENT__ && this.__DOCUMENT__[this.fieldDocStructure]) {
       this.__DOCUMENT__[this.fieldDocStructure] = JSON.stringify(
         JSON.parse(
           this.__DOCUMENT__[this.fieldDocStructure]).filter(field => (field.data || {}).name !== ID
-        )
+          )
       );
     }
 
@@ -72,7 +72,7 @@ export default class CoreDocument {
   }
 
   async getConnectedDocuments() {
-    const documents = await loopar.db.getAll("Document", ["name", "type", "module", "doc_structure", "is_single"]);
+    const documents = await loopar.db.getAll("Entity", ["name", "type", "module", "doc_structure", "is_single"]);
 
     const connexions = documents.reduce((acc, cur) => {
       const fields = loopar.utils.fieldList(cur.doc_structure);
@@ -81,7 +81,7 @@ export default class CoreDocument {
         ...acc,
         ...fields.filter(field => (field.element === SELECT || field.element === FORM_TABLE) && field.data.options).map(field => {
           const options = Array.isArray(field.data.options) ? field.data.options : (field.data.options || "").split("\n")[0];
-          if (options === this.__DOCTYPE__.name) {
+          if (options === this.__ENTITY__.name) {
             return {
               module: cur.module,
               type: cur.type,
@@ -156,9 +156,9 @@ export default class CoreDocument {
   }
 
   getDocypeStructure(structure) {
-    return JSON.parse(this.__DOCTYPE__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
+    return JSON.parse(this.__ENTITY__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
 
-    //return this.__DOCTYPE__.STRUCTURE;
+    //return this.__ENTITY__.STRUCTURE;
   }
 
   async #makeFields(fields = this.getDocypeStructure()) {
@@ -176,13 +176,13 @@ export default class CoreDocument {
   }
 
   setUniqueName() {
-    if (this.nameIsNull() && (this.__IS_NEW__ || this.__DOCTYPE__.is_single) && this.getName.hidden === 1) {
+    if (this.nameIsNull() && (this.__IS_NEW__ || this.__ENTITY__.is_single) && this.getName.hidden === 1) {
       this.name = loopar.utils.randomString(12);
     }
   }
 
   async __ID__() {
-    return this.__IS_NEW__ ? await loopar.db.getValue(this.__DOCTYPE__.name, "id", this.__DOCUMENT_NAME__) : this.id;
+    return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
   }
 
   async save() {
@@ -216,17 +216,19 @@ export default class CoreDocument {
       this.setUniqueName();
       if (validate) await this.validate();
 
-      if (this.__IS_NEW__ || this.__DOCTYPE__.is_single) {
-        await loopar.db.insertRow(this.__DOCTYPE__.name, this.stringifyValues, this.__DOCTYPE__.is_single);
+      console.log(["onSave", this.__ENTITY__]);
+      if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
+        await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
         this.__DOCUMENT_NAME__ = this.name;
       } else {
         const data = this.valuesToSetDataBase;
+        
         if (Object.keys(data).length) {
           await loopar.db.updateRow(
-            this.__DOCTYPE__.name,
+            this.__ENTITY__.name,
             data,
             this.__DOCUMENT_NAME__,
-            this.__DOCTYPE__.is_single
+            this.__ENTITY__.is_single
           );
         }
       }
@@ -236,8 +238,8 @@ export default class CoreDocument {
         const childValuesReq = this.childValuesReq;
 
         if (Object.keys(childValuesReq).length) {
-          await deleteChildRecords(childValuesReq, this.__DOCTYPE__.id, ID);
-          await updateChildRecords(childValuesReq, this.__DOCTYPE__.id, ID);
+          await deleteChildRecords(childValuesReq, this.__ENTITY__.id, ID);
+          await updateChildRecords(childValuesReq, this.__ENTITY__.id, ID);
         }
       }
 
@@ -262,8 +264,8 @@ export default class CoreDocument {
   }
 
   async updateHistory(action) {
-    if (this.__DOCTYPE__.name !== "Document History") {
-      if (!loopar.installing || (loopar.installing && this.__DOCTYPE__.name !== "Document")) {
+    if (this.__ENTITY__.name !== "Document History") {
+      if (!loopar.installing || (loopar.installing && this.__ENTITY__.name !== "Entity")) {
 
         const id = await this.__ID__();
         const hist = await loopar.newDocument("Document History");
@@ -271,7 +273,7 @@ export default class CoreDocument {
         hist.name = loopar.utils.randomString(15);
         hist.document_id = id;
         hist.document_name = this.__DOCUMENT_NAME__;
-        hist.document = this.__DOCTYPE__.name;
+        hist.document = this.__ENTITY__.name;
         hist.action = action || (this.__IS_NEW__ ? "Created" : "Updated");
         hist.date = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
         hist.user = loopar.currentUser?.name;
@@ -284,10 +286,10 @@ export default class CoreDocument {
     const deleteDocument = arguments[0] || false;
     if (loopar.installing) return;
 
-    if (this.__DOCTYPE__.include_in_installer) {
+    if (this.__ENTITY__.include_in_installer) {
       let data = {};
 
-      if (this.__DOCTYPE__.name === "Document") {
+      if (this.__ENTITY__.name === "Entity") {
         data = {
           id: this.id,
           name: this.name,
@@ -298,9 +300,9 @@ export default class CoreDocument {
       }
 
       /*await loopar.updateInstaller({
-        doctype: this.__DOCTYPE__,
-        document: this.__DOCTYPE__.name,
-        documentName: this.name,
+        entity: this.__ENTITY__,
+        document: this.__ENTITY__.name,
+        name: this.name,
         appName: this.__APP__,
         record: data,
         deleteRecord: deleteDocument
@@ -344,7 +346,7 @@ export default class CoreDocument {
               const link = await loopar.db.count(field.options, value);
 
               if (link === 0) {
-                errors.push(`The value ${value} for ${field.name} does not exist in ${field.options} Document`);
+                errors.push(`The value ${value} for ${field.name} does not exist in ${field.options} Entity`);
               }
             }
           }
@@ -357,17 +359,17 @@ export default class CoreDocument {
 
   async delete() {
     const { updateInstaller = true, sofDelete, force, updateHistory } = arguments[0] || {};
-    const connections =  await this.getConnectedDocuments();
+    const connections = await this.getConnectedDocuments();
     //console.log({connections});
     /*const connections = await loopar.db.getAll("Connected Document", ["name", "from_document", "from_name"], {
        "=": {
-          to_document: this.__DOCTYPE__.name,
+          to_document: this.__ENTITY__.name,
           to_id: await this.__ID__()
           
     });*/
 
-    const connectorMessage = connections.map(e => `<span class='fa fa-circle text-red pr-2'></span><a href="/desk/${e.module}/${e.document}/update?documentName=${e.record}" target="_blank"><strong>${e.document}</strong>.${e.record}</a>`).join("<br/>");
-    const message = `Is not possible to delete ${this.__DOCTYPE__.name}.${this.name} because it is connected to:<br/> ${connectorMessage}`;
+    const connectorMessage = connections.map(e => `<span class='fa fa-circle text-red pr-2'></span><a href="/desk/${e.module}/${e.document}/update?name=${e.record}" target="_blank"><strong>${e.document}</strong>.${e.record}</a>`).join("<br/>");
+    const message = `Is not possible to delete ${this.__ENTITY__.name}.${this.name} because it is connected to:<br/> ${connectorMessage}`;
 
     if (connections.length > 0 && !force) {
       loopar.throw({
@@ -378,13 +380,13 @@ export default class CoreDocument {
     }
 
     await loopar.db.beginTransaction();
-    await loopar.db.deleteRow(this.__DOCTYPE__.name, this.__DOCUMENT_NAME__, sofDelete);
+    await loopar.db.deleteRow(this.__ENTITY__.name, this.__DOCUMENT_NAME__, sofDelete);
     updateHistory && await this.updateHistory("Deleted");
 
     /*const deleteConnectedDocuments = async () => {
        const connectedDocuments = await loopar.db.getAll("Connected Document", ["name"], {
           "=": {
-             from_document: this.__DOCTYPE__.name,
+             from_document: this.__ENTITY__.name,
              from_id: await this.__ID__()
           }
        });
@@ -406,12 +408,12 @@ export default class CoreDocument {
   }
 
   async __data__() {
-    const doctype = this.__DOCTYPE__;
+    const entity = this.__ENTITY__;
 
-    if(doctype.is_single) doctype.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(doctype.doc_structure)));
+    if (entity.is_single) entity.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(entity.doc_structure)));
 
     return {
-      __DOCTYPE__: this.__DOCTYPE__,
+      __ENTITY__: this.__ENTITY__,
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,
       __DOCUMENT__: await this.values(),
       //__DOCUMENT__: this.__DOCUMENT__,
@@ -477,7 +479,7 @@ export default class CoreDocument {
     return await loopar.getList(field, {
       filters: {
         "=": {
-          parent_document: this.__DOCTYPE__.id,
+          parent_document: this.__ENTITY__.id,
           parent_id: await this.__ID__()
         }
       }
@@ -487,7 +489,7 @@ export default class CoreDocument {
   async getChildRawValues(field) {
     return await loopar.db.getAll(field, ["*"], {
       "=": {
-        parent_document: this.__DOCTYPE__.id,
+        parent_document: this.__ENTITY__.id,
         parent_id: await this.__ID__()
       }
     })
@@ -496,7 +498,7 @@ export default class CoreDocument {
   get stringifyValues() {
     return Object.values(this.#fields)
       .filter(field => field.name !== ID && field.element !== FORM_TABLE)
-      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue}), {});
+      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 
   get valuesToSetDataBase() {
@@ -510,7 +512,7 @@ export default class CoreDocument {
       }
 
       return true;
-    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue}), {});
+    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 
   get childValuesReq() {

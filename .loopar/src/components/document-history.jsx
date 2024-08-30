@@ -19,7 +19,7 @@ export default class DocumentHistory extends Component {
 
   async getHistory() {
     const data = await loopar.method("Document History", "history", {
-      documentName: this.props.document,
+      name: this.props.document,
       documentId: this.props.document_id,
       page: this.currentPage || 1,
     });

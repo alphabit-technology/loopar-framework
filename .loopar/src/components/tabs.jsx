@@ -1,4 +1,4 @@
-import Component from "$component";
+import ComponentDefaults from "./base/component-defaults";
 import elementManage from "$tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
@@ -28,13 +28,13 @@ const TabContent = ({element, parent}) => {
 }
 
 function TabFn({id, elementsDict, asChild = false, setElements, parent}){
-  const designer = useDesigner();
+  const {designerMode} = useDesigner();
   const getIdentifier = () => {
-    return `${id}${designer.designerMode ? '-designer' : ''}`;
+    return `${id}${designerMode ? '-designer' : ''}`;
   }
 
   const getKey = (data = {}) => {
-    return data.key + (designer.designerMode ? '-designer' : '');
+    return data.key + (designerMode ? '-designer' : '');
   }
   
   const [currentTab, setCurrentTab] = useCookies(getIdentifier(), getKey(elementsDict[0]?.data));
@@ -71,12 +71,12 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
   }
 
   useEffect(() => {
-    if(!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)){
+    if((!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)) && !designerMode){
       selectFirstTab();
       return;
     }
 
-    elementsDict.length === 0 && !asChild && designer.designerMode && addTab();
+    elementsDict.length === 0 && !asChild && designerMode && addTab();
   }, [currentTab, elementsDict]);
 
   return (
@@ -100,7 +100,7 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
             >{data.label}</TabsTrigger>
           ))
         }
-        {(designer.designerMode && !asChild)? (
+        {(designerMode && !asChild)? (
           <TabsTrigger
             onClick={(e) => {
               e.preventDefault();
@@ -127,15 +127,11 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
   )
 }
 
-export default class Tabs extends Component {
-  get requires(){
-    return {
-      modules: ["tab"],
-    }
-  }
-
-  get elementsDict () {
-    const elements = this.props.children || this.props.elements || [];
+export default function MetaTabs(props){
+  const {data, setElements} = ComponentDefaults(props);
+  
+  const elementsDict=()=>{
+    const elements = props.children || props.elements || [];
 
     return elements.map((element) => {
       if (element.$$typeof === Symbol.for("react.element") || element.$$typeof === Symbol.for("react.fragment")) {
@@ -162,22 +158,20 @@ export default class Tabs extends Component {
     });
   }
 
-  render() {
-    const props = this.props;
-
     return (
-      <div className="p-2 my-3 border border-separate" id={props.data?.id}>
-        {props.data.label && <h4 className="p-2">{props.data.label}</h4>}
+      <div className="p-2 my-3 border border-separate" id={data.id}>
+        {data.label && <h4 className="p-2">{data.label}</h4>}
         <TabFn
-          id={super.identifier}
-          elementsDict={this.elementsDict}
+          id={data.key}
+          elementsDict={elementsDict()}
           asChild={props.asChild}
           setElements={(elements, callback) => {
-            this.setElements(elements, callback);
+            setElements(elements, callback);
           }}
           parent={this}
         />
       </div>
     )
-  }
 }
+
+MetaTabs.requires = ["tab"]

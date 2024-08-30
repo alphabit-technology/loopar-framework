@@ -1,6 +1,7 @@
 import BaseDocument from "$context/base/base-document";
 import MetaComponent from "@meta-component";
 import DeskGUI from "@context/base/desk-gui";
+import { FormWrapper } from "$context/form";
 
 export default class View extends BaseDocument {
   hasSidebar = true;
@@ -13,30 +14,18 @@ export default class View extends BaseDocument {
 
   render(content) {
     const meta = this.props.meta;
-    const {STRUCTURE} = meta.__DOCTYPE__;
 
     return super.render(
-      <DeskGUI
-        docRef={this}
-      >
-        <>
-        <MetaComponent elements={JSON.parse(meta.__DOCTYPE__.doc_structure)} parent={this}/>
-        {content}
-        </>
-      </DeskGUI>
-      /*DeskGUI({
-         docRef: this
-      }, [
-         ...this.meta.__DOCTYPE__.STRUCTURE.map(el => {
-            if (el.data.hidden) return null;
-            return Element(el.element, {
-               meta: {
-                  ...el,
-               },
-            })
-         }),
-         content
-      ])*/
+      <FormWrapper>
+        <DeskGUI
+          docRef={this}
+        >
+          <>
+          <MetaComponent elements={JSON.parse(meta.__ENTITY__.doc_structure)} parent={this}/>
+          {content}
+          </>
+        </DeskGUI>
+      </FormWrapper>
     );
   }
 }

@@ -4,7 +4,7 @@ import { ListGrid } from "@list-grid";
 import {useCookies} from "@services/cookie";
 
 function ListContextFn({isModal, content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid, ...props}){
-  const [viewType, setViewType] = useCookies(meta.__DOCTYPE__.name + "_viewType") || meta.__DOCTYPE__.default_list_view || "List";
+  const [viewType, setViewType] = useCookies(meta.__ENTITY__.name + "_viewType") || meta.__ENTITY__.default_list_view || "List";
 
   const getViewType = () => {
     return onlyGrid === true ? "Grid" : viewType;

@@ -186,9 +186,9 @@ const Select = (props) => {
   const model = useRef(null);
   const lastSearch = useRef(null);
 
-  const { renderInput, value, validate } = BaseInput(props);
+  const { renderInput, value, validate, data } = BaseInput(props);
 
-  const data = props.data || { label: "Select", name: "select", value: "" };
+  //const data = props.data || { label: "Select", name: "select", value: "" };
 
   /*const handleInputChange = useCallback((event) => {
     if (event && typeof event === "object") {
@@ -206,8 +206,8 @@ const Select = (props) => {
   }, [props]);*/
 
   useEffect(() => {
-    const value = data.value;
-    const initialRows = loopar.utils.isJSON(value) ? [JSON.parse(value)] : [{ option: value, title: value }];
+    const val = value();
+    const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ option: val, title: val }];
     setRows(getPrepareOptions(initialRows));
   }, []);
 
@@ -274,7 +274,7 @@ const Select = (props) => {
   const getServerData = (q) => {
     return new Promise((resolve) => {
       loopar.send({
-        action: `/api/${getModel()}/search`,
+        action: `/desk/${getModel()}/search`,
         params: { q },
         success: (r) => {
           titleFields.current = r.titleFields;
@@ -340,20 +340,20 @@ const Select = (props) => {
   };
 
    return renderInput((field) => (
-    <div>
+    <>
       {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
       <SelectFn
         field={field}
         options={rows}
         search={(delay) => search(delay)}
         data={data}
-        onSelect={(e) => value(e)}
+        onSelect={field.onChange}
         selected={getCurrentSelection()}
       />
       {data.description && (
         <FormDescription>{data.description}</FormDescription>
       )}
-    </div>
+    </>
   ));
 
   //return renderInput(customRenderInput);
@@ -366,7 +366,7 @@ Select.metaFields = () =>  {
     element: TEXTAREA,
     data: {
       description:
-        "For simple select insert the options separated by enter. For Document Select insert the Document Name",
+        "For simple select insert the options separated by enter. For Entity Select insert the Entity Name",
     },
   };
 

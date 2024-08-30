@@ -37,9 +37,9 @@ export function UserInfo() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="grid grid-cols-1 p-2">
-          <MakeButton Icon={UserRoundCogIcon} text="Profile" link="/desk/auth/User/profile" />
-          <MakeButton Icon={LogOutIcon} text="Log Out" link="/auth/user/logout" />
-          <MakeButton Icon={Globe2Icon} text="Web Site" link="/home1" _target="_blank" />
+          <MakeButton Icon={UserRoundCogIcon} text="Profile" link="/desk/User/profile" />
+          <MakeButton Icon={LogOutIcon} text="Log Out" link="/user/logout" />
+          <MakeButton Icon={Globe2Icon} text="Web Site" link="/Home" target="_blank" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

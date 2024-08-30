@@ -7,10 +7,10 @@ export default class SingleController extends BaseController {
    constructor(props) {
       super(props);
 
-      this.action === 'list' && this.redirect('update');
+      this.action !== 'view' && this.redirect('view');
    }
 
-  async sendAction(action) {
+  /*async sendAction(action) {
     const selfAction = `action${loopar.utils.Capitalize(action)}`;
     if (typeof this[selfAction] == 'function') {
       return await this[selfAction]();
@@ -22,5 +22,5 @@ export default class SingleController extends BaseController {
       document.parentPage = this.document;
       return this.render(document);
     }
-  }
+  }*/
 }

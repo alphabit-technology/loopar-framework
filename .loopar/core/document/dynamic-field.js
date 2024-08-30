@@ -23,7 +23,7 @@ export default class DynamicField {
   }
 
   get isParsed() {
-    return this.element === 'text_editor' || ['__DOCTYPE__', 'doc_structure', 'form_structure'].includes(this.name);
+    return this.element === 'text_editor' || ['__ENTITY__', 'doc_structure', 'form_structure'].includes(this.name);
   }
 
   get value() {
@@ -54,6 +54,10 @@ export default class DynamicField {
     }*/
 
 
+    /*if (this.element === MARKDOWN) {
+      return marked(value);
+    }*/
+
     return value == null || typeof value == "undefined" ? "" : value;
   }
 
@@ -75,10 +79,6 @@ export default class DynamicField {
     if ([CHECKBOX, SWITCH].includes(this.element)) {
       return loopar.utils.trueValue(value) ? 1 : 0;
     }
-
-    /*if(this.element === MARKDOWN){
-       return marked(value);
-    }*/
 
     /*if(this.element === FILE){
        console.log('FILE:', value, typeof value);

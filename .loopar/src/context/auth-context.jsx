@@ -8,7 +8,7 @@ export default class AuthContext extends BaseForm {
 
     return super.render([
       <FormWrapper meta={meta} docRef={this}>
-        <MetaComponent elements={JSON.parse(meta.__DOCTYPE__.doc_structure)} parent={this} />
+        <MetaComponent elements={JSON.parse(meta.__ENTITY__.doc_structure)} parent={this} />
         {content}
       </FormWrapper>
     ]);

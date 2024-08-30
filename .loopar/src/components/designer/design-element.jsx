@@ -2,7 +2,6 @@ import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
 import { BoxIcon } from "lucide-react";
 import { useRef } from "react";
-
 import { useDesigner } from "@context/@/designer-context";
 
 export function DesignElement(props){
@@ -10,7 +9,6 @@ export function DesignElement(props){
   const Icon = props.icon || BoxIcon;
   const draggableRef = useRef();
   const {setCurrentDragging} = useDesigner();
-
   const toElement =  element.element;
 
   const elementToCreate = () => {
@@ -20,10 +18,8 @@ export function DesignElement(props){
       element: toElement,
       data: {
         ...elementName,
-        key: elementName.id
-      },
-      designer: true,
-      hasTitle: true,
+        key: elementName.key
+      }
     }
   }
 
