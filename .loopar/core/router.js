@@ -2,15 +2,15 @@
 import { loopar } from './loopar.js';
 import { fileManage } from "./file-manage.js";
 import multer from "multer";
+import WorkspaceController from './controller/workspace-controller.js';
 import BaseController from './controller/base-controller.js';
-import { titleize } from "inflection";
+import { getHttpError } from './global/http-errors.js';
+import { url } from 'inspector';
 
 const coreInstallerController = 'installer-controller';
 
 export default class Router {
-  controller = 'base-controller';
   debugger = false;
-  lastController = null;
 
   constructor(options) {
     Object.assign(this, options);
@@ -18,278 +18,322 @@ export default class Router {
     this.uploader = multer({ storage: multer.memoryStorage() }).any();
   }
 
-  #isAssetUrl(url) {
-    url = Array.isArray(url) ? url[0] : url;
-    if (url.includes("@") || url.includes("jsx")) return true;
+  initialize() {
 
-    url = url.split("?");
-    const baseUrl = url[0].split("/");
-    const source = baseUrl[baseUrl.length - 1];
-
-    if (url[1]) return false;
-    if (source.includes(".html")) return true;
-    return source.includes(".") && source.split(".")[1].length > 0;
   }
 
-  use(middleware) {
-    this.server._router.stack = this.server._router.stack.filter(layer => layer.handle !== this.#custom404Middleware);
-    this.server.use(middleware);
-    this.server.use(this.#custom404Middleware);
-  }
-
-  #custom404Middleware = (req, res, next) => {
-    res.status(404).send(`
-        <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
-          <h1 style="font-size: 100px; margin: 0;">404</h1>
-          <h3 style="font-size: 30px; margin: 0;">Source not found</h3>
-          <span style="font-size: 20px; margin: 0;">${req.url}</span>
-          <hr style="width: 50%; margin: 20px 0;"/>
-          <span style="font-size: 20px; margin: 0;">Loopar</span>
-        </div>
+  errTemplate = (err) => {
+    return (`
+      <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
+        <h1 style="font-size: 100px; margin: 0;">${err.code}</h1>
+        <h3 style="font-size: 30px; margin: 0;">${err.title}</h3>
+        <span style="font-size: 20px; margin: 0;">${err.description}</span>
+        <hr style="width: 50%; margin: 20px 0;"/>
+        <span style="font-size: 20px; margin: 0;">Loopar</span>
+      </div>
     `);
-  };
+  }
+
+  throw(err, res) {
+    const error = getHttpError(err);
+    const errString = this.errTemplate(error);
+
+    if (res && !res.headersSent) {
+      return res.status(error.code).send(errString);
+    }
+
+    return errString;
+  }
+
+  render(res, req, response){
+    if (!res.headersSent) {
+      if(response.hasOwnProperty('redirect')) {
+        return this.redirect(res, response.redirect);
+      }else{
+        res.status(response.status || 200);
+        res.setHeader('Content-Type', response.contentType || 'text/html');
+        res.send(response.body);
+      }
+    }
+  }
+
+  renderAjax(res, response) {
+    const status = parseInt(response.status) || parseInt(response.code) || 500;
+    if (!res.headersSent) {
+      res.status(status);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'POST');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.send(response);
+    }else{
+      console.error(["Error on request process, petition cant not send to client", response]);
+    }
+  }
+
+  async renderError ({ req = this.currentReq, res = this.currentRes, error }) {
+    if(!res || res.headersSent) return;
+
+    try {
+      if(req.method === 'POST') {
+        return this.renderAjax(res, error);
+      }else{
+        const errControlled = new BaseController({ req, res });
+        errControlled.dictUrl = req._parsedUrl;
+        const e = await errControlled.getError(error.code, error);
+        req.__WORKSPACE__.__DOCUMENT__ = e;
+
+        this.render(res, req, await this.App.render(req.__WORKSPACE__));
+      }
+    } catch (err) {
+      return this.throw(err, res);
+    }
+  }
 
   route() {
-    const loadHttp = async (req, res) => {
-      loopar.req = req;
-      loopar.res = res;
+    this.App = null;
+    this.currentRes = null;
+    this.currentReq = null;
+    this.baseUrl = null;
+
+    const loadHttp = async (req, res, next) => {
+      this.currentReq = req;
+      this.currentRes = res;
       loopar.cookie.res = res;
       loopar.cookie.cookies = req.cookies;
-
-      if (req.files && req.files.length > 0) {
-        req.body.reqUploadFiles = req.files;
-      }
-
-      this.#makeWorkspace({ req, res });
-    }
-
-    this.server.use((req, res, next) => {
       loopar.session.req = req;
-      global.url = req._parsedUrl.pathname;
 
-      if (this.#isAssetUrl(req._parsedUrl.pathname)) {
-        next();
-      } else {
-        loopar.transactionError = false;
-        if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {
-          this.uploader(req, res, err => {
-            if (err instanceof multer.MulterError) {
-              console.log('A Multer error is detected', err);
-              return res.status(500).json({
-                error: 500, code: 500,
-                message: "The attachment files directly on the form can not be processed, please use the attachment button to upload the files<br><br><strong>" + err.message + "</strong>"
-              });
-            } else if (err) {
-              //console.log('Error', err);
-              return res.status(500).json({ error: err.message });
-            }
-            loadHttp(req, res);
-          });
-        } else {
-          loadHttp(req, res);
-        }
-      }
-    });
+      /*if (req.files && req.files.length > 0) {
+        req.body.reqUploadFiles = req.files;
+      }*/
 
-    this.server.use(this.#custom404Middleware);
-  }
-
-  async #makeWorkspace() {
-    const args = arguments[0];
-    const { req, res } = args;
-    const pathname = req._parsedUrl.pathname//.replace('web/', '');
-
-    const context = pathname.split("/")[1];
-    const reqWorkspace = ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
-    const routeStructure = { host: null, document: null, action: null };
-    const controllerParams = { req, res, dictUrl: req._parsedUrl, pathname, url: pathname, controller: "base-controller" }
-
-    if (reqWorkspace === "loopar") {
-      controllerParams.workspace = 'auth';
-      controllerParams.client = 'installer';
-    } else if (reqWorkspace === "api") {
-      controllerParams.url = "/desk" + pathname.split("api")[1];
-      controllerParams.workspace = 'desk';
-      controllerParams.apiRequest = true;
-    } else if (reqWorkspace === 'auth') {
-      controllerParams.url = "/auth" + pathname.split("auth")[1];
-      controllerParams.workspace = 'auth';
-    } else if (reqWorkspace === 'desk') {
-      controllerParams.url = pathname.split("desk")[1];
-      controllerParams.workspace = 'desk';
-    } else {
-      controllerParams.url = "/web" + pathname;
-      controllerParams.workspace = 'web';
-      controllerParams.action ??= 'view';
-      controllerParams.context = "web"
+      next();
     }
 
-    if (reqWorkspace === "web") {
-      const [host, document, action] = controllerParams.url.split("/").filter(Boolean);
-      routeStructure.document = document;
-      routeStructure.action = action || "view";
-      controllerParams.action = routeStructure.action;
-    } else {
-      (controllerParams.url || "").split("/").forEach((seg, index) => {
+    const authMiddleware = async (req, res, next) => {
+      const params = req.__params__;
+      const loginActions = ['login', 'register', 'recovery_user', 'recovery_password'];
+
+      await this.temporaryLogin();
+
+      const isLoginAction = () => {
+        return (loginActions || []).includes(params.action);
+      }
+
+      if (req.session.user) { /** User is logged */
+        if (req._parsedUrl.pathname === "/auth/logout") return next();
+
+        if(params.method === "GET" && req.__WORKSPACE_NAME__ === "auth") return this.redirect(res, '/desk');
+        
+        //const user = {name: "Administrator", "email": "test"}//loopar.get_user(this.req.session.user.name);
+        const user = loopar.getUser(req.session.user.name);
+
+        if (user && user.name !== 'Administrator' && user.disabled) {
+          return req.method === 'POST' ? loopar.throw({code: 403, message: 'User is disabled'}) : this.redirect(res, '/auth/logout');
+        }
+
+        if (isLoginAction()) {
+          return req.method === 'POST' ? loopar.throw({code: 403, message: 'You are already logged in'}) : this.redirect(res, '/desk');
+          //return resolve(false);
+        //} else if (this.isEnableAction) {
+        //  return resolve(true);
+        }
+
+        next();
+      } else if (isLoginAction()){//} && (this.isFreeAction || this.isEnableAction)) {
+        next();
+      } else if (/*this.free_access && */req.__WORKSPACE_NAME__ !== 'desk') {
+        next();
+      }/* else if(this.isFreeAction) {
+          resolve(true);
+        }*/else {
+          return req.method === 'POST' ? loopar.throw({code: 403, message: 'You need to be logged in to access this page'}) : this.redirect(res, '/auth/login');
+      }
+    }
+
+    const systemMiddleware = async (req, res, next) => {
+      const currentUrl = req._parsedUrl.pathname;
+      if (!loopar.DBServerInitialized && currentUrl !== "/loopar/installer/connect") {
+        /**System detected that Database Server is no Initialized or not Installed */
+        return this.redirect(res, '/loopar/installer/connect');
+      } else if (
+        (!loopar.DBInitialized || !loopar.__installed__) && currentUrl !== "/loopar/installer/install"
+      ) {
+        /**System not detected a Database */
+        return this.redirect(res, '/loopar/installer/install');
+      }
+
+      next();
+    }
+
+    const workspaceParamsMiddleware = async (req, res, next) => {
+      const getWorkspaceName = (url) => {
+        const context = url.split("/")[1];
+        return ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
+      }
+
+      req.__WORKSPACE_NAME__ = getWorkspaceName(req._parsedUrl.pathname);
+
+      next();
+    }
+
+    const workSpaceMiddleware = async (req, res, next) => {
+      if (req.method === 'POST') return next();
+
+      const getWorkspace = async (req, res) => {
+        const Controller = new WorkspaceController({ req, res });
+        Controller.dictUrl = req._parsedUrl;
+        Controller.workspace = req.__WORKSPACE_NAME__;
+        this.App = Controller;
+        return await Controller.getWorkspace();
+      }
+
+      req.__WORKSPACE__ = await getWorkspace(req, res, next);
+      next();
+    }
+
+    const buildParamsMiddleware = async (req, res, next) => {
+      req.__WORKSPACE__ ??= {};
+      const url = req._parsedUrl;
+      const pathname = ["web","auth"].includes(req.__WORKSPACE_NAME__) ? url.pathname : url.pathname.split("/").slice(1).join("/");
+
+      const routeStructure = { host:null, document: null, action: null };
+      const controllerParams = { req, res, dictUrl: url, pathname }
+
+      pathname.split("/").forEach((seg, index) => {
         const RTK = Object.keys(routeStructure)[index];
         routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
+
+      if (req.__WORKSPACE_NAME__ === "web") {
+        routeStructure.action ??= "view";
+        routeStructure.document ??= "Home";
+        controllerParams.action = routeStructure.action;
+      }
+
+      controllerParams.method = req.method;
+      req.__params__ = { ...routeStructure, ...controllerParams };
+
+      next();
     }
 
-    if (reqWorkspace === "web" && routeStructure.document === "Undefined") {
-      routeStructure.document = "Home";
+    const controllerMiddleware = async (req, res, next) => {
+      await this.makeController(req, res);
+      const response = req.__WORKSPACE__.__DOCUMENT__;
+      
+      if(response.hasOwnProperty('redirect')) {
+        return this.redirect(res, response.redirect);
+      }
+
+      if (req.method === 'POST') {
+        return this.renderAjax(res, response);
+      } else {
+        next();
+      }
     }
 
-    /**Because user can not navigate in auth workspace if is logged in**/
-    if (controllerParams.workspace === "auth" && loopar.isLoggedIn() && controllerParams.action !== "logout") {
-      //return this.res.redirect('/desk');
+    const fynalyMiddleware = async (req, res) => {
+      this.render(res, req, await this.App.render(req.__WORKSPACE__));
     }
 
-    if (reqWorkspace === "web" && loopar.frameworkInstalled && loopar.databaseServerInitialized && loopar.databaseInitialized) {
+    const assetMiddleware = (req, res, next) => {
+      this.currentReq = null;
+      this.currentRes = null;
+      // List of common asset file extensions (images, multimedia, fonts, web files, documents, compressed files, data files)
+      const assetExtensions = [
+        'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', // Images
+        'mp4', 'webm', 'ogg', 'mp3', 'wav', 'flac', 'aac', // Multimedia
+        'woff', 'woff2', 'ttf', 'eot', 'otf', // Fonts
+        'js', 'mjs', 'jsx', 'css', 'html', 'htm', // Web files
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', // Documents
+        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', // Compressed files
+        'json', 'xml', 'txt' // Data files
+      ];
+
+      const isAsset = () => {
+        const url = req._parsedUrl.pathname;
+
+        // Exclude routes that are clearly APIs or non-asset endpoints
+        if (url.includes("/api/") || url.includes("/admin/")) return false;
+
+        // Extract the file extension from the URL
+        const extensionMatch = url.split('.').pop();
+
+        // If there's no extension or the extension is not in the asset list, it's not an asset
+        if (!extensionMatch || !assetExtensions.includes(extensionMatch.toLowerCase())) return false;
+
+        // If the extension matches the asset list, it is considered an asset
+        return true;
+      };
+
+      req.isAssetUrl = isAsset();
+      next();
+    };
+
+    const notFoundSourceMiddleware = (req, res, next) => {
+      if (!req.isAssetUrl) return next();
+
+      const errString = this.errTemplate({
+        code: 404,
+        title: "Source not found",
+        description: req.url
+      });
+      
+      res.status(404).send(errString);
+    }
+
+    this.server.use(assetMiddleware, notFoundSourceMiddleware);
+    this.server.use(loadHttp, systemMiddleware, workspaceParamsMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
+
+  }
+
+  async makeController(req, res) {
+    const params = req.__params__;
+
+    if (!params.action || !params.document === "Module") {
+      params.name = params.document;
+      params.document = 'Module'; //Because Module is the Entity
+      params.action ??= 'view'; //Because in ModuleController the default action is view
+    }
+
+    if (req.__WORKSPACE_NAME__ === "web") {
       const webApp = loopar.webApp || { menu_items: [] };
-      routeStructure.document ??= "Home";
-      const menu = webApp.menu_items.find(item => item.link === routeStructure.document);
+      params.document ??= "Home";
+      const menu = webApp.menu_items.find(item => item.link === params.document);
 
       if (!webApp.name || !menu) {
-        Object.assign(routeStructure, {
-          document: "Error",
-          action: "view",
-          code: 404,
-          title: !webApp.name ? "Web App not found" : "Page not found",
-          description: !webApp.name ? "You don\'t have Install the Web App, please install it first and set as default" : "The page you are looking for does not exist"
+        return loopar.throw({code: 404, message: !webApp.name ? "Web App not found" : "Page not found"});
+      } else {
+        params.document = menu.page;
+      }
+    }
+
+    const ref = loopar.getRef(params.document);
+
+    if (!ref) return loopar.throw({code: 404, message: `Document ${params.document} not found`}, res);
+
+    const makeController = async (query, body) => {
+      const C = await fileManage.importClass(loopar.makePath(ref.entityRoot, `${params.document}Controller.js`));
+
+      const Controller = new C({
+        ...params, ...query, data: body
+      });
+
+      const action = params.action && params.action.length > 0 ? params.action : Controller.defaultAction;
+      req.__WORKSPACE__.__DOCUMENT__ = await Controller.sendAction(action);
+    }
+
+    if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {
+      return new Promise(resolve => {
+        this.uploader(req, res, async err => {
+          if (err) loopar.throw(err, res);
+
+          resolve(await makeController(req.query, req.body));
         });
-
-        return this.#makeController({ ...routeStructure, ...controllerParams });
-      } else {
-        routeStructure.document = menu.page;
-      }
-    }
-
-    return await this.#makeController({ ...routeStructure, ...controllerParams });
-  }
-
-  async #makeController(args) {
-    const { res, req } = args;
-
-    /**
-     * When workspace is desk and module view is called from sidebar and action is not defined
-     * example: [/desk/core] or [/desk/auth], the document is the module name
-     * */
-    if (!args.action || !args.document === "Module") {
-      args.name = args.document;
-      args.document = 'Module'; //Because Module is the Entity
-      args.action ??= 'view'; //Because in ModuleController the default action is view
-    }
-
-    if (!loopar.databaseServerInitialized) {
-      /**System detected that Database Server is no Initialized or not Installer */
-      args.controller = coreInstallerController;
-
-      if (args.document !== 'Installer' || args.action !== 'connect') {
-        /**Forcer to redirect to: */
-        return res.redirect('/loopar/installer/connect');
-      } else {
-        args.document = "Installer";
-        args.action = "connect";
-      }
-    } else if (!loopar.databaseInitialized || !loopar.frameworkInstalled) {
-      /**System not detected a Database */
-      args.controller = coreInstallerController;
-
-      if (args.document !== 'Installer' || args.action !== 'install') {
-        /**Force to redirect to: */
-        return res.redirect('/loopar/installer/install');
-      } else {
-        args.document = "Installer";
-        args.app_name = "loopar";
-        args.action = "install";
-      }
+      });
     } else {
-      /**System detected that Database Server is Initialized and have Database */
-      if (args.document === "Installer") {
-        return res.redirect('/desk');
-      }
+      return await makeController(req.query, req.body);
     }
-
-    args.method = req.method;
-
-    return await this.#importController(args);
-  }
-
-  sendResponse(res, req, response) {
-    try {
-      if (response instanceof Error) {
-        res.status(500);
-        if (req.method === "POST") {
-          res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.setHeader('Access-Control-Allow-Methods', 'POST');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-          return res.send(response);
-        } else {
-          return res.send(response.message);
-        }
-      } else if (response === undefined) {
-        //return this.#custom404Middleware(req, res);
-      } else if (response instanceof Object) {
-        if (response.status) res.status(response.status);
-        if (response.headers) res.set(response.headers);
-        if (response.body) return res.send(response.body);
-
-        return res.send(response);
-      } else {
-        res.status(200);
-        res.setHeader('Content-Type', 'content-type: text/html; charset=utf-8');
-
-        return res.send(response);
-      }
-    } catch (error) {
-      console.log(["***************Error", error])
-    }
-  }
-
-  async launchAction(controller, action, res, req) {
-    const response = await controller.sendAction(action);
-    this.sendResponse(res, req, response);
-  }
-
-  async launchController(controller, args) {
-    loopar.lastController = controller;
-
-    args.action = args.action && args.action.length > 0 ? args.action : controller.defaultAction;
-
-    await this.temporaryLogin();
-
-    if (args.controller === coreInstallerController || this.debugger || args.workspace === "web" || await controller.isAuthenticated()) {
-      this.launchAction(controller, args.action, args.res, args.req);
-    }
-  }
-
-  notFoundDocumentView(args) {
-    Object.assign(args, {
-      document: "Error",
-      action: "view",
-      code: 404,
-      title: `Document ${titleize(args.document)} not found`,
-      description: "The document you are looking for does not exist"
-    });
-  }
-
-  async #importController(args) {
-    let ref = loopar.getRef(args.document);
-
-    if (!ref) {
-      this.notFoundDocumentView(args);
-      ref = loopar.getRef(args.document);
-    }
-
-    args.controllerPathFile = loopar.makePath(ref.entityRoot, `${args.document}Controller.js`);
-    
-    const Controller = await fileManage.importClass(args.controllerPathFile, BaseController);
-    return await this.launchController(new Controller({ 
-      ...args, ...args.req.query, data: args.req.body 
-    }), args);
   }
 
   async temporaryLogin() {
@@ -303,7 +347,7 @@ export default class Router {
     });
   }
 
-  redirect(url) {
-    return this.res.redirect(url);
+  redirect(res, url) {
+    if(!res.headersSent) res.redirect(url || '/desk');
   }
 }

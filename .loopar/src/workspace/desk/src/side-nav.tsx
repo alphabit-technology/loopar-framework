@@ -14,7 +14,7 @@ export interface SideNavProps {
 
 import { useEffect } from "react";
 
-export function SideNav({ items }: SideNavProps) {
+export function SideNav({ items=[] }: SideNavProps) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
 
   const sideNavItems = items.map((item, i) => {

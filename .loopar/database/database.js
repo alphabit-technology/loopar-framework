@@ -173,13 +173,13 @@ export default class DataBase {
     return new Promise(resolve => {
       connection.beginTransaction(async err => {
         err && this.throw(err);
-        
+
         for (const query of this.transactions) {
           await execute(query);
         }
 
         this.transactions = [];
-        connection.commit(err =>  err ? connection.rollback(() => this.throw(err)) : resolve());
+        connection.commit(err => err ? connection.rollback(() => this.throw(err)) : resolve());
       });
     });
   }
@@ -545,7 +545,7 @@ export default class DataBase {
   }
 
   async makeTable(name, fields) {
-    const tableQuery = await this.alterTableQueryBuild(name, fields, (loopar.databaseInitialized && loopar.frameworkInstalled));
+    const tableQuery = await this.alterTableQueryBuild(name, fields, (loopar.DBInitialized && loopar.__installed__));
     await this.execute(tableQuery, false);
   }
 
@@ -629,18 +629,10 @@ export default class DataBase {
   }
 
   async getList(document, fields = ['*'], condition = null, { isSingle = false, all = false, includeDeleted = false } = {}) {
-    //return new Promise(async (resolve, reject) => {
     if (isSingle) {
       const singleTable = await this.tableName('Document Single Values');
       const result = await this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false);
       return [result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {})];
-      /*this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false).then(result => {
-         const singleValues = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
-
-         resolve([singleValues]);
-      }).catch(err => {
-         reject(err);
-      });*/
     } else {
       const tableName = await this.tableName(document, false);
       fields = await this.makeFields(fields);
@@ -658,16 +650,7 @@ export default class DataBase {
       }
 
       return await this.execute(query, false);
-      //console.log("r", r)
-
-      //return r;
-      /*this.execute(query, false).then(data => {
-         resolve(data);
-      }).catch(error => {
-         reject(error);
-      });*/
     }
-    //});
   }
 
   async getAll(document, fields = ['*'], condition = null, { isSingle = false } = {}) {

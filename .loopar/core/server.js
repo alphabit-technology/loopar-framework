@@ -74,7 +74,7 @@ class Server extends Router {
   }
 
   async exposeClientAppFiles(appName) {
-    if (loopar.frameworkInstalled) {
+    if (loopar.__installed__) {
       const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
 
       for (const app of installedsApps) {
@@ -90,7 +90,7 @@ class Server extends Router {
     loopar.server = this;
     const port = env.serverConfig.port;
 
-    const install_message = loopar.frameworkInstalled ? '' : '\n\nContinue in your browser to complete the installation';
+    const install_message = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
     this.server.listen(port, () => {
       console.log("Server is started in " + port + install_message);

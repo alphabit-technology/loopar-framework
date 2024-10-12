@@ -48,7 +48,7 @@ export default class BaseDocument extends React.Component {
   }
 
   get __STRUCTURE__() {
-    return JSON.parse(this.__ENTITY__.doc_structure || "{}");
+    return this.__ENTITY__.STRUCTURE || JSON.parse(this.__ENTITY__.doc_structure || "{}");
   }
 
   get __FIELDS__() {

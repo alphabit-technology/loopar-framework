@@ -23,8 +23,14 @@ const Layout = (({ webApp={}, ...props }) => {
     handlerInitAnimation();
   }, [animated]);
 
-  const sideMenuItems = menuItems.filter(item => item.parent_menu === currentPage);
+  const currentGroup = menuItems.find(item => item.page === currentPage)?.parent_menu;
+  const currrent = menuItems.find(item => item.page === currentPage);
 
+  const sideMenuItems = [
+    ...menuItems.filter(item => item.parent_menu && (item.parent_menu === currentGroup)),
+    ...menuItems.filter(item => item.parent_menu && (item.parent_menu === currrent?.page))
+  ];
+ 
   return (
     <div className="vaul-drawer-wrapper">
       <TopNav />
@@ -63,7 +69,7 @@ export default function WebWorkspace(props) {
   const { getDocuments, __META__} = useWorkspace();
 
   const getWebApp = () => {
-    const workspace = JSON.parse(__META__.workspace);
+    const workspace =__META__.__WORKSPACE__ || {};
     return workspace.web_app || {};
   }
 
@@ -73,8 +79,10 @@ export default function WebWorkspace(props) {
     return webApp.menu_items || [];
   }
 
+  const currentPage = __META__.__DOCUMENT__?.__ENTITY__?.name
+
   return (
-    <BaseWorkspace menuItems={menuItems}>
+    <BaseWorkspace menuItems={menuItems} currentPage={currentPage}>
       <Layout {...props} webApp={webApp}>
         {getDocuments()}
       </Layout>

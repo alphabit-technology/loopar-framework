@@ -3,8 +3,8 @@ import { loopar, elementsDict } from "loopar";
 
 export const extractElements = (__META__, elements, environment) => {
   let extractedElements = [];
-  const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta)
-  const ENTITY = meta?.__ENTITY__ || {};
+  const __DOCUMENT__ = __META__.__DOCUMENT__ || {};
+  const ENTITY = __DOCUMENT__.__ENTITY__ || {};
 
   const extract = (elements, environment) => {
     for (const el of elements || []) {
@@ -28,7 +28,7 @@ export const extractElements = (__META__, elements, environment) => {
 }
 
 export function requireComponents(__META__) {
-  const meta = typeof __META__.meta == "object" ? __META__.meta : JSON.parse(__META__.meta);
+  const __DOCUMENT__ = __META__.__DOCUMENT__ || {};
   const action = ["update", "create", "form"].includes(__META__.action) ? "form" : __META__.action;
 
   const filterByWritable = (structure) => {
@@ -45,8 +45,8 @@ export function requireComponents(__META__) {
     }, []);
   }
 
-  const ENTITY = meta?.__ENTITY__ || {};
-  const DOCUMENT = meta?.__DOCUMENT__ || {};
+  const ENTITY = __DOCUMENT__?.__ENTITY__ || {};
+  const DOCUMENT = __DOCUMENT__?.__DOCUMENT__ || {};
 
   if (action === "list") {
     return [

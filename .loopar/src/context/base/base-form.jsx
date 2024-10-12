@@ -25,13 +25,15 @@ export default class BaseForm extends BaseDocument {
 
   send(options = { action: this.props.action }) {
     options = typeof options === 'string' ? { action: options } : options;
-    //this.validate();
+    this.validate();
     
     /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
       this.lastData = JSON.stringify(this.getFormValues);
       loopar.notify("No changes to save", "warning");
       return;
     }*/
+
+    
 
     //return new Promise((resolve, reject) => {
     loopar.send({
@@ -154,10 +156,14 @@ export default class BaseForm extends BaseDocument {
   }
 
   getValue(name) {
-    return this.getFormValues()[name];
+    return this.#getFormValues()[name];
   }
 
   getFormValues(toSave = false) {
+    return this.#getFormValues(toSave);
+  }
+
+  #getFormValues(toSave = false) {
     if(!this.Form)  return this.meta.__DOCUMENT__;
     
     const fields = this.__FIELDS__;

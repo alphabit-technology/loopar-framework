@@ -163,7 +163,7 @@ export class BaseTable extends Component {
         success: (res) => {
           this.setState(
             {
-              meta: res.meta,
+              meta: res,
             },
             () => {
               this.setSelectorsStatus();

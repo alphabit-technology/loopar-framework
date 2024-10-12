@@ -12,11 +12,12 @@ const buttons = {
 
 export default function MetaButton(props){
   const data = props.data;
-  const docRef = useDocument();
+  const {docRef} = useDocument();
 
   const handleClick = (e) => {
     e.preventDefault();
 
+    console.log("docRef", docRef);
     if (data.action && docRef) {
       if(!docRef[data.action]) loopar.throw("Action not Defined",`Action ${data.action} not found in model`)
       docRef[data.action]();

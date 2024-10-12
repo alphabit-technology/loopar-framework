@@ -202,6 +202,7 @@ export default function MetaDesigner(props) {
           getElement,
           deleteElement,
           updateElement,
+          setMeta: makeElements
         }}
         data={data}
       />

@@ -20,7 +20,7 @@ export default class BaseController extends CoreController {
     const data = { ...loopar.session.get(this.document + '_q') || {} };
 
     const list = await loopar.getList(this.document, { q: (data && Object.keys(data).length > 0) ? data : null });
-    return this.render(list);
+    return await this.render(list);
   }
 
   async actionCreate() {
@@ -38,13 +38,14 @@ export default class BaseController extends CoreController {
       this.redirect('update?name=' + document.name);
     } else {
       Object.assign(this.response, await document.__data__());
-      return this.render(this.response);
+      return await this.render(this.response);
     }
   }
 
   async actionUpdate(document) {
     document ??= await loopar.getDocument(this.document, this.name, this.hasData() ? this.data : null);
 
+    
     if (this.hasData()) {
       const Entity = document.__ENTITY__;
       const isSingle = Entity.is_single;
@@ -75,6 +76,7 @@ export default class BaseController extends CoreController {
     const document = await loopar.getDocument(this.document, this.name);
     const result = await document.delete();
 
+  
     this.res.send(result);
   }
 

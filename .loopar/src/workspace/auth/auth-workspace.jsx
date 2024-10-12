@@ -3,6 +3,7 @@ import BaseWorkspace from "$workspace/base/base-workspace";
 import {Link} from "@link"
 import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { useEffect } from "react";
+import { useWorkspace } from "@workspace/workspace-provider";
 
 const Layout = (({ ...props }) => {
   useEffect(() => {
@@ -54,14 +55,15 @@ const Layout = (({ ...props }) => {
   );
 });
 
-export default class AuthWorkspace extends BaseWorkspace {
-  render() {
-    const meta = this.meta || {};
+export default function AuthWorkspace(props) {
+  const { getDocuments } = useWorkspace();
 
-    return super.render(
-      <Layout>
-        {super.documents}
+  return (
+    <BaseWorkspace>
+      <Layout {...props}>
+        {/*--//authworkspace-outlet--*/}
+        {getDocuments()}
       </Layout>
-    )
-  }
+    </BaseWorkspace>
+  )
 }

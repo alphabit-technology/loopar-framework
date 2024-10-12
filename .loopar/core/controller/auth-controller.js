@@ -25,7 +25,7 @@ export default class AuthController {
         if (method === AJAX) {
           return loopar.throw(message);
         } else {
-          return this.res.redirect(url);
+          //return this.res.redirect(url);
         }
       }
 
@@ -34,17 +34,17 @@ export default class AuthController {
         const user = loopar.getUser(this.req.session.user.name);
 
         if (user && user.name !== 'Administrator' && user.disabled) {
-          executeAction(this.req.method, 'Not permitted', '/auth/login/login');
+          executeAction(this.req.method, 'Not permitted', '/auth/login');
           return resolve(false);
         }
 
         if (this.isLoginAction) {
-          executeAction(this.method, 'You are already logged in, refresh this page', '/core/desk/view');
+          executeAction(this.method, 'You are already logged in, refresh this page', '/desk/desk/view');
           return resolve(false);
         } else if (this.isEnableAction) {
           return resolve(true);
         } else {
-          executeAction(this.method, 'Action not valid in Desk App', '/core/desk/view');
+          executeAction(this.method, 'Action not valid in Desk App', '/desk/desk/view');
           return resolve(false);
         }
       } else if (this.isLoginAction && (this.isFreeAction || this.isEnableAction)) {
@@ -54,7 +54,7 @@ export default class AuthController {
       }/* else if(this.isFreeAction) {
             resolve(true);
          }*/else {
-        executeAction(this.method, 'Your session has ended, please log in again.', '/auth/login/login');
+        executeAction(this.method, 'Your session has ended, please log in again.', '/auth/login');
         return resolve(false);
       }
     });

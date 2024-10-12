@@ -14,7 +14,6 @@ export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
   //const goTo = (["Single", "View", "Page", "Form", "Report"].includes(type) ? type : "Base") + "Controller";
   const goTo = ["View", "Page", "Report"].includes(type) ? "view" : type === "Single" ? "update" : "list";
     
-
   const formPrimaryActions = () => {
     return docRef.canUpdate ? (
       <>

@@ -254,24 +254,35 @@ export default class CoreInstaller {
   async unInstall() {
     loopar.installingApp = this.app_name;
     if (this.app_name === 'loopar') {
-      loopar.throw("You can't uninstall Loopar");
+      loopar.throw("You can't uninstall app Loopar");
     }
 
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = await fileManage.getConfigFile('installer', moduleRoute);
+    const ownEntities = loopar.getEntities(this.app_name);
 
-    for (const [doc_name, records] of Object.entries(appData).sort((a, b) => b[1].entityId - a[1].entityId)) {
-      for (const document of Object.values(records.documents).sort((a, b) => b.id - a.id)) {
-        if (document.__document_status__ === "Deleted") continue;
-        if (!await loopar.db._count(doc_name, document.name)) continue;
-        console.warn("Uninstalling", doc_name, document.name);
+    const deleteDocuments = async (entity) => {
+      const deleteDocument = async (ent, document) => {
+        if (document.__document_status__ === "Deleted") return;
+        if (!await loopar.db._count(ent.name, document.name)) return;
+        await deleteDocuments(document);
 
-        await loopar.deleteDocument(doc_name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
+        if (document.path && !ownEntities.includes(document.name)) return;
+
+        console.warn("Uninstalling:", ent.name, document.name);
+        await loopar.deleteDocument(ent.name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
+      }
+
+      for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
+        deleteDocument(entity, document);
       }
     }
 
-    loopar.installingApp = null;
+    for(const entity of appData.documents){
+      await deleteDocuments(entity);
+    }
 
+    loopar.installingApp = null;
     return `App ${this.app_name} uninstalled successfully!`;
   }
 
@@ -302,40 +313,44 @@ export default class CoreInstaller {
 
   async installData() {
     const moduleRoute = loopar.makePath('apps', this.app_name);
-    const installerData = await fileManage.getConfigFile('installer', moduleRoute);
+    const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
 
-    for (const [entity, records] of Object.entries(installerData).sort((a, b) => a[1].entityId - b[1].entityId)) {
-      for (const document of Object.values(records.documents).sort((a, b) => a.id - b.id)) {
-        if (document.__document_status === "Deleted") continue;
+    const insertDocuments = async (entity) => {
+      const insertDocument = async (ent, document) => {
+        const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
 
-        if (entity === "Entity") {
-          const data = await this.getDocumentData(this.app_name, document.module, document.name);
-          const app = this.getAppFromData(installerData, document.module);
-          data.__APP__ = app;
+        if(!data) return;
 
-          await this.insertRecord(entity, data, this.app_name, document.module);
-        } else {
-          await this.insertRecord(entity, document);
+        console.warn(["Inserting", ent.name, document.name]);
+        
+        if (data.__document_status__ === "Deleted") return;
+
+        for(const req of (document.requires || [])){
+          await insertDocuments(req);
         }
+
+        if (!await loopar.db._count(ent.name, document.name)){
+          const doc = await loopar.newDocument(ent.name, data);
+          await doc.save({ validate: false });
+        }
+
+        for (const child of (document.documents || [])) {
+          await insertDocument(document, child);
+        }
+      }
+
+      await insertDocument(entity, entity);
+
+      for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
+        await insertDocument(entity, document);
       }
     }
 
-    if (this.app_name === "loopar" && loopar.installing) {
-      const userData = { name: "Administrator", email: this.email, password: this.admin_password, confirm_password: this.confirm_password, __document_status__: "Active" };
-      await this.insertRecord('User', userData, "loopar", "auth");
+    for (const entity of appData) {
+      await insertDocuments(entity);
     }
-  }
 
-  async insertRecord(Document, data, app = null, module = null) {
-    if (await loopar.db.getValue(Document, 'name', data.name, { ifNotFound: false })) {
-      console.log("Updating ..............", Document, data.name);
-      const toUpdateDoc = await loopar.getDocument(Document, data.name, data, { app, module });
-      toUpdateDoc.save({ validate: false });
-    } else {
-      console.log("Inserting .............", Document, data.name);
-      const document = await loopar.newDocument(Document, data, { app, module });
-      await document.save({ validate: false });
-    }
+    return `App ${this.app_name} installed successfully!`;
   }
 
   async pull(repo) {

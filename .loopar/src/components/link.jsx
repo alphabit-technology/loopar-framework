@@ -30,7 +30,7 @@ export const makeUrl = (href) => {
   return `/${Object.values(urlObject).filter(e => e && e !== "").join("/")}${queryString ? "?" + queryString : ""}`;
 }
 
-export function Link({ to = "", variant = "link", size, children, ...props }) {
+export function Link({ to = "", variant = "link", size, children, notControlled, ...props }) {
   const [called, setCalled] = useState(false);
   const url = makeUrl(to);
   const location = useLocation();
@@ -115,12 +115,12 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
     "justify-normal text-left text-primary cursor-pointer p-2",
     props.className,
     active === to.split("#")[1] ? "bg-red-600/50" : "",
-    currentPage === to ? "bg-red-600/50" : ""
+    currentPage && (currentPage === to) ? "bg-red-600/50" : ""
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
    
-  if (isAbsolute) {
+  if (isAbsolute || notControlled) {
     return (
       <a
         {...renderizableProps}
@@ -149,7 +149,6 @@ export function Link({ to = "", variant = "link", size, children, ...props }) {
   );
 }
 
-
 const variants = {
   primary: "primary",
   secondary: "secondary",
@@ -159,15 +158,15 @@ const variants = {
 };
 
 export default function MetaLink(props) {
-    const data = props.data || {};
-    const className = cn(props.className, data.class || "");
-    delete data.class;
+  const data = props.data || {};
+  const className = cn(props.className, data.class || "");
+  delete data.class;
 
-    return (
-      <Link {...props} {...data} className={className} key={props.key || data.key || props.to} >
-        {data.label}
-      </Link>
-    );
+  return (
+    <Link {...props} {...data} className={className} key={props.key || data.key || props.to} >
+      {data.label}
+    </Link>
+  );
 }
 
 MetaLink.metaFields = () => {

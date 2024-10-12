@@ -42,16 +42,15 @@ export default class InstallerController extends BaseController {
     const model = new installerModel(this.data);
 
     if (this.hasData()) {
-      if (loopar.frameworkInstalled && await loopar.appStatus(model.app_name) === 'installed') {
+      if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed') {
         loopar.throw("App already installed please refresh page");
       }
 
-      return this.success(await model.install());
-      /*const install = await model.install();
-      if (install) {
-         await loopar.build
-         return this.success("App installed successfully");
-      }*/
+      if (await model.install()) {
+        return this.redirect();
+      } else {
+        return this.error("App install failed");
+      }
     } else {
       const response = await model.__dataInstall__();
       return await this.render(response);
@@ -92,6 +91,10 @@ export default class InstallerController extends BaseController {
     }
 
     const app = await loopar.getDocument("App", this.data.app_name);
-    return this.success(await app.unInstall());
+    if (await await app.unInstall()) {
+      return this.redirect();
+    } else {
+      loopar.throw("App uninstall failed");
+    }
   }
 }

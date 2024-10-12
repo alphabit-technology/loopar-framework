@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import BaseDialog, {Prompt} from "$dialog";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
@@ -6,6 +6,7 @@ import { useWorkspace, WorkspaceProviderContext } from "@workspace/workspace-pro
 import loopar from "$loopar";
 import Emitter from '@services/emitter/emitter';
 import { Loader2Icon } from "lucide-react";
+import { use } from "marked";
 
 const Notify = () => {
   const { theme } = useWorkspace();
@@ -40,11 +41,15 @@ const Loading = () => {
 
 export function DialogContextProvider() {
   const [dialogs, setDialogs] = useState({});
+  const dialogsRef = useRef({});
+
+  const handleSetDialogs = (dialogs) => {
+    setDialogs(dialogs);
+  }
 
   const setDialog = (dialog) => {
-    const currentDialogs = { ...dialogs || {} }
-    currentDialogs[dialog.id] = dialog;
-    setDialogs(currentDialogs);
+    dialogsRef.current[dialog.id] = dialog;
+    handleSetDialogs({ ...dialogsRef.current });
   }
 
   const setNotify = ({ title, message, type = "info", timeout = 5000 }) => {
@@ -65,12 +70,10 @@ export function DialogContextProvider() {
   }
 
   const setDialogOpen = (id, open) => {
-    const currentDialogs = { ...dialogs || {} }
-    if(currentDialogs[id]) {
-      currentDialogs[id].open = open;
-    }
+    const current = dialogsRef.current[id];
+    current && (current.open = open);
 
-    setDialogs(currentDialogs);
+    handleSetDialogs({ ...dialogsRef.current });
   }
 
   useEffect(() => {
@@ -95,9 +98,9 @@ export function DialogContextProvider() {
 
   return (
     <>
-      {Object.values(dialogs || {}).filter(d => d.open).map((dialog) => {
+      {Object.values(dialogs).filter(d => d.open).map((dialog, index) => {
         return dialog.type === "prompt" ? (
-          <Prompt {...dialog} key={dialog.key} open={dialog.open}/>
+          <Prompt {...dialog} open={dialog.open} size={dialog.size || "sm"}/>
         ) : (
           <BaseDialog {...dialog} key={dialog.id} open={dialog.open} />
         );
@@ -110,9 +113,10 @@ export function DialogContextProvider() {
 export default function BaseWorkspace(props) {
   const workspace = useWorkspace();
 
+  const currentPage = workspace.currentPage || props.currentPage || "";
   return (
     <>
-      <DialogContextProvider/>
+      <DialogContextProvider key={currentPage}/>
       <Loading/>
       <WorkspaceProviderContext.Provider
         value={
@@ -120,6 +124,7 @@ export default function BaseWorkspace(props) {
             ...workspace,
             menuItems: props.menuItems && props.menuItems() || [],
             refresh: () => props.refresh || (() => { }),
+            currentPage: currentPage,
           }
         }
       >

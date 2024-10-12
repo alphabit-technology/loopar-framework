@@ -1,6 +1,5 @@
 import loopar from "$loopar";
-import { Modal } from "$dialog";
-import { BrushIcon, Code2Icon, EyeIcon, StarIcon, Loader } from "lucide-react";
+import { BrushIcon, CodepenIcon, EyeIcon, SparkleIcon } from "lucide-react";
 import { Droppable } from "$droppable";
 import { BaseFormContext } from "@context/form-context";
 import React, { useEffect, useState } from "react";
@@ -33,13 +32,8 @@ export const Designer = ({designerRef, metaComponents, data}) => {
   }, []);
 
   const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
-
   const [sidebarOpen] = useCookies("sidebarOpen");
-  
-  const elements = JSON.parse(metaComponents || "[]")
-  //const className = designerModeType !== "preview" ? " element designer design true bg-default-100" : "";
-  const [IAGenerator, setIAGenerator] = useState(false);
-
+  const elements = JSON.parse(metaComponents || "[]");
 
   const handleChangeMode = (opt=null) => {
     const newMode = opt !== null ? opt : (
@@ -67,7 +61,6 @@ export const Designer = ({designerRef, metaComponents, data}) => {
       if(editElement) handleChangeMode("editor");
     }
   }, [editElement]);
-
   
   useEffect(() => {
     if(editElement && designerModeType == "editor"){
@@ -82,6 +75,32 @@ export const Designer = ({designerRef, metaComponents, data}) => {
   const handleDeleteElement = (element) => {
     loopar.confirm("Are you sure you want to delete this element?", () => {
       designerRef.deleteElement(element.data.key);
+    });
+  }
+
+  const setMeta = (meta) => {
+    if(loopar.utils.isJSON(meta)){
+      designerRef.setMeta(JSON.parse(meta));
+    }else{
+      console.error(["Invalid JSON object", meta]);
+      loopar.throw("Invalid JSON object");
+    }
+  }
+
+  const handleSetMeta = (e) => {
+    e.preventDefault();
+
+    loopar.prompt({
+      title: "META",
+      label: "JSON META object",
+      placeholder: "Enter a valid JSON META object",
+      ok: setMeta,
+      size: "lg",
+      validate: (meta) => {
+        !loopar.utils.isJSON(meta) && loopar.throw("Invalid JSON object");
+        
+        return true;
+      }
     });
   }
 
@@ -144,61 +163,54 @@ export const Designer = ({designerRef, metaComponents, data}) => {
                 {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
                 {designerModeType === "designer" ? "Preview" : "Design"}
               </Button>
+              <Button variant="secondary" onClick={handleSetMeta}>
+                <CodepenIcon className="mr-2" />
+                META
+              </Button>
               <Button
                 variant="secondary"
                 onClick={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
+                  loopar.prompt({
+                    title: "Design IA",
+                    label: (
+                      <div className="relative bg-card/50 rounded-lg border text-card-foreground">
+                        <pre className="relative p-4 h-full">
+                          <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
+                            <p className="pb-2 border-b-2">
+                              Based on the type of API you have contracted with OpenAI,
+                              you may need to wait for a specific
+                            </p>
+                            <p className="pt-2">
+                              Petition example: "Generate a form that allows me to
+                              manage inventory data."
+                            </p>
+                          </code>
+                        </pre>
+                      </div>
+                    ),
+                    ok: (prompt) => {
+                      loopar.send({
+                        action: `/desk/GPT/prompt`,
+                        params: { prompt, document_type: "entity" },
+                        body: { prompt, document_type: "entity" },
+                        success: (res) => {
+                          setMeta(res.message);
+                        }
+                      });
+                    },
+                    validate: (prompt) => {
+                      !prompt && loopar.throw("Please enter a valid Prompt");
+
+                      return true;
+                    },
+                    size: "lg"
+                  });
                 }}
               >
-                <Loader className="mr-2" />
+                <SparkleIcon className="mr-2" />
                 Design IA
               </Button>
-              <Modal
-                title="IA Generator via CHAT GPT-3.5"
-                icon={<span className="fa fa-magic pr-2 text-success" />}
-                size="md"
-                open={IAGenerator}
-                scrollable
-                buttons={[
-                  {
-                    name: "send",
-                    label: "Send",
-                    onClick: (e) => {
-                      this.prompt();
-                    },
-                    internalAction: "close",
-                  },
-                ]}
-                onClose={(e) => {
-                  setIAGenerator(false);
-                }}
-              >
-                <div className="flex flex-col gap-2">
-                  <div className="relative bg-card/50 rounded-lg border text-card-foreground">
-                    <pre className="relative p-4 h-full">
-                      <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
-                        <p className="pb-2 border-b-2">
-                          Based on the type of API you have contracted with OpenAI,
-                          you may need to wait for a specific
-                        </p>
-                        <p className="pt-2">
-                          Petition example: "Generate a form that allows me to
-                          manage inventory data."
-                        </p>
-                      </code>
-                    </pre>
-                  </div>
-                  <textarea
-                    name="PROMPT"
-                    rows={20}
-                    onChange={(ref) => {
-                      //this.promptInput = ref.target.value;
-                    }}
-                    className="bg-transparent w-full h-50 border border-input rounded-md p-2"
-                  />
-                </div>
-              </Modal>
             </div>
           </div>
           <Tabs
@@ -226,7 +238,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
               </div>
             </Tab>
             <Tab
-              label={<div className="flex"><Code2Icon className="h-6 w-6 pr-2" /> JSON</div>}
+              label={<div className="flex"><CodepenIcon className="h-6 w-6 pr-2" /> META</div>}
               name={data.name + "model_tab"}
               key={data.name + "model_tab"}
             >

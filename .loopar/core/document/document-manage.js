@@ -13,7 +13,7 @@ class DocumentManage {
       data = Object.assign(databaseData, data || {});
       return await this.newDocument(ENTITY, data, name);
     } else {
-      loopar.throw({ code: 404, message: `${ENTITY.name} ${name} not found` });
+      loopar.throw({ code: 404, message: `${ENTITY.name} ${name}: not found` });
     }
   }
 

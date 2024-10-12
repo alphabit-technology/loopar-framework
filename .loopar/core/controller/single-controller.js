@@ -20,7 +20,8 @@ export default class SingleController extends BaseController {
 
       const document = await loopar.getDocument(menu?.page || action);
       document.parentPage = this.document;
-      return this.render(document);
+
+      return await this.render(document);
     }
   }
 }

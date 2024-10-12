@@ -14,37 +14,49 @@ type Module = {
   default: React.FC<any>
 }
 
+type ClientImporter = {
+  client: string,
+  context: string,
+}
+
+interface __ENTITY__ {
+  STRUCTURE: [],
+  doc_structure: string,
+}
+
 interface Meta {
-  __ENTITY__: {},
+  __ENTITY__: __ENTITY__,
   __DOCUMENT__: {},
   __META__: {},
   key: string,
-  client_importer: {},
+  client_importer: ClientImporter,
 }
 
 interface __META__ {
   workspace: string;
   meta: Meta;
   key: string;
-  client_importer: {};
+  client_importer: ClientImporter;
   W: string;
 }
 
 interface Document {
   Module: Module,
   meta: Meta,
-  active: boolean
+  active: boolean,
+  __DOCUMENT__?: Meta,
+  [key: string]: any, // Add this line to allow string indexing
 }
 
 interface Documents {
   [key: string]: Document
 }
 
-interface Res {
+/*interface Res {
   meta: Meta,
   key: string,
-  client_importer: {}
-}
+  client_importer: ClientImporter,
+}*/
 
 interface Element {
   data: {
@@ -64,7 +76,6 @@ type WorkspaceProviderProps = {
   openNav?: boolean,
   menuItems?: [],
   currentPage?: string,
-  currentLink?: string,
   ENVIRONMENT?: string
 }
 
@@ -74,7 +85,9 @@ type WorkspaceProviderState = {
   openNav?: boolean,
   setOpenNav?: (open: boolean) => void,
   Documents: Documents,
-  setDocuments: (Documents: Documents) => void
+  setDocuments: (Documents: Documents) => void,
+  currentPage?: string,
+  setCurrentPage?: (currentPage: string) => void,
 }
 
 const initialState: WorkspaceProviderState = {
@@ -83,7 +96,9 @@ const initialState: WorkspaceProviderState = {
   openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
   Documents: {},
-  setDocuments: () => null
+  setDocuments: () => null,
+  currentPage: "",
+  setCurrentPage: () => null,
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
@@ -102,6 +117,7 @@ export function WorkspaceProvider({
 
   const [Documents, setDocuments] = useState(props.Documents || {} as Documents);
   const [loaded, setLoaded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(props.currentPage || "");
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
@@ -120,10 +136,11 @@ export function WorkspaceProvider({
     };
 
     toMergeDocuments.forEach((Document: Document): void => {
-      if (Document.meta.__ENTITY__ && Document.meta.__DOCUMENT__) {
-        Document.meta.__ENTITY__.STRUCTURE = updateValue(
-          JSON.parse(Document.meta.__ENTITY__.doc_structure),
-          Document.meta.__DOCUMENT__
+      if (Document.__DOCUMENT__?.__ENTITY__) {
+        Document.__DOCUMENT__.__ENTITY__.STRUCTURE ??= JSON.parse(Document.__DOCUMENT__.__ENTITY__.doc_structure);
+        Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
+          Document.__DOCUMENT__.__ENTITY__.STRUCTURE,
+          Document.__DOCUMENT__.__DOCUMENT__
         );
       }
     });
@@ -135,8 +152,8 @@ export function WorkspaceProvider({
     return (
       <>
         {getMergeDocument().map((Document: Document) => {
-          const { Module, meta, active } = Document;
-          return active && Module ? <Module meta={meta} key={meta.key} /> : null;
+          const { Module, __DOCUMENT__, active } = Document;
+          return active && Module ? <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} /> : null;
         })}
       </>
     );
@@ -188,57 +205,54 @@ export function WorkspaceProvider({
     setDocuments(Documents);
   }
 
+  useEffect(() => {
+    const active = Object.values(Documents).find((Document) => Document.active);
+    
+    if (!active) return;
+    const { __DOCUMENT__ } = active;
+    const currentPage = __DOCUMENT__?.__ENTITY__?.name
+   
+    currentPage && setCurrentPage(currentPage);
+  }, [Documents, currentPage]);
+
   const setDocument = (__META__: Meta) => {
     const copyDocuments = { ...Documents };
-    const res = __META__ || {} as Meta;
 
     Object.values(copyDocuments).forEach((Document) => {
       Document.active = false;
     });
 
-    res.meta.key = res.key;
-
-    if (!copyDocuments[res.key]) {
-      AppSourceLoader(res.client_importer).then((Module: Module) => {
-        copyDocuments[res.key] = {
-          Module: Module.default,
-          meta: res.meta,
-          active: true,
-        };
-
-        handleSetDocuments(copyDocuments);
-      }).catch((e) => {
-        res.client_importer.client = "error-view";
-
-        AppSourceLoader(res.client_importer).then((Module: Module) => {
-          res.meta.__DOCUMENT__ = {
-            code: 500,
-            description: e.message
-          };
-
-          copyDocuments[res.key] = {
-            Module: Module.default,
-            meta: res.meta,
-            active: true,
-          };
-
-          handleSetDocuments(copyDocuments);
-        });
-      });
-    } else {
-      copyDocuments[res.key] = {
-        Module: Documents[res.key].Module,
-        meta: res.meta,
+    const setDocument = (Module: Module) => {
+      copyDocuments[__META__.key] = {
+        Module: Module.default,
+        __DOCUMENT__: __META__,
         active: true,
       };
 
       handleSetDocuments(copyDocuments);
     }
+
+    AppSourceLoader(__META__.client_importer).then((Module: Module) => {
+      setDocument(Module);
+    }).catch(e => {
+      __META__.client_importer.client = "app/error-view";
+
+      AppSourceLoader(__META__.client_importer).then((Module: Module) => {
+        __META__.__DOCUMENT__ = {
+          code: 404,
+          title: "Source not found",
+          description: e.message
+        };
+
+        setDocument(Module);
+      });
+    });
   }
 
   const fetch = (url) => {
     const route = window.location;
-
+    if(route.hash.includes("#"))  return;
+    
     loopar.send({
       action: route.pathname,
       params: route.search,
@@ -255,7 +269,7 @@ export function WorkspaceProvider({
   const value = {
     theme,
     __META__: props.__META__,
-    workspace: props.workspace,
+    //workspace: props.workspace,
     setTheme: (theme: Theme) => {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
@@ -269,8 +283,7 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    currentPage: props.currentPage,
-    currentLink: props.currentLink,
+    currentPage,
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
     getDocuments: getDocuments

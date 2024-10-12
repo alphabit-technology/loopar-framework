@@ -31,7 +31,7 @@ export default class CoreInstallerController extends BaseController {
     if (this.hasData()) {
       Object.assign(model, this.data);
 
-      if (loopar.frameworkInstalled && await loopar.appStatus(model.app_name) === 'installed') {
+      if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed') {
         loopar.throw("App already installed please refresh page");
       }
 

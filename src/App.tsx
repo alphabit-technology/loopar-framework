@@ -3,14 +3,17 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
+import { ErrorBoundary } from "@error-boundary";
 
 interface RootLayoutProps {
   __META__: {
-    workspace: string;
-    meta: string;
+    __DOCUMENT__: any;
+    __WORKSPACE__: any;
+    //workspace: string;
+    //meta: string;
     key: string;
     client_importer: string;
-    W: string;
+    //W: string;
   };
   Workspace: React.FC<any>;
   Document: React.FC<any>;
@@ -19,8 +22,7 @@ interface RootLayoutProps {
 }
 
 const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
-  const workspace = JSON.parse(__META__.workspace);
-  const meta = JSON.parse(__META__.meta);
+  const __WORKSPACE__ = __META__.__WORKSPACE__;
 
   return (
     <main
@@ -33,18 +35,18 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
           <WorkspaceProvider
             __META__={__META__}
             ENVIRONMENT={ENVIRONMENT}
-            workspace={__META__.W}
+            //workspace={__WORKSPACE__.name}
             Documents={{
               [__META__.key]: {
                 Module: Document,
-                __META__,
-                meta: { ...meta, key: __META__.key },
+                __DOCUMENT__: __META__.__DOCUMENT__,
+                //meta: { ...meta, key: __META__.key },
                 active: true,
-              },
+              }
             }}
           >
             <Workspace
-              {...workspace}
+              {...__WORKSPACE__}
               __META__={__META__}
             />
           </WorkspaceProvider>
@@ -59,15 +61,18 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
 
   return (
     <>
-      <CookiesProvider manager={cookieManager} updater={setUpdate}>
-        <Main
-          __META__={__META__}
-          Workspace={Workspace}
-          Document={Document}
-          ENVIRONMENT={ENVIRONMENT}
-          cookieManager={cookieManager}
-        />
-      </CookiesProvider>
+      <ErrorBoundary>
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+        <CookiesProvider manager={cookieManager} updater={setUpdate}>
+          <Main
+            __META__={__META__}
+            Workspace={Workspace}
+            Document={Document}
+            ENVIRONMENT={ENVIRONMENT}
+            cookieManager={cookieManager}
+          />
+        </CookiesProvider>
+      </ErrorBoundary>
     </>
   )
 }

@@ -18,6 +18,7 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const Icon = ({type, size, ...props}) => {
   const icons = {
@@ -32,12 +33,14 @@ const Icon = ({type, size, ...props}) => {
 
   return <Icon size={size || 24} className={cn(color, props.className)} />;
 }
+
 const MetaDialog = (props) => {
   const handleSetOpenClose = (open) => {
     loopar.handleOpenCloseDialog(props.id, open);
   };
 
   const setDialogOpen = (open) => {
+    if(!open && props.validate && !props.validate(props.value)) return;
     handleSetOpenClose(open);
   };
 
@@ -166,20 +169,27 @@ export function Prompt (props) {
     setValue(e.target.value);
   }
 
+  const getRows = () => {
+    return {"sm": 5, "md": 10, "lg": 15, "full": 20}[props.size || "md"]
+  }
+
   return (
     <MetaDialog
       {...props}
+      value={value}
       type="prompt"
       ok={() => props.ok(value)}
+      size={props.size || "md"}
     >
       <div className="grid w-full items-center gap-1.5">
         <Label htmlFor="form-control">{props.label || ""}</Label>
-        <Input 
+        <Textarea 
           type="text"
           id={`prompt-input-${id}`}
           placeholder={props.placeholder || ""}
-          className="w-full"
+          className="border border-input rounded-sm bg-transparent p-2 mt-2"
           onChange={handleChange}
+          rows={getRows()}
         />
       </div>
     </MetaDialog>

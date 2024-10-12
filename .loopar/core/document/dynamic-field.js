@@ -69,7 +69,7 @@ export default class DynamicField {
     }
 
     if (this.element === FORM_TABLE) {
-      return loopar.utils.isJSON(value) ? JSON.parse(value) : "{}";
+      return loopar.utils.isJSON(value) ? JSON.parse(value) : value;
     }
 
     if (this.element === SELECT && loopar.utils.isJSON(value)) {

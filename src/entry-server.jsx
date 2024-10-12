@@ -4,8 +4,7 @@ import App from "@app";
 import { StaticRouter } from "react-router-dom";
 import { Loader } from "@/loader";
 import { ServerCookiesManager } from '@services/cookie';
-
-import { __META_COMPONENTS__ } from "@components-loader"
+import { __META_COMPONENTS__ } from "@components-loader";
 
 
 const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
@@ -30,6 +29,7 @@ const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
 };
 
 export async function render(url, __META__, req, res) {
+  //__META__ = JSON.parse(__META__);
   const { Workspace, Document } = await Loader(__META__, "server");
   global.__REQUIRE_COMPONENTS__ = [];
   global.ENVIRONMENT = "server";

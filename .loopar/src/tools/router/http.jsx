@@ -84,7 +84,8 @@ export default class HTTP {
 
   #sendPetition(options) {
     const self = this;
-    options.freeze && self.freeze(true);
+    const freeze = options.freeze != false
+    freeze && self.freeze(true);
 
     fetch(self.url, self.options).then(async response => {
       return new Promise(async (resolve, reject) => {
@@ -108,13 +109,12 @@ export default class HTTP {
       });
     }).catch(error => {
       options.error && options.error(error);
-      console.log(["Catch Error", error]);
       self.throw({
         title: error.title || error.code || 'Undefined Error',
         message: error.message || error.description || 'Undefined Error',
       });
     }).finally(() => {
-      options.freeze && self.freeze(false);
+      freeze && self.freeze(false);
       options.always && options.always();
     });
   }

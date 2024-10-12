@@ -50,9 +50,9 @@ class Loopar extends Router {
   }
 
   alert(message, callback) {
-    this.emit('dialog', {
+    this.dialog({
       type: "alert",
-      title: "Alert",
+      title: "Loopar",
       content: message,
       callback: callback,
     });
@@ -67,10 +67,9 @@ class Loopar extends Router {
   }
 
   throw(error, m) {
-    const { type, title, content, message } =
-      typeof error === "object"
-        ? error
-        : { title: error, content: m, message: m };
+    this.emit('freeze', false);
+    const { type, title, content, message } = typeof error === "object" ? error
+        : { title: "Error", content: error, message: m };
 
     this.emit('dialog', {
       type: type || "error",

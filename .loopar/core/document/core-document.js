@@ -123,6 +123,7 @@ export default class CoreDocument {
     }
 
     if (!this.#fields[fieldName]) {
+      
       if (field.element === FORM_TABLE) {
         const val = loopar.utils.isJSON(value) ? JSON.parse(value) : value;
 
@@ -185,27 +186,32 @@ export default class CoreDocument {
     return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
   }
 
+  async deleteChildRecords(transaction=false){
+    const ID = await this.__ID__();
+    const childValuesReq = this.childValuesReq;
+
+    if(Object.keys(childValuesReq).length === 0) return;
+
+    for (const [key, value] of Object.entries(childValuesReq)) {
+      const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__ENTITY__.id}' AND parent_id = '${ID}'`;
+      await loopar.db.execute(deleteQuery, transaction);
+    }
+  }
+
   async save() {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
-
-    async function deleteChildRecords(childValuesReq, parentDocumentId, parentId) {
-      for (const [key, value] of Object.entries(childValuesReq)) {
-        const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${parentDocumentId}' AND parent_id = '${parentId}'`;
-        await loopar.db.execute(deleteQuery, false);
-      }
-    }
-
     async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
 
         const documentsPromises = rows.map(async (row) => {
+          row.name = loopar.utils.randomString(15);
           row.parent_document = parentDocumentId;
           row.parent_id = parentId;
 
           const document = await loopar.newDocument(key, row);
-          return document.save();
+          return await document.save();
         });
 
         await Promise.all(documentsPromises);
@@ -216,7 +222,6 @@ export default class CoreDocument {
       this.setUniqueName();
       if (validate) await this.validate();
 
-      console.log(["onSave", this.__ENTITY__]);
       if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
         await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
         this.__DOCUMENT_NAME__ = this.name;
@@ -233,16 +238,13 @@ export default class CoreDocument {
         }
       }
 
-      if (!this.is_single && !loopar.installing) {
-        const ID = await this.__ID__();
-        const childValuesReq = this.childValuesReq;
+      const childValuesReq = this.childValuesReq;
 
-        if (Object.keys(childValuesReq).length) {
-          await deleteChildRecords(childValuesReq, this.__ENTITY__.id, ID);
-          await updateChildRecords(childValuesReq, this.__ENTITY__.id, ID);
-        }
+      if (Object.keys(childValuesReq).length) {
+        await this.deleteChildRecords(childValuesReq);
+        await updateChildRecords(childValuesReq, this.__ENTITY__.id, await this.__ID__());
       }
-
+      
       await this.updateHistory();
       await this.updateInstaller();
 
@@ -380,6 +382,7 @@ export default class CoreDocument {
     }
 
     await loopar.db.beginTransaction();
+    await this.deleteChildRecords(true);
     await loopar.db.deleteRow(this.__ENTITY__.name, this.__DOCUMENT_NAME__, sofDelete);
     updateHistory && await this.updateHistory("Deleted");
 
@@ -497,7 +500,7 @@ export default class CoreDocument {
 
   get stringifyValues() {
     return Object.values(this.#fields)
-      .filter(field => field.name !== ID && field.element !== FORM_TABLE)
+      .filter(field => (field.name !== ID || loopar.installing) && field.element !== FORM_TABLE)
       .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 
@@ -516,7 +519,6 @@ export default class CoreDocument {
   }
 
   get childValuesReq() {
-    //console.log("Child Values Req", Object.values(this.#fields).filter(e => e.element===FORM_TABLE).map(e => e.value))
     return Object.values(this.#fields)
       .filter(field => field.name !== ID && field.element === FORM_TABLE)
       .reduce((acc, cur) => ({ ...acc, [cur.options]: cur.value }), {});

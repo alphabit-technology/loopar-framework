@@ -30,7 +30,7 @@ export class Session {
   destroy(resolve) {
     this.req.session.destroy(err => {
       if (err) throw new Error(err);
-      resolve();
+      resolve && resolve();
     });
   }
 

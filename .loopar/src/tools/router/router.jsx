@@ -106,7 +106,8 @@ export default class Router extends HTTP {
     //this.rootApp.progress(20);
     //this.rootApp.setDocument(await this.#fetch())
   }
-  #fetch() {
+
+  /*#fetch() {
     return new Promise((resolve, reject) => {
       this.send({
         action: this.route.pathname,
@@ -121,7 +122,7 @@ export default class Router extends HTTP {
       });
     });
   }
-
+*/
   #bindEvents() {
     global.addEventListener && global.addEventListener('popstate', (e) => {
       e.preventDefault();

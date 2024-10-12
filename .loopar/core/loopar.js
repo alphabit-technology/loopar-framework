@@ -18,7 +18,7 @@ import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
-import { singularize, titleize } from "inflection";
+import { singularize, titleize, humanize } from "inflection";
 import { elementsDict } from "loopar";
 //import pug from "pug";
 
@@ -98,10 +98,13 @@ export class Loopar {
     return this.getDirList(this.makePath(this.pathRoot, "apps"));
   }
 
-  getEntities() {
+  getEntities(appName) {
     const basePath = this.pathRoot;
 
     return this.getApps().reduce((acc, app) => {
+      if (appName && !loopar.utils.compare(app.name, appName)) return acc;
+      //if(appName && app.name != appName) return acc;
+
       const moduleRoot = path.resolve(basePath, "apps", app.name, `modules`);
       const modules = this.getDirList(moduleRoot);
 
@@ -119,6 +122,8 @@ export class Loopar {
             if (data) {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
               data.entityRoot = this.makePath("apps", app.name, "modules", module.name, core.name, entity.name);
+              //replace all - with space and titleize
+              data.__APP__ = titleize(humanize(app.name)).replace(/-/g, ' ');
 
               acc.push(data);
             } else {
@@ -138,7 +143,7 @@ export class Loopar {
 
     const getEntityFields = (fields) => {
       const getFields = fields => fields.reduce((acc, field) => acc.concat(field, ...getFields(field.elements || [])), []);
-      
+
       return getFields(fields).filter(field => {
         const def = elementsDict[field.element]?.def || {};
         return def.isWritable
@@ -151,13 +156,19 @@ export class Loopar {
 
       if (isBuilder) {
         types[doc.name] = {
-          __ENTITY__: doc.name,
+          entityRoot: doc.entityRoot,
+          __NAME__: doc.name,
+          __ENTITY__: doc.__ENTITY__ || "Entity",
           __BUILD__: doc.build || doc.name,
+          __APP__: doc.__APP__,
+          __ID__: doc.id,
           fields: getEntityFields(JSON.parse(doc.doc_structure || "[]"))
         }
       }
-      
+
       acc[doc.name] = {
+        __NAME__: doc.name,
+        __APP__: doc.__APP__,
         __ENTITY__: doc.__ENTITY__ || "Entity",
         entityRoot: doc.entityRoot,
         is_single: (!isBuilder && doc.is_single !== 0) ? 1 : 0,
@@ -174,15 +185,31 @@ export class Loopar {
   }
 
   getRef(entity) {
-    return fileManage.getConfigFile('refs', null, {}).refs[entity];
+    return this.getRefs()[entity];
+  }
+
+  getRefs(app) {
+    const refs = fileManage.getConfigFile('refs', null, {}).refs;
+
+    if (app) {
+      return Object.values(refs).filter(ref => ref.__APP__ === app);
+    }
+
+    return refs;
   }
 
   getType(type) {
-    return fileManage.getConfigFile('refs', null, {}).types[type];
+    return this.getTypes()[type];
   }
 
-  getTypes() {
-    return fileManage.getConfigFile('refs', null, {}).types;
+  getTypes(app) {
+    const types = fileManage.getConfigFile('refs', null, {}).types;
+
+    if (app) {
+      return Object.values(types).filter(type => type.__APP__ === app);
+    }
+
+    return types;
   }
 
   makeClientImporter() {
@@ -290,11 +317,16 @@ export class Loopar {
     }
   }
 
-  async build() {
-    await this.buildRefs();
+  async makeDefaultFolders() {
     await fileManage.makeFolder('', "apps");
     await fileManage.makeFolder('public/uploads', "thumbnails");
     await fileManage.makeFolder('public/js', 'components');
+  }
+
+  async build() {
+    if (this.installingApp) return;
+    await this.buildRefs();
+    await this.makeDefaultFolders();
 
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);
@@ -344,15 +376,15 @@ export class Loopar {
     }
 
     const data = {
-      databaseInitialized: this.databaseInitialized,
+      DBInitialized: this.DBInitialized,
       modulesGroup: []
     };
 
-    data.databaseServerInitialized = await this.db.testServer();
-    data.databaseInitialized = data.databaseServerInitialized && await this.db.testDatabase();
-    data.frameworkInstalled = data.databaseInitialized && await this.db.testFramework();
+    data.DBServerInitialized = await this.db.testServer();
+    data.DBInitialized = data.DBServerInitialized && await this.db.testDatabase();
+    data.__installed__ = data.DBInitialized && await this.db.testFramework();
 
-    if (data.frameworkInstalled) {
+    if (data.__installed__) {
       const activeWebApp = await this.db.getDoc('System Settings');
       const webApp = await this.db.getDoc('App', activeWebApp.active_web_app);
 
@@ -412,44 +444,7 @@ export class Loopar {
 
     process.on('uncaughtException', err => {
       console.error(['LOOPAR: uncaughtException', err]);
-
-      const httpError = getHttpError(err);
-
-      const error = new Error(httpError.description);
-      error.stack = err.stack || httpError.description;
-      error.code = httpError.code;
-      error.description = httpError.description;
-
-
-      if (this.db) {
-        this.db.transaction = false;
-        this.db.transactions = [];
-      }
-
-      const { res, req } = this.lastController || {};
-      if (this.lastController && !this.lastController.completedTransaction) {
-        this.lastController.completedTransaction = true;
-        this.lastController.sendError(error).then(response => {
-          this.server.sendResponse(res, req, response);
-        });
-      } else if (res) {
-        this.lastController = null;
-        this.server.sendResponse(res, req, error);
-      } else {
-        try {
-          this.res.status(500).send(`
-            <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
-              <h1 style="font-size: 100px; margin: 0;">500</h1>
-              <h3 style="font-size: 30px; margin: 0;">Internal Sever Error</h3>
-              <span style="font-size: 20px; margin: 0;">${err.stack}</span>
-              <hr style="width: 50%; margin: 20px 0;"/>
-              <span style="font-size: 20px; margin: 0;">Loopar</span>
-            </div>
-        `);
-        } catch (e) {
-          console.error(['LOOPAR: Internal Server Error', e]);
-        }
-      }
+      this.server && this.server.renderError({ error: getHttpError(err) });
     });
 
     //global.__META_COMPONENTS__ = {};
@@ -480,13 +475,13 @@ export class Loopar {
     const throwError = (type) => {
       this.throw({
         code: 404,
-        message: `${(type || "Entity")} ${document} not found`,
+        message: `${(type || "Entity")}: ${document} not found`,
       });
     }
 
     let ENTITY = null;
     const ref = this.getRef(document);
-    if(!ref) return throwError();
+    if (!ref) return throwError();
 
     const entity = ref.__ENTITY__;
 
@@ -647,8 +642,7 @@ export class Loopar {
       }
     }
 
-    console.log(["Update Installer", installerData])
-    //await fileManage.setConfigFile('installer', installerData, appPath);
+    await fileManage.setConfigFile('installer', installerData, appPath);
   }
 
   async appStatus(appName) {

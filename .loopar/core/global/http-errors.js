@@ -365,7 +365,9 @@ export function getHttpError(err) {
   err = typeof err === "object" ? err : { code: err };
   const code = err.code || "500";
   const httpError =  Object.values(httpErrors).find(error => error.code == code) || httpErrors[code] || httpErrors["500 Internal Server Error"];
+  httpError.status = code;
   httpError.description = err.message || httpError.description;
-  httpError.title = httpError.code;
+  httpError.title = httpError.code + " Error";
 
-  return httpError;}
+  return httpError;
+}

@@ -13,15 +13,14 @@ type Item = {
 }
 
 const SideNavRender = ({items}) => {
-  const { menuItems, currentLink } = useWorkspace();
+  const { menuItems, currentPage } = useWorkspace();
 
   const getParentLink = (page: String) => {
     return menuItems.find((item: Item) => item.page === page)?.link;
   }
 
   const groupMenu = items.reduce((acc:Array<Item>, i:Item) => {
-    i.items = menuItems
-      .filter((_i: Item) => _i.parent_menu == i.page)
+    i.items = JSON.parse(JSON.stringify(menuItems.filter((_i: Item) => _i.parent_menu == i.page)))
 
     if (!acc.find((_i: Item) => _i.page == i.page)) {
       acc.push(i);
@@ -40,10 +39,10 @@ const SideNavRender = ({items}) => {
         path={path}
         title={item.link}
         className={`rounded-md pl-0 bg-red-400`}
-        active={currentLink === item.page || subItems.some((i:Item) => (i.page == currentLink && i.parent_menu == item.page))}
+        active={currentPage === item.page || subItems.some((i:Item) => (i.page == currentPage && i.parent_menu == item.page))}
       >
         {subItems.map((child:Item) => {
-          const active = currentLink === child.page;
+          const active = currentPage === child.page;
           const activeText = active ? "text-primary/80" : "text-slate-500/70 hover:text-slate/70";
           return (
             <Link

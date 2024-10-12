@@ -270,6 +270,11 @@ function formatDateTime(date, format = "YYYY-MM-DD HH:mm:ss") {
   return date == "Invalid Date" ? null : date;
 }
 
+function compare(a, b) {
+  //replace - and _ with space and convert to lowercase
+  return a.replace(/[-_]/g, ' ').toLowerCase() === b.replace(/[-_]/g, ' ').toLowerCase();
+}
+
 export {
   Capitalize,
   UPPERCASE,
@@ -297,5 +302,6 @@ export {
   binaryValue,
   formatDate,
   formatTime,
-  formatDateTime
+  formatDateTime,
+  compare
 }

@@ -6,12 +6,10 @@ import { Loader } from "@/loader";
 (async () => {
   const __META_SCRIPT__ = document.getElementById('__loopar-meta-data__');
   const __META__ = JSON.parse(__META_SCRIPT__?.textContent);
-
   const { Workspace, Document } = await Loader(__META__, "client");
 
   ReactDOM.hydrateRoot(
     document.getElementById("loopar-root"),
-    //document,
     <BrowserRouter>
       <App
         __META__={__META__}

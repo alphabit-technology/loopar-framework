@@ -106,7 +106,7 @@ export default class FormContext extends BaseForm {
   render(content: React.ReactNode) {
     if (content) return content;
     const meta = this.props.meta;
-    const { STRUCTURE } = meta.__ENTITY__;
+    const STRUCTURE = this.__STRUCTURE__;
 
     return super.render(
       <FormWrapper meta={meta} docRef={this}>
