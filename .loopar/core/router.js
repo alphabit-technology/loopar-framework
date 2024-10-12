@@ -6,6 +6,7 @@ import WorkspaceController from './controller/workspace-controller.js';
 import BaseController from './controller/base-controller.js';
 import { getHttpError } from './global/http-errors.js';
 import { url } from 'inspector';
+import { type } from 'os';
 
 const coreInstallerController = 'installer-controller';
 
@@ -58,16 +59,20 @@ export default class Router {
   }
 
   renderAjax(res, response) {
-    const status = parseInt(response.status) || parseInt(response.code) || 500;
-    if (!res.headersSent) {
-      res.status(status);
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'POST');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      res.send(response);
-    }else{
-      console.error(["Error on request process, petition cant not send to client", response]);
+    //response = typeof response === 'string' ? { message: response } : response;
+    if(response){
+      const status = parseInt(response.status) || parseInt(response.code) || 200;
+      if (!res.headersSent) {
+        response = typeof response === 'string' ? { message: response } : response;
+        res.status(status);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.send(response);
+      }else{
+        console.error(["Error on request process, petition cant not send to client", response]);
+      }
     }
   }
 
@@ -219,9 +224,9 @@ export default class Router {
 
     const controllerMiddleware = async (req, res, next) => {
       await this.makeController(req, res);
-      const response = req.__WORKSPACE__.__DOCUMENT__;
+      let response = req.__WORKSPACE__.__DOCUMENT__;
       
-      if(response.hasOwnProperty('redirect')) {
+      if(typeof response == Object && response.hasOwnProperty('redirect')) {
         return this.redirect(res, response.redirect);
       }
 
