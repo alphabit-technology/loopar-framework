@@ -13,7 +13,7 @@ const Layout = (({ ...props }) => {
   }, []);
 
   return (
-    <div className="absolute h-full w-full">
+    <div className="w-full h-[100vh]">
       <section
         className="flex h-full"
       >

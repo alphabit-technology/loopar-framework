@@ -6,7 +6,7 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import AOS from 'aos';
 
 const Layout = (({ webApp={}, ...props }) => {
-  const { menuItems, currentPage } = useWorkspace();
+  const { menuItems, activeParentMenu } = useWorkspace();
   const [animated, setAnimated] = useState(true);
 
   const handlerInitAnimation = () => {
@@ -23,23 +23,42 @@ const Layout = (({ webApp={}, ...props }) => {
     handlerInitAnimation();
   }, [animated]);
 
-  const currentGroup = menuItems.find(item => item.page === currentPage)?.parent_menu;
-  const currrent = menuItems.find(item => item.page === currentPage);
+  function buildMenuTree(menu) {
+    const menuMap = {};
 
-  const sideMenuItems = [
-    ...menuItems.filter(item => item.parent_menu && (item.parent_menu === currentGroup)),
-    ...menuItems.filter(item => item.parent_menu && (item.parent_menu === currrent?.page))
-  ];
- 
+    menu.forEach(item => {
+      menuMap[item.link] = { ...item, items: [] };
+    });
+
+    const menuTree = [];
+
+    menu.forEach(item => {
+      if (item.parent_menu) {
+        if (menuMap[item.parent_menu]) {
+          menuMap[item.parent_menu].items.push(menuMap[item.link]);
+        }else{
+          menuTree.push(menuMap[item.link]);
+        }
+      } else {
+        menuTree.push(menuMap[item.link]);
+      }
+    });
+
+    return menuTree;
+  }
+
+  const menuItemsTree = buildMenuTree(menuItems);
+  const childMenu = menuItemsTree.find(item => item.page === activeParentMenu)?.items || [];
+
   return (
     <div className="vaul-drawer-wrapper">
       <TopNav />
       <section
         className={`flex absolute w-full`}
       >
-        <SideNav sideMenuItems={sideMenuItems}/>
+        <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu}/>
         <div
-          className={`ease-induration-100 w-full overflow-auto mt-webHeaderHeight ${sideMenuItems.length > 0 && 'lg:ml-webSidebarWidth'}`}
+          className={`ease-induration-100 w-full overflow-auto mt-webHeaderHeight ${childMenu.length > 0 && 'lg:ml-webSidebarWidth'}`}
         >
           <div className="p-3">
             {props.children}
@@ -79,10 +98,10 @@ export default function WebWorkspace(props) {
     return webApp.menu_items || [];
   }
 
-  const currentPage = __META__.__DOCUMENT__?.__ENTITY__?.name
+  const activePage = __META__.__DOCUMENT__?.__ENTITY__?.name
 
   return (
-    <BaseWorkspace menuItems={menuItems} currentPage={currentPage}>
+    <BaseWorkspace menuItems={menuItems} activePage={activePage}>
       <Layout {...props} webApp={webApp}>
         {getDocuments()}
       </Layout>

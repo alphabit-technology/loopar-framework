@@ -25,7 +25,7 @@ export function DesignElement(props){
 
   return (
     <a
-      className="flex w-full flex-col items-center rounded-sm border bg-card p-2 text-card-foreground shadow cursor-pointer transition-colors hover:bg-muted/50"
+      className="flex w-full flex-col items-center rounded border p-2 shadow cursor-pointer transition-colors hover:bg-muted/50"
       draggable="true"
       ref={draggableRef}
       onDragStart={(e) => {

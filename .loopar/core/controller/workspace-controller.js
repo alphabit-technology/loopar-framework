@@ -61,8 +61,10 @@ export default class WorkspaceController extends AuthController {
     const HTML = await render(url, __META__, this.req, this.res);
     const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));
 
+
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark')
+
     html = html.replace(`<!--__loopar-meta-data__-->`, `
       <script id="__loopar-meta-data__" type="application/json">
         ${JSON.stringify(__META__)}

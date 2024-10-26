@@ -1,5 +1,5 @@
 import BaseInput from "$base-input";
-import {Quill} from '@quill';
+import {Quill} from './quill/quill';
 
 export default function MetaHtmlBlock(props) {
   const { renderInput, value } = BaseInput(props);

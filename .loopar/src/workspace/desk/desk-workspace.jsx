@@ -6,8 +6,8 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import React, {useState} from "react";
 
 export default function DeskWorkspace(props){
-  const {openNav, getDocuments, __META__} = useWorkspace();
-  const [menuData, setMenuData] = useState(__META__.menu_data || []);
+  const {openNav, getDocuments, __META__={}} = useWorkspace();
+  const [menuData, setMenuData] = useState(__META__?.menu_data || []);
 
   const refresh = () => {
     return new Promise(() => {

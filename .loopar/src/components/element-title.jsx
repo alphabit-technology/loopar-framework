@@ -30,7 +30,7 @@ export function ElementTitle({element, active, ...props}) {
             variant="destructive"
             size="xs"
             onClick={handleEditElement}
-            className="h-5 w-10 rounded-none rounded-bl-md"
+            className="h-5 w-10 rounded-none rounded-bl"
           >
             <PencilIcon className="h-4 w-4"/>
           </Button>
@@ -45,9 +45,9 @@ export function ElementTitle({element, active, ...props}) {
         </> 
       )}
       <Button
-        variant="ghost"
+        variant="primary"
         size="xs"
-        className="h-5 rounded-none rounded-tr-md px-1 bg-gradient-to-r from-transparent to-slate-900/20"
+        className="h-5 rounded-none rounded-tr px-1 text-secondary"
         onClick={(e) => {e.stopPropagation(); e.preventDefault();}}
       >
         {(element.elementTitle || element.element).toString().split(".")[0].toUpperCase()}

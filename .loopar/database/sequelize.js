@@ -2,11 +2,46 @@
 
 import mysql from 'mysql';
 import { loopar } from "../core/loopar.js";
-import { Sequelize } from '@sequelize/core';
+import { Sequelize, QueryTypes, Model, sql } from '@sequelize/core';
+import { DataTypes } from '@sequelize/core';
+//import pug from "pug";
+global.DataTypes = DataTypes;
 
-import { SqliteDialect } from '@sequelize/sqlite3';
+//console.log(["DataTypes", DataTypes]);
+//const fields = ['name', 'document', 'field', 'value'];
 
-const ENGINE = 'ENGINE=INNODB';
+class SingleModel extends Model {}
+
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: 'path/to/database.sqlite'
+});
+
+SingleModel.init({
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  document: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  field: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  value: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  __document_status__: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+}, {
+  sequelize,
+  modelName: 'tblDocument Single Values'
+});
 
 export default class DataBase {
   #connection = null;
@@ -39,14 +74,9 @@ export default class DataBase {
           console.error(new Date(), 'MySQL close', err);
        });
     });*/
+    ``
 
-    /*this.sequelize = new Sequelize({
-      dialect: SqliteDialect,
-      storage: ':memory:', // or ''
-      pool: { max: 1, idle: Infinity, maxUses: Infinity },
-    });*/
-
-    this.#connection = new mysql.createConnection(this.dbConfig);
+    this.sequelize = sequelize; 
   }
 
   dbFielTypeCanHaveDefaultValue(fieldType) {
@@ -78,8 +108,6 @@ export default class DataBase {
     }
   }
 
-
-
   datatype(field) {
     const UNIQUE = [field.data.unique ? 'NOT NULL UNIQUE' : ''];
 
@@ -93,6 +121,8 @@ export default class DataBase {
       default_value = 'CURRENT_TIMESTAMP';
     }*/
 
+    const types = {}
+
     if ([DATE, DATE_TIME, TIME].includes(field.element)) {
       if (field.element === DATE) {
         defaultValue = loopar.utils.formatDate(defaultValue, 'YYYY-MM-DD');
@@ -103,11 +133,15 @@ export default class DataBase {
       }
     }
 
-    const DEFAULT = hasDefault ? `DEFAULT '${defaultValue}'` : '';
+    if(hasDefault){
+      types.defaultValue = defaultValue;
+    }
+    //const DEFAULT = hasDefault ? `DEFAULT '${defaultValue}'` : '';
 
     const dataType = (type) => {
       if (field.element === ID) {
-        return 'INT(11) AUTO_INCREMENT';
+        types.autoIncrement = true;
+        types.primaryKey = true;
       }
 
       const types = [
@@ -118,8 +152,8 @@ export default class DataBase {
       return [...new Set(types)].join(' ');
     }
 
-    const fieldType = dataType(type && type.toString().length > 0 ? type : field.element);
-    return `${loopar.utils.UPPERCASE(fieldType)} ${DEFAULT}`;
+    //const fieldType = dataType(type && type.toString().length > 0 ? type : field.element);
+    //return `${loopar.utils.UPPERCASE(fieldType)} ${DEFAULT}`;
   }
 
   debugText(text) {
@@ -131,13 +165,7 @@ export default class DataBase {
   }
 
   connection() {
-    return this.#connection || new mysql.createConnection(this.dbConfig);
-    /*return new Promise(resolve => {
-       this.pool.getConnection((err, connection) => {
-          if (err) throw err; // not connected!
-          resolve(connection);
-       });
-    });*/
+    return this.sequelize;
   }
 
   start() {
@@ -178,7 +206,7 @@ export default class DataBase {
   }
 
   async endTransaction() {
-    this.transaction = false;
+    /*this.transaction = false;
     const connection = await this.connection();
 
     const execute = query => {
@@ -200,7 +228,7 @@ export default class DataBase {
         this.transactions = [];
         connection.commit(err => err ? connection.rollback(() => this.throw(err)) : resolve());
       });
-    });
+    });*/
   }
 
   throw(error) {
@@ -210,43 +238,17 @@ export default class DataBase {
     loopar.throw(error);
   }
 
-  execute(query = this.query, inTransaction = true) {
-    return new Promise(async (resolve, reject) => {
+  async execute(query = this.query, inTransaction = true) {
+    return new Promise(async resolve => {
       if (this.transaction && inTransaction) {
         this.transactions.push(query);
         resolve();
       } else {
-        //try {
         try {
-          const connection = await this.connection();
-
-          connection.query(query, (err, result) => {
-            if (err) console.log(["_______________QUERY ERROR_______________", query, err]);
-            //if (err) loopar.throw(err);
-           // return resolve(result);
-        
-            if (err && err.code === 'ER_NO_SUCH_TABLE') {
-              return loopar.throw({
-                code: 404,
-                status: 404,
-                title: 'ER_NO_SUCH_TABLE',
-                message: err.sqlMessage,
-              });
-            }
-
-            if(err) {
-              return loopar.throw({
-                code: 500,
-                status: 500,
-                title: 'QUERY ERROR',
-                message: err.sqlMessage
-              });
-            }
-
-            return resolve(result);
-          });
+          const r = await this.sequelize.query(query, { type: QueryTypes.SELECT});
+          return resolve(r);
         } catch (err) {
-          //return reject(err);
+          console.log(["_______________QUERY ERROR_______________", err, query]);
           return loopar.throw({
             code: 500,
             status: 500,
@@ -254,10 +256,6 @@ export default class DataBase {
             message: err.sqlMessage
           });
         }
-        //} catch (err) {
-        //  loopar.throw(err);
-          //reject(err);
-        //}
       }
     });
   }
@@ -313,8 +311,6 @@ export default class DataBase {
   }
 
   async WHERE(__CONDITIONS__ = null) {
-    const con = await this.connection();
-
     const WHERE = (__CONDITIONS__) => {
       return Object.entries(__CONDITIONS__ || {}).reduce((acc, [operand, DEF]) => {
         operand = this.getOperand(operand);
@@ -328,22 +324,22 @@ export default class DataBase {
             if (!VALUE || (Array.isArray(VALUE) && VALUE.length === 0)) VALUE = [null]
 
             if (["IN", "NOT IN"].includes(operand)) {
-              return [...acc, `${FIELD} ${operand} (${VALUE.map(v => con.escape(v)).join(',')})`];
+              return [...acc, `${FIELD} ${operand} (${VALUE.map(v => this.#escape(v)).join(',')})`];
             } else if (["BETWEEN", "NOT BETWEEN"].includes(operand)) {
-              return [...acc, `${FIELD} ${operand} ${VALUE.map(v => con.escape(v)).join(' AND ')}`];
+              return [...acc, `${FIELD} ${operand} ${VALUE.map(v => this.#escape(v)).join(' AND ')}`];
             } else if (["LIKE", "NOT LIKE"].includes(operand)) {
               if (Array.isArray(DEF)) {
-                const field = Array.isArray(DEF[0]) ? `CONCAT(${DEF[0].map(f => con.escapeId(f)).join(',')})` : con.escapeId(DEF[0]);
-                return [...acc, `${field} ${operand} ${con.escape(`%${DEF[1]}%`)}`];
+                const field = Array.isArray(DEF[0]) ? `CONCAT(${DEF[0].map(f => this.#escapeId(f)).join(',')})` : this.#escapeId(DEF[0]);
+                return [...acc, `${field} ${operand} ${this.#escape(`%${DEF[1]}%`)}`];
               } else {
-                return [...acc, `${FIELD} ${operand} ${con.escape(`%${VALUE}%`)}`];
+                return [...acc, `${FIELD} ${operand} ${this.#escape(`%${VALUE}%`)}`];
               }
             } else if (["IS", "IS NOT"].includes(operand)) {
-              return [...acc, `${FIELD} ${operand} ${con.escape(VALUE)}`];
+              return [...acc, `${FIELD} ${operand} ${this.#escape(VALUE)}`];
             }
           } else {
             const def = `${Object.entries(DEF).reduce((acc, [key, value]) => {
-              return [...acc, `${con.escapeId(key)} ${operand} ${con.escape(value)}`];
+              return [...acc, `LOWER(${this.#escapeId(key)}) ${operand} LOWER(${this.#escape(value)})`];
             }, []).join(' AND ')}`;
 
             return def.length > 0 ? [...acc, `(${def})`] : acc;// [...acc, def.length > 0 ? `(${def})` : []];
@@ -370,14 +366,8 @@ export default class DataBase {
     this.pagination ? this.pagination.page = page : this.makePagination();
   }
 
-  getLastId(document) {
-    return new Promise((resolve, reject) => {
-      this.execute(`SELECT MAX(id) as id FROM ${this.tableName(document)}`, false).then(result => {
-        resolve(result[0].id);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+  async getLastId(document) {
+    return await this.getOneField(`SELECT MAX(id) as id FROM ${this.tableName(document)}`);
   }
 
   isJson(str) {
@@ -389,51 +379,110 @@ export default class DataBase {
     return true;
   }
 
-  async #escape(value, connection = null) {
-    connection = connection || await this.connection();
-
-    return connection.escape(value);
+  #escape(value) {
+    try {
+      return this.sequelize.escape(value);
+    } catch (e) {
+      return 'NULL';
+    }
   }
 
-  async #escapeId(value, connection = null) {
-    connection = connection || await this.connection();
-
-    return connection.escapeId(value);
+  #escapeId(value) {
+    return `\`${value}\``;
   }
+
+  objectToSqlSet(obj) {
+    const keys = Object.keys(obj);
+    const values = Object.values(obj);
+
+    // Crear la cadena 'key=value' para cada clave y valor
+    const setString = keys.map((key, index) => {
+      const value = values[index];
+
+      // Si el valor es una cadena de texto, debe estar entre comillas simples
+      if (typeof value === 'string') {
+        return `${key} = '${value.replace(/'/g, "''")}'`;  // Escapar comillas simples
+      }
+
+      // Si el valor es booleano, lo convertimos a 1 o 0
+      if (typeof value === 'boolean') {
+        return `${key} = ${value ? 1 : 0}`;
+      }
+
+      // Si el valor es null, ponerlo explícitamente como NULL
+      if (value === null) {
+        return `${key} = NULL`;
+      }
+
+      // Para los números y otros tipos de datos
+      return `${key} = ${value}`;
+    }).join(', ');
+
+    return setString;
+  }
+
+  objectToSqlInsert(obj) {
+    const keys = Object.keys(obj);
+    const values = Object.values(obj);
+
+    const setString = keys.map((key, index) => {
+      const value = values[index];
+
+      if (typeof value === 'string') {
+        return `'${value.replace(/'/g, "''")}'`;
+      }
+
+      if (typeof value === 'boolean') {
+        return value ? 1 : 0;
+      }
+
+      if (value === null) {
+        return 'NULL';
+      }
+
+      return value;
+    }).join(', ');
+  
+    return setString;
+  }
+
+  /*async insertOne(document, data = {}, isSingle = false) {
+    if(await this._count(document, { field_name: 'name', field_value: data.name }) > 0) {
+      return await this.execute(`UPDATE ${this.tableName(document)} SET ${this.objectToSqlSet(data)} WHERE name = '${data.name}'`, false);
+    }else{
+      return await this.execute(`INSERT INTO ${this.tableName(document)} (${Object.keys(data).map(c => this.#escapeId(c)).join(',')}) VALUES (${Object.values(data).map(v => this.#escape(v)).join(",")})`, false);
+    }
+  }*/
 
   async insertRow(document, data = {}, isSingle = false) {
-    return new Promise(async (resolve, reject) => {
-      const con = await this.connection();
+    if (isSingle) {
+      for(const field of Object.keys(data)) {
+        const values = {
+          name: document + '-' + field,
+          document: document,
+          field: field,
+          value: data[field] || "",
+          __document_status__: 'Active'
+        }
 
-      if (isSingle) {
-        const fields = ['name', 'document', 'field', 'value'];
-
-        const values = Object.entries(data).reduce((acc, [field, value]) => {
-          acc.push(`(${con.escape(document + '-' + field)},${con.escape(document)},${con.escape(field)},${con.escape(value)})`);
-
-          return acc;
-        }, []);
-
-        const singleTable = await this.tableName('Document Single Values');
-
-        const onDuplicateKey = fields.map(field => `${field} = VALUES(${field})`).join(',');
-
-        const query = `INSERT INTO ${singleTable} (${fields.join(',')}) VALUES ${values.join(',')} ON DUPLICATE KEY UPDATE ${onDuplicateKey}`;
-
-        this.execute(query, false).then(resolve).catch(reject);
-      } else {
-        con.query(`INSERT INTO ${await this.tableName(document)} SET ?`, data, function (error, results) {
-          error ? reject(error) : resolve(results);
-        });
+        if(await SingleModel.count({ where: {name: values.name} }) > 0) {
+          await SingleModel.update(values, { where: {name: values.name} });
+        }else{
+          await SingleModel.create(values);
+        }
       }
-    });
+    } else {
+      await this.execute(`
+        INSERT INTO ${this.tableName(document)} 
+        (${Object.keys(data).map(c => this.#escapeId(c)) .join(',')}) 
+        VALUES (${Object.values(data).map(v => this.#escape(v || "")).join(",")})
+      `);
+    }
   }
 
   async mergeData(data) {
-    const connection = await this.connection();
-
     return Object.keys(data).map(x => {
-      return `${connection.escapeId(x)}=${connection.escape(data[x])}`
+      return `${this.#escapeId(x)}=${this.#escape(data[x])}`
     }).join(',');
   }
 
@@ -442,8 +491,6 @@ export default class DataBase {
   }
 
   async #setValueTo(document, field, value, name, { distinctToId = null, ifNotFound = "throw" } = {}) {
-    const connection = await this.connection();
-
     const condition = {
       ...(typeof name === 'object' ? name : { '=': { name: name } }),
     };
@@ -457,51 +504,32 @@ export default class DataBase {
     const where = await this.WHERE(condition);
 
     const query = `
-         UPDATE ${await this.tableName(document)}
-         SET ${connection.escapeId(field)}=${connection.escape(value)} 
-         WHERE 1=1 ${where}
-      `;
+      UPDATE ${this.tableName(document)}
+      SET ${this.#escapeId(field)}=${this.#escape(value)} 
+      WHERE 1=1 ${where}
+   `;
 
-    return new Promise((resolve, reject) => {
-      this.execute(query).then(result => {
-        resolve(result);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    await this.execute(query, false);
   }
 
   async updateRow(document, data = {}, name, isSingle = false) {
-    const connection = await this.connection();
     data = await this.mergeData(data);
-    const query = `UPDATE ${await this.tableName(document)} SET ${data} WHERE \`name\`=${connection.escape(name)}`;
-
-    return new Promise((resolve, reject) => {
-      this.execute(query).then(result => {
-        resolve(result);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    const query = `UPDATE ${this.tableName(document)} SET ${data} WHERE \`name\`=${this.#escape(name)}`;
+    await this.execute(query, false);
   }
 
   async deleteRow(document, name, sofDelete = true) {
     const deletedName = `${name}-${loopar.utils.randomString(20)}`;
-    let query = `DELETE FROM ${await this.tableName(document)} WHERE \`name\` = '${name}'`;
+    let query = `DELETE FROM ${this.tableName(document)} WHERE \`name\` = '${name}'`;
     if (sofDelete) {
       query = `
-         UPDATE ${await this.tableName(document)}
-         SET __document_status__ = 'Deleted', name='${deletedName}'
-         WHERE \`name\` = '${name}'`;
+        UPDATE ${this.tableName(document)}
+        SET __document_status__ = 'Deleted', name='${deletedName}'
+        WHERE \`name\` = '${name}'
+      `;
     }
 
-    return new Promise((resolve, reject) => {
-      this.execute(query).then(result => {
-        resolve(result);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    await this.execute(query, false);
   }
 
   get _query() {
@@ -566,76 +594,75 @@ export default class DataBase {
   }
 
   makeColumns(fields, dbFields = {}) {
-    dbFields = Object.values(dbFields).reduce((acc, field) => {
-      acc[field.Field.toLowerCase()] = field;
-
-      return acc;
-    }, {});
-
     return fields.reduce((acc, field) => {
       if (fieldIsWritable(field)) {
-        if (field.data.name !== 'name' || !dbFields["name"]) {
-          const pre = Object.keys(dbFields).length > 0 ? dbFields[field.data.name] ? 'MODIFY' : 'ADD' : '';
-          const column = `${pre} ${field.data.name} ${this.datatype(field)}`;
+        const def = ELEMENT_DEFINITION(field.element);
+        acc[field.data.name] = {
+          type: def.type,
+          ...field.data.required && { allowNull: false },
+        };
 
-          acc.push(column);
+        if(field.data.name == 'id') {
+          acc[field.data.name].primaryKey = true;
+          //acc[field.data.name].autoIncrement = true;
         }
       }
 
-      return [...acc, ...this.makeColumns(field.elements || [], dbFields)];
-    }, [])
+      if (field.elements) {
+        Object.assign(acc, this.makeColumns(field.elements || [], dbFields));
+      }
+
+      return acc;
+    }, {});
   }
 
-  async tableName(document, likeParam = false) {
-    const connection = await this.connection();
+  tableName(document, likeParam = false) {
     const table = `${this.tablePrefix}${document}`;
-    return likeParam ? connection.escape(table) : connection.escapeId(table);
+    return likeParam ? this.#escape(table) : this.#escapeId(table);
   }
 
   async makeTable(name, fields) {
     const tableQuery = await this.alterTableQueryBuild(name, fields, (loopar.DBInitialized && loopar.__installed__));
-    await this.execute(tableQuery, false);
+    //await this.execute(tableQuery, false);
+  }
+
+  async describeTable(document) {
+    return await this.sequelize.getQueryInterface().describeTable(this.tableName(document).replace(/`/g, ''));
   }
 
   async alterTableQueryBuild(document, fields = {}, checkIfExists = true) {
-    const TABLE = await this.tableName(document);
+    const TABLE = this.tableName(document).replace(/`/g, '');
     const [exist, hasPk] = checkIfExists ? [await this.count(document), await this.hasPk(document)] : [false, false];
 
-    return new Promise(resolve => {
-      if (exist) {
-        this.execute(`SHOW COLUMNS FROM ${TABLE}`, false).then(columns => {
-          const dbFields = columns.reduce((acc, col) => ({ ...acc, [col.Field]: col }), {});
+    if (exist) {
+      let dbFields = {};
 
-          const alterColumns = [
-            ...this.makeColumns(fields, dbFields),
-            ...(!hasPk ? [`ADD PRIMARY KEY (\`id\`)`] : [])
-          ];
-
-          this.query = `ALTER TABLE ${TABLE} ${alterColumns.join(',')} ;`;
-
-          resolve(this.query);
-        });
-      } else {
-        const columns = [...this.makeColumns(fields), `PRIMARY KEY (\`id\`)`];
-
-        //console.log(["CREATE TABLE", TABLE, columns]);
-
-        this.query = `CREATE TABLE IF NOT EXISTS ${TABLE} (${columns.join(',')}) ${ENGINE};`;
-        resolve(this.query);
+      try {
+        dbFields = await this.describeTable(document);
+      }catch(e) {
+        dbFields = {};
       }
-    });
+
+      const columns = this.makeColumns(fields, dbFields);
+
+      for (const field of Object.keys(columns)) {
+        if(dbFields[field]){
+          await this.sequelize.getQueryInterface().changeColumn(TABLE, field, columns[field]);
+        }else{
+          await this.sequelize.getQueryInterface().addColumn(TABLE, field, columns[field]);
+        }
+      }
+    } else {
+      const columns = this.makeColumns(fields);
+      
+      console.log(["_______________CREATE TABLE_______________", TABLE, exist,  columns]);
+      await this.sequelize.getQueryInterface().createTable(TABLE, columns);
+    }
   }
 
   async #getDbValue(document, field, name) {
     const where = typeof name === 'object' ? `WHERE 1=1 ${await this.WHERE(name)}` : `WHERE \`name\` = ${await this.#escape(name)}`;
-
-    return new Promise(async (resolve, reject) => {
-      this.execute(`SELECT ${await this.#escapeId(field)} FROM ${await this.tableName(document)} ${where}`, false).then(async result => {
-        resolve((result[0] || {})[field]);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    return await this.getOneField(`SELECT ${this.#escapeId(field)} FROM ${this.tableName(document)} ${where}`);
   }
 
   async getValue(document, field, name, { distinctToId = null, ifNotFound = "throw", includeDeleted = false } = {}) {
@@ -660,9 +687,8 @@ export default class DataBase {
     }
   }
 
-  async getDoc(document, name, fields = ['*'], { isSingle, includeDeleted = false } = {}) {
-    document = document === "Document" ? "Entity" : document;
-    //const entityIsSingle = typeof isSingle != "undefined" ? isSingle : await this.#getDbValue("Entity", 'is_single', document, { includeDeleted });
+  async getDoc(document, name, fields = ['*'], { includeDeleted = false } = {}) {
+    document = document == "Document" ? "Entity" : document;
     const ref = loopar.getRef(document);
     return await this.getRow(document, name, fields, { isSingle: ref.is_single, includeDeleted });
   }
@@ -673,18 +699,18 @@ export default class DataBase {
       '=': {
         'name': id
       }
-    }, { isSingle, includeDeleted }) || [];
+    }, { isSingle, includeDeleted });
 
-    return row[0] || null;
+    return row.length ? row[0] : null;
   }
 
   async getList(document, fields = ['*'], condition = null, { isSingle = false, all = false, includeDeleted = false } = {}) {
     if (isSingle) {
-      const singleTable = await this.tableName('Document Single Values');
+      const singleTable = this.tableName('Document Single Values');
       const result = await this.execute(`SELECT field, value from ${singleTable} WHERE \`document\` = '${document}'`, false);
       return [result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {})];
     } else {
-      const tableName = await this.tableName(document, false);
+      const tableName = this.tableName(document, false);
       fields = await this.makeFields(fields);
       condition = await this.WHERE(condition);
 
@@ -707,43 +733,52 @@ export default class DataBase {
     return await this.getList(document, fields, condition, { isSingle, all: true });
   }
 
+
   async makeFields(fields = ['*']) {
-    const connection = await this.connection();
-    return fields.map(field => field === '*' ? field : connection.escapeId(field)).join(',');
+    //const connection = await this.connection();
+    return fields.map(field => field === '*' ? field : this.#escapeId(field)).join(',');
+  }
+
+  get masterSchema() {
+    const dbSchema = {
+      sqlite: "sqlite_master",
+      mysql: "INFORMATION_SCHEMA.TABLES",
+      postgres: "information_schema.tables",
+      mssql: "INFORMATION_SCHEMA.TABLE",
+      oracle: "user_tables"
+    }[this.dbConfig.dialect];
+
+    if (!dbSchema) {
+      throw new Error("Database not supported");
+    }
+
+    return dbSchema;
   }
 
   async hasPk(document) {
-    const table = await this.tableName(document, true);
-    return new Promise(async resolve => {
-      this.execute(`
-        SELECT COUNT(*) as count 
-        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
-        WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`table_name\` = ${table} AND \`table_schema\` = '${this.database}'
-      `, false).then(res => {
-        resolve(res[0].count);
-      });
-    });
+    const table = this.tableName(document, true);
+
+    if(this.dbConfig.dialect === 'sqlite') {
+      return this.getOneField(`SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name = ${table} AND sql LIKE '%PRIMARY KEY%'`) > 0;
+    }
+
+    return this.getOneField(`
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+      WHERE \`CONSTRAINT_TYPE\` = 'PRIMARY KEY' AND \`table_name\` = ${table} AND \`table_schema\` = '${this.database}'
+    `);
   }
 
   async count(document) {
-    const table = await this.tableName(document, true);
-    return new Promise(async resolve => {
-      try {
-        //console.log([`SELECT COUNT(table_name) as count FROM INFORMATION_SCHEMA.TABLES WHERE \`table_name\` = ${table}`])
-        this.execute(
-          `
-            SELECT COUNT(table_name) as count 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE \`table_name\` = ${table} AND \`table_schema\` = '${this.database}'
-          `
-          , false
-        ).then(res => {
-          resolve(res[0].count);
-        });
-      } catch (e) {
-        resolve(0);
-      }
-    });
+    const masterQuery = {
+      sqlite: `SELECT COUNT(name) as count FROM sqlite_master WHERE type='table' AND name = ${this.tableName(document, true)}`,
+      mysql: `SELECT COUNT(table_name) as count FROM INFORMATION_SCHEMA.TABLES WHERE \`table_name\` = ${this.tableName(document, true)} AND \`table_schema\` = '${this.database}'`
+    }
+    try {
+      return await this.getOneField(masterQuery[this.dbConfig.dialect]);
+    } catch (e) {
+      return 0;
+    }
   }
 
   async _count(document, params = { field_name: 'name', field_value: null }, condition = null) {
@@ -751,37 +786,41 @@ export default class DataBase {
     document = document === "Document" ? "Entity" : document;
     const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
-    return new Promise(async resolve => {
-      const c = {
-        "!=": {
-          __document_status__: "Deleted",
+    const c = {
+      "!=": {
+        __document_status__: "Deleted",
+      },
+      AND: condition
+    };
+
+    if (param.field_value) {
+      c.AND = {
+        "=": {
+          [param.field_name]: param.field_value
         },
         AND: condition
-      };
-
-      if (param.field_value) {
-        c.AND = {
-          "=": {
-            [param.field_name]: param.field_value
-          },
-          AND: condition
-        }
       }
+    }
 
-      const WHERE = await this.WHERE(c);
+    const WHERE = await this.WHERE(c);
 
-      try {
-        this.execute(`SELECT COUNT(*) as count FROM ${await this.tableName(document)} WHERE 1=1 ${WHERE}`, false).then(async res => {
-          resolve(res[0].count);
-        });
-      } catch (error) {
-        resolve(0);
-      }
-    });
+    try {
+      return await this.getOneField(
+        `SELECT COUNT(*) as count FROM ${this.tableName(document)} WHERE 1=1 ${WHERE}`
+      );
+    } catch (error) {
+      return 0;
+    }
   }
 
   async testDatabase() {
-    const connection = await this.connection();
+    try {
+      await this.sequelize.authenticate();
+      return true;
+    } catch (e) {
+      return false;
+    }
+    /*const connection = await this.connection();
     return new Promise(resolve => {
       if (connection.state === 'authenticated') return resolve(true);
 
@@ -790,38 +829,40 @@ export default class DataBase {
 
         return resolve(!err);
       });
-    });
+    });*/
   }
 
   async testServer() {
-    return new Promise(resolve => {
-      if (this.coreConnection.state === 'authenticated') return resolve(true);
-
-      this.coreConnection.connect(err => {
-        err && console.log(err);
-
-        return resolve(!err);
-      });
-    });
+    try {
+      await this.sequelize.authenticate();
+      console.log('Connection has been established successfully.');
+      return true;
+    }catch (e) {
+      return false;
+    }
   }
 
-  async testFramework() {
+  async testFramework(app) {
+    const entities = loopar.getEntities(app);
     const tablesTest = [];
-    for (const table of ['Entity', 'Module', 'Module Group']) {
-      tablesTest.push(await this.tableName(table, true))
+
+    for (const entity of entities) {
+      if(entity.is_single) continue;
+      tablesTest.push(this.tableName(entity.name, true));
     }
-    //
-    //const tables_test = ['Entity', 'Module', 'Module Group'].map(table => this.tableName(table, true));
+    
+    const master  = {
+      sqlite: `SELECT COUNT(name) as count FROM sqlite_master WHERE type='table' AND name in (${tablesTest.join(',')})`,
+      mysql: `SELECT COUNT(table_name) as count FROM INFORMATION_SCHEMA.TABLES WHERE \`table_name\` in (${tablesTest.join(',')}) AND \`table_schema\` = '${this.database}'`,
+    }
 
-    const q = `
-SELECT COUNT(table_name) as count
-FROM INFORMATION_SCHEMA.TABLES 
-WHERE \`table_name\` in (${tablesTest.join(',')}) AND \`table_schema\` = '${this.database}'`;
+    return await this.getOneField(master[this.dbConfig.dialect]) >= (tablesTest.length-1);
+  }
 
-    return new Promise(async resolve => {
-      this.execute(q, false).then(res => {
-        return resolve(res[0].count === tablesTest.length);
-      });
-    });
+  async getOneField(Q){
+    const r = await this.execute(Q, false);
+    const obj = r.length ? r[0] : {};
+
+    return Object.values(obj)[0];
   }
 }

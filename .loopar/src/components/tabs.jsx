@@ -3,9 +3,9 @@ import elementManage from "$tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import MetaComponent from "@meta-component";
-import { PlusIcon } from "lucide-react";
 import React, { useEffect } from "react";
 import {useCookies} from "@services/cookie";
+import { use } from "marked";
 
 const TabContent = ({element, parent}) => {
   if(element.type === "dynamic.component"){
@@ -29,22 +29,17 @@ const TabContent = ({element, parent}) => {
 
 function TabFn({id, elementsDict, asChild = false, setElements, parent}){
   const {designerMode} = useDesigner();
-  const getIdentifier = () => {
-    return `${id}${designerMode ? '-designer' : ''}`;
-  }
-
-  const getKey = (data = {}) => {
-    return data.key + (designerMode ? '-designer' : '');
-  }
+  const getIdentifier = (id) => `${id}${designerMode ? '-designer' : ''}`;
+  const getKey = (data = {}) => getIdentifier(data.key || data.name);
   
-  const [currentTab, setCurrentTab] = useCookies(getIdentifier(), getKey(elementsDict[0]?.data));
+  const [currentTab, setCurrentTab] = useCookies(getIdentifier(id), getKey(elementsDict[0]?.data));
 
   const selectFirstTab = () => {
-    elementsDict.length > 0 &&  setCurrentTab(getKey(elementsDict[0]?.data));
+    elementsDict.length > 0 && setCurrentTab(getKey(elementsDict[0]?.data));
   }
 
   const checkIfTabExists = (key) => {
-    return elementsDict.some((element) => getKey(element.data) === key);
+    return elementsDict.some(element => getKey(element.data) === key);
   }
 
   const addTab = () => {
@@ -71,30 +66,29 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
   }
 
   useEffect(() => {
-    if((!currentTab || currentTab === "undefined" || !checkIfTabExists(currentTab)) && !designerMode){
+    if((!checkIfTabExists(currentTab))){7
       selectFirstTab();
-      return;
+    }else{
+      elementsDict.length === 0 && !asChild && designerMode && addTab();
     }
+  }, [designerMode, id, currentTab, elementsDict]);
 
-    elementsDict.length === 0 && !asChild && designerMode && addTab();
-  }, [currentTab, elementsDict]);
+  useEffect(() => {
+    !checkIfTabExists(currentTab) && selectFirstTab();
+  }, []);
 
   return (
     <BaseTabs 
-      defaultValue={currentTab} 
+      //defaultValue={currentTab}
+      value={currentTab}
       className="w-full"
-      key={id + elementsDict.length + currentTab}
     >
       <TabsList className="inline-table align-middle">
         {
           elementsDict.map(({data}) => (
             <TabsTrigger
-              key={getKey(data)}
               value={getKey(data)}
-              onMouseUp={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
+              onMouseDown={(e) => {
                 setCurrentTab(getKey(data));
               }}
             >{data.label}</TabsTrigger>
@@ -105,10 +99,11 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              addTab(getIdentifier());
+              addTab(getIdentifier(id));
             }}
+            className="bg-red-500 mx-2 text-primary"
           >
-            <PlusIcon className="pr-1"/>
+            +
           </TabsTrigger>
         ) : null}
       </TabsList>
@@ -158,20 +153,20 @@ export default function MetaTabs(props){
     });
   }
 
-    return (
-      <div className="p-2 my-3 border border-separate" id={data.id}>
-        {data.label && <h4 className="p-2">{data.label}</h4>}
-        <TabFn
-          id={data.key}
-          elementsDict={elementsDict()}
-          asChild={props.asChild}
-          setElements={(elements, callback) => {
-            setElements(elements, callback);
-          }}
-          parent={this}
-        />
-      </div>
-    )
+  return (
+    <div className="p-2 my-3 border border-separate" id={data.id}>
+      {data.label && <h4 className="p-2">{data.label}</h4>}
+      <TabFn
+        id={data.id || data.name}
+        data={data}
+        elementsDict={elementsDict()}
+        asChild={props.asChild}
+        setElements={(elements, callback) => {
+          setElements(elements, callback);
+        }}
+      />
+    </div>
+  )
 }
 
 MetaTabs.requires = ["tab"]

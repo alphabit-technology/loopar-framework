@@ -14,7 +14,6 @@ export function ElementEditor({element}) {
   const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
   if(!connectedElement) return null;
   
-
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   

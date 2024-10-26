@@ -1,26 +1,28 @@
 import path from "path";
 import { loopar } from "./loopar.js";
-import fs, { access, mkdir } from 'fs'
+import fs, { access, existsSync } from 'fs';
 
 class FileManage {
   async makeFile(destiny, name, content, ext = 'js', replace = false) {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
 
-    return new Promise((resolve, reject) => {
-      fs.existsSync(filePath) && ['jsx', 'tsx', 'js'].includes(ext) && !replace ? resolve(true) : fs.writeFile(filePath, content, (err) => {
-        if (err) {
-          console.log(['make_file err', err]);
-          reject(err);
-        }
+    try {
+      if(existsSync(filePath) && ['jsx', 'tsx', 'js'].includes(ext) && !replace) return;
+    } catch (e) {
+      return;
+    }
 
-        resolve(true);
+    return new Promise(resolve => {
+      fs.writeFile(filePath, content, (err) => {
+        if(err) throw new Error(err);
+        resolve();
       });
     });
   }
 
   async existFile(fileRoute) {
     const isRelative = fileRoute.startsWith("./");
-      return new Promise(resolve => {
+    return new Promise(resolve => {
       access(isRelative ? path.resolve(fileRoute) : path.resolve(loopar.makePath(loopar.pathRoot, fileRoute)), (err) => {
         return resolve(!err);
       });
@@ -104,9 +106,10 @@ class FileManage {
   async makeFolder(destiny, name) {
     const folderPath = loopar.makePath(loopar.pathRoot, destiny, name);
 
-    return new Promise((resolve, reject) => {
-      mkdir(folderPath, { recursive: true }, (err) => {
-        err ? reject(err) : resolve(true);
+    return new Promise(resolve => {
+      fs.mkdir(folderPath, { recursive: true }, (err) => {
+        if(err) throw new Error(err);
+        resolve();
       });
     });
   }
@@ -114,9 +117,10 @@ class FileManage {
   async deleteFolder(destiny, name) {
     const folderPath = loopar.makePath(loopar.pathRoot, destiny, name);
 
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       fs.rmdir(folderPath, { recursive: true }, (err) => {
-        err ? reject(err) : resolve(true);
+        if (err) throw new Error(err);
+        resolve();
       });
     });
   }
@@ -142,7 +146,7 @@ export default class ${name}${_EXTENDS} {
     }
 }`;
 
-    await this.makeFile(destiny, name, classContent, ext);
+    return await this.makeFile(destiny, name, classContent, ext);
   }
 
   fileName(name, ext = 'js') {
@@ -157,19 +161,10 @@ export default class ${name}${_EXTENDS} {
     return name.replace(/\s/g, '');
   }
 
-  getConfigFile(fileName, _path = null, ifError = "throw") {
-    const path_file = this.fileName((`./${_path || `config`}/${fileName}`), 'json');
-
-    try {
-      return JSON.parse(fs.readFileSync(path.resolve(loopar.pathRoot, path_file), 'utf8') || {});
-    } catch (e) {
-      console.log(['get_config_file err', path.resolve(loopar.pathRoot, path_file)]);
-      if (ifError === "throw") {
-        throw new Error(e);
-      } else {
-        return ifError;
-      }
-    }
+  getConfigFile(fileName, _path = null) {
+    const pathFile = this.fileName((`./${_path || `config`}/${fileName}`), 'json');
+    const data = fs.readFileSync(path.resolve(loopar.pathRoot, pathFile), 'utf8');
+    return loopar.utils.isJSON(data) ? JSON.parse(data) : {};
   }
 
   getAppData(appName) {

@@ -174,7 +174,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
     //if (isDroppable) {
      // className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-900/70 mb-4 dark:border-gray-600 dark:text-gray-200 p-1 pt-5");
     //} else {
-      className = cn(className, "bg-gray-300 p-2 mb-4 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded-md");
+      className = cn(className, "bg-card rounded p-2 mb-4 border border-gray-400 dark:border-gray-600");
     //}
   }
 
@@ -362,7 +362,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
     const data = _props.data || {};
 
-    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, "rounded-md", el.className, className, data?.class);
+    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, "rounded", el.className, className, data?.class);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {

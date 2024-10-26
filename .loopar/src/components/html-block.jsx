@@ -1,5 +1,5 @@
 import ComponentDefaults from "@component-defaults";
-import {Quill} from '@quill';
+import {Quill} from './quill/quill';
 import { useDesigner } from "@context/@/designer-context";
 
 export default function MetaHtmlBlock(props) {

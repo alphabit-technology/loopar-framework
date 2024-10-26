@@ -5,9 +5,9 @@
   "tsx": true,
   "tailwind": {
     "config": "tailwind.config.js",
-    "css": "src/style/globals.css",
+    "css": "src/app/styles/globals.css",
     "baseColor": "gray",
-    "cssVariables": true,
+    "cssVariables": false,
     "prefix": "lp"
   },
   "aliases": {

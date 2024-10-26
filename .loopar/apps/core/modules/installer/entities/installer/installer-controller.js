@@ -1,11 +1,10 @@
 'use strict'
 
-import Installer from "../../modules/core/entities/installer/installer.js";
-import BaseController from "./base-controller.js";
-import { loopar } from "../loopar.js";
-
+import BaseController from "../../../../../../core/controller/base-controller.js";
+import {CoreInstaller as Installer, loopar, fileManage} from "loopar";
 
 export default class CoreInstallerController extends BaseController {
+  client = "form";
   constructor(props) {
     super(props);
   }
@@ -17,16 +16,35 @@ export default class CoreInstallerController extends BaseController {
       Object.assign(model, this.data);
 
       if (await model.connect()) {
-        this.res.redirect('/desk');
+        return this.res.redirect('/desk');
       }
     } else {
       const response = await model.__dataConnect__();
-      await this.render(response);
+      response.__DOCUMENT__ = {
+        dialect: "mysql",
+        host: "localhost",
+        port: "3306",
+        user: "root",
+        password: "root",
+        tyme_zone: "+00:00",
+      }
+      return await this.render(response);
     }
   }
 
+  getAppName() {
+    return this.app_name || "loopar";
+  }
+
+  async getInstallerModel() {
+    const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js')
+
+    return await fileManage.importClass(installerRoute, Installer);
+  }
+
   async actionInstall() {
-    const model = new Installer();
+    const installerModel = await this.getInstallerModel();
+    const model = new installerModel(this.data);
 
     if (this.hasData()) {
       Object.assign(model, this.data);
@@ -35,13 +53,17 @@ export default class CoreInstallerController extends BaseController {
         loopar.throw("App already installed please refresh page");
       }
 
-      const install = await model.install();
-      if (install) {
-        await loopar.build
-        return this.success("App installed successfully");
-      }
+      await model.install();
+      return this.success("App installed successfully");
     } else {
       const response = await model.__dataInstall__();
+      response.__DOCUMENT__ = {
+        company: "AlphaBit Technology Test123",
+        email: "alfredrz2012@gmail.com",
+        admin_password: "admin",
+        confirm_password: "admin",
+      }
+
       return await this.render(response);
     }
   }
@@ -53,7 +75,7 @@ export default class CoreInstallerController extends BaseController {
       Object.assign(model, this.data);
 
       if (await model.update()) {
-        await lloopar.build
+        //await lloopar.build
         return this.success("App updated successfully");
       }
     } else {

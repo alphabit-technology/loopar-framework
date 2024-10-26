@@ -37,8 +37,9 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
   
-  const { menuItems, currentLink, currentPage, setOpenNav, workspace } = useWorkspace();
+  const { menuItems, currentLink, currentPage, setOpenNav, workspace, activeParentMenu, activePage } = useWorkspace();
 
+  //console.log({activeParentMenu, activePage});
   const handleSetCalled = (called) => {
     setCalled(called);
   };

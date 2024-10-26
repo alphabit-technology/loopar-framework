@@ -5,15 +5,15 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import {Link} from "@link"
 
 export function MainNav() {
-  const { openNav, setOpenNav, menuItems, device, currentPage } = useWorkspace();
+  const { openNav, setOpenNav, menuItems, device, activePage, activeParentMenu } = useWorkspace();
   const Icon = openNav ? Cross1Icon : HamburgerMenuIcon;
   //const desktop = device === "desktop"
 
   const Items = menuItems.filter((item: { parent_menu: any; }) => !item.parent_menu).map((item, i) => {
-    const active = currentPage === item.page ? "text-foreground/100 bg-foreground/10 rounded-full px-4" : "px-4";
+    const active = activeParentMenu === item.page ? "text-foreground/100 bg-foreground/10 px-4" : "px-4";
     return (
       <Link
-        className={`transition-colors hover:text-foreground/80 text-foreground/60 px-2 py-1 ${active}`}
+        className={`transition-colors hover:text-foreground/80 text-foreground/60 px-2 py-1 rounded-full ${active}`}
         key={item.id + i} 
         to={`/${item.link}`}
       >

@@ -75,7 +75,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         setElement(
           <div
             style={{maxHeight: rect.height}}
-            className="mb-4 bg-blue-900/40 rounded-sm transition-all duration-300 shadow-sm shadow-red-500/50 p-4 w-full h-20"
+            className="mb-4 rounded transition-all duration-300 shadow-sm shadow-red-500/50 p-4 w-full h-20"
           />, position
         );
         return;
@@ -175,7 +175,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
   const ClassNames = cn(
     //mode !== "preview" && "h-full w-full p-3 bg-slate-200/50 dark:bg-red-500/50 pt-4" + isDroppable ? " min-h-20" : "",
-    designerModeType !== "preview" && "bg-slate-200/50 dark:bg-slate-800/50 pt-4 h-full min-h-20 w-full p-2",
+    designerModeType !== "preview" && "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
     dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow transition-all duration-300 p-4 h-full' : '',
     className
   );
@@ -199,7 +199,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         {
           (dropping && currentDropZone && currentDropZone === dropZoneRef.current && currentDragging && !currentDragging.new) && (
             <div
-              className="fixed bg-secondary rounded-md border-2 pointer-events-none"
+              className="fixed rounded border-2 pointer-events-none"
               style={{
                 width: targetRect.width,
                 height: targetRect.height,

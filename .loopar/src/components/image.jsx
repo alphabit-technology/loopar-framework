@@ -76,7 +76,7 @@ export function Image ({imageProps={}, coverProps={}, ...props}) {
 }
 
 
-export default function MetaImage(props) {  
+export default function MetaImage(props) {
   return (
     <Image {...props} />
   )

@@ -54,7 +54,7 @@ const BaseInput = (props) => {
 
     fieldControl.current.value = val;
     setTimeout(() => {
-      fieldControl.current.onChange({ target: { value: value() } });
+      fieldControl.current.onChange({ target: { value: val } });
     }, 0);
   };
 
@@ -86,7 +86,7 @@ const BaseInput = (props) => {
           };
 
           return (
-            <FormItem className={cn("flex flex-col mb-2 rounded-lg shadow-sm", invalidClassName, className)}>
+            <FormItem className={cn("flex flex-col mb-2 rounded shadow-sm", invalidClassName, className)}>
               {input(field, data)}
               <FormMessage>
                 {field.message || (isInvalid && field.invalidMessage)}

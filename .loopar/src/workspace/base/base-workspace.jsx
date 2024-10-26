@@ -6,7 +6,6 @@ import { useWorkspace, WorkspaceProviderContext } from "@workspace/workspace-pro
 import loopar from "$loopar";
 import Emitter from '@services/emitter/emitter';
 import { Loader2Icon } from "lucide-react";
-import { use } from "marked";
 
 const Notify = () => {
   const { theme } = useWorkspace();
@@ -113,10 +112,10 @@ export function DialogContextProvider() {
 export default function BaseWorkspace(props) {
   const workspace = useWorkspace();
 
-  const currentPage = workspace.currentPage || props.currentPage || "";
+  const activePage = workspace.activePage || props.activePage || "";
   return (
     <>
-      <DialogContextProvider key={currentPage}/>
+      <DialogContextProvider key={activePage}/>
       <Loading/>
       <WorkspaceProviderContext.Provider
         value={
@@ -124,7 +123,7 @@ export default function BaseWorkspace(props) {
             ...workspace,
             menuItems: props.menuItems && props.menuItems() || [],
             refresh: () => props.refresh || (() => { }),
-            currentPage: currentPage,
+            activePage: activePage,
           }
         }
       >

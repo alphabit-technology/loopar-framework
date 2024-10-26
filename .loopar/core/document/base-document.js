@@ -80,8 +80,11 @@ export default class BaseDocument extends CoreDocument {
       return acc;
     }, {});
 
+    //console.log(["buildCondition..", con]);
+
     return Object.entries(con).reduce((acc, [key, value], index) => {
       if (index === 0) {
+
         /**
          * Firs condition don't need AND
          */
@@ -101,6 +104,40 @@ export default class BaseDocument extends CoreDocument {
 
       return acc;
     }, {});
+  }
+
+  buildCondition1(q = null) {
+    const conditions = [];
+    /**
+     * If q is null, return empty object
+     */
+    if (q === null) return [];
+
+    /**
+     * Debug q for empty values and not existing fields
+     */
+    Object.entries(q).forEach(([field, value]) => {
+      if (!this.fields[field] || value === '') delete q[field];
+    });
+
+    return Object.entries(q).reduce((acc, [key, value], index) => {
+      const field = this.fields[key];
+      if (!field) return acc;
+
+      const operand = [SELECT, SWITCH, CHECKBOX].includes(field.element) ? '=' : 'LIKE';
+
+      if (value && value.length > 0) {
+        if ([SWITCH, CHECKBOX].includes(field.element)) {
+          if ([1, '1'].includes(value)) {
+            acc.push({ method: "where", params: [key, operand, 1] });
+          }
+        } else {
+          acc.push({ method: "where", params: [key, operand, value] });
+        }
+      }
+
+      return acc;
+    }, []);
   }
 
   async getList({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
@@ -131,7 +168,7 @@ export default class BaseDocument extends CoreDocument {
     }
 
     const condition = { ...this.buildCondition(q), ...filters };
-
+    
     pagination.totalRecords = await this.records(condition);
 
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
@@ -186,6 +223,7 @@ export default class BaseDocument extends CoreDocument {
 
     const rows = await loopar.db.getList(this.__ENTITY__.name, listFields, this.buildConditionToSelect(q));
 
+    
     pagination.totalRecords = await this.records();
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
 
@@ -195,7 +233,7 @@ export default class BaseDocument extends CoreDocument {
     });
   }
 
-  async records(condition = null) {
-    return await loopar.db._count(this.__ENTITY__.name, {}, condition);
+  async records(condition = []) {
+    return await loopar.db.count(this.__ENTITY__.name, {}, condition);
   }
 }

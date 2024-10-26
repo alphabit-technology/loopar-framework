@@ -5,10 +5,7 @@ import multer from "multer";
 import WorkspaceController from './controller/workspace-controller.js';
 import BaseController from './controller/base-controller.js';
 import { getHttpError } from './global/http-errors.js';
-import { url } from 'inspector';
 import { type } from 'os';
-
-const coreInstallerController = 'installer-controller';
 
 export default class Router {
   debugger = false;
@@ -108,64 +105,103 @@ export default class Router {
       loopar.cookie.cookies = req.cookies;
       loopar.session.req = req;
 
-      /*if (req.files && req.files.length > 0) {
+      if (req.files && req.files.length > 0) {
         req.body.reqUploadFiles = req.files;
-      }*/
+      }
 
       next();
     }
 
     const authMiddleware = async (req, res, next) => {
+      if(req.__WORKSPACE_NAME__ === "loopar") return next();
+      
       const params = req.__params__;
-      const loginActions = ['login', 'register', 'recovery_user', 'recovery_password'];
-
-      await this.temporaryLogin();
+      const loginActions = ['login', 'register', 'logout'];
+      const url = req._parsedUrl.pathname;
 
       const isLoginAction = () => {
         return (loginActions || []).includes(params.action);
       }
 
-      if (req.session.user) { /** User is logged */
-        if (req._parsedUrl.pathname === "/auth/logout") return next();
+      this.temporaryLogin();
 
-        if(params.method === "GET" && req.__WORKSPACE_NAME__ === "auth") return this.redirect(res, '/desk');
+      try {
+        // User is logged in
+        if (req.session.user) {
+          const user = loopar.getUser(req.session.user.name);
+
+          if (url === "/auth/logout") {
+            // Close the session and redirect to the login page
+            req.session.destroy(err => {
+              if (err) {
+                return loopar.throw({ code: 500, message: 'Error destroying session' });
+              }
+              return this.redirect(res, '/auth/login');
+            });
+            return;
+          }
+
+          // If the user is disabled and is not an administrator
+          if (user && user.name !== 'Administrator' && user.disabled) {
+            return req.method === 'POST' ?
+              loopar.throw({ code: 403, message: 'User is disabled' }) :
+              this.redirect(res, '/auth/logout');
+          }
+
+          // If the user tries to access a login action, redirect to the desktop
+          if (isLoginAction()) {
+            return this.redirect(res, '/desk');
+          }
+
+          // If it's a GET request and the workspace is "auth", redirect to the desktop
+          if (params.method === "GET" && req.__WORKSPACE_NAME__ === "auth") {
+            return this.redirect(res, '/desk');
+          }
+
+          return next();
+        }
         
-        //const user = {name: "Administrator", "email": "test"}//loopar.get_user(this.req.session.user.name);
-        const user = loopar.getUser(req.session.user.name);
-
-        if (user && user.name !== 'Administrator' && user.disabled) {
-          return req.method === 'POST' ? loopar.throw({code: 403, message: 'User is disabled'}) : this.redirect(res, '/auth/logout');
-        }
-
+        // If it's a login action and the user is not logged in
         if (isLoginAction()) {
-          return req.method === 'POST' ? loopar.throw({code: 403, message: 'You are already logged in'}) : this.redirect(res, '/desk');
-          //return resolve(false);
-        //} else if (this.isEnableAction) {
-        //  return resolve(true);
+          if (url === "/auth/logout") {
+            return this.redirect(res, '/auth/login');
+          }
+          return next();
         }
 
-        next();
-      } else if (isLoginAction()){//} && (this.isFreeAction || this.isEnableAction)) {
-        next();
-      } else if (/*this.free_access && */req.__WORKSPACE_NAME__ !== 'desk') {
-        next();
-      }/* else if(this.isFreeAction) {
-          resolve(true);
-        }*/else {
-          return req.method === 'POST' ? loopar.throw({code: 403, message: 'You need to be logged in to access this page'}) : this.redirect(res, '/auth/login');
+        // If the user is not logged in and the workspace is not "desk", allow access
+        if (req.__WORKSPACE_NAME__ !== 'desk') {
+          return next();
+        }
+
+        // In any other case, redirect to the login
+        return req.method === 'POST' ?
+          loopar.throw({ code: 403, message: 'You need to be logged in to access this page' }) :
+          this.redirect(res, '/auth/login');
+
+      } catch (err) {
+        // Unexpected error handling
+        return loopar.throw({ code: 500, message: 'Internal Server Error' });
       }
-    }
+    };
 
     const systemMiddleware = async (req, res, next) => {
       const currentUrl = req._parsedUrl.pathname;
-      if (!loopar.DBServerInitialized && currentUrl !== "/loopar/installer/connect") {
+      const {DBServerInitialized, DBInitialized, __installed__} = loopar;
+
+      if (!DBServerInitialized && currentUrl != "/loopar/installer/connect") {
         /**System detected that Database Server is no Initialized or not Installed */
         return this.redirect(res, '/loopar/installer/connect');
-      } else if (
-        (!loopar.DBInitialized || !loopar.__installed__) && currentUrl !== "/loopar/installer/install"
-      ) {
+      }
+      
+      if (DBServerInitialized && (!DBInitialized || !loopar.__installed__) && currentUrl != "/loopar/installer/install") {
         /**System not detected a Database */
         return this.redirect(res, '/loopar/installer/install');
+      }
+
+      if(DBServerInitialized && DBInitialized && currentUrl.includes("/loopar/installer") && __installed__) {
+        /**System is Installed */
+        return this.redirect(res, '/desk');
       }
 
       next();
@@ -207,8 +243,10 @@ export default class Router {
 
       pathname.split("/").forEach((seg, index) => {
         const RTK = Object.keys(routeStructure)[index];
+        if(seg && seg.length > 0)
         routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
+
 
       if (req.__WORKSPACE_NAME__ === "web") {
         routeStructure.action ??= "view";
@@ -226,7 +264,7 @@ export default class Router {
       await this.makeController(req, res);
       let response = req.__WORKSPACE__.__DOCUMENT__;
       
-      if(typeof response == Object && response.hasOwnProperty('redirect')) {
+      if(typeof response == "object" && response.hasOwnProperty('redirect')) {
         return this.redirect(res, response.redirect);
       }
 
@@ -303,16 +341,13 @@ export default class Router {
 
     if (req.__WORKSPACE_NAME__ === "web") {
       const webApp = loopar.webApp || { menu_items: [] };
-      params.document ??= "Home";
       const menu = webApp.menu_items.find(item => item.link === params.document);
 
-      if (!webApp.name || !menu) {
+      if (!webApp.name || !menu)
         return loopar.throw({code: 404, message: !webApp.name ? "Web App not found" : "Page not found"});
-      } else {
-        params.document = menu.page;
-      }
-    }
 
+      params.document = menu.page;
+    }
     const ref = loopar.getRef(params.document);
 
     if (!ref) return loopar.throw({code: 404, message: `Document ${params.document} not found`}, res);
@@ -333,7 +368,7 @@ export default class Router {
         this.uploader(req, res, async err => {
           if (err) loopar.throw(err, res);
 
-          resolve(await makeController(req.query, req.body));
+          return resolve(await makeController(req.query, req.body));
         });
       });
     } else {
@@ -352,7 +387,29 @@ export default class Router {
     });
   }
 
+  makeUrl = (href, currentURL) => {
+    if (href.startsWith("http") || href.startsWith("/")) return href;
+
+    const urlStructure = ["workspace", "document", "action"];
+    const urlArray = currentURL.split("/");
+
+    const urlObject = {};
+    urlStructure.forEach((key, index) => {
+      urlObject[key] = urlArray[index + 1];
+    });
+
+    const [baseUrl, queryString] = href.split("?");
+    const baseUrlSegments = baseUrl.split("/").reverse();
+
+    urlStructure.reverse().forEach((key, index) => {
+      urlObject[key] = baseUrlSegments[index] || urlObject[key];
+    });
+
+    return `/${Object.values(urlObject).filter(e => e && e !== "").join("/")}${queryString ? "?" + queryString : ""}`;
+  }
+
   redirect(res, url) {
+    url = this.makeUrl(url, this.currentReq._parsedUrl.pathname);
     if(!res.headersSent) res.redirect(url || '/desk');
   }
 }

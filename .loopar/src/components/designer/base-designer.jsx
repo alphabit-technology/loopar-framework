@@ -90,7 +90,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
   const handleSetMeta = (e) => {
     e.preventDefault();
 
-    loopar.prompt({
+    !designerMode && loopar.prompt({
       title: "META",
       label: "JSON META object",
       placeholder: "Enter a valid JSON META object",
@@ -101,6 +101,46 @@ export const Designer = ({designerRef, metaComponents, data}) => {
         
         return true;
       }
+    });
+  }
+
+  const handleDesingIA = (e) => {
+    e.preventDefault();
+
+    !designerMode && loopar.prompt({
+      title: "Design IA",
+      label: (
+        <div className="relative bg-card/50 border text-card-foreground">
+          <pre className="relative p-4 h-full">
+            <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
+              <p className="pb-2 border-b-2">
+                Based on the type of API you have contracted with OpenAI,
+                you may need to wait for a specific
+              </p>
+              <p className="pt-2">
+                Petition example: "Generate a form that allows me to
+                manage inventory data."
+              </p>
+            </code>
+          </pre>
+        </div>
+      ),
+      ok: (prompt) => {
+        loopar.send({
+          action: `/desk/GPT/prompt`,
+          params: { prompt, document_type: "entity" },
+          body: { prompt, document_type: "entity" },
+          success: (res) => {
+            setMeta(res.message);
+          }
+        });
+      },
+      validate: (prompt) => {
+        !prompt && loopar.throw("Please enter a valid Prompt");
+
+        return true;
+      },
+      size: "lg"
     });
   }
 
@@ -146,7 +186,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
       }}
     >
       <BaseFormContext.Provider value={{}}>
-        <div className="rounded-sm">
+        <div className="">
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
               <h1 className="text-xl">{data.label}</h1>
@@ -169,44 +209,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
               </Button>
               <Button
                 variant="secondary"
-                onClick={(e) => {
-                  e.preventDefault();
-                  loopar.prompt({
-                    title: "Design IA",
-                    label: (
-                      <div className="relative bg-card/50 rounded-lg border text-card-foreground">
-                        <pre className="relative p-4 h-full">
-                          <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
-                            <p className="pb-2 border-b-2">
-                              Based on the type of API you have contracted with OpenAI,
-                              you may need to wait for a specific
-                            </p>
-                            <p className="pt-2">
-                              Petition example: "Generate a form that allows me to
-                              manage inventory data."
-                            </p>
-                          </code>
-                        </pre>
-                      </div>
-                    ),
-                    ok: (prompt) => {
-                      loopar.send({
-                        action: `/desk/GPT/prompt`,
-                        params: { prompt, document_type: "entity" },
-                        body: { prompt, document_type: "entity" },
-                        success: (res) => {
-                          setMeta(res.message);
-                        }
-                      });
-                    },
-                    validate: (prompt) => {
-                      !prompt && loopar.throw("Please enter a valid Prompt");
-
-                      return true;
-                    },
-                    size: "lg"
-                  });
-                }}
+                onClick={handleDesingIA}
               >
                 <SparkleIcon className="mr-2" />
                 Design IA
@@ -224,16 +227,16 @@ export const Designer = ({designerRef, metaComponents, data}) => {
               key={data.name + "designer_tab"}
             >
               <div
-                className={cn("rounded-md border bg-card/50 text-card-foreground shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
+                className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
                 <Tailwind/>
                 {!designerMode && sidebarOpen && <Sidebar/>}
                 {!designerMode ?
                   <Droppable
-                    className={designerModeType !== "preview" ? "min-h-20 rounded-md bg-gray-300/80 dark:bg-slate-800/70 dark:text-gray-200 p-4" : "p-1"}
+                    className={designerModeType !== "preview" ? "min-h-20 rounded p-4" : "p-1"}
                     elements={elements}
                     data={data}
-                  /> : <div className="p-6 text-center text-gray-400 bg-slate-800/50"/>
+                  /> : <div className="p-6 text-center bg-card/50">Designer Area</div>
                 }
               </div>
             </Tab>
@@ -242,7 +245,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
               name={data.name + "model_tab"}
               key={data.name + "model_tab"}
             >
-              <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded-lg border p-2 font-mono text-sm font-bold text-green-600">
+              <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded border p-2 font-mono text-sm font-bold text-green-600">
                 {JSON.stringify(elements, null, 2)}
               </div>
             </Tab>

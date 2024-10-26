@@ -1,13 +1,37 @@
 'use-strict';
 import dayjs from 'dayjs';
 import {getTime} from './date-utils.js';
-
-const commonProps = ['draggable', 'draggable_actions'];
-const droppableProps = ['droppable', 'droppable_actions'];
-
-const varcharLen = '(255)';
-const [text, long_text, varchar, decimal, int, mediumint, longint, date, date_time, time] =
-  ['text', 'longtext', 'varchar', 'decimal', 'int', 'mediumint', 'longint', 'date', 'datetime', 'time'];
+/**
+ * @typedef {import('tedious').TYPES} TYPES
+ */
+const TYPES = {
+  increments: 'increments',  // Auto-incrementing integer
+  integer: 'integer',  // Integer
+  bigInteger: 'bigInteger',  // Big Integer
+  float: 'float',  // Floating point number
+  decimal: 'decimal',  // Decimal with precision
+  double: 'double',  // High-precision float
+  smallint: 'smallint',  // Small Integer
+  tinyint: 'tinyint',  // Tiny Integer
+  string: 'string',  // Variable length string (like VARCHAR)
+  text: 'text',  // Long text (like TEXT)
+  mediumtext: 'mediumtext',  // Medium text (like MEDIUMTEXT)
+  longtext: 'longtext',  // Long text (like LONGTEXT)
+  uuid: 'uuid',  // UUID (universally unique identifier)
+  enum: 'enum',  // Enum type (limited set of values)
+  boolean: 'boolean',  // Boolean values (TRUE/FALSE)
+  date: 'date',  // Date without time
+  dateTime: 'dateTime',  // Date and time
+  time: 'time',  // Time only
+  timestamp: 'timestamp',  // Timestamp
+  timestamps: 'timestamps',  // Automatically creates created_at and updated_at fields
+  binary: 'binary',  // Binary data (BLOB)
+  json: 'json',  // JSON format
+  jsonb: 'jsonb',  // Binary JSON (PostgreSQL only)
+  geometry: 'geometry',  // Geometrical data (PostGIS)
+  point: 'point',  // Single point of coordinates
+  multiPoint: 'multiPoint'  // Multiple points (geometry)
+};
 
 const [LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML] = ['layout', 'design', 'form', 'html'];
 
@@ -39,7 +63,7 @@ export const elementsDefinition = {
     { element: "link", icon: "MousePointerClick" },
     { element: "icon", icon: "Icon" },
     { element: "markdown", icon: "BookOpenCheck", clientOnly: true, designerOnly: true },
-    { element: "html_block", icon: "Code", type: [long_text, ''], designerOnly: true, clientOnly: true },
+    { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
     { element: "title", icon: "Heading1" },
     { element: "subtitle", icon: "Heading2" },
     { element: "paragraph", icon: "Pilcrow" },
@@ -50,29 +74,31 @@ export const elementsDefinition = {
     //{ element: "element_title", icon: "fa fa-heading" },
   ],
   [FORM_ELEMENT]: [
-    { element: "input", icon: "FormInput", type: [varchar, varcharLen] },
-    { element: "password", icon: "Asterisk", type: [varchar, varcharLen] },
-    { element: "date", icon: "Calendar", type: [date, ''], format: 'YYYY-MM-DD' },
-    { element: "date_time", icon: "CalendarClock", type: [date_time, ''], format: 'YYYY-MM-DD HH:mm:ss' },
-    { element: "time", icon: "Clock10", type: [time, ''], format: 'HH:mm:ss' },
-    { element: "currency", icon: "Currency", type: [decimal, '(18,6)'], show_in_design: false },
-    { element: "integer", icon: "fa-duotone fa-input-numeric", type: [int, '(11)'], show_in_design: false },
-    { element: "decimal", icon: "fa fa-00", type: [decimal, '(18,6)'], show_in_design: false },
-    { element: "select", icon: "ChevronDown", type: [varchar, varcharLen] },
-    { element: "textarea", icon: "FileText", type: [long_text, ''] },
-    { element: "tailwind", icon: "PaintRoler", type: [long_text, ''] },
-    { element: "text_editor", icon: "TextCursorInput", type: [long_text, ''], clientOnly: true },
-    { element: "checkbox", icon: "CheckSquare", type: [int, '(11)'] },
-    { element: "switch", icon: "ToggleLeft", type: [int, '(11)'] },
-    { element: "id", icon: "BookKey", type: [int] },
-    { element: "form_table", icon: "Sheet", type: [varchar, varcharLen] },
-    { element: "markdown_input", icon: "BookOpenCheck", type: [long_text, ''], clientOnly: true },
-    { element: "designer", icon: "Brush", type: [long_text, ''] },
-    { element: "file_input", icon: "FileInput", type: [long_text, ''] },
-    { element: "file_uploader", icon: "FileUp", type: [long_text, ''] },
-    { element: "image_input", icon: "FileImage", type: [long_text, ''] },
-    { element: "color_picker", icon: "Palette", type: [varchar, varcharLen] },
-    { element: "icon_input", icon: "Icon", type: [varchar, varcharLen] },
+    { element: "input", icon: "FormInput", type: TYPES.string },
+    { element: "password", icon: "Asterisk", type: TYPES.text },
+    { element: "date", icon: "Calendar", type: TYPES.date, format: 'YYYY-MM-DD' },
+    { element: "date_time", icon: "CalendarClock", type: TYPES.dateTime, format: 'YYYY-MM-DD HH:mm:ss' },
+    { element: "time", icon: "Clock10", type: TYPES.time, format: 'HH:mm:ss' },
+    { element: "currency", icon: "Currency", type: TYPES.decimal, show_in_design: false },
+    { element: "integer", icon: "fa-duotone fa-input-numeric", type: TYPES.integer, show_in_design: false },
+    { element: "decimal", icon: "fa fa-00", type: TYPES.decimal, show_in_design: false },
+    { element: "select", icon: "ChevronDown", type: TYPES.text },
+    { element: "textarea", icon: "FileText", type: TYPES.longtext },
+    { element: "tailwind", icon: "PaintRoler", type: TYPES.longtext },
+    { element: "text_editor", icon: "TextCursorInput", type: TYPES.longtext, clientOnly: true },
+    { element: "checkbox", icon: "CheckSquare", type: TYPES.integer },
+    { element: "switch", icon: "ToggleLeft", type: TYPES.integer },
+    { element: "id", icon: "BookKey", type: TYPES.integer, show_in_design: false },
+    { element: "form_table", icon: "Sheet", type: TYPES.string },
+    { element: "markdown_input", icon: "BookOpenCheck", type: TYPES.text, clientOnly: true },
+    { element: "designer", icon: "Brush", type: TYPES.longtext },
+    { element: "file_input", icon: "FileInput", type: TYPES.longtext },
+    { element: "file_uploader", icon: "FileUp", type: TYPES.longtext },
+    { element: "image_input", icon: "FileImage", type: TYPES.longtext },
+    { element: "color_picker", icon: "Palette", type: TYPES.text },
+    { element: "icon_input", icon: "Icon", type: TYPES.text },
+    { element: "radio_group", icon: "Circle", type: TYPES.text },
+    { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
   ]
 }
 

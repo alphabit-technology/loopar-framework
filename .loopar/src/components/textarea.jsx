@@ -21,7 +21,7 @@ export default function TextArea(props) {
           key={null}
           placeholder={data.placeholder || data.label} type={type} 
           className="border border-input rounded-sm bg-transparent"
-          rows={6}
+          rows={data.rows || 6}
         />
       </FormControl>
       <FormDescription>
@@ -30,4 +30,19 @@ export default function TextArea(props) {
       <FormMessage />
     </>
   ));
+}
+
+
+ TextArea.metaFields = () => {
+  return [
+    {
+      group: "form",
+      elements: {
+        rows: {
+          element: INPUT,
+          format: "number",
+        },
+      },
+    },
+  ];
 }

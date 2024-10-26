@@ -193,14 +193,19 @@ export default class CoreDocument {
     if(Object.keys(childValuesReq).length === 0) return;
 
     for (const [key, value] of Object.entries(childValuesReq)) {
-      const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__ENTITY__.id}' AND parent_id = '${ID}'`;
-      await loopar.db.execute(deleteQuery, transaction);
+      await loopar.db.knex(loopar.db.literalTableName(key)).where({
+        parent_document: this.__ENTITY__.id,
+        parent_id: ID
+      }).del();
+      //const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__ENTITY__.id}' AND parent_id = '${ID}'`;
+      //await loopar.db.execute(deleteQuery, transaction);
     }
   }
 
   async save() {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
+
     async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
@@ -238,12 +243,14 @@ export default class CoreDocument {
         }
       }
 
+      //if (!loopar.installing) {
       const childValuesReq = this.childValuesReq;
 
       if (Object.keys(childValuesReq).length) {
         await this.deleteChildRecords(childValuesReq);
         await updateChildRecords(childValuesReq, this.__ENTITY__.id, await this.__ID__());
       }
+      //}
       
       await this.updateHistory();
       await this.updateInstaller();
@@ -266,6 +273,7 @@ export default class CoreDocument {
   }
 
   async updateHistory(action) {
+    if(loopar.installing) return;
     if (this.__ENTITY__.name !== "Document History") {
       if (!loopar.installing || (loopar.installing && this.__ENTITY__.name !== "Entity")) {
 
@@ -285,6 +293,7 @@ export default class CoreDocument {
   }
 
   async updateInstaller() {
+    return true;
     const deleteDocument = arguments[0] || false;
     if (loopar.installing) return;
 
@@ -342,10 +351,10 @@ export default class CoreDocument {
           if (options[0] === "") {
             errors.push(errForNotValidDocument);
           } else {
-            if (await loopar.db.count(options[0]) === 0) {
+            if (await loopar.db.hastEntity(options[0]) === 0) {
               errors.push(errForNotValidDocument);
             } else {
-              const link = await loopar.db.count(field.options, value);
+              const link = await loopar.db.hastEntity(field.options, value);
 
               if (link === 0) {
                 errors.push(`The value ${value} for ${field.name} does not exist in ${field.options} Entity`);
@@ -403,6 +412,7 @@ export default class CoreDocument {
 
     await loopar.db.endTransaction();
 
+    console.log(["Deleting", this.__ENTITY__.name, this.name]);
     if (updateInstaller && this.updateInstaller && typeof this.updateInstaller === 'function') {
       await this.updateInstaller(true);
     }
@@ -501,6 +511,7 @@ export default class CoreDocument {
   get stringifyValues() {
     return Object.values(this.#fields)
       .filter(field => (field.name !== ID || loopar.installing) && field.element !== FORM_TABLE)
+      //.filter(field => (field.element === PASSWORD && field.value != this.protectedPassword))
       .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 

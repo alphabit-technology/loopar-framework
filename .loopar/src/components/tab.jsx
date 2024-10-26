@@ -1,11 +1,9 @@
-import Component from "@component";
 import { Droppable } from "$droppable";
 
-export default function Tab({data, ...props}) {
+export default function Tab(props) {
   return (
     <Droppable
       {...props}
-      receiver={this}
     />
   )
 }

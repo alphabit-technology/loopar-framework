@@ -35,7 +35,7 @@ export default class BaseController extends CoreController {
 
     if (this.hasData()) {
       await document.save();
-      this.redirect('update?name=' + document.name);
+      return this.redirect('update?name=' + document.name);
     } else {
       Object.assign(this.response, await document.__data__());
       return await this.render(this.response);
@@ -45,11 +45,11 @@ export default class BaseController extends CoreController {
   async actionUpdate(document) {
     document ??= await loopar.getDocument(this.document, this.name, this.hasData() ? this.data : null);
 
-    
     if (this.hasData()) {
       const Entity = document.__ENTITY__;
       const isSingle = Entity.is_single;
       await document.save();
+
       return await this.success(
         `${(Entity.name === "Entity") ? document.type : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
       );
@@ -60,24 +60,14 @@ export default class BaseController extends CoreController {
 
   async actionView() {
     const document = await loopar.getDocument(this.document, this.name);
-
-    if (document.__ENTITY__.side_menu) {
-      //const menuId = await loopar.db.getValue('Menu Item', 'name', { "=": {page: document.__ENTITY__.name}});
-
-      //console.log(["Menu Id", menuId])
-      //document.side_menu = document.__ENTITY__.side_menu;
-      //document.side_menu_items = await loopar.db.getList('Menu Item', ["page", "link", "parent_menu"], {"=": {parent_menu: menuId}});
-    }
-
     return await this.render(document);
   }
 
   async actionDelete() {
     const document = await loopar.getDocument(this.document, this.name);
-    const result = await document.delete();
+    await document.delete();
 
-  
-    this.res.send(result);
+    return this.redirect('list');
   }
 
   async actionBulkDelete() {

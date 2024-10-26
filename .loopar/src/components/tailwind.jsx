@@ -20,7 +20,7 @@ export default function Tailwind(props){
     clearTimeout(timerId);
 
     timerId = setTimeout(() => {
-      loopar.method("Document", "setTailwind", {to_element: data.to_element, classes: e.target.value })
+      loopar.method("Entity", "setTailwind", {to_element: data.to_element, classes: e.target.value })
     }, 500);
   }
 

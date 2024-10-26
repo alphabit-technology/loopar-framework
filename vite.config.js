@@ -32,14 +32,12 @@ const makeAppsToAlias = (dir) => {
 
               //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `dist/apps/${app}/modules/${module}/${entity}/client` });
               //targets.push({ src: `${clientRoot}/${clientFile}`, dest: `assets/app` });
+
               //fs.copyFileSync(path.resolve(`${clientRoot}/${clientFile}`), path.resolve(__dirname, 'src', '__apps__', `${clientFile}`));
+
               /**
                * To default import ej: import MyComponent from '$my-component'
                */
-
-
-
-              //appAlias[`$assets/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
               appAlias[`@app/${clientFile.split(".")[0]}`] = path.resolve(`${clientRoot}/${clientFile}`);
 
               /**
@@ -50,7 +48,6 @@ const makeAppsToAlias = (dir) => {
                * await AppSourceLoader(clientFile): (await import('item-client')).default
                * */
               appAlias[`/src/app/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
-              /////////////appAlias[`/assets/${clientFile}`] = path.resolve(`${clientRoot}/${clientFile}`);
             });
           });
         });
@@ -142,7 +139,7 @@ export default defineConfig({
         encoding: "buffer",
       }
     }),
-    importDynamicModule(),
+    //importDynamicModule(),
     //root: path.resolve(__dirname, './src
   ],
   optimizeDeps: {

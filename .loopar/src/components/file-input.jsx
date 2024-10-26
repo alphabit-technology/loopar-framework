@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useId } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo} from 'react';
 import BaseInput from "@base-input";
 import { FileBrowserModal } from "@file-browser";
 import FilePreview from "@file-preview";
 import FileContainer from "@file-container";
 import fileManager from "@tools/file-manager";
-import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon } from "lucide-react";
+import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import loopar from "$loopar";
 
 import {
@@ -22,21 +22,19 @@ const origins = [
 ];
 
 const FileInput = (props) => {
-  const { value, data, renderInput, fieldControl, handleInputChange } = BaseInput(props);
+  const { value, data, renderInput } = BaseInput(props);
 
-  const [state, setState] = useState({
-    dropping: false,
-    fileBrowserOpen: false,
-    previews: [],
-    loaded: false,
-  });
-
+  const [dropping, setDropping] = useState(false);
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  const [previews, setPreviews] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const inputRef = useRef(null);
 
   const accept = data.accept || "/*";
   const [files, setFiles] = useState(fileManager.getMappedFiles(value()));
 
-  const makePreviews = (files = [], callback) => {
+  // Solo actualiza previews si los archivos realmente han cambiado
+  const makePreviews = useCallback((files = [], callback) => {
     const promises = files.map((file) => new Promise((resolve, reject) => {
       if (file instanceof File) {
         if (file.type.match("image.*")) {
@@ -65,25 +63,26 @@ const FileInput = (props) => {
       }
     }));
 
-    Promise.all(promises).then((previews) => {
-      setState({ previews, loaded: true, dropping: false });
-      callback && callback(previews);
-    }).catch((error) => {
-      setState({ loaded: true, dropping: false });
-      console.error("Error reading files:", error);
-    });
-  };
+    Promise.all(promises)
+      .then((newPreviews) => {
+        // Solo actualiza si los previews han cambiado
+        if (JSON.stringify(previews) !== JSON.stringify(newPreviews)) {
+          setPreviews(newPreviews);
+        }
+        setLoaded(true);
+        setDropping(false);
+        callback && callback(newPreviews);
+      })
+      .catch((error) => {
+        setLoaded(true);
+        setDropping(false);
+        console.error("Error reading files:", error);
+      });
+  }, [previews]);
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prevState => ({ ...prevState, dropping: true }));
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prevState => ({ ...prevState, dropping: false }));
+  const handleChange = (e) => {
+    const f = mergeFiles(files, Array.from(e.target.files));
+    makePreviews(f, value);
   };
 
   const handleDrop = (e) => {
@@ -93,11 +92,29 @@ const FileInput = (props) => {
     handleChange({ target: { files: droppedFiles } });
   };
 
-  const handleChange = (e) => {
-    const f = mergeFiles(files, Array.from(e.target.files));
-    makePreviews(f, value);
+   const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropping(true);
   };
-  
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropping(false);
+  };
+
+  useEffect(() => {
+    makePreviews(files);
+  }, [files]);
+
+  useEffect(() => {
+    const mappedFiles = fileManager.getMappedFiles(value());
+    if (JSON.stringify(files) !== JSON.stringify(mappedFiles)) {
+      setFiles(mappedFiles);
+    }
+  }, [value]);
+
   const mergeFiles = (files = [], newFiles) => {
     if (data.multiple) {
       return [...files, ...newFiles].filter((file, index, self) => (
@@ -107,44 +124,28 @@ const FileInput = (props) => {
     return Array.isArray(newFiles) ? [newFiles[0]] : Array.isArray(files) ? [files[0]] : [];
   };
 
-  const getSrc = (file, preview = false) => (
-    file ? `/uploads/${preview ? 'thumbnails/' : ''}${file.name}` : ''
-  );
-
-  useEffect(() => {
-    makePreviews(files);
-  }, []);
-
-  useEffect(() => {
-    setFiles(fileManager.getMappedFiles(value()));
-  }, [data.value]);
-
-  useEffect(() => {
-    makePreviews(files);
-  }, [files]);
-
   const handleClearFiles = () => {
     loopar.confirm('Are you sure you want to delete all files?', () => {
       makePreviews([], value);
     });
   };
 
-  const hasFiles = state.previews.length > 0;
+  const hasFiles = previews.length > 0;
 
-  const DroppbleArea = (files) => (
+  const DroppbleArea = useMemo(() => (
     <div
-      className={`h-full bg-background/50 flex ${!hasFiles ? "flex-col" : "flex-row"} items-center justify-center ${state.dropping ? "drag-over" : ""}`}
+      className={`h-full bg-background/50 flex ${!hasFiles ? "flex-col" : "flex-row"} items-center justify-center ${dropping ? "drag-over" : ""}`}
       onDragOverCapture={handleDragOver}
       onDragLeaveCapture={handleDragLeave}
       onDrop={handleDrop}
     >
-      {state.dropping ?
+      {dropping ? (
         <div className="w-full flex flex-col items-center text-lg">
           <UploadCloudIcon className="w-12 h-12" />
           Drop files here!
         </div>
-        :
-        state.loaded ?
+      ) : (
+        loaded ? (
           <>
             {!hasFiles && <div className="mb-2">
               <small className="flex text-lg text-center w-full">
@@ -153,20 +154,21 @@ const FileInput = (props) => {
             </div>}
             <div className={`flex ${!hasFiles ? "flex-row" : "flex-col"} gap-2`}>
               {origins.map(origin => {
-                const refOrigin = props.origins;
                 if (!hasFiles && origin.name === "Trash") return null;
+                const refOrigin = props.origins;
                 if (refOrigin && refOrigin.length > 0 && !refOrigin.includes(origin.name)) return null;
 
                 const Icon = origin.icon;
                 const size = !hasFiles ? "w-16" : "w-12";
                 return (
                   <button
-                    className={`flex ${size} flex-col items-center rounded-sm border bg-card p-2 shadow cursor-pointer transition-colors hover:bg-muted/50`}
+                    key={origin.name}
+                    className={`flex ${size} flex-col items-center rounded border bg-card p-2 shadow cursor-pointer transition-colors hover:bg-muted/50`}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       if (origin.name === "Local") return inputRef.current.click();
-                      if (origin.name === "Server") return setState(prevState => ({ ...prevState, fileBrowserOpen: true }));
+                      if (origin.name === "Server") return setFileBrowserOpen(true);
                       if (origin.name === "Web") {
                         loopar.prompt({
                           title: "Web file",
@@ -196,56 +198,56 @@ const FileInput = (props) => {
               })}
             </div>
           </>
-          :
-          <span className="file-drop-zone-icon">
-            {/* <i className="fa fa-spinner fa-spin mr-2 fa-3x"></i> */}
-          </span>
-      }
+        ) : <Loader2Icon className="text-slate-500 w-10 h-10 animate-spin" />
+      )}
       <>
-        {state.previews.length > 0 && <FileContainer>
-          {state.previews.map((file) => (
-            <>
-            <FilePreview
-              file={file}
-              onDelete={() => {
-                handleChange({
-                  target: {
-                    files: files.filter((f) => f.name !== file.name),
-                  },
-                });
-              }}
-            />
-            </>
-          ))}
-        </FileContainer>}
-        {state.fileBrowserOpen && <FileBrowserModal
-          hasTitle={false}
-          onClose={() => setState(prevState => ({ ...prevState, fileBrowserOpen: false }))}
-          onSelect={(file) => {
-            const newFiles = [...files, ...file];
-            handleChange({
-              target: { files: hasFiles ? newFiles : JSON.stringify(newFiles) },
-            });
-            setState(prevState => ({ ...prevState, fileBrowserOpen: false }));
-          }}
-          open={state.fileBrowserOpen}
-          multiple={data.multiple}
-          accept={accept}
-          height={512}
-        />}
+        {hasFiles && (
+          <FileContainer>
+            {previews.map((file) => (
+              <FilePreview
+                key={file.name}
+                file={file}
+                onDelete={() => {
+                  handleChange({
+                    target: {
+                      files: files.filter((f) => f.name !== file.name),
+                    },
+                  });
+                }}
+              />
+            ))}
+          </FileContainer>
+        )}
+        {fileBrowserOpen && (
+          <FileBrowserModal
+            hasTitle={false}
+            onClose={() => setFileBrowserOpen(false)}
+            onSelect={(file) => {
+              const newFiles = [...files, ...file];
+              handleChange({
+                target: { files: hasFiles ? newFiles : JSON.stringify(newFiles) },
+              });
+              setFileBrowserOpen(false);
+            }}
+            open={fileBrowserOpen}
+            multiple={data.multiple}
+            accept={accept}
+            height={512}
+          />
+        )}
       </>
     </div>
-  );
+  ), [dropping, loaded, hasFiles, previews, files, fileBrowserOpen, handleChange, handleClearFiles, accept, data.multiple, props.origins]);
 
   return renderInput((field) => (
     <>
       {data.label && <FormLabel>{data.label}</FormLabel>}
       <FormControl>
         <div
-          className={`w-full h-10 p-3 border shadow-md bg-slate-300/50 dark:bg-slate-700/50 ${hasFiles > 0 && !state.dropping ? "has-files" : ""}`}
+          className={`w-full h-10 p-3 border shadow-md bg-slate-300/50 dark:bg-slate-700/50 ${hasFiles ? "has-files" : ""}`}
           style={{ minHeight: 270 }}
         >
-          <div className=" h-full bg-background p-2">
+          <div className="h-full bg-background p-2">
             <input
               type="file"
               className="hidden"
@@ -254,16 +256,26 @@ const FileInput = (props) => {
               accept={accept}
               ref={inputRef}
             />
-            {DroppbleArea(files)}
+            {DroppbleArea}
+            <div
+              className={`h-full bg-background/50 flex ${!hasFiles ? "flex-col" : "flex-row"} items-center justify-center ${dropping ? "drag-over" : ""}`}
+              onDragOverCapture={(e) => {
+                e.preventDefault();
+                setDropping(true);
+              }}
+              onDragLeaveCapture={(e) => {
+                e.preventDefault();
+                setDropping(false);
+              }}
+              onDrop={handleDrop}
+            >
+              {/* Resto de la lógica para mostrar el área de arrastre y carga */}
+            </div>
           </div>
         </div>
       </FormControl>
-      <FormDescription>
-        {data.description}
-      </FormDescription>
-      <FormMessage />
     </>
   ));
-}
+};
 
 export default FileInput;

@@ -9,6 +9,8 @@ class DocumentManage {
   async getDocument(ENTITY, name, data = null) {
     const databaseData = await loopar.db.getDoc(ENTITY.name, name, ['*'], { isSingle: ENTITY.is_single });
 
+    //console.log("getDocument", ENTITY, name, databaseData);
+
     if (databaseData) {
       data = Object.assign(databaseData, data || {});
       return await this.newDocument(ENTITY, data, name);

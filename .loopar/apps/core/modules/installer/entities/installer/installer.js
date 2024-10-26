@@ -83,6 +83,7 @@ export default class CoreInstaller {
         ]
       }
     ]
+
     return {
       __ENTITY__: {
         doc_structure: JSON.stringify(STRUCTURE),
@@ -143,6 +144,29 @@ export default class CoreInstaller {
           label: "Your Server Database Data",
         },
         elements: [
+          {
+            element: "select",
+            data: {
+              name: "dialect",
+              label: "Database Type",
+              required: 1,
+              options: [
+                { option: "mysql", value: "mysql" },
+                { option: "mariadb", value: "mariadb" },
+                { option: "postgres", value: "postgres" },
+                { option: "sqlite", value: "sqlite" },
+                { option: "mssql", value: "mssql" },
+              ],
+            }
+          },
+          {
+            element: "input",
+            data: {
+              name: "client",
+              label: "Client (ej: mysql)",
+              required: 1
+            }
+          },
           {
             element: "input",
             data: {
@@ -225,11 +249,10 @@ export default class CoreInstaller {
     return this.formConnectStructure.find(e => e.identifier === "form_connect").elements.map(e => e.data.name);
   }
 
-  async getDocumentData(app, module, document) {
-    const moduleRoute = loopar.makePath('apps', app);
-    const documentRoot = loopar.makePath(moduleRoute, "modules", module, document);
+  async getDocumentData(document) {
+    const ref = loopar.getRef(document);
 
-    return await fileManage.getConfigFile(document, documentRoot);
+    return await fileManage.getConfigFile(document, ref.entityRoot);
   }
 
   getNameToFileName(name) {
@@ -260,21 +283,23 @@ export default class CoreInstaller {
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = await fileManage.getConfigFile('installer', moduleRoute);
     const ownEntities = loopar.getEntities(this.app_name);
+    const ownEntitiesNames = ownEntities.map(e => e.name);
 
     const deleteDocuments = async (entity) => {
       const deleteDocument = async (ent, document) => {
         if (document.__document_status__ === "Deleted") return;
-        if (!await loopar.db._count(ent.name, document.name)) return;
+        if (!await loopar.db.count(ent.name, document.name)) return;
+
         await deleteDocuments(document);
 
-        if (document.path && !ownEntities.includes(document.name)) return;
+        if (document.path && !ownEntitiesNames.includes(document.name)) return;
 
         console.warn("Uninstalling:", ent.name, document.name);
-        await loopar.deleteDocument(ent.name, document.name, { updateInstaller: false, sofDelete: false, force: true, updateHistory: false });
+        await loopar.deleteDocument(ent.name, document.name, { updateInstaller: true, sofDelete: false, force: true, updateHistory: false });
       }
 
       for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
-        deleteDocument(entity, document);
+        await deleteDocument(entity, document);
       }
     }
 
@@ -283,11 +308,11 @@ export default class CoreInstaller {
     }
 
     loopar.installingApp = null;
+    console.log(`App ${this.app_name} uninstalled successfully!`);
     return `App ${this.app_name} uninstalled successfully!`;
   }
 
   async install() {
-    console.warn("Installing " + this.app_name);
     loopar.installingApp = this.app_name;
 
     if (this.app_name === 'loopar') {
@@ -314,23 +339,35 @@ export default class CoreInstaller {
   async installData() {
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
+    const ownEntities = loopar.getEntities(this.app_name);
+
+    const buildEntity = async (entity, data) => {
+      if(!ownEntities.find(e => e.name === data.name)) return;
+      
+      const E = await loopar.newDocument(entity, data);
+      await E.save({save:false, validate:false});
+    }
 
     const insertDocuments = async (entity) => {
       const insertDocument = async (ent, document) => {
-        const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
+        for (const req of (document.requires || [])) {
+          const ref = loopar.getRef(document.name);
 
-        if(!data) return;
-
-        console.warn(["Inserting", ent.name, document.name]);
-        
-        if (data.__document_status__ === "Deleted") return;
-
-        for(const req of (document.requires || [])){
-          await insertDocuments(req);
+          if (ref) {
+            for (const doc of (req.documents || [])) {
+              await buildEntity(ref.__ENTITY__, doc);
+            }
+          } else {
+            await insertDocuments(req);
+          }
         }
 
-        if (!await loopar.db._count(ent.name, document.name)){
-          const doc = await loopar.newDocument(ent.name, data);
+        const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
+        if(!data) return;
+        if (data.__document_status__ && data.__document_status__ === "Deleted") return;
+        
+        if (!await loopar.db.count(ent.name, document.name)){
+          const doc = await loopar.newDocument(ent.name, { ...data, __document_status__: "Active" });
           await doc.save({ validate: false });
         }
 
@@ -339,9 +376,14 @@ export default class CoreInstaller {
         }
       }
 
-      await insertDocument(entity, entity);
+      const ref = loopar.getRef(entity.name);
+      if (ref) {
+        const data = await fileManage.getConfigFile(ref.__NAME__, ref.entityRoot);
+        await buildEntity(ref.__ENTITY__, data);
+      }
 
-      for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
+      for (const document of (entity.documents || []).sort((a, b) => a.id - b.id)) {
+        console.log(["Inserting Document", entity.name, document.name])
         await insertDocument(entity, document);
       }
     }
@@ -389,15 +431,19 @@ export default class CoreInstaller {
 
   async connect() {
     const dbConfig = await fileManage.getConfigFile('db.config');
+    const originalConfig = dbConfig.connection;
+    const connection = Object.fromEntries(Object.entries(this).filter(([key]) => this.formConnectFields.includes(key) && this[key]));
+    const dialect = connection.dialect;
 
-    Object.assign(dbConfig, Object.fromEntries(Object.entries(this).filter(([key]) => this.formConnectFields.includes(key) && this[key])));
+    Object.assign(dbConfig, {
+      dialect,
+      connection: Object.assign(originalConfig, connection)
+    });
 
     await fileManage.setConfigFile('db.config', dbConfig);
 
     env.dbConfig = dbConfig;
-
-    await loopar.db.initialize();
-    await loopar.build();
+    await loopar.db.initialize(true);
 
     if (await loopar.db.testServer()) {
       return true;

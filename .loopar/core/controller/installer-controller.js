@@ -1,6 +1,6 @@
 'use strict'
 
-import Installer from "../../apps/core/modules/installer/entities/installer/core-installer.js";
+/*import {CoreInstaller as Installer} from "loopar";
 import BaseController from "./base-controller.js";
 import { loopar } from "../loopar.js";
 import { fileManage } from "../file-manage.js";
@@ -31,13 +31,12 @@ export default class InstallerController extends BaseController {
   }
 
   async getInstallerModel() {
-    const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js');
+    const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js')
 
     return await fileManage.importClass(installerRoute, Installer);
   }
 
   async actionInstall() {
-    this.client = "form";
     const installerModel = await this.getInstallerModel();
     const model = new installerModel(this.data);
 
@@ -97,4 +96,4 @@ export default class InstallerController extends BaseController {
       loopar.throw("App uninstall failed");
     }
   }
-}
+}*/

@@ -1,8 +1,10 @@
 
 'use strict';
 
+
+
 import { access } from 'fs'
-import DataBase from '../database/database.js';
+import Knex from '../database/knex.js';
 //import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { documentManage } from './document/document-manage.js';
@@ -20,8 +22,7 @@ import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
 import { singularize, titleize, humanize } from "inflection";
 import { elementsDict } from "loopar";
-//import pug from "pug";
-
+import { ChevronDownCircle } from 'lucide-react';
 
 export class Loopar {
   #installingApp = false;
@@ -44,7 +45,7 @@ export class Loopar {
 
   set server(server) {
     this.#server = server;
-    this.session.req = server.req;
+    //this.session.req = server.currentReq;
   }
 
   get server() {
@@ -84,7 +85,7 @@ export class Loopar {
     this.dateUtils = dateUtils;
     await this.GlobalEnvironment();
     await this.#loadConfig();
-    this.db = new DataBase();
+    this.db = new Knex();
 
     //this.db = new DataBaseSqlLite();
     await this.db.initialize();
@@ -95,17 +96,27 @@ export class Loopar {
   }
 
   getApps() {
-    return this.getDirList(this.makePath(this.pathRoot, "apps"));
+    const baseApps =  this.getDirList(this.makePath(this.pathRoot, "apps")).map(app => {
+      return {
+        ...app,
+        appRoot: this.makePath("apps", app.name)
+      }
+    });
+    const coreApp = this.getDirList(this.makePath(this.pathRoot, ".loopar", "apps")).map(app => {
+      return {
+        ...app,
+        appRoot: this.makePath(".loopar", "apps", app.name)
+      }
+    });
+
+    return [...coreApp, ...baseApps];
   }
 
   getEntities(appName) {
-    const basePath = this.pathRoot;
-
     return this.getApps().reduce((acc, app) => {
       if (appName && !loopar.utils.compare(app.name, appName)) return acc;
-      //if(appName && app.name != appName) return acc;
 
-      const moduleRoot = path.resolve(basePath, "apps", app.name, `modules`);
+      const moduleRoot = this.makePath(this.pathRoot, app.appRoot, `modules`);
       const modules = this.getDirList(moduleRoot);
 
       modules.forEach(module => {
@@ -121,7 +132,7 @@ export class Loopar {
 
             if (data) {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
-              data.entityRoot = this.makePath("apps", app.name, "modules", module.name, core.name, entity.name);
+              data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
               //replace all - with space and titleize
               data.__APP__ = titleize(humanize(app.name)).replace(/-/g, ' ');
 
@@ -151,7 +162,7 @@ export class Loopar {
     }
 
     const refs = Object.values(docs).reduce((acc, doc) => {
-      if (doc.__document_status__ !== "Active") return acc;
+      if (doc.__document_status__ == "Deleted") return acc;
       const isBuilder = doc.is_builder || doc.build;
 
       if (isBuilder) {
@@ -324,14 +335,16 @@ export class Loopar {
   }
 
   async build() {
+    console.log('......Building Loopar.......');
     if (this.installingApp) return;
+
     await this.buildRefs();
     await this.makeDefaultFolders();
 
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);
 
-      await this.#loadConfig(data)
+      await this.#loadConfig(data);
     }
 
     const writeModules = async (data) => {
@@ -381,8 +394,11 @@ export class Loopar {
     };
 
     data.DBServerInitialized = await this.db.testServer();
+    data.DBServerInitialized  && console.log('......Loopar DB Server Initalized.......');
     data.DBInitialized = data.DBServerInitialized && await this.db.testDatabase();
-    data.__installed__ = data.DBInitialized && await this.db.testFramework();
+    data.DBInitialized && console.log('......Loopar DB Initalized.......');
+    data.__installed__ = data.DBInitialized && await this.db.testFramework("loopar");
+    data.__installed__ && console.log('......Loopar Initalized.......');
 
     if (data.__installed__) {
       const activeWebApp = await this.db.getDoc('System Settings');
@@ -390,7 +406,7 @@ export class Loopar {
 
       data.webApp = {
         ...(webApp || {}),
-        menu_items: webApp ? await this.db.getList("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : []
+        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : []
       }
 
       await writeModules(data);
@@ -444,7 +460,14 @@ export class Loopar {
 
     process.on('uncaughtException', err => {
       console.error(['LOOPAR: uncaughtException', err]);
-      this.server && this.server.renderError({ error: getHttpError(err) });
+
+      try {
+        this.server && this.server.renderError({ error: getHttpError(err) });
+      } catch (error) {
+        console.error(['LOOPAR: uncaughtException', err]);
+        console.error(['LOOPAR: uncaughtException produced by', error]);
+      }
+      
     });
 
     //global.__META_COMPONENTS__ = {};
@@ -452,6 +475,7 @@ export class Loopar {
     global.AJAX = 'POST';
     global.env = {};
     global.dayjs = dayjs;
+
     await this.#writeDefaultSSettings();
 
     env.dbConfig = fileManage.getConfigFile('db.config');
@@ -587,8 +611,6 @@ export class Loopar {
     err.code = error.code;
 
     this.#installingApp = null;
-    this.lastController && (this.lastController.error = error);
-
     throw err;
   }
 

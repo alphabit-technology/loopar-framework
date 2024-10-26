@@ -38,6 +38,7 @@ interface __META__ {
   key: string;
   client_importer: ClientImporter;
   W: string;
+  __DOCUMENT__: {},
 }
 
 interface Document {
@@ -75,7 +76,9 @@ type WorkspaceProviderProps = {
   workspace?: string,
   openNav?: boolean,
   menuItems?: [],
-  currentPage?: string,
+  activeParentMenu?: string,
+  activePage?: string,
+  //currentPage?: string,
   ENVIRONMENT?: string
 }
 
@@ -86,8 +89,12 @@ type WorkspaceProviderState = {
   setOpenNav?: (open: boolean) => void,
   Documents: Documents,
   setDocuments: (Documents: Documents) => void,
-  currentPage?: string,
-  setCurrentPage?: (currentPage: string) => void,
+  activeParentMenu?: string,
+  setActiveParentMenu?: (activeParentMenu: string) => void,
+  activePage?: string,
+  setActivePage?: (activePage: string) => void,
+  //currentPage?: string,
+  //setCurrentPage?: (currentPage: string) => void,
 }
 
 const initialState: WorkspaceProviderState = {
@@ -97,8 +104,12 @@ const initialState: WorkspaceProviderState = {
   setOpenNav: () => null,
   Documents: {},
   setDocuments: () => null,
-  currentPage: "",
-  setCurrentPage: () => null,
+  activeParentMenu: "",
+  setActiveParentMenu: () => null,
+  activePage: "",
+  setActivePage: () => null,
+  //currentPage: "",
+  //setCurrentPage: () => null,
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
@@ -115,9 +126,15 @@ export function WorkspaceProvider({
     () => (loopar.cookie.get(storageKey) as Theme) || defaultTheme
   );
 
+  const __META__ = props.__META__ || {}
+  const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
+  const __WORKSPACE_NAME__ = __META__.__WORKSPACE__?.name || "desk"
+
   const [Documents, setDocuments] = useState(props.Documents || {} as Documents);
   const [loaded, setLoaded] = useState(false);
-  const [currentPage, setCurrentPage] = useState(props.currentPage || "");
+  const [activeParentMenu, setActiveParentMenu] = useState(__DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name);
+  const [activePage, setActivePage] = useState(props.activePage || "");
+  //const [currentPage, setCurrentPage] = useState(props.currentPage || "");
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
@@ -159,10 +176,9 @@ export function WorkspaceProvider({
     );
   }
 
-  const [openNav, setOpenNav] = useCookies(props.workspace);
+  const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
 
-  const handleSetOpenNav = useCallback(
-    (openNav) => {
+  const handleSetOpenNav = useCallback(openNav => {
       setOpenNav(openNav);
     },
     [openNav]
@@ -170,6 +186,7 @@ export function WorkspaceProvider({
 
   const handleToogleSidebarNav = useCallback(
     () => {
+      console.log("toogleSidebarNav");
       handleSetOpenNav(!openNav);
     },
     [setOpenNav]
@@ -209,11 +226,18 @@ export function WorkspaceProvider({
     const active = Object.values(Documents).find((Document) => Document.active);
     
     if (!active) return;
+
     const { __DOCUMENT__ } = active;
-    const currentPage = __DOCUMENT__?.__ENTITY__?.name
+    const activeParentMenu = __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
    
-    currentPage && setCurrentPage(currentPage);
-  }, [Documents, currentPage]);
+    if (activeParentMenu){
+      setActiveParentMenu(activeParentMenu);
+      setActivePage(__DOCUMENT__?.__ENTITY__?.name);
+    }
+
+  }, [Documents, pathname]);
+
+  
 
   const setDocument = (__META__: Meta) => {
     const copyDocuments = { ...Documents };
@@ -268,8 +292,7 @@ export function WorkspaceProvider({
 
   const value = {
     theme,
-    __META__: props.__META__,
-    //workspace: props.workspace,
+    __META__,
     setTheme: (theme: Theme) => {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
@@ -283,10 +306,11 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    currentPage,
+    activeParentMenu: activeParentMenu,
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
-    getDocuments: getDocuments
+    getDocuments: getDocuments,
+    activePage: activePage,
   }
 
   return (

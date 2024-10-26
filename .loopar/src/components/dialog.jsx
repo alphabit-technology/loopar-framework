@@ -114,7 +114,7 @@ const MetaDialog = (props) => {
 
   return (
     <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
-      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`}>
+      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`} style={{overflow: "auto"}}>
         <DialogHeader>
           <DialogTitle className="flex space-x-2">
             <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>

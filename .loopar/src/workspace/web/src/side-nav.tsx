@@ -1,70 +1,81 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import React from "react";
-import { Link } from "$link";
 import { cn } from "@/lib/utils";
-import { DotFilledIcon, Cross1Icon } from "@radix-ui/react-icons";
+import { Cross1Icon } from "@radix-ui/react-icons";
+import { Item } from "@radix-ui/react-context-menu";
+
+type Items = Array<Item>
 
 type Item = {
   link: String,
   page: String,
   parent_menu: String,
-  items: Array<Item>
+  items: Items
 }
 
-const SideNavRender = ({items}) => {
-  const { menuItems, currentPage } = useWorkspace();
+const getActive = (item: Item, activePage: String) => {
+  if (item.page == activePage) return true;
 
-  const getParentLink = (page: String) => {
-    return menuItems.find((item: Item) => item.page === page)?.link;
+  for (const i of item.items) {
+    if(getActive(i, activePage)){
+      return true;
+    }
   }
 
-  const groupMenu = items.reduce((acc:Array<Item>, i:Item) => {
-    i.items = JSON.parse(JSON.stringify(menuItems.filter((_i: Item) => _i.parent_menu == i.page)))
-
-    if (!acc.find((_i: Item) => _i.page == i.page)) {
-      acc.push(i);
-    }
-    return acc;
-  }, []);
-
-  return groupMenu.map((item:Item) => {
-    const parentLink = getParentLink(item.parent_menu);
-    const link = item.link.replaceAll(" ", "_");
-    const path = parentLink ? `/${parentLink}/${link}` : `/${link}`;
-    const subItems = item.items.filter((i: Item) => !groupMenu.find((_i: Item) => _i.link === i.link));
-
-    return (
-      <SideNavItem
-        path={path}
-        title={item.link}
-        className={`rounded-md pl-0 bg-red-400`}
-        active={currentPage === item.page || subItems.some((i:Item) => (i.page == currentPage && i.parent_menu == item.page))}
-      >
-        {subItems.map((child:Item) => {
-          const active = currentPage === child.page;
-          const activeText = active ? "text-primary/80" : "text-slate-500/70 hover:text-slate/70";
-          return (
-            <Link
-              className={`block border-l ml-4 pl-3 my-0 ${activeText} font-semibold rounded-none w-full h-7`}
-              to={`/${item.link}/${child.link}`.replaceAll(" ", "_")}
-            >
-              {active && <DotFilledIcon className="w-6 h-6 inline-block -ml-6" />}
-              <button
-                className={`transition-colors hover:text-foreground/80`}
-              >
-                {child.link}
-              </button>
-            </Link>
-          );
-        })}
-      </SideNavItem>
-    );
-  });
+  return false;
 }
 
-export function SideNav({ sideMenuItems}) {
-  const { openNav, setOpenNav, toogleSidebarNav, menuItems } = useWorkspace();
+const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
+  const { menuItems, activePage, activeParentMenu } = useWorkspace();
+
+  const getParentLink = () => {
+    return menuItems.find((item: Item) => item.page === activeParentMenu)?.link;
+  }
+
+  const getLink = (item: Item) => {
+    const parentLink = getParentLink();
+    return parentLink === item.page ? `/${item.link}` : `/${parentLink}/${item.link}`;
+  }
+
+  const treeIsActive = getActive(item, activePage);
+
+  return (
+    <>
+      <SideNavItem
+        path={getLink(item)}
+        title={item.link}
+        className={`rounded-md pl-0 pt-0`}
+        active={treeIsActive}
+        hasChildren={item.items.length > 0}
+        isChild={isChild}
+      >
+        {treeIsActive && (
+          <div className={`pl-3 ${isChild ? '' : ''}`}>
+            {item.items.map((subItem:Item) => (
+              <>
+                <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
+              </>
+            ))}
+          </div>
+        )}
+      </SideNavItem>
+    </>
+  );
+};
+
+const SideNavRender = ({ menu }) => {
+  return (
+    <div className="w-full">
+      {menu.map((item:Item) => (
+        <MenuItemTree key={item.page} item={item}/>
+      ))}
+    </div>
+  );
+}
+
+export function SideNav({sideMenuItems}) {
+  const { openNav, setOpenNav, toogleSidebarNav, activeParentMenu } = useWorkspace();
   const baseClassName = `fixed inset-0 z-50 overflow-y-auto bg-popover/90 lg:bg-transparent border-r ${openNav ? 'w-webSidebarWidth px-2' : 'w-0'} lg:top-webHeaderHeight`
 
   if (typeof window !== "undefined") {
@@ -77,6 +88,8 @@ export function SideNav({ sideMenuItems}) {
       }
     })
   }
+
+  const childMenuItems = sideMenuItems.find(item => item.page === activeParentMenu)?.items || [];
 
   return (
     <>
@@ -100,15 +113,15 @@ export function SideNav({ sideMenuItems}) {
             </>
           )}
           <div className="relative lg:text-sm lg:leading-6 pt-10 w-full">
-            <SideNavRender items={menuItems.filter(item => !item.parent_menu)} />
+            <SideNavRender menu={sideMenuItems} />
           </div>
         </>
       </div>
-      {sideMenuItems.length > 0 && <div className={cn(baseClassName, "hidden lg:block w-webSidebarWidth p-2")}>
+      {childMenuItems.length > 0 && <div className={cn(baseClassName, "hidden lg:block w-webSidebarWidth p-2")}>
         <>
-          <SideNavRender items={sideMenuItems} />
+          <SideNavRender menu={childMenuItems} />
         </>
       </div>}
     </>
-  )
+  );
 }
