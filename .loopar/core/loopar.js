@@ -336,11 +336,10 @@ export class Loopar {
 
   async build() {
     console.log('......Building Loopar.......');
+    await this.makeDefaultFolders();
     if (this.installingApp) return;
 
     await this.buildRefs();
-    await this.makeDefaultFolders();
-
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);
 
