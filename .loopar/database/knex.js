@@ -18,11 +18,8 @@ export default class DataBase {
     return this.dbConfig.database;
   }
 
-  async initialize() {
-    const dbConfig = this.dbConfig;
-    const dialect = dbConfig.dialect || "";
-
-    if(dialect.includes('sqlite')) {
+  async connectWithSqlite() {
+    try {
       await fileManage.makeFolder('', "path/to");
       await fileManage.makeFile('path/to', this.database, '', 'db', true);
       const dbPath = loopar.makePath(loopar.pathRoot, 'path/to', `${this.database}.sqlite`);
@@ -32,26 +29,44 @@ export default class DataBase {
         connection: {
           filename: dbPath,
         },
-      })
-    } else if(dialect.includes('mysql')) {
-      const connection = dbConfig.connection || {};
-      try {
-        this.knex = knex({
-          client: 'mysql',
-          connection: {
-            ...connection,
-            database: dbConfig.database
-          }
-        });
-      }catch(e){
-        this.knex = knex({
-          client: 'mysql',
-          connection: {
-            ...connection,
-            database: 'information_schema'
-          }
-        });
+      });
+    } catch (e) {
+      loopar.throw("SQLite database not possible to connect");
+    }
+  }
+
+  async connectMySQL(database = null) {
+    const dbConfig = this.dbConfig;
+    const connection = dbConfig.connection || {};
+
+    try {
+      this.knex = knex({
+        client: 'mysql',
+        connection: {
+          ...connection,
+          database: database || dbConfig.database
+        }
+      });
+    }catch(e){
+      if(!database) {
+        await this.connectMySQL("information_schema");
+      }else{
+        await this.connectWithSqlite();
+        loopar.throw("MySQL database not possible to connect, connecting to SQLite database");
       }
+    }
+  }
+
+  async initialize() {
+    const dbConfig = this.dbConfig;
+    const dialect = dbConfig.dialect || "";
+
+    if(dialect.includes('sqlite')) {
+      return await this.connectWithSqlite();
+    } 
+    
+    if(dialect.includes('mysql')) {
+      return await this.connectMySQL();
     }
   }
 
@@ -799,7 +814,6 @@ export default class DataBase {
 
 
   async testDatabase() {
-    console.log('Testing database...', this.dialect);
     const client = this.dialect; 
     async function databaseExists(knex, dbName) {
       if (client.includes('mysql')) {
@@ -818,9 +832,11 @@ export default class DataBase {
     }
 
     try {
-      const db = await databaseExists(this.knex, this.database);
-      return db;
+      await databaseExists(this.knex, this.database);
+      loopar.printSuccess('Database connected successfully');
+      return true;
     }catch(e){
+      loopar.printError('Database not connected', true);
       return false;
     }
     //await databaseExists(this.knex, this.database);
@@ -838,24 +854,34 @@ export default class DataBase {
   async testServer() {
     try {
       this.coreConnection.raw('SELECT 1+1 as result');
-      console.log('......Database server initialized.....');
+      loopar.printSuccess('Database server is running');
       return true;
     }catch(e){
+      loopar.printError('Database server is not running');
       return false;
     }
   }
 
   async testFramework(app) {
-    if (!loopar.DBServerInitialized || !loopar.DBInitialized) return false;
+    if (!loopar.DBServerInitialized || !loopar.DBInitialized){
+      console.log([loopar.DBServerInitialized, loopar.DBInitialized]);
+      loopar.printError(`Loopar framework is not installed`);
+      return false;
+    }
 
     const entities = loopar.getEntities(app);
 
     for (const entity of entities) {
       if(entity.is_single) continue;
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
-      if(!exist) return false;
+
+      if(!exist){
+        loopar.printError(`Loopar framework is not installed`);
+        return false;
+      }
     }
 
+    loopar.printSuccess(`Loopar framework is installed`);
     return true;
   }
 

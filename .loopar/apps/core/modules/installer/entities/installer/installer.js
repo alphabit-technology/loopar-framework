@@ -159,14 +159,14 @@ export default class CoreInstaller {
               ],
             }
           },
-          {
+          /*{
             element: "input",
             data: {
               name: "client",
               label: "Client (ej: mysql)",
               required: 1
             }
-          },
+          },*/
           {
             element: "input",
             data: {
@@ -323,9 +323,11 @@ export default class CoreInstaller {
         return;
       }
     }
+
     await this.installData();
 
     loopar.installingApp = null;
+
     await loopar.initialize();
     await loopar.server.exposeClientAppFiles(this.app_name);
     return "App installed successfully!";
@@ -337,6 +339,7 @@ export default class CoreInstaller {
   }
 
   async installData() {
+    console.log("Installing App DATA", this.app_name);
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
     const ownEntities = loopar.getEntities(this.app_name);
@@ -431,21 +434,23 @@ export default class CoreInstaller {
 
   async connect() {
     const dbConfig = await fileManage.getConfigFile('db.config');
-    const originalConfig = dbConfig.connection;
+    const originalConfig = dbConfig.connection || {};
     const connection = Object.fromEntries(Object.entries(this).filter(([key]) => this.formConnectFields.includes(key) && this[key]));
-    const dialect = connection.dialect;
 
+    console.log("Connecting to the database server", originalConfig, connection);
     Object.assign(dbConfig, {
-      dialect,
+      dialect: connection.dialect,
+      client: connection.client,
       connection: Object.assign(originalConfig, connection)
     });
 
     await fileManage.setConfigFile('db.config', dbConfig);
 
     env.dbConfig = dbConfig;
-    await loopar.db.initialize(true);
+    await loopar.db.initialize();
 
     if (await loopar.db.testServer()) {
+      await loopar.initialize();
       return true;
     } else {
       loopar.throw({

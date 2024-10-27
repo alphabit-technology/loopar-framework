@@ -272,6 +272,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
+  console.log(["HTMLBlock", element]);
   return (
     <div
       className={`h-auto w-full prose dark:prose-invert pb-5`}

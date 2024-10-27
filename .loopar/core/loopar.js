@@ -393,12 +393,13 @@ export class Loopar {
       modulesGroup: []
     };
 
-    data.DBServerInitialized = await this.db.testServer();
-    data.DBServerInitialized  && console.log('......Loopar DB Server Initalized.......');
-    data.DBInitialized = data.DBServerInitialized && await this.db.testDatabase();
-    data.DBInitialized && console.log('......Loopar DB Initalized.......');
-    data.__installed__ = data.DBInitialized && await this.db.testFramework("loopar");
-    data.__installed__ && console.log('......Loopar Initalized.......');
+    this.DBServerInitialized = await this.db.testServer();
+    this.DBInitialized = (this.DBServerInitialized && await this.db.testDatabase());
+    this.__installed__ = (this.DBInitialized && await this.db.testFramework("loopar"));
+
+    data.DBInitialized = this.DBInitialized;
+    data.DBServerInitialized = this.DBServerInitialized;
+    data.__installed__ = this.__installed__;
 
     if (data.__installed__) {
       const activeWebApp = await this.db.getDoc('System Settings');
@@ -415,6 +416,27 @@ export class Loopar {
     }
   }
 
+  printMessage() {
+    console.log(`__________________________________________________________`);
+    console.log(arguments[0]);
+    console.log(`***********************************************************\n`);
+
+  }
+
+  printSuccess() {
+    console.log("\x1b[32m__________________________________________________________");
+    console.log(arguments[0]);
+    console.log(`\x1b[32m***********************************************************`);
+    console.log("\x1b[0m", "");
+  }
+
+  printError() {
+    console.log("\x1b[31m__________________________________________________________");
+    console.error(arguments[0]);
+    console.log(`\x1b[31m***********************************************************`);
+    console.log("\x1b[0m", "");
+  }
+
   async systemsSettings() {
     return await this.getDocument("System Settings");
   }
@@ -423,7 +445,8 @@ export class Loopar {
     await fileManage.makeFolder('', "config");
 
     if (!fileManage.existFileSync(path.join('config', 'db.config.json'))) {
-      await fileManage.setConfigFile('db.config', {
+      await fileManage.setConfigFile('db.config', {});
+      /*await fileManage.setConfigFile('db.config', {
         "host": "localhost",
         "user": "root",
         "password": "root",
@@ -435,7 +458,7 @@ export class Loopar {
           "acquire": 30000,
           "idle": 10000
         }
-      });
+      });*/
     }
 
     if (!fileManage.existFileSync(path.join('config', 'loopar.config.json'))) {
@@ -459,15 +482,14 @@ export class Loopar {
     GlobalEnvironment();
 
     process.on('uncaughtException', err => {
-      console.error(['LOOPAR: uncaughtException', err]);
+      this.printError('LOOPAR: uncaughtException', err);
 
       try {
         this.server && this.server.renderError({ error: getHttpError(err) });
       } catch (error) {
-        console.error(['LOOPAR: uncaughtException', err]);
-        console.error(['LOOPAR: uncaughtException produced by', error]);
+        this.printError(['LOOPAR: uncaughtException', err]);
+        this.printError(['LOOPAR: uncaughtException produced by', error]);
       }
-      
     });
 
     //global.__META_COMPONENTS__ = {};
