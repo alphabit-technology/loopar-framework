@@ -26,7 +26,10 @@ const makeAppsToAlias = (dir) => {
 
           entities.forEach(entity => {
             const clientRoot = path.resolve(`${entitiesRoot}/${entity}/client`);
-            const clientFiles = fs.readdirSync(clientRoot);
+            let clientFiles = [];
+            try {
+              clientFiles = fs.readdirSync(clientRoot);
+            } catch (e) { }
 
             clientFiles.forEach(clientFile => {
 

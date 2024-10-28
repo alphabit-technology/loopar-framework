@@ -7,14 +7,14 @@ class FileManage {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
 
     try {
-      if(existsSync(filePath) && ['jsx', 'tsx', 'js'].includes(ext) && !replace) return;
+      if (existsSync(filePath) && ['jsx', 'tsx', 'js'].includes(ext) && !replace) return;
     } catch (e) {
       return;
     }
 
     return new Promise(resolve => {
       fs.writeFile(filePath, content, (err) => {
-        if(err) throw new Error(err);
+        if (err) throw new Error(err);
         resolve();
       });
     });
@@ -74,10 +74,10 @@ class FileManage {
       const Class = await import(isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
       return Class.default;
     } catch (e) {
-      if (e.code === 'ERR_MODULE_NOT_FOUND') {
-        const moduleNotFoundName = e.message.split('\'')[1];
+      if (e.code == 'ERR_MODULE_NOT_FOUND') {
+        const moduleNotFoundName = e.split('/').pop().split('.')[0];
 
-        if (moduleNotFoundName === moduleName) {
+        if (moduleNotFoundName == moduleName) {
           if (typeof onError === 'function' && !onError.prototype) {
             return onError(`File ${fileRote} not found`);
           } else if (typeof onError != "object") {
@@ -88,7 +88,7 @@ class FileManage {
               message: `File ${fileRote} not found`
             });
           }
-        }else{
+        } else {
           return loopar.throw({
             code: 500,
             message: `${e} ${fileRote},\n\nPlease check your dependencies and imports in the file ${fileRote}`
@@ -108,7 +108,7 @@ class FileManage {
 
     return new Promise(resolve => {
       fs.mkdir(folderPath, { recursive: true }, (err) => {
-        if(err) throw new Error(err);
+        if (err) throw new Error(err);
         resolve();
       });
     });
@@ -125,7 +125,7 @@ class FileManage {
     });
   }
 
-  async makeClass(destiny, name, { IMPORTS = {}, EXTENDS = null } = {}, importer_type = '', ext='js') {
+  async makeClass(destiny, name, { IMPORTS = {}, EXTENDS = null } = {}, importer_type = '', ext = 'js') {
     const _EXTENDS = EXTENDS ? ` extends ${EXTENDS}` : '';
     const CONSTRUCTOR = EXTENDS ? `super(props);` : 'Object.assign(this, props);';
 
@@ -163,8 +163,12 @@ export default class ${name}${_EXTENDS} {
 
   getConfigFile(fileName, _path = null) {
     const pathFile = this.fileName((`./${_path || `config`}/${fileName}`), 'json');
-    const data = fs.readFileSync(path.resolve(loopar.pathRoot, pathFile), 'utf8');
-    return loopar.utils.isJSON(data) ? JSON.parse(data) : {};
+    try {
+      const data = fs.readFileSync(path.resolve(loopar.pathRoot, pathFile), 'utf8');
+      return loopar.utils.isJSON(data) ? JSON.parse(data) : {};
+    } catch (error) {
+      return {};
+    }
   }
 
   getAppData(appName) {

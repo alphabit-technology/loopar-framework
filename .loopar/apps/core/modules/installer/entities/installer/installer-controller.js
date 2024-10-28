@@ -38,7 +38,6 @@ export default class CoreInstallerController extends BaseController {
 
   async getInstallerModel() {
     const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js')
-
     return await fileManage.importClass(installerRoute, Installer);
   }
 

@@ -96,7 +96,7 @@ export class Loopar {
   }
 
   getApps() {
-    const baseApps =  this.getDirList(this.makePath(this.pathRoot, "apps")).map(app => {
+    const baseApps = this.getDirList(this.makePath(this.pathRoot, "apps")).map(app => {
       return {
         ...app,
         appRoot: this.makePath("apps", app.name)
@@ -417,21 +417,21 @@ export class Loopar {
 
   printMessage() {
     console.log(`__________________________________________________________`);
-    console.log(arguments[0]);
+    console.log(...arguments);
     console.log(`***********************************************************\n`);
 
   }
 
   printSuccess() {
     console.log("\x1b[32m__________________________________________________________");
-    console.log(arguments[0]);
+    console.log(...arguments);
     console.log(`\x1b[32m***********************************************************`);
     console.log("\x1b[0m", "");
   }
 
   printError() {
     console.log("\x1b[31m__________________________________________________________");
-    console.error(arguments[0]);
+    console.error(...arguments);
     console.log(`\x1b[31m***********************************************************`);
     console.log("\x1b[0m", "");
   }

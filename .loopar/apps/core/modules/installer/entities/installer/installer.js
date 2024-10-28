@@ -260,7 +260,7 @@ export default class CoreInstaller {
   }
 
   checkIfAppExists() {
-    return fileManage.getConfigFile("installer", path.join("apps", this.app_name), false);
+    return fileManage.existFileSync(loopar.makePath('apps', this.app_name, 'installer.js'));
   }
 
   async restartInstaller() {
