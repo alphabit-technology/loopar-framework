@@ -23,8 +23,8 @@ export default class BaseForm extends BaseDocument {
     loopar.rootApp.updateDocument(this.props.key, this.getFormValues(), false);
   }
 
-  send(options = { action: this.props.action }) {
-    options = typeof options === 'string' ? { action: options } : options;
+  send({ action, params={}, ...options } = {}) {
+    //options = typeof options === 'string' ? { action: options } : options;
     this.validate();
     
     /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
@@ -32,13 +32,12 @@ export default class BaseForm extends BaseDocument {
       loopar.notify("No changes to save", "warning");
       return;
     }*/
-
     
 
     //return new Promise((resolve, reject) => {
     loopar.send({
-      action: options.action,
-      params: this.params,
+      action: action,
+      params: {...this.params, ...params},
       body: this.#getFormData(true),
       success: r => {
         if (r && r.success) {

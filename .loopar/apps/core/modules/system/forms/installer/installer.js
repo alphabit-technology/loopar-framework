@@ -3,6 +3,7 @@ import { loopar, fileManage } from "loopar";
 import BaseDocument from "../../../../../../core/document/base-document.js";
 
 export default class Installer extends BaseDocument {
+
   /**
    * snakeCase because is the same property name in the database
    */
@@ -27,7 +28,7 @@ export default class Installer extends BaseDocument {
 
     if (fileManage.existFileSync(installerRoute)) {
       const InstallerModel = await fileManage.importClass(installerRoute);
-      new InstallerModel.default(this).install();
+      new InstallerModel(await this.values()).install();
     } else {
       loopar.throw(`App ${this.app_name} not provide a installer model`);
     }
@@ -79,8 +80,6 @@ export default class Installer extends BaseDocument {
 
       loopar.git().clone(repo, async (err, update) => {
         err && loopar.throw(err);
-        await loopar.build();
-        await loopar.rebuildVite();
         resolve(true);
       });
     });
@@ -89,9 +88,11 @@ export default class Installer extends BaseDocument {
   async install() {
     loopar.installingApp = this.app_name;
 
+    console.log("Installing App", this.app_name);
     if (this.app_name === 'loopar') {
       if (!this.checkIfAppExists()) {
         await this.clone("https://github.com/alphabit-technology/loopar.git");
+        await loopar.buildRefs();
         this.restartInstaller();
         return;
       }
@@ -101,8 +102,11 @@ export default class Installer extends BaseDocument {
 
     loopar.installingApp = null;
 
-    await loopar.initialize();
-    await loopar.server.exposeClientAppFiles(this.app_name);
+    await loopar.build();
+    await loopar.rebuildVite();
+
+    //await loopar.initialize();
+    //await loopar.server.exposeClientAppFiles(this.app_name);
     return "App installed successfully!";
   }
 

@@ -42,13 +42,14 @@ export default class SystemController extends BaseController {
     const Installer = await fileManage.importClass(installerRoute, false);
 
     if (Installer) return new Installer(this.data);
-    return await loopar.newDocument("Installer", this.data);
+    return await loopar.newDocument("Installer", { ...this.data, app_name: this.app_name });
   }
 
   async actionInstall() {
     if (this.hasData()) {
       const model = await this.getInstallerModel();
-      Object.assign(model, this.data);
+      model.app_name ??= this.getAppName();
+      //Object.assign(model, this.data);
 
       if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed') {
         loopar.throw("App already installed please refresh page");
