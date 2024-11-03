@@ -5,7 +5,6 @@ import multer from "multer";
 import WorkspaceController from './controller/workspace-controller.js';
 import BaseController from './controller/base-controller.js';
 import { getHttpError } from './global/http-errors.js';
-import { type } from 'os';
 
 export default class Router {
   debugger = false;
@@ -43,11 +42,11 @@ export default class Router {
     return errString;
   }
 
-  render(res, req, response){
+  render(res, req, response) {
     if (!res.headersSent) {
-      if(response.hasOwnProperty('redirect')) {
+      if (response.hasOwnProperty('redirect')) {
         return this.redirect(res, response.redirect);
-      }else{
+      } else {
         res.status(response.status || 200);
         res.setHeader('Content-Type', response.contentType || 'text/html');
         res.send(response.body);
@@ -57,7 +56,7 @@ export default class Router {
 
   renderAjax(res, response) {
     //response = typeof response === 'string' ? { message: response } : response;
-    if(response){
+    if (response) {
       const status = parseInt(response.status) || parseInt(response.code) || 200;
       if (!res.headersSent) {
         response = typeof response === 'string' ? { message: response } : response;
@@ -67,19 +66,19 @@ export default class Router {
         res.setHeader('Access-Control-Allow-Methods', 'POST');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         res.send(response);
-      }else{
+      } else {
         console.error(["Error on request process, petition cant not send to client", response]);
       }
     }
   }
 
-  async renderError ({ req = this.currentReq, res = this.currentRes, error }) {
-    if(!res || res.headersSent) return;
+  async renderError({ req = this.currentReq, res = this.currentRes, error }) {
+    if (!res || res.headersSent) return;
 
     try {
-      if(req.method === 'POST') {
+      if (req.method === 'POST') {
         return this.renderAjax(res, error);
-      }else{
+      } else {
         const errControlled = new BaseController({ req, res });
         errControlled.dictUrl = req._parsedUrl;
         const e = await errControlled.getError(error.code, error);
@@ -113,8 +112,8 @@ export default class Router {
     }
 
     const authMiddleware = async (req, res, next) => {
-      if(req.__WORKSPACE_NAME__ === "loopar") return next();
-      
+      if (req.__WORKSPACE_NAME__ === "loopar") return next();
+
       const params = req.__params__;
       const loginActions = ['login', 'register', 'logout'];
       const url = req._parsedUrl.pathname;
@@ -160,7 +159,7 @@ export default class Router {
 
           return next();
         }
-        
+
         // If it's a login action and the user is not logged in
         if (isLoginAction()) {
           if (url === "/auth/logout") {
@@ -187,19 +186,19 @@ export default class Router {
 
     const systemMiddleware = async (req, res, next) => {
       const currentUrl = req._parsedUrl.pathname;
-      const {DBServerInitialized, DBInitialized, __installed__} = loopar;
+      const { DBServerInitialized, DBInitialized, __installed__ } = loopar;
 
-      if (!DBServerInitialized && currentUrl != "/loopar/installer/connect") {
+      if (!DBServerInitialized && currentUrl != "/loopar/system/connect") {
         /**System detected that Database Server is no Initialized or not Installed */
-        return this.redirect(res, '/loopar/installer/connect');
-      }
-      
-      if (DBServerInitialized && (!DBInitialized || !loopar.__installed__) && currentUrl != "/loopar/installer/install") {
-        /**System not detected a Database */
-        return this.redirect(res, '/loopar/installer/install');
+        return this.redirect(res, '/loopar/system/connect');
       }
 
-      if(DBServerInitialized && DBInitialized && currentUrl.includes("/loopar/installer") && __installed__) {
+      if (DBServerInitialized && (!DBInitialized || !loopar.__installed__) && currentUrl != "/loopar/system/install") {
+        /**System not detected a Database */
+        return this.redirect(res, '/loopar/system/install');
+      }
+
+      if (DBServerInitialized && DBInitialized && currentUrl.includes("/loopar/system") && __installed__) {
         /**System is Installed */
         return this.redirect(res, '/desk');
       }
@@ -236,15 +235,15 @@ export default class Router {
     const buildParamsMiddleware = async (req, res, next) => {
       req.__WORKSPACE__ ??= {};
       const url = req._parsedUrl;
-      const pathname = ["web","auth"].includes(req.__WORKSPACE_NAME__) ? url.pathname : url.pathname.split("/").slice(1).join("/");
+      const pathname = ["web", "auth"].includes(req.__WORKSPACE_NAME__) ? url.pathname : url.pathname.split("/").slice(1).join("/");
 
-      const routeStructure = { host:null, document: null, action: null };
+      const routeStructure = { host: null, document: null, action: null };
       const controllerParams = { req, res, dictUrl: url, pathname }
 
       pathname.split("/").forEach((seg, index) => {
         const RTK = Object.keys(routeStructure)[index];
-        if(seg && seg.length > 0)
-        routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
+        if (seg && seg.length > 0)
+          routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
 
 
@@ -263,8 +262,8 @@ export default class Router {
     const controllerMiddleware = async (req, res, next) => {
       await this.makeController(req, res);
       let response = req.__WORKSPACE__.__DOCUMENT__;
-      
-      if(typeof response == "object" && response.hasOwnProperty('redirect')) {
+
+      if (typeof response == "object" && response.hasOwnProperty('redirect')) {
         return this.redirect(res, response.redirect);
       }
 
@@ -321,7 +320,7 @@ export default class Router {
         title: "Source not found",
         description: req.url
       });
-      
+
       res.status(404).send(errString);
     }
 
@@ -344,13 +343,13 @@ export default class Router {
       const menu = webApp.menu_items.find(item => item.link === params.document);
 
       if (!webApp.name || !menu)
-        return loopar.throw({code: 404, message: !webApp.name ? "Web App not found" : "Page not found"});
+        return loopar.throw({ code: 404, message: !webApp.name ? "Web App not found" : "Page not found" });
 
       params.document = menu.page;
     }
     const ref = loopar.getRef(params.document);
 
-    if (!ref) return loopar.throw({code: 404, message: `Document ${params.document} not found`}, res);
+    if (!ref) return loopar.throw({ code: 404, message: `Document ${params.document} not found` }, res);
 
     const makeController = async (query, body) => {
       const C = await fileManage.importClass(loopar.makePath(ref.entityRoot, `${params.document}Controller.js`));
@@ -410,6 +409,6 @@ export default class Router {
 
   redirect(res, url) {
     url = this.makeUrl(url, this.currentReq._parsedUrl.pathname);
-    if(!res.headersSent) res.redirect(url || '/desk');
+    if (!res.headersSent) res.redirect(url || '/desk');
   }
 }

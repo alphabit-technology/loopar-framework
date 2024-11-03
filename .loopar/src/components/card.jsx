@@ -19,7 +19,7 @@ export default function Card(props) {
     >
       <CardHeader>
         <CardTitle>{data.label}</CardTitle>
-        <CardDescription>{data.description}</CardDescription>
+        {data.description && <CardDescription>{data.description}</CardDescription>}
       </CardHeader>
       <Droppable
         Component={CardContent}

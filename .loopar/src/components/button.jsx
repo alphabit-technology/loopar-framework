@@ -16,8 +16,7 @@ export default function MetaButton(props){
 
   const handleClick = (e) => {
     e.preventDefault();
-
-    console.log("docRef", docRef);
+    
     if (data.action && docRef) {
       if(!docRef[data.action]) loopar.throw("Action not Defined",`Action ${data.action} not found in model`)
       docRef[data.action]();

@@ -70,10 +70,10 @@ export default class WorkspaceController extends AuthController {
         ${JSON.stringify(__META__)}
       </script>
     `);
-    html = html.replace(`<!--ssr-modulepreload-->`, `
+    /*html = html.replace(`<!--ssr-modulepreload-->`, `
       <link rel="modulepreload" href="/workspace/${workSpaceName}/${workSpaceName}-workspace.jsx">
       <link rel="modulepreload" href="/src/entry-client.jsx">
-    `);
+    `);*/
 
     if (workSpaceName === 'web') {
       html = html.replace(`<!--web-head-->`, `

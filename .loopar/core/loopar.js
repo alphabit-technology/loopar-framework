@@ -8,7 +8,7 @@ import Knex from '../database/knex.js';
 //import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { documentManage } from './document/document-manage.js';
-import path from "path";
+import path, { resolve } from "path";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
@@ -22,7 +22,6 @@ import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
 import { singularize, titleize, humanize } from "inflection";
 import { elementsDict } from "loopar";
-import { ChevronDownCircle } from 'lucide-react';
 
 export class Loopar {
   #installingApp = false;
@@ -45,7 +44,6 @@ export class Loopar {
 
   set server(server) {
     this.#server = server;
-    //this.session.req = server.currentReq;
   }
 
   get server() {
@@ -92,7 +90,7 @@ export class Loopar {
     await this.build();
 
     this.tailwindClasses = {};
-    this.setTailwind();
+    await this.setTailwind();
   }
 
   getApps() {
@@ -233,8 +231,8 @@ export class Loopar {
 
   }
 
-  setTailwind(to_element, classes) {
-    to_element && (this.tailwindClasses[to_element] = classes);
+  async setTailwind(toElement, classes) {
+    toElement && (this.tailwindClasses[toElement] = classes);
     let colector = "";
 
     const filterSpecialChars = (str) => {
@@ -252,7 +250,7 @@ export class Loopar {
     );
   }`
 
-    fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
+    await fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
   }
 
   eachAppsSync(fn) {
@@ -336,6 +334,7 @@ export class Loopar {
 
   async build() {
     console.log('......Building Loopar.......');
+
     await this.makeDefaultFolders();
     if (this.installingApp) return;
 
@@ -415,6 +414,13 @@ export class Loopar {
     }
   }
 
+  async rebuildVite() {
+    console.log('*********Restarting Vite*********');
+    await this.server.vite.restart();
+    console.log('*********Reloading Browser*********');
+    await this.server.vite.ws.send({ type: 'full-reload' });
+  }
+
   printMessage() {
     console.log(`__________________________________________________________`);
     console.log(...arguments);
@@ -481,6 +487,7 @@ export class Loopar {
     GlobalEnvironment();
 
     process.on('uncaughtException', err => {
+      this.installingApp = null;
       this.printError('LOOPAR: uncaughtException', err);
 
       try {
@@ -543,8 +550,9 @@ export class Loopar {
     if (!ENTITY) return throwError(entity);
     ENTITY.is_single ??= ref.is_single;
     ENTITY.__REF__ = ref;
+    const doc_structure = this.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
 
-    ENTITY.is_single && (ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(JSON.parse(ENTITY.doc_structure))));
+    ENTITY.is_single && (ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure)));
 
     return ENTITY;
   }
@@ -692,34 +700,16 @@ export class Loopar {
     return await loopar.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
   }
 
-  unInstallApp(appName) {
+  async unInstallApp(appName) {
     if (this.installing) return;
+    const installerRoute = this.makePath('apps', appName, 'installer.js');
 
-    if (appName === "loopar") {
-      this.throw("You can't uninstall app Loopar");
-      return;
-    }
-
-    return new Promise(async (resolve, reject) => {
-      this.installingApp = appName;
-
-      const installerRoute = this.makePath('apps', appName, 'installer.js');
-
-      const installer = await fileManage.importClass(installerRoute, () => {
-        this.throw(`App ${appName} does not have an installer`);
-      });
-
-      const Installer = new installer({ app_name: appName });
-
-      return Installer.unInstall().then(async r => {
-        await this.build();
-        this.installingApp = null;
-        resolve(r);
-      }).catch((error) => {
-        this.installingApp = null;
-        reject(error);
-      });
+    const installer = await fileManage.importClass(installerRoute, () => {
+      this.throw(`App ${appName} does not have an installer`);
     });
+
+    const Installer = new installer({ app_name: appName });
+    await Installer.unInstall();
   }
 
   async getApp(appName) {

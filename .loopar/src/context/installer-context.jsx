@@ -17,21 +17,6 @@ export default class InstallerContext extends BaseForm {
         {content}
       </FormWrapper>
     ]);
-
-    return super.render([
-      ...this.props.__ENTITY__.STRUCTURE.map(el => {
-        if (el.data.hidden) return null;
-        return Element(el.element,
-          {
-            docRef: this,
-            meta: {
-              ...el,
-            },
-            //...(el.data.action ? {onClick: () => this.send({action: el.data.action})} : {}),
-          }
-        )
-      })
-    ]);
   }
 
   async install() {

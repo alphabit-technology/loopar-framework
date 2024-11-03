@@ -70,16 +70,13 @@ export default class BaseForm extends BaseDocument {
   }
 
   validate() {
-    //console.log(["validate", this.formFields.defaultValues, this.Form.watch()])
     const fields = this.__FIELDS__;
     const errors = [];
     Object.entries(this.Form.watch()).reduce((obj, [key, value]) => {
       const field = fields.find(f => f.data?.name === key);
-      if (!field) return obj;
-
+      if (!field || !this.get(key)) return obj;
       field.value = value;
       
-
       if([FORM_TABLE].includes(field.def.element)) {
         const TableInput = this.get(key);
 

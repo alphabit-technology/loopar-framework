@@ -75,7 +75,7 @@ class FileManage {
       return Class.default;
     } catch (e) {
       if (e.code == 'ERR_MODULE_NOT_FOUND') {
-        const moduleNotFoundName = e.split('/').pop().split('.')[0];
+        const moduleNotFoundName = e.message.split('imported from')[0]?.split('/').pop().split('.')[0];
 
         if (moduleNotFoundName == moduleName) {
           if (typeof onError === 'function' && !onError.prototype) {

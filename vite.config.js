@@ -170,6 +170,9 @@ export default defineConfig({
   },
   server: {
     hmr: true,
+    watch: {
+      usePolling: true
+    }
   },
   // server.hmr.overlay: false
 });

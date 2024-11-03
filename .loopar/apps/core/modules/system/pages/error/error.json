@@ -1,0 +1,15 @@
+{
+  "id": 21,
+  "name": "Error",
+  "module": "core",
+  "type": "Page",
+  "is_single": 1,
+  "is_static": 0,
+  "include_in_installer": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[]",
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null
+}

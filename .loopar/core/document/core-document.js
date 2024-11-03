@@ -51,7 +51,11 @@ export default class CoreDocument {
     } else if (this.__ENTITY__.name === "Module") {
       this.__APP__ = this.app_name;
     } else {
-      this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__ENTITY__.module);
+      if (this.__ENTITY__?.__REF__?.__APP__) {
+        this.__APP__ = this.__ENTITY__.__REF__.__APP__;
+      } else {
+        this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__ENTITY__.module);
+      }
     }
   }
 
@@ -123,7 +127,7 @@ export default class CoreDocument {
     }
 
     if (!this.#fields[fieldName]) {
-      
+
       if (field.element === FORM_TABLE) {
         const val = loopar.utils.isJSON(value) ? JSON.parse(value) : value;
 
@@ -186,11 +190,11 @@ export default class CoreDocument {
     return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
   }
 
-  async deleteChildRecords(transaction=false){
+  async deleteChildRecords(transaction = false) {
     const ID = await this.__ID__();
     const childValuesReq = this.childValuesReq;
 
-    if(Object.keys(childValuesReq).length === 0) return;
+    if (Object.keys(childValuesReq).length === 0) return;
 
     for (const [key, value] of Object.entries(childValuesReq)) {
       await loopar.db.knex(loopar.db.literalTableName(key)).where({
@@ -232,7 +236,7 @@ export default class CoreDocument {
         this.__DOCUMENT_NAME__ = this.name;
       } else {
         const data = this.valuesToSetDataBase;
-        
+
         if (Object.keys(data).length) {
           await loopar.db.updateRow(
             this.__ENTITY__.name,
@@ -251,7 +255,7 @@ export default class CoreDocument {
         await updateChildRecords(childValuesReq, this.__ENTITY__.id, await this.__ID__());
       }
       //}
-      
+
       await this.updateHistory();
       await this.updateInstaller();
 
@@ -273,7 +277,7 @@ export default class CoreDocument {
   }
 
   async updateHistory(action) {
-    if(loopar.installing) return;
+    if (loopar.installing) return;
     if (this.__ENTITY__.name !== "Document History") {
       if (!loopar.installing || (loopar.installing && this.__ENTITY__.name !== "Entity")) {
 

@@ -4,6 +4,7 @@ import React from "react";
 import { CookiesProvider } from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary";
+import 'vite/modulepreload-polyfill'
 
 interface RootLayoutProps {
   __META__: {

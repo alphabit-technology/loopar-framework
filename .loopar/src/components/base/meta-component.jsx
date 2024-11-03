@@ -11,6 +11,8 @@ import loopar from "$loopar";
 import { useDocument } from "@context/@/document-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
+import _ from "lodash";
+import { use } from "marked";
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -322,36 +324,52 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode;
-
+  const _props = elementProps({ elDict: el, parent, isDesigner });
+  
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
   const def = baseElementsDict[el.element]?.def || {};
+  
   //el.def = def;
-  const _props = elementProps({ elDict: el, parent, isDesigner });
+  
   const { ENVIRONMENT } = useWorkspace();
-
+ 
   /*if(ENVIRONMENT === "server") {
     global.__REQUIRE_COMPONENTS__.push(el.element);
   }*/
 
+  const isDisplay = () => {
+    if (_props.data?.display_on){
+      const fields = extractFieldNames(_props.data?.display_on);
 
-  let display = true;
-  if (_props.data?.display_on){
-    const fields = extractFieldNames(_props.data?.display_on);
+      const values = fields.reduce((acc, field) => {
+        acc[field] = formValues[field];
+        return acc;
+      }, {});
 
-    const values = fields.reduce((acc, field) => {
-      acc[field] = formValues[field];
-      return acc;
-    }, {});
-
-    display = evaluateCondition(_props.data?.display_on, values);
+      return evaluateCondition(_props.data?.display_on, values);
+    }else{
+      return ![true, "true", "1", 1].includes(_props.data?.hidden);
+    }
   }
+
+  /*const [display, setDisplay] = useState(isDisplay());
+
+  useEffect(() => {
+    docRef.__REFS__[el.data.name] = {
+      ..._props.data,
+      hidden: !display
+    }
+
+    setDisplay(isDisplay());
+  }, [formValues]);*/
 
   if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
     global.__REQUIRE_COMPONENTS__.push(el.element);
   }
 
+  const display = isDisplay();
   useEffect(() => {
     if (!Comp && (isDesigner || def.designerOnly !== true)) {
       ComponentsLoader([el.element], () => {
@@ -401,9 +419,10 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         <Fragment {...fragmentProps}>
           <Comp
             {..._props}
-            ref={ref => {
-              docRef.__REFS__[data.name] = ref;
-              parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
+            ref1={ref => {
+              console.log(["ref", docRef]);
+              //docRef.__REFS__[data.name] = ref;
+              //parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
             }
           } />
         </Fragment>

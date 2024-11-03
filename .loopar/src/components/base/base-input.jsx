@@ -1,16 +1,21 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { dataInterface } from "$global/element-definition";
 import { FormItem, FormMessage } from "@/components/ui/form";
 import { FormField } from "@form-field";
 import { cn } from "@/lib/utils";
 import elementManage from "$tools/element-manage";
 import loopar from "$loopar";
+import { useHidden } from "@context/@/hidden-context";
+
+import { useDocument } from "@context/@/document-context";
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
   const fieldControl = useRef(null);
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
-
+  const parentHidden = useHidden();
+  const { docRef } = useDocument();
+    
   const getData = () => {
     if(props.element) {
       const data = props.data || {};
@@ -23,6 +28,15 @@ const BaseInput = (props) => {
       return props.data || {};
     }
   }
+
+  useEffect(() => {
+    const data = getData();
+    docRef.__REFS__[data.name] = getData();
+    return () => {
+      delete docRef.__REFS__[data.name];
+    };
+  }, []);
+
 
   const data = getData();
 
@@ -42,10 +56,17 @@ const BaseInput = (props) => {
   }, [props]);
 
   const validate = () => {
+    if(data.hidden || parentHidden) return { valid: true };
     const validation = dataInterface({ data }, value()).validate();
     setIsInvalid(!validation.valid);
     return validation;
   };
+
+  /*useImperativeHandle(ref, () => ({
+    visible() {
+      return !data.hidden && !parentHidden;
+    }
+  }));*/
 
   const value = (val) => {
     if (typeof val === "undefined") return fieldControl.current?.value;
@@ -105,7 +126,7 @@ const BaseInput = (props) => {
   }
 
   return { renderInput, value, validate, readOnly, hasLabel, data:getData(), handleInputChange, fieldControl };
-};
+}
 
 BaseInput.metaFields = () =>{
   return [

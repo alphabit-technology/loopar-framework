@@ -1,25 +1,25 @@
 'use strict'
 
 import BaseController from "../../../../../../core/controller/base-controller.js";
-import {CoreInstaller as Installer, loopar, fileManage} from "loopar";
+import { loopar, fileManage } from "loopar";
 
-export default class CoreInstallerController extends BaseController {
+export default class SystemController extends BaseController {
   client = "form";
   constructor(props) {
     super(props);
   }
 
   async actionConnect() {
-    const model = new Installer();
+    const model = await loopar.newDocument("Connector", this.data);
 
     if (this.hasData()) {
-      Object.assign(model, this.data);
+      //Object.assign(model, this.data);
 
       if (await model.connect()) {
         return this.res.redirect('/desk');
       }
     } else {
-      const response = await model.__dataConnect__();
+      const response = await model.__data__();
       response.__DOCUMENT__ = {
         dialect: "mysql",
         host: "localhost",
@@ -38,14 +38,16 @@ export default class CoreInstallerController extends BaseController {
 
   async getInstallerModel() {
     const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js')
-    return await fileManage.importClass(installerRoute, Installer);
+
+    const Installer = await fileManage.importClass(installerRoute, false);
+
+    if (Installer) return new Installer(this.data);
+    return await loopar.newDocument("Installer", this.data);
   }
 
   async actionInstall() {
-    const installerModel = await this.getInstallerModel();
-    const model = new installerModel(this.data);
-
     if (this.hasData()) {
+      const model = await this.getInstallerModel();
       Object.assign(model, this.data);
 
       if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed') {
@@ -55,7 +57,9 @@ export default class CoreInstallerController extends BaseController {
       await model.install();
       return this.success("App installed successfully");
     } else {
-      const response = await model.__dataInstall__();
+      const model = await loopar.newDocument("Installer", this.data)
+      const response = await model.__data__();
+
       response.__DOCUMENT__ = {
         company: "AlphaBit Technology Test123",
         email: "alfredrz2012@gmail.com",
@@ -95,7 +99,6 @@ export default class CoreInstallerController extends BaseController {
 
   async actionUninstall() {
     const app = await loopar.getDocument("App", this.data.app_name);
-
     return this.success(await app.unInstall());
   }
 }

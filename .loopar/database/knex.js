@@ -47,10 +47,10 @@ export default class DataBase {
           database: database || dbConfig.database
         }
       });
-    }catch(e){
-      if(!database) {
+    } catch (e) {
+      if (!database) {
         await this.connectMySQL("information_schema");
-      }else{
+      } else {
         await this.connectWithSqlite();
         loopar.throw("MySQL database not possible to connect, connecting to SQLite database");
       }
@@ -61,11 +61,11 @@ export default class DataBase {
     const dbConfig = this.dbConfig;
     const dialect = dbConfig.dialect || "";
 
-    if(dialect.includes('sqlite')) {
+    if (dialect.includes('sqlite')) {
       return await this.connectWithSqlite();
-    } 
-    
-    if(dialect.includes('mysql')) {
+    }
+
+    if (dialect.includes('mysql')) {
       return await this.connectMySQL();
     }
   }
@@ -124,7 +124,7 @@ export default class DataBase {
       }
     }
 
-    if(hasDefault){
+    if (hasDefault) {
       types.defaultValue = defaultValue;
     }
     //const DEFAULT = hasDefault ? `DEFAULT '${defaultValue}'` : '';
@@ -152,9 +152,9 @@ export default class DataBase {
   }
 
   get coreConnection() {
-    if(this.dialect.includes('sqlite')) {
+    if (this.dialect.includes('sqlite')) {
       return this.knex;
-    }else{
+    } else {
       return knex(this.dbConfig);
     }
   }
@@ -419,7 +419,7 @@ export default class DataBase {
 
       return value;
     }).join(', ');
-  
+
     return setString;
   }
 
@@ -436,7 +436,7 @@ export default class DataBase {
       value ??= null;
       typeof value === 'object' && (value = JSON.stringify(value));
 
-      if(typeof value == 'string'){
+      if (typeof value == 'string') {
         value === 'null' && (value = null);
         value === 'true' && (value = true);
         value === 'false' && (value = false);
@@ -453,7 +453,7 @@ export default class DataBase {
 
     if (isSingle) {
       const values = []
-      for(const field of Object.keys(data)) {
+      for (const field of Object.keys(data)) {
         values.push({
           name: document + '-' + field,
           document: document,
@@ -595,7 +595,7 @@ export default class DataBase {
         let type = data.unique ? "string" : ELEMENT_DEFINITION(f.element).type;
 
         if (data.name == 'id' && action == 'create') {
-          if(!this.dialect.includes('sqlite')) {
+          if (!this.dialect.includes('sqlite')) {
             type = 'increments';
           }
           /*if(!this.dialect.includes('sqlite')) {
@@ -607,7 +607,7 @@ export default class DataBase {
 
         if (data.required) {
           def.push({ fn: 'notNullable', args: [] });
-          if(data.default_value) {
+          if (data.default_value) {
             def.push({ fn: 'defaultTo', args: [data.default_value] });
           }
         }
@@ -642,11 +642,11 @@ export default class DataBase {
     const dbFields = exists ? await this.getTableDescription(name) : [];
     const cols = this.makeColumns(fields, dbFields, exists ? 'alter' : 'create');
 
-    if(exists) {
+    if (exists) {
       await this.knex.schema.alterTable(TABLE, t => {
         cols.forEach(c => eval(c));
       });
-    }else{
+    } else {
       await this.knex.schema.createTable(TABLE, t => {
         cols.forEach(c => eval(c));
       });
@@ -659,7 +659,7 @@ export default class DataBase {
 
   async getTableDescription(document) {
     const queries = {
-      sqlite: `PRAGMA table_info(${this.tableName(document).replace(/`/g, "'") })`,
+      sqlite: `PRAGMA table_info(${this.tableName(document).replace(/`/g, "'")})`,
       mysql: `DESCRIBE ${this.tableName(document)}`,
       postgres: `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ${this.tableName(document)}`,
       mssql: `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ${this.tableName(document)}`,
@@ -667,7 +667,7 @@ export default class DataBase {
     }
 
     const cols = await this.knex.raw(queries[this.dbConfig.dialect]);
-    return cols.flat().map(c => ({ name: c.column_name || c.name || c.Field}));
+    return cols.flat().map(c => ({ name: c.column_name || c.name || c.Field }));
   }
 
   /*async #getDbValue(document, field, name) {
@@ -726,9 +726,9 @@ export default class DataBase {
         const pagination = this.makePagination();
         const [PAGE, PAGE_SIZE] = [pagination.page, pagination.pageSize];
         const OFFSET = (PAGE - 1) * PAGE_SIZE;
-
+        
         return this.knex(this.literalTableName(document)).whereRaw(`${sofDelete} ${condition}`).select(fields).limit(PAGE_SIZE).offset(OFFSET);
-      }else{
+      } else {
         return await this.knex(this.literalTableName(document)).whereRaw(`${sofDelete} ${condition}`).select(fields);
       }
     }
@@ -777,7 +777,7 @@ export default class DataBase {
     return await this.knex.schema.hasTable(this.literalTableName(document));
   }
 
-  async count(document, params = { field_name: 'name', field_value: null }, condition=null) {
+  async count(document, params = { field_name: 'name', field_value: null }, condition = null) {
     if (!params) return 0;
     document = document === "Document" ? "Entity" : document;
     const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
@@ -799,7 +799,7 @@ export default class DataBase {
       }
     }
 
-    
+
     const WHERE = await this.WHERE(c);
     const table = this.literalTableName(document);
     //const where = typeof params === 'object' ? params : {name: params };
@@ -814,7 +814,7 @@ export default class DataBase {
 
 
   async testDatabase() {
-    const client = this.dialect; 
+    const client = this.dialect;
     async function databaseExists(knex, dbName) {
       if (client.includes('mysql')) {
         const result = await knex.raw(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [dbName]);
@@ -835,8 +835,8 @@ export default class DataBase {
       await databaseExists(this.knex, this.database);
       loopar.printSuccess('Database connected successfully');
       return true;
-    }catch(e){
-      loopar.printError('Database not connected', true);
+    } catch (e) {
+      loopar.printError('Database not connected');
       return false;
     }
     //await databaseExists(this.knex, this.database);
@@ -856,26 +856,29 @@ export default class DataBase {
       this.coreConnection.raw('SELECT 1+1 as result');
       loopar.printSuccess('Database server is running');
       return true;
-    }catch(e){
+    } catch (e) {
       loopar.printError('Database server is not running');
       return false;
     }
   }
 
   async testFramework(app) {
-    if (!loopar.DBServerInitialized || !loopar.DBInitialized){
+    if (!loopar.DBServerInitialized || !loopar.DBInitialized) {
       console.log([loopar.DBServerInitialized, loopar.DBInitialized]);
       loopar.printError(`Loopar framework is not installed`);
       return false;
     }
 
     const entities = loopar.getEntities(app);
+    if (entities.length === 0) {
+      return false;
+    }
 
     for (const entity of entities) {
-      if(entity.is_single) continue;
+      if (entity.is_single) continue;
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
-      if(!exist){
+      if (!exist) {
         loopar.printError(`Loopar framework is not installed`);
         return false;
       }
@@ -885,7 +888,7 @@ export default class DataBase {
     return true;
   }
 
-  async getOneField(Q){
+  async getOneField(Q) {
     const r = await this.execute(Q);
     const obj = r.length ? r[0] : {};
 

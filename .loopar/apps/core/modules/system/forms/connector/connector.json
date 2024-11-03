@@ -1,0 +1,85 @@
+{
+  "name": "Connector",
+  "__APP__": "core",
+  "__ENTITY__": "Form Builder",
+  "doc_structure": [{
+    "element": "card",
+    "data": {
+      "label": "Your server DataBase",
+      "key": "card1_el173793814043"
+    },
+    "elements": [
+      {
+        "element": "select",
+        "data": {
+          "name": "database",
+          "label": "Database",
+          "key": "select7_el78225014630",
+          "options": "mysql\nmariadb\npostgress\nsqlite\nmssql",
+          "required": true
+        },
+        "elements": []
+      },
+      {
+        "element": "card",
+        "data": {
+          "label": "Connection",
+          "key": "card30_el1074140857913",
+          "display_on": "database!='sqlite'&&database!=''&&database!='null'&&database!='undefined'"
+        },
+        "elements": [
+          {
+            "element": "input",
+            "data": {
+              "label": "Host (ej: localhost)",
+              "key": "input8_el352198640755",
+              "name": "host",
+              "required": true
+            },
+            "elements": []
+          },
+          {
+            "element": "input",
+            "data": {
+              "label": "User (ej: root)",
+              "key": "input11_el1064069671468",
+              "name": "user",
+              "required": true
+            },
+            "elements": []
+          },
+          {
+            "element": "input",
+            "data": {
+              "label": "Port (ej: 3306)",
+              "key": "input15_el287852591092",
+              "name": "port",
+              "required": true
+            },
+            "elements": []
+          },
+          {
+            "element": "password",
+            "data": {
+              "label": "Password (ej: root)",
+              "key": "password1_el72405222992",
+              "name": "password",
+              "required": true
+            },
+            "elements": []
+          }
+        ]
+      },
+      {
+        "element": "button",
+        "data": {
+          "label": "Connect",
+          "key": "button1_el1074140857913",
+          "variant": "destructive",
+          "class": "w-full",
+          "action": "connect"
+        }
+      }
+    ]
+  }]
+}

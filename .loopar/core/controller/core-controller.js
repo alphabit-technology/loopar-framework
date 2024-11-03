@@ -48,8 +48,8 @@ export default class CoreController extends AuthController {
   async notFound(message = null) {
     const document = await loopar.newDocument("Error");
 
-    document.__DOCUMENT__ = { 
-      code: 404, 
+    document.__DOCUMENT__ = {
+      code: 404,
       title: `Document ${titleize(this.document)} not found`,
       description: "The document you are looking for does not exist",
     };
@@ -57,7 +57,7 @@ export default class CoreController extends AuthController {
     return await this.render(document);
   }
 
-  async getError(code, {title="Error", description="An error occurred"}={}) {
+  async getError(code, { title = "Error", description = "An error occurred" } = {}) {
     const document = await loopar.newDocument("Error");
 
     document.__DOCUMENT__ = {
@@ -130,7 +130,7 @@ export default class CoreController extends AuthController {
   }
 
   async success(message, options = {}) {
-    return {status:200, success: true, message: message || "Success", ...options, notify: { type: "success", message: message || "Success" } };
+    return { status: 200, success: true, message: message || "Success", ...options, notify: { type: "success", message: message || "Success" } };
   }
 
   async actionSidebar() {
