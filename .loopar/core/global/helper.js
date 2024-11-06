@@ -138,7 +138,7 @@ function nullValue(value) {
   return [null, "null", undefined, "undefined"].includes(value);
 }
 
-function avatar(name, size = 32) {
+function avatar(name="loopar", size = 32) {
   return (name.split(" ").map((n) => n.charAt(0)).join("").toUpperCase()).slice(0, 2);
 }
 
