@@ -106,7 +106,7 @@ class Loopar extends Router {
     Emitter.emit(event, data);
   }
 
-  bgColor(name, alpha = 0.8) {
+  bgColor(name="loopar", alpha = 0.8) {
     function hashCode(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
