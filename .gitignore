@@ -52,4 +52,7 @@ public/js/components
 #apps
 /apps
 
+#path
+/path
+
 !/.loopar/apps
