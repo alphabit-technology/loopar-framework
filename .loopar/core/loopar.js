@@ -20,7 +20,7 @@ import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
-import { singularize, titleize, humanize } from "inflection";
+import inflection, { singularize, titleize, humanize } from "inflection";
 import { elementsDict } from "loopar";
 
 export class Loopar {
@@ -193,18 +193,27 @@ export class Loopar {
     });
   }
 
-  getRef(entity) {
-    return this.getRefs()[entity];
+  getRef(entity, alls=false) {
+    return this.getRefs(null, alls)[entity];
   }
 
-  getRefs(app) {
-    const refs = fileManage.getConfigFile('refs', null, {}).refs;
+  getRefs(app, alls=false) {
+    let refs = Object.values(fileManage.getConfigFile('refs', null, {}).refs)
 
-    if (app) {
-      return Object.values(refs).filter(ref => ref.__APP__ === app);
-    }
+    if (app) refs = refs.filter(ref => ref.__APP__ === app);
+    const installedApps = alls ? [] : Object.keys(fileManage.getConfigFile('installed-apps')).map(
+      app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
+    );
+    
+    refs = alls ? refs : refs.filter(ref => {
+      const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
+      return installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp);
+    });
 
-    return refs;
+    return refs.reduce((acc, ref) => {
+      acc[ref.__NAME__] = ref;
+      return acc;
+    }, {});
   }
 
   getType(type) {
@@ -425,7 +434,6 @@ export class Loopar {
     console.log(`__________________________________________________________`);
     console.log(...arguments);
     console.log(`***********************************************************\n`);
-
   }
 
   printSuccess() {
@@ -709,7 +717,7 @@ export class Loopar {
     });
 
     const Installer = new installer({ app_name: appName });
-    await Installer.unInstall();
+    return await Installer.unInstall();
   }
 
   async getApp(appName) {

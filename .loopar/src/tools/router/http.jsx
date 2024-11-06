@@ -60,7 +60,7 @@ export default class HTTP {
     }, {});
   }
 
-  async fetchWithInterceptors(url, options) {
+  /*async fetchWithInterceptors(url, options) {
     const response = await fetch(url, options);
 
     if (response.redirected) {
@@ -80,11 +80,11 @@ export default class HTTP {
     }
 
     return data;
-  }
+  }*/
 
   #sendPetition(options) {
     const self = this;
-    const freeze = options.freeze != false
+    const freeze = options.freeze != false;
     freeze && self.freeze(true);
 
     fetch(self.url, self.options).then(async response => {

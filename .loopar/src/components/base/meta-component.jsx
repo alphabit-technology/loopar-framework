@@ -11,8 +11,7 @@ import loopar from "$loopar";
 import { useDocument } from "@context/@/document-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
-import _ from "lodash";
-import { use } from "marked";
+import Markdown from 'react-markdown'
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -274,15 +273,18 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
-  console.log(["HTMLBlock", element]);
-  return (
-    <div
-      className={`h-auto w-full prose dark:prose-invert pb-5`}
-      id={element.data.id}
-      dangerouslySetInnerHTML={{ __html: element.data.value }}
-      {...props}
-    />
-  )
+  if(element.element == MARKDOWN){
+    return <Markdown id={element.data.id} className={`h-auto w-full prose dark:prose-invert pb-5`} >{element.data.value}</Markdown>
+  }else{
+    return (
+      <div
+        className={`h-auto w-full prose dark:prose-invert pb-5`}
+        id={element.data.id}
+        dangerouslySetInnerHTML={{ __html: element.data.value }}
+        {...props}
+      />
+    )
+  }
 }
 
 function evaluateCondition(condition, values) {
@@ -330,14 +332,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
   const def = baseElementsDict[el.element]?.def || {};
-  
-  //el.def = def;
-  
   const { ENVIRONMENT } = useWorkspace();
- 
-  /*if(ENVIRONMENT === "server") {
-    global.__REQUIRE_COMPONENTS__.push(el.element);
-  }*/
 
   const isDisplay = () => {
     if (_props.data?.display_on){
@@ -419,10 +414,10 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         <Fragment {...fragmentProps}>
           <Comp
             {..._props}
-            ref1={ref => {
-              console.log(["ref", docRef]);
-              //docRef.__REFS__[data.name] = ref;
-              //parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
+            ref={ref => {
+              //console.log(["ref", docRef]);
+              docRef.__REFS__[data.name] = ref;
+              parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
             }
           } />
         </Fragment>

@@ -8,6 +8,7 @@ export default class BaseForm extends BaseDocument {
   formFields = {};
   hasSidebar = true;
   lastData = null;
+  __FORM_REFS__ = {};
   #Form = null;
   static contextType = useWorkspace;
 
@@ -77,11 +78,12 @@ export default class BaseForm extends BaseDocument {
       field.value = value;
       
       if([FORM_TABLE].includes(field.def.element)) {
-        const TableInput = this.get(key);
+        /*const TableInput = this.get(key);
 
+        console.log(["TableInput", TableInput]);
         const tableErrors = TableInput?.validate();
 
-        /*if(tableErrors.length > 0) {
+        if(tableErrors.length > 0) {
           errors.push(...tableErrors);
         }*/
       }else{
@@ -94,48 +96,7 @@ export default class BaseForm extends BaseDocument {
           });
         }
       }
-      //console.log(dataInterface(field, value).validate())
-
-      /*if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
-        const files = value;
-        const metaFiles = [];
-
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (file instanceof File) {
-            metaFiles.push({
-              name: files[i].name,
-              size: files[i].size,
-              type: files[i].type,
-            });
-            obj[key + "[" + i + "]"] = files[i];
-          }
-        }
-
-        obj[key] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
-        return obj
-      }
-
-      obj[key] = value;
-      return obj;*/
     }, {});
-
-    /*const errors = Object.values(this.formFields).filter(e => e.data.hidden !== 1).reduce((errors, field) => {
-      if (field.element === FORM_TABLE) {
-        const tableErrors = field?.validate();
-        return [...errors, ...tableErrors];
-      } else {
-        return [...errors, field?.validate()];
-      }
-    }, []).flat().filter(e => !e?.valid).map(e => e?.message);
-
-    if (errors.length > 0) {
-      loopar.throw({
-        type: 'error',
-        title: 'Validation error',
-        message: errors.join('<br/>')
-      });
-    }*/
 
     if(errors.length > 0) {
       errors.forEach(e => this.setError(e.field, { message: e.message}));

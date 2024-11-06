@@ -699,7 +699,7 @@ export default class DataBase {
 
   async getDoc(document, name, fields = ['*'], { includeDeleted = false } = {}) {
     document = document == "Document" ? "Entity" : document;
-    const ref = loopar.getRef(document);
+    const ref = loopar.getRef(document, true);
     return await this.getRow(document, name, fields, { isSingle: ref.is_single, includeDeleted });
   }
 
@@ -782,7 +782,6 @@ export default class DataBase {
     document = document === "Document" ? "Entity" : document;
     const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
-
     const c = {
       "!=": {
         __document_status__: "Deleted",
@@ -798,7 +797,6 @@ export default class DataBase {
         AND: condition
       }
     }
-
 
     const WHERE = await this.WHERE(c);
     const table = this.literalTableName(document);

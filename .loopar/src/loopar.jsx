@@ -58,6 +58,11 @@ class Loopar extends Router {
     });
   }
 
+  reload() {
+    console.log("Reloading...");
+    this.navigate(window.location.href);
+  }
+
   closeDialog(id) {
     this.handleOpenCloseDialog(id, false);
   }
@@ -298,10 +303,6 @@ class Loopar extends Router {
     } else {
       return animation;
     }
-  }
-
-  render() {
-    return <></>
   }
 }
 

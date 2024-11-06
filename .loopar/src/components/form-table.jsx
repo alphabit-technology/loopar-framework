@@ -3,8 +3,8 @@ import BaseInput from "@base-input"
 import MetaComponent from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
-import { useRef } from "react";
 import { DesignerContext } from "@context/@/designer-context";
+import { useDocument } from "@context/@/document-context";
 
 import {
   TableCell
@@ -154,7 +154,6 @@ class FormTableClass extends BaseTable {
 
 export default function FormTable (props) {
   const { renderInput, value } = BaseInput(props);
-  const formRefTable = useRef();
 
   const handleChange = (e) => {
     value(e.target.value);
@@ -166,8 +165,6 @@ export default function FormTable (props) {
         <FormTableClass
           meta={field.value}
           onChange={handleChange}
-          //ref={formRefTable}
-          //ref={formRefTable => {this.formRefTable = formRefTable}}
         />
       </DesignerContext.Provider>
     )

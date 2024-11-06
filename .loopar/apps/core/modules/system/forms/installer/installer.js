@@ -3,12 +3,6 @@ import { loopar, fileManage } from "loopar";
 import BaseDocument from "../../../../../../core/document/base-document.js";
 
 export default class Installer extends BaseDocument {
-
-  /**
-   * snakeCase because is the same property name in the database
-   */
-  //app_name = "loopar";
-
   async getDocumentData(document) {
     const ref = loopar.getRef(document);
 
@@ -35,11 +29,12 @@ export default class Installer extends BaseDocument {
   }
 
   async unInstall() {
+    if (this.app_name === 'loopar') {
+      loopar.throw("You can't uninstall app Loopar");
+    }
+
     console.log("Uninstalling App", this.app_name);
     loopar.installingApp = this.app_name;
-    if (this.app_name === 'loopar') {
-      loopar.throw("You can't uninstall app Loopar......");
-    }
 
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = await fileManage.getConfigFile('installer', moduleRoute);
@@ -69,7 +64,7 @@ export default class Installer extends BaseDocument {
     }
 
     loopar.installingApp = null;
-    await loopar.build();
+    await loopar.buildRefs();
     console.log(`App ${this.app_name} uninstalled successfully!`);
     return `App ${this.app_name} uninstalled successfully!`;
   }
@@ -80,6 +75,7 @@ export default class Installer extends BaseDocument {
 
       loopar.git().clone(repo, async (err, update) => {
         err && loopar.throw(err);
+        await loopar.rebuildVite();
         resolve(true);
       });
     });
@@ -87,8 +83,8 @@ export default class Installer extends BaseDocument {
 
   async install() {
     loopar.installingApp = this.app_name;
-
     console.log("Installing App", this.app_name);
+
     if (this.app_name === 'loopar') {
       if (!this.checkIfAppExists()) {
         await this.clone("https://github.com/alphabit-technology/loopar.git");
@@ -101,19 +97,18 @@ export default class Installer extends BaseDocument {
     await this.installData();
 
     loopar.installingApp = null;
-
+    const installedApps = fileManage.getConfigFile('installed-apps');
+    installedApps[this.app_name] = true;
+    await fileManage.setConfigFile('installed-apps', installedApps);
+    
     await loopar.build();
-    await loopar.rebuildVite();
-
-    //await loopar.initialize();
-    //await loopar.server.exposeClientAppFiles(this.app_name);
     return "App installed successfully!";
   }
 
-  getAppFromData(data, modu) {
+  /*getAppFromData(data, modu) {
     const modules = data.Module.documents;
     return Object.values(modules).find(e => e.name === modu).app_name;
-  }
+  }*/
 
   async installData() {
     console.log("Installing App DATA", this.app_name);

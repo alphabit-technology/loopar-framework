@@ -16,7 +16,7 @@ export default class SystemController extends BaseController {
       //Object.assign(model, this.data);
 
       if (await model.connect()) {
-        return this.res.redirect('/desk');
+        return this.redirect('/desk');
       }
     } else {
       const response = await model.__data__();
@@ -56,7 +56,11 @@ export default class SystemController extends BaseController {
       }
 
       await model.install();
-      return this.success("App installed successfully");
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(this.redirect('view'));
+        }, 1000);
+      });  
     } else {
       const model = await loopar.newDocument("Installer", this.data)
       const response = await model.__data__();
@@ -100,6 +104,7 @@ export default class SystemController extends BaseController {
 
   async actionUninstall() {
     const app = await loopar.getDocument("App", this.data.app_name);
-    return this.success(await app.unInstall());
+    await app.unInstall();
+    return this.redirect('view');  
   }
 }

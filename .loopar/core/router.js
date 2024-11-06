@@ -122,7 +122,7 @@ export default class Router {
         return (loginActions || []).includes(params.action);
       }
 
-      this.temporaryLogin();
+      //this.temporaryLogin();
 
       try {
         // User is logged in
@@ -198,7 +198,9 @@ export default class Router {
         return this.redirect(res, '/loopar/system/install');
       }
 
-      if (DBServerInitialized && DBInitialized && currentUrl.includes("/loopar/system") && __installed__) {
+      workspaceParamsMiddleware(req, res, next);
+
+      if (DBServerInitialized && DBInitialized && __installed__ && req.__WORKSPACE_NAME__ === "loopar") {
         /**System is Installed */
         return this.redirect(res, '/desk');
       }
@@ -214,7 +216,7 @@ export default class Router {
 
       req.__WORKSPACE_NAME__ = getWorkspaceName(req._parsedUrl.pathname);
 
-      next();
+      //next();
     }
 
     const workSpaceMiddleware = async (req, res, next) => {
@@ -325,7 +327,7 @@ export default class Router {
     }
 
     this.server.use(assetMiddleware, notFoundSourceMiddleware);
-    this.server.use(loadHttp, systemMiddleware, workspaceParamsMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
+    this.server.use(loadHttp, systemMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
 
   }
 

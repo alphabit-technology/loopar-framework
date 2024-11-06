@@ -8,7 +8,8 @@
       "data": {
         "label": "Company",
         "key": "input2_el160742627248",
-        "name": "company"
+        "name": "company",
+        "required": true
       },
       "elements": []
     },
@@ -17,7 +18,8 @@
       "data": {
         "label": "Email",
         "key": "input5_el79354111945",
-        "name": "email"
+        "name": "email",
+        "required": true
       },
       "elements": []
     },
@@ -26,7 +28,8 @@
       "data": {
         "label": "Password",
         "key": "password1_el946947421610",
-        "name": "admin_password"
+        "name": "admin_password",
+        "required": true
       },
       "elements": []
     },
@@ -35,7 +38,8 @@
       "data": {
         "label": "Confirm Password",
         "key": "password4_el48920209652",
-        "name": "confirm_password"
+        "name": "confirm_password",
+        "required": true
       },
       "elements": []
     },
