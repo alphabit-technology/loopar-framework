@@ -273,9 +273,10 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
-  if(element.element == MARKDOWN){
+  console.log(["HTMLBlock: " + element.element, element.data.value]);
+  /*if(element.element == MARKDOWN){
     return <Markdown id={element.data.id} className={`h-auto w-full prose dark:prose-invert pb-5`} >{element.data.value}</Markdown>
-  }else{
+  }else{*/
     return (
       <div
         className={`h-auto w-full prose dark:prose-invert pb-5`}
@@ -284,7 +285,7 @@ function HTMLBlock({ element, className = "", ...props }) {
         {...props}
       />
     )
-  }
+  //}
 }
 
 function evaluateCondition(condition, values) {

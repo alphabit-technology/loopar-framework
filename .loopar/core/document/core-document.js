@@ -2,7 +2,6 @@
 
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
-import { marked } from "marked";
 
 export default class CoreDocument {
   #fields = {};
@@ -427,7 +426,18 @@ export default class CoreDocument {
   async __data__() {
     const entity = this.__ENTITY__;
 
-    if (entity.is_single) entity.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(entity.doc_structure)));
+    const isDesigner = (elements) => {
+      for (const element of elements) {
+        if (element.element == DESIGNER) return true;
+
+        if (element.elements) {
+          return isDesigner(element.elements);
+        }
+      }
+    }
+
+
+    if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(entity.doc_structure)));
 
     return {
       __ENTITY__: this.__ENTITY__,
