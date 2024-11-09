@@ -42,7 +42,7 @@ export default class Router {
     return errString;
   }
 
-  render(res, req, response) {
+  render(res, response) {
     if (!res.headersSent) {
       if (response.hasOwnProperty('redirect')) {
         return this.redirect(res, response.redirect);
@@ -84,7 +84,7 @@ export default class Router {
         const e = await errControlled.getError(error.code, error);
         req.__WORKSPACE__.__DOCUMENT__ = e;
 
-        this.render(res, req, await this.App.render(req.__WORKSPACE__));
+        this.render(res, await this.App.render(req.__WORKSPACE__));
       }
     } catch (err) {
       return this.throw(err, res);
@@ -105,6 +105,7 @@ export default class Router {
       loopar.session.req = req;
 
       if (req.files && req.files.length > 0) {
+        console.log(["req.files", req.files]);
         req.body.reqUploadFiles = req.files;
       }
 
@@ -122,7 +123,7 @@ export default class Router {
         return (loginActions || []).includes(params.action);
       }
 
-      //this.temporaryLogin();
+      this.temporaryLogin();
 
       try {
         // User is logged in
@@ -277,7 +278,7 @@ export default class Router {
     }
 
     const fynalyMiddleware = async (req, res) => {
-      this.render(res, req, await this.App.render(req.__WORKSPACE__));
+      this.render(res, await this.App.render(req.__WORKSPACE__));
     }
 
     const assetMiddleware = (req, res, next) => {
@@ -367,6 +368,7 @@ export default class Router {
     if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {
       return new Promise(resolve => {
         this.uploader(req, res, async err => {
+          if(err) console.log(["Multer Error", err]);
           if (err) loopar.throw(err, res);
 
           return resolve(await makeController(req.query, req.body));

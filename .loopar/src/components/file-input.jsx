@@ -9,9 +9,7 @@ import loopar from "$loopar";
 
 import {
   FormControl,
-  FormDescription,
-  FormLabel,
-  FormMessage
+  FormLabel
 } from "@/components/ui/form";
 
 const origins = [
@@ -33,9 +31,15 @@ const FileInput = (props) => {
   const accept = data.accept || "/*";
   const [files, setFiles] = useState(fileManager.getMappedFiles(value()));
 
-  // Solo actualiza previews si los archivos realmente han cambiado
   const makePreviews = useCallback((files = [], callback) => {
     const promises = files.map((file) => new Promise((resolve, reject) => {
+      const getSrc = (f) => {
+        if (f.type.match("video.*")) return URL.createObjectURL(f);
+        if (f.type.match("audio.*")) return URL.createObjectURL(f);
+        if(f.type.match("image.*")) return URL.createObjectURL(f);
+        return null;
+      };
+
       if (file instanceof File) {
         if (file.type.match("image.*")) {
           const reader = new FileReader();
@@ -51,6 +55,12 @@ const FileInput = (props) => {
           reader.onerror = reject;
           reader.readAsDataURL(file);
         } else {
+          /*const getSrc = (f) => {
+            if (f.type.match("video.*")) return URL.createObjectURL(f);
+            if (f.type.match("audio.*")) return URL.createObjectURL(f);
+            return null;
+          };*/
+
           resolve({
             name: file.name,
             src: getSrc(file),
@@ -65,12 +75,12 @@ const FileInput = (props) => {
 
     Promise.all(promises)
       .then((newPreviews) => {
-        // Solo actualiza si los previews han cambiado
         if (JSON.stringify(previews) !== JSON.stringify(newPreviews)) {
           setPreviews(newPreviews);
         }
         setLoaded(true);
         setDropping(false);
+        props.onChange && props.onChange(newPreviews);
         callback && callback(newPreviews);
       })
       .catch((error) => {
@@ -218,27 +228,25 @@ const FileInput = (props) => {
             ))}
           </FileContainer>
         )}
-        {fileBrowserOpen && (
-          <FileBrowserModal
-            hasTitle={false}
-            onClose={() => setFileBrowserOpen(false)}
-            onSelect={(file) => {
-              const newFiles = [...files, ...file];
-              handleChange({
-                target: { files: hasFiles ? newFiles : JSON.stringify(newFiles) },
-              });
-              setFileBrowserOpen(false);
-            }}
-            open={fileBrowserOpen}
-            multiple={data.multiple}
-            accept={accept}
-            height={512}
-          />
-        )}
+        {fileBrowserOpen && <FileBrowserModal
+          hasTitle={false}
+          onClose={() => setFileBrowserOpen(false)}
+          onSelect={(file) => {
+            const newFiles = [...files, ...file];
+            handleChange({
+              target: { files: hasFiles ? newFiles : JSON.stringify(newFiles) },
+            });
+            setFileBrowserOpen(false);
+          }}
+          multiple={data.multiple}
+          accept={accept}
+          height={512}
+        />}
       </>
     </div>
   ), [dropping, loaded, hasFiles, previews, files, fileBrowserOpen, handleChange, handleClearFiles, accept, data.multiple, props.origins]);
 
+  console.log(["fileBrowserOpen", fileBrowserOpen]);
   return renderInput((field) => (
     <>
       {data.label && <FormLabel>{data.label}</FormLabel>}

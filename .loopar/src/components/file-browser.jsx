@@ -90,7 +90,35 @@ export class FileBrowser extends React.Component {
 
   breadcrumbs() {
     return (
-      <nav>
+      <nav className="flex pb-1" aria-label="Breadcrumb">
+        <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+          {Object.values(this.history).map((route) => (
+            <li className="inline-flex items-center">
+              <Link
+                variant="link"
+                className="px-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  this.fetchFiles(route);
+                }}
+              >
+                {route}
+              </Link>
+            </li>
+            /*<li className="breadcrumb-item active" key={route}>
+              <a
+                onClick={(e) => {
+                  e.preventDefault();
+                  this.fetchFiles(route);
+                }}
+              >
+                {route}
+              </a>
+            </li>*/
+          ))}
+        </ol>
+      </nav>
+      /*<nav>
         <ol className="breadcrumb">
           <li className="breadcrumb-item active">
             <a
@@ -117,16 +145,14 @@ export class FileBrowser extends React.Component {
             </li>
           ))}
         </ol>
-      </nav>
+      </nav>*/
     );
   }
 
   header() {
     return (
-      <div className="page-title-bar fixed">
-        <div className="col-12">
-          <div className="row align-items-center">
-            <div className="col-md-6 col-12">
+          <div className="flex flex-row align-middle">
+            <div className="">
               {this.props.hasTitle ? (
                 <div className="page-title">
                   <h4>File Manager</h4>
@@ -164,7 +190,7 @@ export class FileBrowser extends React.Component {
               {this.props.hasTitle ? this.breadcrumbs() : null}
               {/*this.breadcrumbs()*/}
             </div>
-            <div className="col-md-6 col-12">
+            <div className="">
               <div className="breadcrumb-bar text-right">
                 <div className="btn-group">
                   <button
@@ -192,8 +218,6 @@ export class FileBrowser extends React.Component {
               </div>
             </div>
           </div>
-        </div>
-      </div>
     );
   }
 
@@ -324,39 +348,32 @@ export class FileBrowser extends React.Component {
    }*/
 }
 
-export class FileBrowserModal extends FileBrowser {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    return (
-      <Modal
-        icon="fas fa-folder-open"
-        position="top"
-        size="lg"
-        title="File Browser"
-        scrollable={true}
-        open={this.props.open}
-        onClose={() => {
-          this.props.onClose && this.props.onClose();
-        }}
-        buttons={[
-          {
-            name: "ok",
-            text: "Select",
-            onClick: () => {
-              this.props.onSelect &&
-                this.props.onSelect(this.getSelectedFiles());
-              this.props.onClose && this.props.onClose();
-            },
+export function FileBrowserModal(props) {
+  return (
+    <Modal
+      position="top"
+      size="full"
+      title="File Browser"
+      scrollable={true}
+      open={true}
+      onClose={() => {
+        props.onClose && props.onClose();
+      }}
+      buttons={[
+        {
+          name: "ok",
+          text: "Select",
+          onClick: () => {
+            props.onSelect &&
+              props.onSelect(this.getSelectedFiles());
+            props.onClose && props.onClose();
           },
-        ]}
-        content={[super.render()]}
-        onShow={() => {
-          //this.fetchFiles();
-        }}
-      />
-    );
-  }
+        },
+      ]}
+      content={<FileBrowser {...props} />}
+      onShow={() => {
+        //this.fetchFiles();
+      }}
+    />
+  );
 }

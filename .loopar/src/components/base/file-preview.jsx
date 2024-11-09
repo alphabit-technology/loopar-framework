@@ -1,13 +1,100 @@
 import React, {useEffect} from "react";
 import fileManager from "$tools/file-manager";
 import loopar from "$loopar";
-import { FileIcon } from "lucide-react";
-import { ImageIcon } from "lucide-react";
+import {ImageIcon} from "lucide-react";
+//import {ImageIcon, VideoIcon, MusicIcon, PdfIcon, WordIcon, SheetIcon, PresentationIcon, ArchiveIcon, CodeIcon, TextIcon, FolderIcon, FileIcon} from "lucide-react"
 import LazyLoad from 'react-lazy-load';
-import MetaImage from "@image"
-import MetaComponent from "@meta-component"
+import { FaFileZipper } from "react-icons/fa6";
+import { RiFileExcel2Fill } from "react-icons/ri";
+import { BsFillFileEarmarkPdfFill } from "react-icons/bs";
+import { FaFile, FaFileAudio, FaFolder } from "react-icons/fa";
+import { IoVideocamSharp } from "react-icons/io5";
+import { RiFileWord2Fill } from "react-icons/ri";
 
-function ImageWithFallback({ src, fallbackSrc, alt }) {
+
+
+const fileIcons = {
+  image: {
+    icon: ImageIcon,
+    color: "text-primary",
+  },
+  video: {
+    icon: IoVideocamSharp,
+    color: "text-primary",
+  },
+  audio: {
+    icon: FaFileAudio,
+    color: "text-primary",
+  },
+  pdf: {
+    icon: BsFillFileEarmarkPdfFill,
+    color: "text-red-500",
+  },
+  zip: {
+    icon: FaFileZipper,
+    color: "text-yellow-500",
+  },
+  word: {
+    icon: RiFileWord2Fill,
+    color: "text-blue-500",
+  },
+  excel: {
+    icon: RiFileExcel2Fill,
+    color: "text-green-500",
+  },
+  archive: {
+    icon: FaFileZipper,
+    color: "text-yelow-500",
+  },
+  code: {
+    icon: FaFile,
+    color: "text-primary",
+  },
+  text: {
+    icon: FaFile,
+    color: "text-primary",
+  },
+  folder: {
+    icon: FaFolder,
+    color: "text-yellow-500",
+  },
+  default: {
+    icon: FaFile,
+    color: "text-primary",
+  },
+};
+
+function getIconByExtention(extention, type) {
+  const icon = fileIcons[extention] || fileIcons[type] || fileIcons["default"];
+  return icon;
+}
+
+function getFileType(file) {
+  if (file.type) {
+    return file.type.split("/")[0];
+  }
+
+  return file.extention;
+}
+
+function getExtention(file) {
+  return file.name.split('.').pop();
+}
+
+function getFileSize(size) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+
+  while (size > 1024) {
+    size /= 1024;
+    i++;
+  }
+
+  return `${size.toFixed(2)} ${units[i]}`;
+}
+
+
+function ImageWithFallback({ src }) {
  const [state, setState] = React.useState({
     imageLoaded: false,
     isValidImage: false,
@@ -30,23 +117,22 @@ function ImageWithFallback({ src, fallbackSrc, alt }) {
 
   return (
     <LazyLoad height={120} offset={100} debounce={false} throttle={100} once
-      className="rounded-md inset-0 bg-gradient-to-b from-slate-900/70 to-slate-500/80 bg-no-repeat mb-10"
+      className="inset-0 bg-gradient-to-b from-slate-900/70 to-slate-500/80 bg-no-repeat bg-center bg-cover p-0 m-0"
     >
       <>
       <ImageIcon 
-        height={100} 
+        height={120} 
         className={`h-120 w-full object-cover transition-all ease-in text-slate-600/50 duration-300 hover:scale-105 aspect-square ${imageLoaded ? "hidden" : "block"}`}
       />
-      <div className="overflow-hidden rounded-md w-full">
+      <div className="overflow-hidden w-full h-full p-0 m-0">
         <img 
           alt="React Rendezvous" 
           loading="lazy"
-          //height={!imageLoaded ? 0 : "150"} 
           decoding="async" 
           data-nimg="1" 
           className={`h-auto w-auto object-cover transition-all hover:scale-105 aspect-square`}
           srcSet={src}
-          style={{color: "transparent", ...(!imageLoaded ? {width: 0, height: 0} : {})}}
+          style={{color: "transparent", ...(!imageLoaded ? {width: 0, height: 0} : {height: "100%"})}}
           onLoad={handleImageLoad}
           onError={handleImageError}
         />
@@ -107,7 +193,7 @@ export default class FilePreview extends React.Component {
     }
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps) {
     if (prevProps.selected !== this.props.selected) {
       this.setState({
         selected: this.props.selected
@@ -124,16 +210,20 @@ export default class FilePreview extends React.Component {
   }
 
   render() {
-    const { type, icon, file } = this;
+    const { type, file } = this;
     const data = this.props.file;
 
     if(!data) return null;
 
+    console.log(["FilePreview", this.type]);
+    const icon = fileIcons[this.type] || fileIcons["default"];
+    const Icon = icon.icon;
+    const color = icon.color;
+
     return (
       <div 
-        className="w-[130px] h-[180px] flex-col items-center bg-card border p-2 rounded-md shadow-sm hover:shadow-md transition-all cursor-pointer relative"
+        className="w-[130px] h-[180px] flex-col items-center border p-2 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
         onClick={() => { this.select(!this.isSelected); }}
-        //style={{ paddingBottom: 0, ...(this.isSelected ? { boxShadow: "inset 0 0 0 3px var(--primary)", background: "var(--secondary)" } : {}) }}
       >
         <>
           {type === "image" ? (
@@ -143,43 +233,17 @@ export default class FilePreview extends React.Component {
               fallbackSrc='/assets/images/blank-image.svg'
               alT={data.name}
           />) : null}
-          {/*<a href={this.getSrc()} className="img-link" data-size="600x450">
-            <span className="img-caption d-none">{this.name}</span>
-          </a>*/}
-          {
-          /*  type !== "folder" ? 
-            <div 
-              className="figure-attachment figure-action " 
-              style={{ backgroundColor: '#000000cf', width: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: "0.5rem" }}
-            >
-              <a 
-                className="btn btn-sm btn-danger" 
-                onClick={e => { e.preventDefault(); this.props.onDelete && this.props.onDelete(this.attributes); }}
-              >
-                <span className="oi oi-trash"></span>
-              </a>
-            </div> : null*/
-          }
-          {/*
-            type !== "image" ? 
-            <FileIcon className="w-full h-20"/>
-            : null
-          */}
+
+          {type !== "image" ? (
+            <div className="flex items-center justify-center w-full pt-5">
+              <Icon className={`w-20 h-20 ${color}`} />
+            </div>
+          ) : null}
+
         </>
         <div className="space-y-1 text-sm w-full flex flex-col absolute bottom-0 p-1">
           <h3 className="font-medium leading-none truncate w-full">{data.name}</h3>
           <p className="text-xs text-muted-foreground">{this.size}</p>
-          {/*<ul className="list-inline d-flex text-muted mb-0">
-            <li className="list-inline-item text-truncate mr-auto">
-              {this.name}
-            </li>
-            <li className="list-inline-item">
-              <div className="custom-control custom-control-inline custom-checkbox" style={{ marginRight: 0 }}>
-                <input className="custom-control-input" key={`file-${data.name}`} type="checkbox" id={`file-${data.name}`} {...(!this.grid ? { checked: this.isSelected } : {})} onChange={e => { e.preventDefault(); this.select(e.target.checked); }} ref={selector => { (this.grid && selector) && (this.grid.selectors[data.name] = selector); }} />
-                <label className="custom-control-label" onClick={e => { e.preventDefault(); this.select(!this.isSelected); }}></label>
-              </div>
-            </li>
-        </ul>*/}
         </div>
       </div>
     );

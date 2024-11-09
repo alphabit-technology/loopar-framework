@@ -37,6 +37,8 @@ const Icon = ({type, size, ...props}) => {
 const MetaDialog = (props) => {
   const handleSetOpenClose = (open) => {
     loopar.handleOpenCloseDialog(props.id, open);
+    if(open) props.onOpen && props.onOpen();
+    if(!open) props.onClose && props.onClose();
   };
 
   const setDialogOpen = (open) => {
@@ -114,7 +116,7 @@ const MetaDialog = (props) => {
 
   return (
     <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
-      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`} style={{overflow: "auto"}}>
+      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]}`}>
         <DialogHeader>
           <DialogTitle className="flex space-x-2">
             <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
@@ -214,6 +216,10 @@ export function Alert (props) {
   )
 }
 
-export const Modal = (props, content) => {
-  loopar.dialog({ ...props, content: props.content || content });
+export const Modal = (props) => {
+  return <MetaDialog {...props} />;
 };
+
+/*export const Modal = (props, content) => {
+  return loopar.dialog({ ...props, content: props.content || content });
+};*/

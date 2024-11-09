@@ -2,6 +2,10 @@
   z-index: 0 !important;
 }
 
+.CodeMirror-scroll {
+  min-height: 100px !important;
+}
+
 .dark .CodeMirror-cursors .CodeMirror-cursor {
   border: 1px solid white !important;
 }

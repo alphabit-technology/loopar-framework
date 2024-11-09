@@ -2,27 +2,28 @@ import { Modal } from "@dialog";
 import loopar from "$loopar";
 import FileInput from "@file-input";
 import { FormWrapper } from "@context/form";
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { UploadIcon } from "lucide-react";
-import { useRef } from "react";
+import { useState } from "react";
 
-export default function FileUploader(props){
+export default function FileUploader(props) {
   const origins = ["Local", "Trash"];
-  const fileInput = useRef(null);
-
-  const getFiles = () => {
-    return fileInput.current.files || [];
-  }
+  const [files, setFiles] = useState([]);
 
   const upload = () => {
     const formData = new FormData();
-
-    getFiles().forEach((file) => {
-      formData.append("files[]", file.rawFile);
+    files.forEach((file) => {
+      if (file.rawFile instanceof File) {
+        formData.append("files[]", file.rawFile);
+      }
     });
 
-    loopar.method("File Manager", "upload", formData).then((r) => {
-      props.onUpload && props.onUpload();
+    loopar.method("File Manager", "upload", {}, {
+      body: formData,
+      success: (r) => {
+        console.log(["Upload", r]);
+        props.onUpload && props.onUpload();
+      }
     });
   }
 
@@ -38,7 +39,7 @@ export default function FileUploader(props){
         }}
         withoutLabel={true}
         origins={origins}
-        ref={fileInput}
+        onChange={setFiles}
       />
     </FormWrapper>
   )
@@ -46,7 +47,6 @@ export default function FileUploader(props){
   return (
     props.inModal ? (
       <Modal
-        icon="fas fa-folder-open"
         position="top"
         size="lg"
         title="File Uploader"
@@ -62,7 +62,7 @@ export default function FileUploader(props){
             variant="secondary"
             onClick={upload}
           >
-            <UploadIcon className="w-10 pr-3"/>
+            <UploadIcon className="w-10 pr-3" />
             Upload
           </Button>
         </div>

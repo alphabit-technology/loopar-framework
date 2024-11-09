@@ -30,11 +30,13 @@ const BaseInput = (props) => {
   }
 
   useEffect(() => {
-    const data = getData();
-    docRef.__REFS__[data.name] = getData();
-    return () => {
-      delete docRef.__REFS__[data.name];
-    };
+    if(docRef){
+      const data = getData();
+      docRef.__REFS__[data.name] = getData();
+      return () => {
+        delete docRef.__REFS__[data.name];
+      };
+    }
   }, []);
 
 

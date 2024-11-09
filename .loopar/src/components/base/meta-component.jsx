@@ -273,7 +273,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
 };
 
 function HTMLBlock({ element, className = "", ...props }) {
-  console.log(["HTMLBlock: " + element.element, element.data.value]);
   /*if(element.element == MARKDOWN){
     return <Markdown id={element.data.id} className={`h-auto w-full prose dark:prose-invert pb-5`} >{element.data.value}</Markdown>
   }else{*/
@@ -400,7 +399,6 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
       )
     } else if (!data.hidden && display) {
       const disabled = data.disabled;
-
       const Fragment = disabled ? "div" : React.Fragment;
       const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
