@@ -8,7 +8,7 @@ import Knex from '../database/knex.js';
 //import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { documentManage } from './document/document-manage.js';
-import path, { resolve } from "path";
+import path, { resolve } from "pathe";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
@@ -22,11 +22,11 @@ import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
 import inflection, { singularize, titleize, humanize } from "inflection";
 import { elementsDict } from "loopar";
-
+console.log(process.env.PWD);
 export class Loopar {
   #installingApp = false;
   modulesGroup = []
-  pathRoot = process.env.PWD;
+  pathRoot = process.cwd();
   pathFramework = process.argv[1];
   pathCore = process.argv[1];
   session = new Session();
