@@ -1,7 +1,7 @@
-import path from "path";
+import path from "pathe";
 import { loopar } from "./loopar.js";
 import fs, { access, existsSync } from 'fs';
-
+import { pathToFileURL } from 'url';
 class FileManage {
   async makeFile(destiny, name, content, ext = 'js', replace = false) {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
@@ -71,7 +71,11 @@ class FileManage {
     const moduleName = fileRote.split('/').pop().split('.')[0];
 
     try {
-      const Class = await import(isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
+     // console.log('fileRote', isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
+      let normalizedPath = path.resolve(isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
+      normalizedPath = pathToFileURL(normalizedPath).href;
+ 
+      const Class = await import(normalizedPath);
       return Class.default;
     } catch (e) {
       if (e.code == 'ERR_MODULE_NOT_FOUND') {

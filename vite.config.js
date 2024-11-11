@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
-import path from 'path';
+import path from 'pathe';
 import importDynamicModule from 'vite-plugin-dynamic-import-vars';
 //import copy from 'rollup-plugin-copy';
 import { viteStaticCopy } from 'vite-plugin-static-copy'
@@ -118,7 +118,7 @@ export default defineConfig({
       '$workspace': path.resolve(__dirname + '/.loopar/src/workspace'),
 
       '/workspace': path.resolve(__dirname + '/.loopar/src/workspace'),
-      "$entry-client": path.resolve(__dirname + '/src/entry-client.jsx'),
+      "$entry-client": path.resolve(__dirname + './src/entry-client.jsx'),
       "$css": path.resolve(__dirname + '/.loopar/src/css'),
 
       '$app-source-loader': path.resolve(__dirname, '/apps/app-source-loader.jsx'),
