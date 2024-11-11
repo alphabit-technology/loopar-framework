@@ -459,7 +459,7 @@ export class BaseTable extends Component {
             </div>
           ) : 
           rows.map((row) => {
-            console.log(["row", row])
+            console.log(["row", row]);
             const action = row.is_single ? (row.type === "Page" ? "view" : "update") : "list";
 
             const color = loopar.bgColor(row.name);
@@ -621,8 +621,6 @@ export class BaseTable extends Component {
     const rows = this.rows;
     this.conciliateSelectedRows();
     const selectedRowsCount = this.selectedRows.length;
-
-    //console.log(["meta.q", this.meta.q])
 
     //this.searchData = this.meta.q && typeof this.meta.q == "object" ? this.meta.q : {};
     this.rowsRef = {};

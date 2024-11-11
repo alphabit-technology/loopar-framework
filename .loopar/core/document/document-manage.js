@@ -22,6 +22,7 @@ class DocumentManage {
   async newDocument(ENTITY, data = {}, name) {
     const DOCUMENT = await this.#importDocument(ENTITY);
 
+    //console.log('newDocument', name, data);
     const instance = await new DOCUMENT({
       __ENTITY__: ENTITY,
       __DOCUMENT_NAME__: name,

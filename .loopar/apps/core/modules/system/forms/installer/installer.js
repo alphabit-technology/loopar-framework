@@ -137,7 +137,10 @@ export default class Installer extends BaseDocument {
           }
         }
 
+       
         const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
+
+        console.log(["Inserting Document", ent.name, document.name])
         if (!data) return;
         if (data.__document_status__ && data.__document_status__ === "Deleted") return;
 

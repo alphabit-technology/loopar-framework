@@ -246,7 +246,6 @@ const FileInput = (props) => {
     </div>
   ), [dropping, loaded, hasFiles, previews, files, fileBrowserOpen, handleChange, handleClearFiles, accept, data.multiple, props.origins]);
 
-  console.log(["fileBrowserOpen", fileBrowserOpen]);
   return renderInput((field) => (
     <>
       {data.label && <FormLabel>{data.label}</FormLabel>}
