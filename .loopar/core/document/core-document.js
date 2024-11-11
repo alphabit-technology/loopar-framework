@@ -38,7 +38,7 @@ export default class CoreDocument {
        * If is an Entity type App, the app name is the same as the document name
        */
       this.__APP__ = this.name;
-    } else if (this.__ENTITY__.name === "Entity") {
+    } else if (this.isBuilder) {
       /**
        * If is a Entity type Entity, the app name is the same as the module name
        */
@@ -435,7 +435,6 @@ export default class CoreDocument {
         }
       }
     }
-
 
     if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(entity.doc_structure)));
 

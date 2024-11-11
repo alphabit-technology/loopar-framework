@@ -34,7 +34,7 @@ export class ListGrid extends BaseTable {
 
   get mappedColumns() {
     const base = super.mappedColumns.filter((col) => col.data.name !== "name");
-    const titleDocument = this.meta.__ENTITY__.title_fields;
+    //const titleDocument = this.meta.__ENTITY__.title_fields;
 
     //console.log(["mappedColumns", this.meta])
 

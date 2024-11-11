@@ -459,6 +459,7 @@ export class BaseTable extends Component {
             </div>
           ) : 
           rows.map((row) => {
+            console.log(["row", row])
             const action = row.is_single ? (row.type === "Page" ? "view" : "update") : "list";
 
             const color = loopar.bgColor(row.name);
