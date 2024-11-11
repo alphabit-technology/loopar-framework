@@ -31,7 +31,7 @@ export function SideNav({ items=[] }: SideNavProps) {
         <div key={i}>
           {hasSubitems && (
             <ul className="flex flex-col gap-1 px-1">
-              {...modules.map((module:any) => {
+              {...modules.map((module:any, key) => {
                 const active = module.link ? true : false;
 
                 return (
@@ -40,11 +40,12 @@ export function SideNav({ items=[] }: SideNavProps) {
                     disabled={module.disabled}
                     external={module.external}
                     Icon={LucideIcons[module.icon] || LucideIcons.ChevronLeftIcon}
-                    key={module.description}
+                    //key={module.description} // Alfredo code
                     path={module.link}
                     title={module.description}
                     compact={!openNav}
                     className="rounded-md py-2 hover:bg-slate-300/50 dark:hover:bg-slate-700/80"
+                    key={key}
                   />
                 );
               })}

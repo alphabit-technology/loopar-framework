@@ -2,6 +2,7 @@ import path from "pathe";
 import { loopar } from "./loopar.js";
 import fs, { access, existsSync } from 'fs';
 import { pathToFileURL } from 'url';
+/// in case this failed, try to import resolvePath, resolvePathSync } from 'mlly'
 class FileManage {
   async makeFile(destiny, name, content, ext = 'js', replace = false) {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
