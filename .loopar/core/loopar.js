@@ -26,7 +26,7 @@ import { elementsDict } from "loopar";
 export class Loopar {
   #installingApp = false;
   modulesGroup = []
-  pathRoot = process.env.PWD;
+  pathRoot = process.cwd();
   pathFramework = process.argv[1];
   pathCore = process.argv[1];
   session = new Session();

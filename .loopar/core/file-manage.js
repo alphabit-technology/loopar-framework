@@ -7,7 +7,7 @@ class FileManage {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
 
     try {
-      if (existsSync(filePath) && ['jsx', 'tsx', 'js'].includes(ext) && !replace) return;
+      if (existsSync(filePath) && ['jsx', 'tsx', 'js', 'sqlite'].includes(ext) && !replace) return;
     } catch (e) {
       return;
     }

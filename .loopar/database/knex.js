@@ -21,7 +21,7 @@ export default class DataBase {
   async connectWithSqlite() {
     try {
       await fileManage.makeFolder('', "path/to");
-      await fileManage.makeFile('path/to', this.database, '', 'db', true);
+      await fileManage.makeFile('path/to', this.database, '', 'sqlite');
       const dbPath = loopar.makePath(loopar.pathRoot, 'path/to', `${this.database}.sqlite`);
 
       this.knex = knex({
@@ -873,10 +873,11 @@ export default class DataBase {
     }
 
     for (const entity of entities) {
-      if (entity.is_single) continue;
+      if (entity.is_single || ["Page Builder", "View Builder"].includes(entity.__ENTITY__)) continue;
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
       if (!exist) {
+        console.log(["_______________ENTITY NOT FOUND_______________", entity.name]);
         loopar.printError(`Loopar framework is not installed`);
         return false;
       }
