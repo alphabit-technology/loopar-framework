@@ -3,8 +3,6 @@
 import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar";
-import fs from 'fs';
-import pug from 'pug';
 import { titleize } from "inflection";
 
 export default class CoreController extends AuthController {
@@ -18,19 +16,8 @@ export default class CoreController extends AuthController {
   }
 
   exposeClientFiles() {
-    /*this.defaultImporterFiles.forEach(file => {
-      loopar.server.use(express.static(loopar.makePath(this.controllerPath, file)));
-    });*/
-
     loopar.server.use(express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
   }
-
-  /*getCodeError(code) {
-    const validCodeErrors = [400, 401, 403, 404, 500];
-    //const code_error = this.error[code] || this.error[500];
-
-    return validCodeErrors.includes(code) ? code : 500;
-  }*/
 
   async sendAction(action) {
     action = `action${loopar.utils.Capitalize(action)}`
@@ -88,10 +75,6 @@ export default class CoreController extends AuthController {
 
     const getClient = () => {
       if (this.client) return this.client;
-
-      /*if (__DOCUMENT__.__ENTITY__.is_single || this.workspace === "web") {
-        return "view"
-      }*/
 
       const action = this.action;
       if (['create', 'update'].includes(action)) {

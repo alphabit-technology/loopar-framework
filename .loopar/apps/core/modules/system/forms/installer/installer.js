@@ -51,7 +51,7 @@ export default class Installer extends BaseDocument {
         if (document.path && !ownEntitiesNames.includes(document.name)) return;
 
         console.warn("Uninstalling:", ent.name, document.name);
-        await loopar.deleteDocument(ent.name, document.name, { updateInstaller: true, sofDelete: false, force: true, updateHistory: false });
+        await loopar.deleteDocument(ent.name, document.name, { sofDelete: false, force: true, updateHistory: false });
       }
 
       for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
@@ -119,8 +119,10 @@ export default class Installer extends BaseDocument {
     const buildEntity = async (entity, data) => {
       if (!ownEntities.find(e => e.name === data.name)) return;
 
-      const E = await loopar.newDocument(entity, data);
-      await E.save({ save: false, validate: false });
+      if (!await loopar.db.count(entity, data.name)) {
+        const E = await loopar.newDocument(entity, data);
+        await E.save({ save: false, validate: false });
+      }
     }
 
     const insertDocuments = async (entity) => {
@@ -137,7 +139,6 @@ export default class Installer extends BaseDocument {
           }
         }
 
-       
         const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
 
         console.log(["Inserting Document", ent.name, document.name])
@@ -161,7 +162,6 @@ export default class Installer extends BaseDocument {
       }
 
       for (const document of (entity.documents || []).sort((a, b) => a.id - b.id)) {
-        console.log(["Inserting Document", entity.name, document.name])
         await insertDocument(entity, document);
       }
     }

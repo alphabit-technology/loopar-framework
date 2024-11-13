@@ -576,9 +576,9 @@ export class Loopar {
     return await this.newDocument("Error", {});
   }
 
-  async deleteDocument(document, name, { updateInstaller = true, sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
+  async deleteDocument(document, name, { sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
     const Doc = await this.getDocument(document, name);
-    await Doc.delete({ updateInstaller, sofDelete, force, updateHistory });
+    await Doc.delete({ sofDelete, force, updateHistory });
   }
 
   exist(path) {
@@ -642,34 +642,6 @@ export class Loopar {
 
   get currentUser() {
     return this.session.get('user') || null;
-  }
-
-  async updateInstaller() {
-    const { entity, appName, record, deleteRecord = false } = arguments[0];
-    const docName = entity.name;
-
-    const appPath = loopar.makePath("apps", appName);
-    if (this.installing) return;
-
-    const installerData = fileManage.getConfigFile('installer', appPath, {});
-
-    if (deleteRecord) {
-      delete installerData[docName][record.name];
-    } else {
-      installerData[docName] ??= {};
-      installerData[docName].entityId = entity.id;
-      installerData[docName].documents ??= {};
-
-      if (record instanceof Array) {
-        for (const rec of record) {
-          installerData[docName].documents[rec.name] = rec;
-        }
-      } else {
-        installerData[docName].documents[record.name] = record;
-      }
-    }
-
-    await fileManage.setConfigFile('installer', installerData, appPath);
   }
 
   async appStatus(appName) {

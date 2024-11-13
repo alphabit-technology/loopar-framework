@@ -503,12 +503,13 @@ export default class DataBase {
   }
 
   async deleteRow(document, name, sofDelete = true) {
-    if (sofDelete) {
+    await this.knex(this.literalTableName(document)).where({ name }).del();
+    /*if (sofDelete) {
       const newName = `${name}-${new Date().getTime()}`;
       await this.knex(this.literalTableName(document)).where({ name }).update({ __document_status__: 'Deleted', name: newName });
     } else {
       await this.knex(this.literalTableName(document)).where({ name }).del();
-    }
+    }*/
   }
 
   get _query() {
@@ -784,10 +785,12 @@ export default class DataBase {
     document = document === "Document" ? "Entity" : document;
     const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
 
-    const c = {
-      "!=": {
-        __document_status__: "Deleted",
-      },
+    const c = !loopar.installing ? {
+      /*"!=": {
+        //__document_status__: "Deleted",
+      },*/
+      AND: condition
+    } : {
       AND: condition
     };
 
@@ -802,7 +805,6 @@ export default class DataBase {
 
     const WHERE = await this.WHERE(c);
     const table = this.literalTableName(document);
-    //const where = typeof params === 'object' ? params : {name: params };
     const r = await this.knex(table).count('id as count').where(this.knex.raw(`1=1 ${WHERE}`));
     return r[0].count || 0;
   }

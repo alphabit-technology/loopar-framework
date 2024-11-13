@@ -256,7 +256,6 @@ export default class CoreDocument {
       //}
 
       await this.updateHistory();
-      await this.updateInstaller();
 
       const files = this.__DOCUMENT__.reqUploadFiles || [];
       for (const file of files) {
@@ -292,35 +291,6 @@ export default class CoreDocument {
         hist.user = loopar.currentUser?.name;
         await hist.save({ validate: false });
       }
-    }
-  }
-
-  async updateInstaller() {
-    return true;
-    const deleteDocument = arguments[0] || false;
-    if (loopar.installing) return;
-
-    if (this.__ENTITY__.include_in_installer) {
-      let data = {};
-
-      if (this.__ENTITY__.name === "Entity") {
-        data = {
-          id: this.id,
-          name: this.name,
-          module: this.module,
-        }
-      } else {
-        data = await this.rawValues();
-      }
-
-      /*await loopar.updateInstaller({
-        entity: this.__ENTITY__,
-        document: this.__ENTITY__.name,
-        name: this.name,
-        appName: this.__APP__,
-        record: data,
-        deleteRecord: deleteDocument
-      });*/
     }
   }
 
@@ -372,16 +342,8 @@ export default class CoreDocument {
   }
 
   async delete() {
-    const { updateInstaller = true, sofDelete, force, updateHistory } = arguments[0] || {};
+    const { sofDelete, force, updateHistory } = arguments[0] || {};
     const connections = await this.getConnectedDocuments();
-    //console.log({connections});
-    /*const connections = await loopar.db.getAll("Connected Document", ["name", "from_document", "from_name"], {
-       "=": {
-          to_document: this.__ENTITY__.name,
-          to_id: await this.__ID__()
-          
-    });*/
-
     const connectorMessage = connections.map(e => `<span class='fa fa-circle text-red pr-2'></span><a href="/desk/${e.module}/${e.document}/update?name=${e.record}" target="_blank"><strong>${e.document}</strong>.${e.record}</a>`).join("<br/>");
     const message = `Is not possible to delete ${this.__ENTITY__.name}.${this.name} because it is connected to:<br/> ${connectorMessage}`;
 
@@ -414,11 +376,7 @@ export default class CoreDocument {
     await deleteConnectedDocuments();*/
 
     await loopar.db.endTransaction();
-
     console.log(["Deleting", this.__ENTITY__.name, this.name]);
-    if (updateInstaller && this.updateInstaller && typeof this.updateInstaller === 'function') {
-      await this.updateInstaller(true);
-    }
 
     await this.trigger('afterDelete', this);
   }
