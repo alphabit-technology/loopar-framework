@@ -34,6 +34,10 @@ export default class SingleController extends BaseController {
     const menu = webApp.menu_items.find(item => item.link === action.replaceAll('_', ' '));
 
     const document = await loopar.getDocument(menu?.page || action);
+    document.__ENTITY__ = {
+      name: document.__ENTITY__?.name,
+      doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
+    }
     const parent = await this.getParent();
     document.activeParentMenu = parent;
 

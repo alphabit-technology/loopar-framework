@@ -2,7 +2,6 @@
 'use strict';
 
 
-
 import { access } from 'fs'
 import Knex from '../database/knex.js';
 import { GlobalEnvironment } from './global/element-definition.js';
@@ -18,7 +17,6 @@ import dayjs from "dayjs";
 import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
-import { marked } from "marked";
 import inflection, { titleize, humanize, singularize } from "inflection";
 import { elementsDict } from "loopar";
 
@@ -506,74 +504,26 @@ export class Loopar {
     env.serverConfig = fileManage.getConfigFile('server.config');
   }
 
-  parseDocStructure(doc_structure) {
-    return doc_structure.map(field => {
-      field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
-
-      if (field.elements) {
-        field.elements = this.parseDocStructure(field.elements);
-      }
-
-      return field;
-    });
-  }
-
-  async #GET_ENTITY(document) {
-    const throwError = (type) => {
-      this.throw({
-        code: 404,
-        message: `${(type || "Entity")}: ${document} not found`,
-      });
-    }
-
-    let ENTITY = null;
-    const ref = this.getRef(document);
-    if (!ref) return throwError();
-
-    const entity = ref.__ENTITY__;
-
-    /**Testing get fileRef only */
-    ENTITY = await fileManage.getConfigFile(document, ref.__ROOT__);
-
-    if (!ENTITY) return throwError(entity);
-    ENTITY.is_single ??= ref.is_single;
-    ENTITY.__REF__ = ref;
-    const doc_structure = this.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
-
-    ENTITY.is_single && (ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure)));
-
-    return ENTITY;
-  }
-
   /**
    * 
    * @param {*} document DocumentType name
    * @param {*} name Document name
    * @param {*} data
-   * @param {*} moduleRoute Path to app root folder 
+   * @param {*} ifNotFound
    * @returns 
    */
   async getDocument(document, name, data = null, ifNotFound = 'throw') {
-    const ENTITY = await this.#GET_ENTITY(document);
-
-    return await documentManage.getDocument(ENTITY, name, data, ifNotFound);
+    return await documentManage.getDocument(document, name, data, ifNotFound);
   }
 
   /**
    * 
    * @param {*} document 
    * @param {*} data 
-   * @param {*} moduleRoute 
-   * @param {*} name 
    * @returns 
    */
   async newDocument(document, data = {}) {
-    const ENTITY = await this.#GET_ENTITY(document);
-    return await documentManage.newDocument(ENTITY, data);
-  }
-
-  async getErrDocument() {
-    return await this.newDocument("Error", {});
+    return await documentManage.newDocument(document, data);
   }
 
   async deleteDocument(document, name, { sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
@@ -601,14 +551,6 @@ export class Loopar {
       return {};
     }
   }
-
-  /*getError(errorType, errorMessage, errorCode = 500) {
-     return {
-        code: err.code || 500,
-        message: err.message || 'Internal Server Error',
-        data: err.data || null,
-     };
-  }*/
 
   throw(error) {
     error = typeof error === 'string' ? { code: 400, message: error } : error

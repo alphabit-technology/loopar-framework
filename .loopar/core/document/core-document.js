@@ -1,7 +1,7 @@
 'use strict'
 
 import DynamicField from './dynamic-field.js';
-import { loopar } from '../loopar.js';
+import { loopar, documentManage } from 'loopar';
 
 export default class CoreDocument {
   #fields = {};
@@ -28,6 +28,7 @@ export default class CoreDocument {
   }
 
   async setApp() {
+    const __REF__ = this.__ENTITY__.__REF__;
     if (loopar.installing) {
       this.__APP__ = loopar.installingApp;
       return;
@@ -50,8 +51,8 @@ export default class CoreDocument {
     } else if (this.__ENTITY__.name === "Module") {
       this.__APP__ = this.app_name;
     } else {
-      if (this.__ENTITY__?.__REF__?.__APP__) {
-        this.__APP__ = this.__ENTITY__.__REF__.__APP__;
+      if (__REF__?.__APP__) {
+        this.__APP__ = __REF__.__APP__;
       } else {
         this.__APP__ ??= await loopar.db.getValue("Module", "app_name", this.__ENTITY__.module);
       }
@@ -394,10 +395,12 @@ export default class CoreDocument {
       }
     }
 
-    if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(loopar.parseDocStructure(JSON.parse(entity.doc_structure)));
+    if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
 
+    const __ENTITY__ = this.__ENTITY__;
+    delete __ENTITY__.__REF__;
     return {
-      __ENTITY__: this.__ENTITY__,
+      __ENTITY__: __ENTITY__,
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,
       __DOCUMENT__: await this.values(),
       //__DOCUMENT__: this.__DOCUMENT__,
