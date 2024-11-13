@@ -877,9 +877,9 @@ export default class DataBase {
     }
 
     for (const entity of entities) {
-      const ref = loopar.getRef(entity);
+      const ref = loopar.getRef(entity.name);
       if (ref.is_single || ref.is_builder) continue;
-      
+
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
       if (!exist) {
