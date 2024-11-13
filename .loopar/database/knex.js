@@ -871,13 +871,15 @@ export default class DataBase {
       return false;
     }
 
-    const entities = loopar.getEntities(app);
+    const entities = loopar.getEntities(app).filter(e => e.__document_status__ !== 'Deleted');
     if (entities.length === 0) {
       return false;
     }
 
     for (const entity of entities) {
-      if (entity.is_single || ["Page Builder", "View Builder"].includes(entity.__ENTITY__)) continue;
+      const ref = loopar.getRef(entity);
+      if (ref.is_single || ref.is_builder) continue;
+      
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
       if (!exist) {
