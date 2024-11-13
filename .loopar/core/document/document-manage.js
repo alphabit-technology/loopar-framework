@@ -6,16 +6,22 @@ class DocumentManage {
     Object.assign(this, props);
   }
 
-  async getDocument(ENTITY, name, data = null) {
-    const databaseData = await loopar.db.getDoc(ENTITY.name, name, ['*'], { isSingle: ENTITY.is_single });
-
-    //console.log("getDocument", ENTITY, name, databaseData);
+  async getDocument(ENTITY, name, data = null, ifNotFound = 'throw') {
+    const databaseData = await loopar.db.getDoc(ENTITY, name, ENTITY.__REF__.__FIELDS__);
 
     if (databaseData) {
       data = Object.assign(databaseData, data || {});
       return await this.newDocument(ENTITY, data, name);
     } else {
-      loopar.throw({ code: 404, message: `${ENTITY.name} ${name}: not found` });
+      if (ifNotFound === 'new') {
+        return await this.newDocument(ENTITY, data, name);
+      }
+      
+      if (ifNotFound === 'throw') {
+        loopar.throw({ code: 404, message: `${ENTITY.name} ${name}: not found` });
+      }
+
+      return ifNotFound;
     }
   }
 
@@ -42,7 +48,7 @@ class DocumentManage {
 
   async #importDocument(entity) {
     const ref = loopar.getRef(entity.name);
-    const documentPathFile = loopar.makePath(ref.entityRoot, `${entity.name}.js`);
+    const documentPathFile = loopar.makePath(ref.__ROOT__, `${entity.name}.js`);
 
     return fileManage.importClass(documentPathFile, (e) => {
       console.log("importDocument err", e);

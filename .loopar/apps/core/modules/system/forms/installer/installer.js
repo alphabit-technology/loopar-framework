@@ -6,7 +6,7 @@ export default class Installer extends BaseDocument {
   async getDocumentData(document) {
     const ref = loopar.getRef(document);
 
-    return await fileManage.getConfigFile(document, ref.entityRoot);
+    return await fileManage.getConfigFile(document, ref.__ROOT__);
   }
 
   getNameToFileName(name) {
@@ -156,7 +156,7 @@ export default class Installer extends BaseDocument {
 
       const ref = loopar.getRef(entity.name);
       if (ref) {
-        const data = await fileManage.getConfigFile(ref.__NAME__, ref.entityRoot);
+        const data = await fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
         await buildEntity(ref.__ENTITY__, data);
       }
 

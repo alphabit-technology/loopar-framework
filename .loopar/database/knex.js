@@ -698,8 +698,10 @@ export default class DataBase {
   }
 
   async getDoc(document, name, fields = ['*'], { includeDeleted = false } = {}) {
+    const ref = typeof document === 'object' ? document.__REF__ : loopar.getRef(document);  
+    document = typeof document === 'object' ? document.name : document;
     document = document == "Document" ? "Entity" : document;
-    const ref = loopar.getRef(document, true);
+
     return await this.getRow(document, name, fields, { isSingle: ref.is_single, includeDeleted });
   }
 

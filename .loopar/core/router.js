@@ -350,12 +350,12 @@ export default class Router {
 
       params.document = menu.page;
     }
-    const ref = loopar.getRef(params.document);
+    const ref = loopar.getRef(params.document, false);
 
     if (!ref) return loopar.throw({ code: 404, message: `Document ${params.document} not found` }, res);
 
     const makeController = async (query, body) => {
-      const C = await fileManage.importClass(loopar.makePath(ref.entityRoot, `${params.document}Controller.js`));
+      const C = await fileManage.importClass(loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`));
 
       const Controller = new C({
         ...params, ...query, data: body

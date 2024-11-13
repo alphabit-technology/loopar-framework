@@ -5,10 +5,9 @@
 
 import { access } from 'fs'
 import Knex from '../database/knex.js';
-//import DataBaseSqlLite from '../database/database-sqlite.js';
 import { GlobalEnvironment } from './global/element-definition.js';
 import { documentManage } from './document/document-manage.js';
-import path, { resolve } from "pathe";
+import path from "pathe";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
@@ -20,14 +19,13 @@ import crypto from "crypto-js";
 import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
 import { marked } from "marked";
-import inflection, { singularize, titleize, humanize } from "inflection";
+import inflection, { titleize, humanize, singularize } from "inflection";
 import { elementsDict } from "loopar";
-console.log(process.env.PWD);
+
 export class Loopar {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
-  pathFramework = process.argv[1];
   pathCore = process.argv[1];
   session = new Session();
   cookie = new Cookie();
@@ -85,7 +83,6 @@ export class Loopar {
     await this.#loadConfig();
     this.db = new Knex();
 
-    //this.db = new DataBaseSqlLite();
     await this.db.initialize();
     await this.build();
 
@@ -131,6 +128,7 @@ export class Loopar {
             if (data) {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
               data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
+              data.type = titleize(singularize(core.name));
               //replace all - with space and titleize
               data.__APP__ = titleize(humanize(app.name)).replace(/-/g, ' ');
 
@@ -144,6 +142,10 @@ export class Loopar {
 
       return acc;
     }, []);
+  }
+
+  entityIsSingle(ENT) {
+    return (["Page", "Form", "Report", "View", "Controller"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
   }
 
   async buildRefs() {
@@ -161,17 +163,20 @@ export class Loopar {
 
     const refs = Object.values(docs).reduce((acc, doc) => {
       if (doc.__document_status__ == "Deleted") return acc;
-      const isBuilder = doc.is_builder || doc.build;
+      
+      const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
+      const isSingle = this.entityIsSingle(doc);
 
       if (isBuilder) {
         types[doc.name] = {
-          entityRoot: doc.entityRoot,
+          __ROOT__: doc.entityRoot,
           __NAME__: doc.name,
           __ENTITY__: doc.__ENTITY__ || "Entity",
           __BUILD__: doc.build || doc.name,
           __APP__: doc.__APP__,
           __ID__: doc.id,
-          fields: getEntityFields(JSON.parse(doc.doc_structure || "[]"))
+          __TYPE__: doc.type,
+          __FIELDS__: getEntityFields(JSON.parse(doc.doc_structure || "[]"))
         }
       }
 
@@ -179,9 +184,10 @@ export class Loopar {
         __NAME__: doc.name,
         __APP__: doc.__APP__,
         __ENTITY__: doc.__ENTITY__ || "Entity",
-        entityRoot: doc.entityRoot,
-        is_single: (!isBuilder && doc.is_single !== 0) ? 1 : 0,
-        is_builder: (isBuilder) ? 1 : 0
+        __ROOT__: doc.entityRoot,
+        is_single: isSingle,
+        is_builder: isBuilder,
+        __TYPE__: doc.type,
       }
 
       return acc;
@@ -193,27 +199,31 @@ export class Loopar {
     });
   }
 
-  getRef(entity, alls=false) {
+  getRef(entity, alls=true) {
     return this.getRefs(null, alls)[entity];
   }
 
-  getRefs(app, alls=false) {
-    let refs = Object.values(fileManage.getConfigFile('refs', null, {}).refs)
-
-    if (app) refs = refs.filter(ref => ref.__APP__ === app);
+  getRefs(app, alls = false) {
+    const refs = fileManage.getConfigFile('refs', null, {}).refs;
     const installedApps = alls ? [] : Object.keys(fileManage.getConfigFile('installed-apps')).map(
       app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
     );
-    
-    refs = alls ? refs : refs.filter(ref => {
-      const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
-      return installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp);
-    });
 
-    return refs.reduce((acc, ref) => {
-      acc[ref.__NAME__] = ref;
-      return acc;
-    }, {});
+    const result = {};
+    for (const key in refs) {
+      if (Object.hasOwn(refs, key)) {
+        const ref = refs[key];
+
+        if (app && ref.__APP__ !== app) continue;
+
+        const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
+        if (alls || installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp)) {
+          result[ref.__NAME__] = ref;
+        }
+      }
+    }
+
+    return result;
   }
 
   getType(type) {
@@ -228,16 +238,6 @@ export class Loopar {
     }
 
     return types;
-  }
-
-  makeClientImporter() {
-
-    /*const fn = `
-    import {Entity}
-    export default {Entity}
-    `
-    fileManage.makeFile('apps', 'index', fn, 'jsx', true);*/
-
   }
 
   async setTailwind(toElement, classes) {
@@ -459,19 +459,6 @@ export class Loopar {
 
     if (!fileManage.existFileSync(path.join('config', 'db.config.json'))) {
       await fileManage.setConfigFile('db.config', {});
-      /*await fileManage.setConfigFile('db.config', {
-        "host": "localhost",
-        "user": "root",
-        "password": "root",
-        "port": "3306",
-        "dialect": "mysql",
-        "pool": {
-          "max": 5,
-          "min": 0,
-          "acquire": 30000,
-          "idle": 10000
-        }
-      });*/
     }
 
     if (!fileManage.existFileSync(path.join('config', 'loopar.config.json'))) {
@@ -531,7 +518,7 @@ export class Loopar {
     });
   }
 
-  async #GET_ENTITY(document, { fromFile } = {}) {
+  async #GET_ENTITY(document) {
     const throwError = (type) => {
       this.throw({
         code: 404,
@@ -546,14 +533,7 @@ export class Loopar {
     const entity = ref.__ENTITY__;
 
     /**Testing get fileRef only */
-    ENTITY = await fileManage.getConfigFile(document, ref.entityRoot);
-
-    /*if (fromFile || this.installing) {
-      ENTITY = await fileManage.getConfigFile(document, ref.entityRoot);
-    } else {
-      const entityFields = this.getType(entity).fields;
-      ENTITY = await loopar.db.getDoc(entity, document, entityFields);
-    }*/
+    ENTITY = await fileManage.getConfigFile(document, ref.__ROOT__);
 
     if (!ENTITY) return throwError(entity);
     ENTITY.is_single ??= ref.is_single;
@@ -573,10 +553,10 @@ export class Loopar {
    * @param {*} moduleRoute Path to app root folder 
    * @returns 
    */
-  async getDocument(document, name, data = null, { fromFile = false } = {}) {
-    const ENTITY = await this.#GET_ENTITY(document, { fromFile });
+  async getDocument(document, name, data = null, ifNotFound = 'throw') {
+    const ENTITY = await this.#GET_ENTITY(document);
 
-    return await documentManage.getDocument(ENTITY, name, data);
+    return await documentManage.getDocument(ENTITY, name, data, ifNotFound);
   }
 
   /**
@@ -587,31 +567,19 @@ export class Loopar {
    * @param {*} name 
    * @returns 
    */
-  async newDocument(document, data = {}, { app, module, name = null } = {}) {
-    const ENTITY = await this.#GET_ENTITY(document, { app, module });
-    return await documentManage.newDocument(ENTITY, data, name);
+  async newDocument(document, data = {}) {
+    const ENTITY = await this.#GET_ENTITY(document);
+    return await documentManage.newDocument(ENTITY, data);
   }
 
   async getErrDocument() {
-    return await this.newDocument("Error", {}, { app: "loopar", module: "core" });
+    return await this.newDocument("Error", {});
   }
 
   async deleteDocument(document, name, { updateInstaller = true, sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
     const Doc = await this.getDocument(document, name);
     await Doc.delete({ updateInstaller, sofDelete, force, updateHistory });
   }
-
-  /*async getForm(formName, data = {}) {
-     const ENTITY = await this.#GET_ENTITY(formName, 'Form', 'form_structure');
-
-     return documentManage.getForm(ENTITY, data);
-  }
-
-  async newForm(formName, data = {}) {
-     const ENTITY = await this.#GET_ENTITY(formName, 'Form', 'form_structure');
-
-     return await documentManage.newForm(ENTITY, data);
-  }*/
 
   exist(path) {
     return new Promise(res => {

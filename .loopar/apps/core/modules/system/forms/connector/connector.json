@@ -16,7 +16,8 @@
           "label": "Database",
           "key": "select7_el78225014630",
           "options": "mysql\nmariadb\npostgress\nsqlite\nmssql",
-          "required": true
+          "required": true,
+          "default_value": "sqlite"
         },
         "elements": []
       },
