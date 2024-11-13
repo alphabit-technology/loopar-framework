@@ -20,6 +20,7 @@ export default class CoreController extends AuthController {
   }
 
   async sendAction(action) {
+    console.log(["sendAction", action]);
     action = `action${loopar.utils.Capitalize(action)}`
     if (typeof this[action] !== 'function') {
       return await this.notFound(`Action ${action} not found`);

@@ -1,17 +1,5 @@
 'use strict'
 
-import BaseController from './base-controller.js';
-import { loopar } from "loopar";
+import SingleConrtroller from './single-controller.js';
 
-export default class PageController extends BaseController {
-   constructor(props) {
-      super(props);
-
-      this.action !== 'view' && this.redirect('view');
-   }
-
-  async actionView() {
-    const document = await loopar.getDocument(this.document, this.name);
-    return await this.render(document);
-  }
-}
+export default SingleConrtroller;
