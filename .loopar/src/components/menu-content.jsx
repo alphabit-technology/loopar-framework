@@ -1,17 +1,14 @@
-import ComponentDefaults from "$component-defaults";
 import elementManage from "$tools/element-manage";
 import MetaComponent from "@meta-component";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 
-export default function MenuContentClass(props) {
-  const { setElements } = ComponentDefaults(props);
+export default function MenuContentMeta(props) {
   const isDesigner = useDesigner().designerMode;
+  const [elements, setElements] = useState(props.children || props.elements || []);
 
   const getElementsDict = () => {
-    const elements = props.children || props.elements || [];
-
     return elements.map((element) => {
       if (element.$$typeof === Symbol.for("react.element")) {
         return {
@@ -38,58 +35,50 @@ export default function MenuContentClass(props) {
   }
 
   const setStructure = () => {
-    const elementsDict = getElementsDict();
-    const menuElements = elementsDict[0];
-    const contentElements = elementsDict[1];
+    const elements = getElementsDict();
+    const [menuElements, contentElements] = elements;
 
     if(!menuElements){
-      const menu = elementManage.elementName(this.props.element);
+      const menu = elementManage.elementName(props.element);
 
-      const baseStructure = {
+      elements.unshift({
         element: "fragment",
         data: {
           name: menu.name,
           label: menu.label,
           key: menu.id,
         },
-      };
-
-      elementsDict.unshift(baseStructure);
+      });
     }
 
     if(!contentElements){
-      const content = elementManage.elementName(this.props.element);
+      const content = elementManage.elementName(props.element);
 
-      const baseStructure = {
+      elements.push({
         element: "fragment",
         data: {
           name: content.name,
           label: content.label,
           key: content.id,
         },
-      }
-
-      elements.push(baseStructure);
+      });
     }
 
-    setElements(elementsDict);
+    setElements(elements);
   }
-  
+
+  const elementsDict = getElementsDict();
+  const [menuElements, contentElements] = elementsDict;
+
   useEffect(() => {
     isDesigner && setStructure();
   }, []);
-
-  const elementsDict = getElementsDict();
-  const menuElements = elementsDict[0];
-  const contentElements = elementsDict[1];
 
   if (elementsDict.length === 0 || !menuElements || !contentElements) {
     return (
       <div className="text-center text-red-500">
         <p>The default Menu structure has ben changed</p>
-        <Button variant="destructive" onClick={() => {
-          this.setStructure();
-        }}>Reset</Button>
+        <Button variant="destructive" onClick={setStructure}>Reset</Button>
       </div>
     );
   }
