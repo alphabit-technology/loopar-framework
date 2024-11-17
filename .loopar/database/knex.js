@@ -780,10 +780,10 @@ export default class DataBase {
     return await this.knex.schema.hasTable(this.literalTableName(document));
   }
 
-  async count(document, params = { field_name: 'name', field_value: null }, condition = null) {
-    if (!params) return 0;
+  async count(document, condition) {
+    if (!condition) return 0;
     document = document === "Document" ? "Entity" : document;
-    const param = typeof params === 'object' ? params : { field_name: "name", field_value: params };
+    condition = typeof condition === 'object' ? condition : { "=" : {"name": condition} };
 
     const c = !loopar.installing ? {
       /*"!=": {
@@ -794,14 +794,14 @@ export default class DataBase {
       AND: condition
     };
 
-    if (param.field_value) {
+    /*if (param.field_value) {
       c.AND = {
         "=": {
           [param.field_name]: param.field_value
         },
         AND: condition
       }
-    }
+    }*/
 
     const WHERE = await this.WHERE(c);
     const table = this.literalTableName(document);
@@ -812,8 +812,6 @@ export default class DataBase {
   get dialect() {
     return this.dbConfig.dialect || "";
   }
-
-
 
   async testDatabase() {
     const client = this.dialect;

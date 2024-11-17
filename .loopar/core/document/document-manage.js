@@ -44,7 +44,7 @@ class DocumentManage {
 
   #GET_ENTITY(document) {
     const throwError = (type) => {
-      this.throw({
+      loopar.throw({
         code: 404,
         message: `${(type || "Entity")}: ${document} not found`,
       });

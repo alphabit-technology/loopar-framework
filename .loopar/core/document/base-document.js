@@ -234,6 +234,6 @@ export default class BaseDocument extends CoreDocument {
   }
 
   async records(condition = []) {
-    return await loopar.db.count(this.__ENTITY__.name, {}, condition);
+    return await loopar.db.count(this.__ENTITY__.name, condition);
   }
 }
