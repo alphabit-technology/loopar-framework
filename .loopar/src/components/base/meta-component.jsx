@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext, useEffect, useId } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import { elementsDict as baseElementsDict } from "$global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "$components-loader";
 import elementManage from "$tools/element-manage";
@@ -11,28 +11,21 @@ import loopar from "$loopar";
 import { useDocument } from "@context/@/document-context";
 import fileManager from "$tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
-import Markdown from 'react-markdown'
+import { ErrorBoundary } from "@error-boundary";
 
 const designElementProps = (el) => {
   if (!el.data) {
     const names = elementManage.elementName(el.element);
     el.data = {
-      //name: names.name,
       label: names.label,
-      //id: names.id,
       key: names.id
     }
   }
 
-  //if(el.data.name && !el.data.name.includes("--design--") && fieldIsWritable(el.element)) el.data.name += "--design--";
-
   const newProps = {
     ...{
       ...el,
-      key: 'design-element' + el.data.key,
-      //readOnly: selfProps.readOnly,
-      //hasTitle: true,
-      //dragabble: true
+      key: 'design-element' + el.data.key
     }
   }
 
@@ -168,24 +161,12 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const {designerModeType, currentDragging, setCurrentDragging, designing} = useDesigner();
   const parentHidden = useHidden();
   const dragginElement = useRef(null);
-  //const isDroppable = false// Comp.droppable || element.fieldDesigner;
-  let className = "";
+  const {__REFS__} = useDroppable();
+  const draggableRef = useRef(null);
 
-  if (designing) {
-    //if (isDroppable) {
-     // className = cn(className, "min-h-20 rounded-md border border-gray-400 shadow bg-gray-200/80 dark:bg-slate-900/70 mb-4 dark:border-gray-600 dark:text-gray-200 p-1 pt-5");
-    //} else {
-      className = cn(className, "bg-card rounded p-2 mb-4 border border-gray-400 dark:border-gray-600");
-    //}
-  }
-
-  className = cn(className, element.className);
-
-  const handleMouseOver = (hover) => {
-    !currentDragging && setHover(hover);
-  }
-
-  delete element.key;
+  useEffect(() => {
+    __REFS__[element.data.key] = draggableRef.current;
+  }, [__REFS__, draggableRef.current]);
 
   if (parentHidden) {
     return (
@@ -199,16 +180,21 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
       />
     )
   }
+
+  const className = cn(
+    designing ? "bg-card rounded p-2 mb-4 border border-gray-400 dark:border-gray-600" : "",
+    element.className
+  );
+
+  const handleMouseOver = (hover) => {
+    !currentDragging && setHover(hover);
+  }
+
+  delete element.key;
+
   const disabled = element.data && (element.data.hidden || element.data.disabled);
   const Fragment = (disabled && !parentHidden) ? "div" : React.Fragment;
   const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
-  
-  const {__REFS__} = useDroppable();
-  const draggableRef = useRef(null);
-
-  useEffect(() => {
-    __REFS__[element.data.key] = draggableRef.current;
-  }, [__REFS__, draggableRef.current]);
 
   return (
     <HiddenContext.Provider value={disabled}>
@@ -433,13 +419,15 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
     const key = parentKey + (el.data?.key || useId());
 
     return (
-      <MetaComponentFn 
-        el={el}
-        parent={parent}
-        className={className}
-        parentKey={parentKey}
-        key={key}
-      />
+      <ErrorBoundary>
+        <MetaComponentFn 
+          el={el}
+          parent={parent}
+          className={className}
+          parentKey={parentKey}
+          key={key}
+        />
+      </ErrorBoundary>
     )
   });
 }

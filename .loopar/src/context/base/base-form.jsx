@@ -12,10 +12,6 @@ export default class BaseForm extends BaseDocument {
   #Form = null;
   static contextType = useWorkspace;
 
-  constructor(props) {
-    super(props);
-  }
-
   save() {
     this.send({ action: this.props.meta.action });
   }

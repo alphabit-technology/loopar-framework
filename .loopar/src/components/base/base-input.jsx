@@ -127,7 +127,7 @@ const BaseInput = (props) => {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data:getData(), handleInputChange, fieldControl };
+  return { renderInput, value, validate, readOnly, hasLabel, data: getData(), handleInputChange, fieldControl };
 }
 
 BaseInput.metaFields = () =>{

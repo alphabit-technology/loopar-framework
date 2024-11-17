@@ -24,12 +24,14 @@ import DateDemo from "$date-demo";
 import { CalendarIcon } from "lucide-react";
 
 export default function TimePicker(props) {
-  const { renderInput, data } = BaseInput(props);
+  const { renderInput, data={}, value } = BaseInput(props);
 
   return renderInput(field => {
-    const setTimeHandler = (value) => {
-      this.value(loopar.dateUtils.getTime(value));
+    const setTimeHandler = (val) => {
+      value(loopar.dateUtils.getTime(val));
     };
+
+    const initialHour = dayjs(field.value).format("HH:mm");
 
     return (
       <FormItem className="flex flex-col" >
@@ -44,13 +46,13 @@ export default function TimePicker(props) {
                   !field.value && "text-muted-foreground"
                 )}
               >
-                {field.value ? loopar.dateUtils.getTime(field.value, "DB") : <span>Pick a date</span>}
+                {field.value ? loopar.dateUtils.getTime(field.value, "DB") : <span>Pick a Time</span>}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
               </Button>
             </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <DateDemo value={loopar.dateUtils.getTime(field.value, "DB")} handleChange={setTimeHandler}/>
+            <DateDemo value={initialHour} handleChange={setTimeHandler}/>
           </PopoverContent>
         </Popover>
         <FormDescription>

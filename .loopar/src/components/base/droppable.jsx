@@ -33,7 +33,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   };
 
   const getBrothers = (current) => {
-    return Object.keys(__REFS__).filter(e => e !== current).map(key => __REFS__[key].getBoundingClientRect());
+    return Object.keys(__REFS__).filter(e => e !== current).map(key => __REFS__[key]?.getBoundingClientRect());
   }
 
   const findInsertIndex = (current, currentKey) => {

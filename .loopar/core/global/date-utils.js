@@ -39,7 +39,7 @@ const getDateTime = (date=new Date(), format) => {
 }
 
 const getTime = (date = new Date(), format) => {
-  if(!date) return null;
+  if(!date || date == "Invalid Date") return null;
   let time = typeof date === "string" ? new Date(date) : date;
 
   if(typeof date === "string"){

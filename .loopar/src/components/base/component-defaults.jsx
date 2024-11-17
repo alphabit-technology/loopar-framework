@@ -84,17 +84,12 @@ export default function ComponentDefaults(props) {
     designerRef.updateElements(props, removeDuplicates(newElements), null, callback);
   }
 
-  const getElements = () => {
-    return elementsDict();
-  }
-
   return {
     getSrc,
     getTextSize,
     getTextAlign,
     set,
     setElements,
-    getElements,
     getSize,
     data
   }

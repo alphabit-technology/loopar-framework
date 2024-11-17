@@ -69,7 +69,7 @@ export default function DateTime(props) {
                 {field.value ? (
                   format(dayjs(field.value).isValid() ? new Date(field.value) : new Date(), "PPP HH:mm:ss a")
                 ) : (
-                  <span>Pick a date</span>
+                  <span>Pick a date & time</span>
                 )}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
               </Button>

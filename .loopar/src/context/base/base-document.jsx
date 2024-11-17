@@ -12,6 +12,7 @@ export default class BaseDocument extends React.Component {
     super(props);
 
     this.state = {
+      ...this.state,
       meta: props.meta
     };
   }
