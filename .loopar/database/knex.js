@@ -730,7 +730,7 @@ export default class DataBase {
         const [PAGE, PAGE_SIZE] = [pagination.page, pagination.pageSize];
         const OFFSET = (PAGE - 1) * PAGE_SIZE;
         
-        return this.knex(this.literalTableName(document)).whereRaw(`${sofDelete} ${condition}`).select(fields).limit(PAGE_SIZE).offset(OFFSET);
+        return await this.knex(this.literalTableName(document)).whereRaw(`${sofDelete} ${condition}`).select(fields).limit(PAGE_SIZE).offset(OFFSET);
       } else {
         return await this.knex(this.literalTableName(document)).whereRaw(`${sofDelete} ${condition}`).select(fields);
       }
