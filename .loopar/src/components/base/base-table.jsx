@@ -449,6 +449,14 @@ export class BaseTable extends Component {
   }
 
   getGridRender(rows) {
+    const defaultActions = {
+      "Builder": "list",
+      "Entity": "list",
+      "Page Builder": "view",
+      "View Builder": "view",
+      "Form Builder": "update",
+    };
+
     return (
       <div className="justify flex flex-wrap gap-3 border p-2">
         {
@@ -459,7 +467,7 @@ export class BaseTable extends Component {
             </div>
           ) : 
           rows.map((row) => {
-            const action = row.is_single ? (row.type === "Page" ? "view" : "update") : "list";
+            const action = defaultActions[row.type || "Entity"];
 
             const color = loopar.bgColor(row.name);
             return this.docRef.gridTemplate ? (
