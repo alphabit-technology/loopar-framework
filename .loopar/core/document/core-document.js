@@ -76,7 +76,7 @@ export default class CoreDocument {
   }
 
   async getConnectedDocuments() {
-    const documents = await loopar.db.getAll("Entity", ["name", "type", "module", "doc_structure", "is_single"]);
+    const documents = await loopar.db.getAll("Entity", ["name", "module", "doc_structure", "is_single"]);
 
     const connexions = documents.reduce((acc, cur) => {
       const fields = loopar.utils.fieldList(cur.doc_structure);
@@ -160,15 +160,15 @@ export default class CoreDocument {
     }
   }
 
-  getDocypeStructure(structure) {
+  getDocypeStructure() {
     return JSON.parse(this.__ENTITY__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
-
-    //return this.__ENTITY__.STRUCTURE;
   }
 
   async #makeFields(fields = this.getDocypeStructure()) {
+    const entityFields = this.__ENTITY__.__REF__.__FIELDS__;
+
     await Promise.all(fields.map(async (field) => {
-      if (fieldIsWritable(field) || field.element === FORM_TABLE) {
+      if ((fieldIsWritable(field) || field.element === FORM_TABLE) && entityFields.includes(field.data.name)) {
         this.#makeField({ field });
       }
 
@@ -201,8 +201,6 @@ export default class CoreDocument {
         parent_document: this.__ENTITY__.id,
         parent_id: ID
       }).del();
-      //const deleteQuery = `DELETE FROM \`tbl${key}\` WHERE parent_document = '${this.__ENTITY__.id}' AND parent_id = '${ID}'`;
-      //await loopar.db.execute(deleteQuery, transaction);
     }
   }
 
@@ -213,8 +211,10 @@ export default class CoreDocument {
     async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
+        const nextId = await loopar.db.nextId(key);
 
-        const documentsPromises = rows.map(async (row) => {
+        const documentsPromises = rows.map(async (row, index) => {
+          row.id = nextId + index;
           row.name = loopar.utils.randomString(15);
           row.parent_document = parentDocumentId;
           row.parent_id = parentId;
@@ -288,7 +288,7 @@ export default class CoreDocument {
         hist.document_name = this.__DOCUMENT_NAME__;
         hist.document = this.__ENTITY__.name;
         hist.action = action || (this.__IS_NEW__ ? "Created" : "Updated");
-        hist.date = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
+        hist.date = dayjs(new Date())//.format("YYYY-MM-DD HH:mm:ss");
         hist.user = loopar.currentUser?.name;
         await hist.save({ validate: false });
       }

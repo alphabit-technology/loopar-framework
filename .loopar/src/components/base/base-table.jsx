@@ -449,13 +449,10 @@ export class BaseTable extends Component {
   }
 
   getGridRender(rows) {
-    const defaultActions = {
-      "Builder": "list",
-      "Entity": "list",
-      "Page Builder": "view",
-      "View Builder": "view",
-      "Form Builder": "update",
-    };
+    const defaultAction = (row) => {
+      if(["Entity", "Builder"].includes(row.type || this.name)) return row.is_single ? "update" : "list";
+      if(["Page Builder", "View Builder"].includes(row.type)) return "view";
+    }
 
     return (
       <div className="justify flex flex-wrap gap-3 border p-2">
@@ -467,11 +464,11 @@ export class BaseTable extends Component {
             </div>
           ) : 
           rows.map((row) => {
-            const action = defaultActions[row.type || "Entity"];
-
+            const action = defaultAction(row);
             const color = loopar.bgColor(row.name);
+
             return this.docRef.gridTemplate ? (
-              this.docRef.gridTemplate(row, action, this)
+              this.docRef.gridTemplate(row, action)
             ) : (
               <div>
                 <Card className="w-full min-w-[300px]">

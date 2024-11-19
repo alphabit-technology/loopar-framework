@@ -122,40 +122,40 @@ const MetaDialog = (props) => {
             <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
             <h1 className="text-2xl">{props.title}</h1>
           </DialogTitle>
-          <DialogDescription>
-            <>
-            {
-              contentType === "text" ? (
-                <div
-                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
-                />
-              ) : (
-                <div>{content}</div>
-              )
-            }
-            <div className="fixed bottom-5 right-5 z-0 opacity-5" style={{zIndex:"-1"}}><Icon type={props.type} size={130}/></div>
-            </>
-          </DialogDescription>
-          {props.hasFooter !== false && (
-            <DialogFooter className="pt-5">
-              {(getButtons() || []).map((b) => (
-                <Button
-                  key={b.name}
-                  variant={b.variant || "primary"}
-                  onClick={(e) => {
-                    e.preventDefault();
-
-                    b.dismiss && setDialogOpen(false);
-                    b.onClick();
-                  }}
-                  ref={b.name === "ok" ? okButton : null}
-                >
-                  {b.content || b.text || b.label}
-                </Button>
-              ))}
-            </DialogFooter>
-          )}
         </DialogHeader>
+        <DialogDescription className="overflow-auto max-h-[80vh]">
+          <>
+          {
+            contentType === "text" ? (
+              <div
+                dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
+              />
+            ) : (
+              <div>{content}</div>
+            )
+          }
+          <div className="fixed bottom-5 right-5 z-0 opacity-5" style={{zIndex:"-1"}}><Icon type={props.type} size={130}/></div>
+          </>
+        </DialogDescription>
+        {props.hasFooter !== false && (
+          <DialogFooter className="pt-5">
+            {(getButtons() || []).map((b) => (
+              <Button
+                key={b.name}
+                variant={b.variant || "primary"}
+                onClick={(e) => {
+                  e.preventDefault();
+
+                  b.dismiss && setDialogOpen(false);
+                  b.onClick();
+                }}
+                ref={b.name === "ok" ? okButton : null}
+              >
+                {b.content || b.text || b.label}
+              </Button>
+            ))}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -164,6 +164,7 @@ export class Loopar {
       
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
+      const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
 
       if (isBuilder) {
         types[doc.name] = {
@@ -174,7 +175,7 @@ export class Loopar {
           __APP__: doc.__APP__,
           __ID__: doc.id,
           __TYPE__: doc.type,
-          __FIELDS__: getEntityFields(JSON.parse(doc.doc_structure || "[]"))
+          __FIELDS__: getEntityFields(fields)
         }
       }
 
@@ -186,6 +187,7 @@ export class Loopar {
         is_single: isSingle,
         is_builder: isBuilder,
         __TYPE__: doc.type,
+        __FIELDS__: getEntityFields(fields)
       }
 
       return acc;

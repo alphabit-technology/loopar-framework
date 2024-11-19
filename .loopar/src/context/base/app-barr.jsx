@@ -7,13 +7,17 @@ import {Link} from "$link";
 export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
   const { __ENTITY__, __DOCUMENT__ } = meta;
-  const title = ((meta.title || context === 'module') ? meta.module_group :
-      (['list', 'view'].includes(context) || meta.action === 'create' || __ENTITY__.is_single) ? __ENTITY__.name : __DOCUMENT__.name) || __ENTITY__.name;
 
-  const type = __DOCUMENT__.is_single ? "Single" : __ENTITY__.build || __ENTITY__.__TYPE__;
-  //const goTo = (["Single", "View", "Page", "Form", "Report"].includes(type) ? type : "Base") + "Controller";
-  const goTo = ["View", "Page", "Report"].includes(type) ? "view" : type === "Single" ? "update" : "list";
-    
+  const title = __ENTITY__.name/* ((meta.title || context === 'module') ? meta.module_group :
+      (['list', 'view'].includes(context) || meta.action === 'create' || __ENTITY__.is_single) ? __ENTITY__.name : __DOCUMENT__.name) || __ENTITY__.name;
+  */
+      const gotoAction = (row, entity) => {
+    if(["Entity", "Builder"].includes(entity.name)) return row.is_single ? "update" : "list";
+    if(["Page Builder", "View Builder"].includes(entity.name)) return "view";
+  }
+
+  const goTo = gotoAction(__DOCUMENT__, __ENTITY__);
+
   const formPrimaryActions = () => {
     return docRef.canUpdate ? (
       <>
@@ -28,7 +32,7 @@ export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
           <SaveIcon className="pr-1" />
           Save
         </Button>
-        {!meta.__IS_NEW__ && (__ENTITY__.is_builder || __ENTITY__.__TYPE__ === 'Builder') && (
+        {!meta.__IS_NEW__ && goTo && (
           <Link
             variant="secondary"
             to={`/desk/${__DOCUMENT__.name}/${goTo}`}

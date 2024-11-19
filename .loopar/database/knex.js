@@ -458,12 +458,17 @@ export default class DataBase {
           name: document + '-' + field,
           document: document,
           field: field,
-          value: data[field] || "",
+          value: data[field] || null,
           __document_status__: 'Active'
         });
       }
+
       await this.knex(this.literalTableName('Document Single Values')).insert(values).onConflict('name').merge();
     } else {
+      const nextId = await this.nextId(document);
+      const currentId = parseInt(data.id || 0);
+      data.id = currentId < nextId ? nextId : currentId;
+
       await this.knex(this.literalTableName(document)).insert(data);
     }
   }
@@ -471,6 +476,11 @@ export default class DataBase {
   async maxId(document) {
     const maxId = await this.knex(this.literalTableName(document)).max('id', { as: 'max' });
     return maxId[0]?.max
+  }
+
+  async nextId(document) {
+    const maxId = await this.maxId(document);
+    return maxId ? maxId + 1 : 1;
   }
 
   async setValue(document, field, value, name, { distinctToId = null, ifNotFound = "throw" } = {}) {
