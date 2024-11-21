@@ -46,17 +46,18 @@ export default class WorkspaceController extends AuthController {
 
     const workSpaceName = __META__.__WORKSPACE__.name;
 
-    const isProduction = false// process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV == 'production';
+    
     const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/index.html' : 'index.html');
     const serverTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? "dist/server/entry-server.js" : "src/entry-server.jsx");
 
-    const ssrManifest = isProduction
+    /*const ssrManifest = isProduction
       ? fs.readFileSync('./dist/client/.vite/manifest.json')
-      : undefined
+      : undefined*/
 
     const url = this.req.originalUrl;
     const vite = loopar.server.vite;
-    const { render } = await vite.ssrLoadModule(loopar.makePath(loopar.pathRoot, "src/entry-server.jsx"));
+    const { render } = await vite.ssrLoadModule(serverTemplateRoute);
 
     const HTML = await render(url, __META__, this.req, this.res);
     const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));

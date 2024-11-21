@@ -89,7 +89,7 @@ const makeGroupComponentsAlias = (dir) => {
 makeComponentToAlias('./.loopar/src/components');
 makeGroupComponentsAlias('./.loopar/src');
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.mjs', '.ts', '.tsx'],
     alias: {
@@ -162,12 +162,19 @@ export default defineConfig({
     noExternal: ['lucide-react']
   },
   build: {
+    outDir: command === 'build:server' ? 'dist/server' : 'dist/client',
+    ssr: command === 'build:server',
+    rollupOptions: {
+      input: command === 'build:server' ? './src/entry-server.jsx' : 'index.html',
+    },
+  },
+  /*build: {
     manifest: true,
     rollupOptions: {
       plugins: [importDynamicModule()],
     },
     reactRefresh: true,
-  },
+  },*/
   server: {
     hmr: true,
     watch: {
@@ -175,4 +182,5 @@ export default defineConfig({
     }
   },
   // server.hmr.overlay: false
-});
+  // server.hmr.port: 443
+}));

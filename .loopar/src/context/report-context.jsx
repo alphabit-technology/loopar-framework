@@ -3,7 +3,7 @@ import MetaComponent from "@meta-component";
 import DeskGUI from "@context/base/desk-gui";
 import { FormWrapper } from "$context/form";
 
-export default class ViewContext extends BaseDocument {
+export default class ReportContext extends BaseDocument {
   hasSidebar = true;
   hasHeader = true;
   hasHistory = true;
