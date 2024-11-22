@@ -1,5 +1,5 @@
 import React from "react";
-import {AppBarr} from "$context/base/app-barr";
+import {AppBarr} from "@context/base/app-barr";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { MoreVertical } from "lucide-react";
 import {Button} from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import {
   FormControl,
   FormDescription,
@@ -7,7 +7,7 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea"
-import loopar from "$loopar";
+import loopar from "loopar";
 
 let timerId;
 

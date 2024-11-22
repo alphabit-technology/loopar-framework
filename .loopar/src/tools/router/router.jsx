@@ -1,4 +1,4 @@
-import HTTP from '$tools/router/http';
+import HTTP from '@tools/router/http';
 //import {makeUrl} from "@link"
 
 export default class Router extends HTTP {

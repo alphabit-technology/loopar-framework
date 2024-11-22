@@ -1,5 +1,5 @@
 
-import loopar from "$loopar";
+import loopar from "loopar";
 import React, { useState, useEffect } from "react";
 import { Link as ReactLink, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";

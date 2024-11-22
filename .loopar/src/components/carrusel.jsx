@@ -1,4 +1,4 @@
-import BaseCarrusel from "$base-carrusel";
+import BaseCarrusel from "@base-carrusel";
 import Preassembled from "@preassembled";
 
 export default function Carrusel(props){

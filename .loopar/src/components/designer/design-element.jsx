@@ -1,5 +1,5 @@
-import elementManage from "$tools/element-manage";
-import loopar from "$loopar";
+import elementManage from "@tools/element-manage";
+import loopar from "loopar";
 import { BoxIcon } from "lucide-react";
 import { useRef } from "react";
 import { useDesigner } from "@context/@/designer-context";

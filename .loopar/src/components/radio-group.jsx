@@ -1,11 +1,11 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import { Input as FormInput } from "@/components/ui/input";
-import loopar from "$loopar";
+import loopar from "loopar";
 import { Label } from "@/components/ui/label"
 import { RadioGroupItem } from "@/components/ui/radio-group"
 import * as RadioGroup from "@radix-ui/react-radio-group";
 
-import {Droppable} from "$droppable";
+import {Droppable} from "@droppable";
 
 import {
   FormItem,

@@ -1,4 +1,4 @@
-import BaseText from "$base-text";
+import BaseText from "@base-text";
 import ComponentDefaults from "@component-defaults";
 import {useDesigner} from "@context/@/designer-context";
 

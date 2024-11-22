@@ -1,7 +1,7 @@
-import BaseDocument from "$context/base/base-document";
+import BaseDocument from "@context/base/base-document";
 import MetaComponent from "@meta-component";
 import DeskGUI from "@context/base/desk-gui";
-import { FormWrapper } from "$context/form";
+import { FormWrapper } from "@context/form";
 
 export default class ReportContext extends BaseDocument {
   hasSidebar = true;

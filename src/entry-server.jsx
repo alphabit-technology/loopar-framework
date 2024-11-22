@@ -29,7 +29,6 @@ const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
 };
 
 export async function render(url, __META__, req, res) {
-  //__META__ = JSON.parse(__META__);
   const { Workspace, Document } = await Loader(__META__, "server");
   global.__REQUIRE_COMPONENTS__ = [];
   global.ENVIRONMENT = "server";
@@ -44,7 +43,8 @@ export async function render(url, __META__, req, res) {
       __META__,
       req,
       res
-    })
+    }),
+    context
   );
 
   if (context.url) {
@@ -55,6 +55,6 @@ export async function render(url, __META__, req, res) {
 
   __META__.__REQUIRE_COMPONENTS__ = global.__REQUIRE_COMPONENTS__;
   return {
-    HTML,
+    HTML
   };
 }

@@ -1,6 +1,6 @@
 //import { div, span, a, p, small, image, figure, h6, strong} from "/components/elements.js";
 //import { elementManage } from "../element-manage.js";
-import elementManage from "$tools/element-manage";
+import elementManage from "@tools/element-manage";
 
 class FileManager {
   groupElement = FILE_INPUT;

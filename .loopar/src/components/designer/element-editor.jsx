@@ -1,7 +1,7 @@
 import React, { useState, useEffect} from 'react';
-import { __META_COMPONENTS__ } from "$components-loader";
-import loopar from "$loopar";
-import { elementsDict } from "$global/element-definition";
+import { __META_COMPONENTS__ } from "@components-loader";
+import loopar from "loopar";
+import { elementsDict } from "@global/element-definition";
 import Tabs from "@tabs";
 import { MetaComponent } from "@meta-component";
 import { Separator } from "@/components/ui/separator";

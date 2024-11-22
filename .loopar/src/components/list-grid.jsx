@@ -1,6 +1,6 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 import {BaseTable} from "@base-table"
-import {Link} from "$link";
+import {Link} from "@link";
 
 import {
   Avatar,

@@ -1,5 +1,5 @@
-import Preassembled from "$preassembled";
-import loopar from "$loopar";
+import Preassembled from "@preassembled";
+import loopar from "loopar";
 
 /**
  * #file BaseSlider component for displaying a slider with multiple slides.

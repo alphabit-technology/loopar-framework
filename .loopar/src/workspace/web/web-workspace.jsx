@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import BaseWorkspace from "$workspace/base/base-workspace";
+import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";

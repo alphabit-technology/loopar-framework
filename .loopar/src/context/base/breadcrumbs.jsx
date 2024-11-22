@@ -1,4 +1,4 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 import {Link} from "@link";
 import { HomeIcon, ChevronRight } from "lucide-react";
 

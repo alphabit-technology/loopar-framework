@@ -1,7 +1,7 @@
 
-import {loopar} from "$loopar";
+import {loopar} from "loopar";
 import { Checkbox} from "@/components/ui/checkbox";
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 
 import {
   FormControl,

@@ -1,7 +1,7 @@
-import ComponentDefaults, {tagDontHaveChild, validTags} from "$component-defaults";
-import loopar from "$loopar";
+import ComponentDefaults, {tagDontHaveChild, validTags} from "@component-defaults";
+import loopar from "loopar";
 import React from "react";
-import { Droppable } from "$droppable";
+import { Droppable } from "@droppable";
 
 export default function Generic({ ...props }) {
   const {elementsDict, data} = ComponentDefaults(props);

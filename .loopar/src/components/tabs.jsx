@@ -1,11 +1,10 @@
 import ComponentDefaults from "./base/component-defaults";
-import elementManage from "$tools/element-manage";
+import elementManage from "@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import MetaComponent from "@meta-component";
 import React, { useEffect } from "react";
 import {useCookies} from "@services/cookie";
-import { use } from "marked";
 
 const TabContent = ({element, parent}) => {
   if(element.type === "dynamic.component"){

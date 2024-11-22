@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card"
 import {Droppable} from "@droppable";
 import {cn} from "@/lib/utils";
-import loopar from "$loopar";
+import loopar from "loopar";
 
 export default function Card(props) {
   const data = props.data || {};

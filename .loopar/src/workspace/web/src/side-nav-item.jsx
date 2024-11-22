@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import {Link} from "$link";
+import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import {useCookies} from "@services/cookie";
 

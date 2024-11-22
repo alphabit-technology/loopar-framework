@@ -1,5 +1,5 @@
-import elementManage from "$tools/element-manage";
-import BaseCarrusel from "$base-carrusel";
+import elementManage from "@tools/element-manage";
+import BaseCarrusel from "@base-carrusel";
 
 export default function Slider(props) {
   const defaultElements = [

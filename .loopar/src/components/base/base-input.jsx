@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { dataInterface } from "$global/element-definition";
+import { dataInterface } from "@global/element-definition";
 import { FormItem, FormMessage } from "@/components/ui/form";
 import { FormField } from "@form-field";
 import { cn } from "@/lib/utils";
-import elementManage from "$tools/element-manage";
-import loopar from "$loopar";
+import elementManage from "@tools/element-manage";
+import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
 
 import { useDocument } from "@context/@/document-context";

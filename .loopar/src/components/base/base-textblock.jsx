@@ -1,4 +1,3 @@
-import Component from "$component";
 import { useEffect } from "react";
 import ComponentDefaults from "@component-defaults";
 

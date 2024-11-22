@@ -1,4 +1,4 @@
-import BaseDocument from "$context/base/base-document";
+import BaseDocument from "@context/base/base-document";
 import MetaComponent from "@meta-component";
 
 const WebContextLayout = ({children}) => {

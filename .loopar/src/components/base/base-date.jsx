@@ -1,5 +1,5 @@
-import BaseInput from "$base-input";
-import loopar from "$loopar";
+import BaseInput from "@base-input";
+import loopar from "loopar";
 //import { format, setDate } from "date-fns";
 import dayjs from "dayjs";
 import { format, setHours, setMinutes, setYear, setMonth, setDate } from 'date-fns';
@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 //import { toast } from "@/components/ui/use-toast"
-import DateDemo from "$date-demo";
+import DateDemo from "@date-demo";
 import { CalendarIcon, TimerIcon } from "lucide-react";
 
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

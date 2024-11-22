@@ -1,6 +1,6 @@
-import Component from "$component";
-import loopar from "$loopar";
-import { Modal } from "$dialog";
+import Component from "@component";
+import loopar from "loopar";
+import { Modal } from "@dialog";
 
 export default class StripeClass extends Component {
   className = "";

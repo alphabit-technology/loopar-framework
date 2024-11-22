@@ -1,5 +1,5 @@
 import React from "react";
-import BaseWorkspace from "$workspace/base/base-workspace";
+import BaseWorkspace from "@workspace/base/base-workspace";
 import {Link} from "@link"
 import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { useEffect } from "react";

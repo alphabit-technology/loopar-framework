@@ -1,7 +1,7 @@
-import Div from "$div";
-import loopar from "$loopar";
-import fileManager from "$tools/file-manager";
-import Link from "$link";
+import Div from "@div";
+import {loopar} from "loopar";
+import fileManager from "@tools/file-manager";
+import Link from "@link";
 
 export default class TopBarClass extends Div {
    className = "top-bar";

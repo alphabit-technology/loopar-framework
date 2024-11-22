@@ -1,4 +1,4 @@
-import Preassembled from "$preassembled";
+import Preassembled from "@preassembled";
 import {cn} from "@/lib/utils";
 
 export default function MetaBanner(props) {

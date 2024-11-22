@@ -1,7 +1,7 @@
-import loopar from "$loopar";
-import elementManage from "$tools/element-manage";
+import loopar from "loopar";
+import elementManage from "@tools/element-manage";
 import React, { useEffect } from "react";
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import {Designer} from "./designer/base-designer";
 
 import { DesignerContext, useDesigner } from "@context/@/designer-context";

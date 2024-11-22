@@ -17,8 +17,7 @@ export default class WorkspaceController extends AuthController {
 
     const WORKSPACE = {
       user: loopar.currentUser,
-      name: workspace,
-      //W: workspace,
+      name: workspace
     }
 
     if (workspace === "desk") {
@@ -51,17 +50,12 @@ export default class WorkspaceController extends AuthController {
     const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/index.html' : 'index.html');
     const serverTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? "dist/server/entry-server.js" : "src/entry-server.jsx");
 
-    /*const ssrManifest = isProduction
-      ? fs.readFileSync('./dist/client/.vite/manifest.json')
-      : undefined*/
-
     const url = this.req.originalUrl;
     const vite = loopar.server.vite;
-    const { render } = await vite.ssrLoadModule(serverTemplateRoute);
+    const { render } = isProduction ? await import(serverTemplateRoute) : await vite.ssrLoadModule(serverTemplateRoute);
 
     const HTML = await render(url, __META__, this.req, this.res);
     const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));
-
 
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark')
@@ -71,10 +65,6 @@ export default class WorkspaceController extends AuthController {
         ${JSON.stringify(__META__)}
       </script>
     `);
-    /*html = html.replace(`<!--ssr-modulepreload-->`, `
-      <link rel="modulepreload" href="/workspace/${workSpaceName}/${workSpaceName}-workspace.jsx">
-      <link rel="modulepreload" href="/src/entry-client.jsx">
-    `);*/
 
     if (workSpaceName === 'web') {
       html = html.replace(`<!--web-head-->`, `

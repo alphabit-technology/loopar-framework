@@ -1,4 +1,4 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import dayjs from "dayjs";
 import { format } from 'date-fns';
 
@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-import DateDemo from "$date-demo";
+import DateDemo from "@date-demo";
 import { CalendarIcon, TimerIcon } from "lucide-react";
 
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

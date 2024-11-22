@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { loopar } from "loopar";
 import { useLocation } from 'react-router-dom';
 import { useCookies } from "@services/cookie";
-import { AppSourceLoader } from "$/app-source-loader";
+import { AppSourceLoader } from "@loader";
 
 const usePathname = () => {
   return useLocation();

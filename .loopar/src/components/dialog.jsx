@@ -1,5 +1,5 @@
 import React, { useRef, useId } from "react";
-import loopar from "$loopar";
+import loopar from "loopar";
 import {Button} from "@/components/ui/button";
 import { AlertCircle, InfoIcon, TriangleIcon, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils"

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import BaseDialog, {Prompt} from "$dialog";
+import BaseDialog, {Prompt} from "@dialog";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
 import { useWorkspace, WorkspaceProviderContext } from "@workspace/workspace-provider";
-import loopar from "$loopar";
+import loopar from "loopar";
 import Emitter from '@services/emitter/emitter';
 import { Loader2Icon } from "lucide-react";
 

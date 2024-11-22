@@ -1,7 +1,7 @@
-import { Modal } from "$dialog";
-import loopar from "$loopar";
-import FileContainer from "$file-container";
-import FileUploader from "$file-uploader";
+import { Modal } from "@dialog";
+import loopar from "loopar";
+import FileContainer from "@file-container";
+import FileUploader from "@file-uploader";
 import React from "react";
 
 export class FileBrowser extends React.Component {

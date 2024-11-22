@@ -1,4 +1,4 @@
-import DefaultCheckbox from '$default-checkbox';
+import DefaultCheckbox from '@default-checkbox';
 
 export default function MetaCheckbox(props) {
   return <DefaultCheckbox {...props} />

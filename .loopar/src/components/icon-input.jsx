@@ -1,5 +1,5 @@
 import * as LucideIcons from "lucide-react";
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import Select from "@select";
 import { HelpCircle } from "lucide-react";
 

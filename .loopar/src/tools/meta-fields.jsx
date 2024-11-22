@@ -1,5 +1,5 @@
 
-import loopar from "$loopar";
+import loopar from "loopar";
 
 export const getMetaFields = (data) => {
   return [

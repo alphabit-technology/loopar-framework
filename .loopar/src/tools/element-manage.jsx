@@ -1,7 +1,7 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 
 /**Need to global tags*/
-import {elementsNames} from "$global/element-definition";
+import {elementsNames} from "@global/element-definition";
 /**Need to global tags*/
 
 class ElementManage {

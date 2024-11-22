@@ -1,4 +1,4 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 import {DocumentContext} from "@context/@/document-context";
 import React from "react";
 

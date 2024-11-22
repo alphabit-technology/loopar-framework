@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, MouseEvent } from 'react';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import loopar from "$loopar";
+import loopar from "loopar";
 import dayjs from "dayjs";
 
 /*interface MarkPosition {
@@ -14,18 +14,18 @@ interface PropsInterface {
 }
 
 const getTime = (time: string) => {
-  if(!time || typeof time == "object") return dayjs(time).format("HH:mm");
+  if (!time || typeof time == "object") return dayjs(time).format("HH:mm");
   time = dayjs(time).format("HH:mm");
 
   const date = new Date();
-  const [hours=0, minutes=0] = time.split(":").map((value) => parseInt(value) || 0);
+  const [hours = 0, minutes = 0] = time.split(":").map((value) => parseInt(value) || 0);
   date.setHours(hours);
   date.setMinutes(minutes);
 
   return loopar.utils.formatTime(date);
 }
 
-const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
+const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const { handleChange, value } = props;
   const [hours, minutes] = getTime(value).split(":").map(value => parseInt(value));
 
@@ -42,7 +42,7 @@ const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
   const markRadius = clockRadius - markSize / 2;
   const hourColor = "bg-slate-500";
   const minuteColor = "bg-green-500";
-  
+
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -144,9 +144,9 @@ const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
     return { x, y };
   };*/
 
-  const calculateMarkPosition = (index:number, isHourMark:boolean) => {
+  const calculateMarkPosition = (index: number, isHourMark: boolean) => {
     const angle = (index * (isHourMark ? 30 : 6)) * (Math.PI / 180);
-    const radius = isHourMark ? markRadius-15 : markRadius;
+    const radius = isHourMark ? markRadius - 15 : markRadius;
     const x = clockRadius + radius * Math.cos(angle) - (isHourMark ? markSize / 2 : 1);
     const y = clockRadius + radius * Math.sin(angle) - (isHourMark ? markSize / 2 : 1);
     return { x, y };
@@ -162,7 +162,7 @@ const AnalogTimePicker: React.ElementType = (props:PropsInterface) => {
       </div>
       <div
         className={`relative rounded-full border-4 border-slate-600`}
-        style={{ width: clockSize+10, height: clockSize+10, padding:85}}
+        style={{ width: clockSize + 10, height: clockSize + 10, padding: 85 }}
         ref={clockRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseUp}

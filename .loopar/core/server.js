@@ -44,7 +44,6 @@ class Server extends Router {
     const sessionConfig = env.serverConfig.session;
     sessionConfig.maxAge = sessionConfig.maxAge * 1000 * 60 * 60 * 24;
 
-    //this.server.set('view engine', 'pug');
     this.server.use(cookieParser());
     this.server.use(this.express.json());
     this.server.use(this.express.urlencoded({ extended: true }));
@@ -57,13 +56,6 @@ class Server extends Router {
       'node_modules/particles.js',
       'dist/assets',
       'dist/client',
-      /*'src',
-      'public', "public/js",
-      'node_modules/loopar/core/global',
-      'node_modules/loopar/public',
-      'node_modules/dayjs',
-      'node_modules/mime-types',
-      'node_modules/twig',*/
     ];
     publicDirs.forEach(dir => {
       this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
@@ -90,10 +82,10 @@ class Server extends Router {
     loopar.server = this;
     const port = env.serverConfig.port;
 
-    const install_message = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
+    const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
     this.server.listen(port, () => {
-      console.log("Server is started in " + port + install_message);
+      console.log("Server is started in " + port + installMessage);
     });
   }
 }

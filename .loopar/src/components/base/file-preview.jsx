@@ -1,6 +1,6 @@
 import React, {useEffect} from "react";
-import fileManager from "$tools/file-manager";
-import loopar from "$loopar";
+import fileManager from "@tools/file-manager";
+import loopar from "loopar";
 import {ImageIcon} from "lucide-react";
 //import {ImageIcon, VideoIcon, MusicIcon, PdfIcon, WordIcon, SheetIcon, PresentationIcon, ArchiveIcon, CodeIcon, TextIcon, FolderIcon, FileIcon} from "lucide-react"
 import LazyLoad from 'react-lazy-load';

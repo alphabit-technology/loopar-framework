@@ -3,7 +3,7 @@ import { useHidden } from "@context/@/hidden-context";
 import { DroppableContext } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
-import loopar from "$loopar";
+import loopar from "loopar";
 import MetaComponent from "@meta-component";
 
 export function Droppable({data={}, children, className, Component="div", ...props}) {

@@ -1,6 +1,4 @@
-import Component from "$component";
-import {Droppable} from "$droppable";
-import {WorkspaceProviderContext} from "@workspace/workspace-provider";
+import {Droppable} from "@droppable";
 
 export default function Row(props) {
   /*blockComponent = true;

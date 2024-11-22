@@ -1,4 +1,4 @@
-import Preassembled from "$preassembled";
+import Preassembled from "@preassembled";
 import {useId} from "react";
 
 export default function TextBlockIcon(props) {

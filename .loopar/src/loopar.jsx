@@ -1,12 +1,9 @@
-import Router from "$tools/router/router";
-//import GuiManage from "$tools/gui";
-//import http from "$tools/router/http";
-import * as Helpers from "$global/helper";
-import * as dateUtils from "$global/date-utils";
-import scriptManager from "$tools/script-manager";
+import Router from "@tools/router/router";
+import * as Helpers from "@global/helper";
+import * as dateUtils from "@global/date-utils";
+import scriptManager from "@tools/script-manager";
 import { elementsDict } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
-import { decodeComponent } from "./tools/router/http-helper";
 
 class Loopar extends Router {
   //ui = GuiManage;

@@ -1,5 +1,5 @@
-import loopar from '$loopar';
-import BaseDocument from "$context/base/base-document";
+import {loopar} from 'loopar';
+import BaseDocument from "@context/base/base-document";
 import { dataInterface } from '@global/element-definition';
 import { useWorkspace } from "@workspace/workspace-provider"; 
 

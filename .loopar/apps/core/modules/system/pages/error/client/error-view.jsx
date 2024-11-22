@@ -1,8 +1,8 @@
 
 'use strict';
 
-import ViewContext from '$context/view-context';
-import React, { useState, useEffect } from 'react';
+import ViewContext from '@context/view-context';
+import React, { useState } from 'react';
 
 const ImageWithPlaceholder = ({ data }) => {
   const message = data.message || data.description || 'An error occurred';

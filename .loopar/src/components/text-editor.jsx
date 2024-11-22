@@ -1,4 +1,4 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import {Quill} from './quill/quill';
 
 export default function MetaHtmlBlock(props) {

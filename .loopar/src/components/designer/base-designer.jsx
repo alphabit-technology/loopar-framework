@@ -1,6 +1,6 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 import { BrushIcon, CodepenIcon, EyeIcon, SparkleIcon } from "lucide-react";
-import { Droppable } from "$droppable";
+import { Droppable } from "@droppable";
 import { BaseFormContext } from "@context/form-context";
 import React, { useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";

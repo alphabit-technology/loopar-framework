@@ -1,10 +1,10 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 
 import React, { useState, useEffect, useRef, useCallback, useContext} from "react";
 import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import loopar from "$loopar";
+import loopar from "loopar";
 
 import {
   Command,

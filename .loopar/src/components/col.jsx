@@ -1,4 +1,4 @@
-import { Droppable } from "$droppable";
+import { Droppable } from "@droppable";
 
 export default function Col (props) {
   return (

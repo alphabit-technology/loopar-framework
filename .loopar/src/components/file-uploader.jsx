@@ -1,5 +1,5 @@
 import { Modal } from "@dialog";
-import loopar from "$loopar";
+import loopar from "loopar";
 import FileInput from "@file-input";
 import { FormWrapper } from "@context/form";
 import { Button } from "@/components/ui/button";

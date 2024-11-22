@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useId } from "react";
-import { elementsDict as baseElementsDict } from "$global/element-definition";
-import { __META_COMPONENTS__, ComponentsLoader } from "$components-loader";
-import elementManage from "$tools/element-manage";
-import { ElementTitle } from "$element-title";
+import { elementsDict as baseElementsDict } from "@global/element-definition";
+import { __META_COMPONENTS__, ComponentsLoader } from "@components-loader";
+import elementManage from "@tools/element-manage";
+import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
 import { useDroppable } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
-import loopar from "$loopar";
+import loopar from "loopar";
 import { useDocument } from "@context/@/document-context";
-import fileManager from "$tools/file-manager";
+import fileManager from "@tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary";
 

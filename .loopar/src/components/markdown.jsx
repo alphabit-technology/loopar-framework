@@ -1,6 +1,6 @@
 'use client';
 
-import ComponentDefaults from "$component-defaults";
+import ComponentDefaults from "@component-defaults";
 import { useDesigner } from "@context/@/designer-context";
 import React, { useCallback, useMemo } from "react";
 import {marked} from "marked";

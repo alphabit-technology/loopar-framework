@@ -1,6 +1,6 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import { Input as FormInput } from "@/components/ui/input";
-import loopar from "$loopar";
+import loopar from "loopar";
 import {
   FormControl,
   FormDescription,

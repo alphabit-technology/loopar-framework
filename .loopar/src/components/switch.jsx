@@ -1,4 +1,4 @@
-import DefaultCheckbox from "$default-checkbox";
+import DefaultCheckbox from "@default-checkbox";
 import { Switch} from "@/components/ui/switch";
 
 export default function MetaSwitch(props) {

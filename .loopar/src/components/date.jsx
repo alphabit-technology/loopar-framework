@@ -1,4 +1,4 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import dayjs from "dayjs";
 import { format } from 'date-fns';
 

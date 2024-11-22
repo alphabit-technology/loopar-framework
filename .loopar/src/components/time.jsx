@@ -1,7 +1,7 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import dayjs from "dayjs";
 import { format, setHours, setMinutes } from 'date-fns';
-import loopar from "$loopar";
+import loopar from "loopar";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-import DateDemo from "$date-demo";
+import DateDemo from "@date-demo";
 
 import { CalendarIcon } from "lucide-react";
 

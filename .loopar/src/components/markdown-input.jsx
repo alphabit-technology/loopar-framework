@@ -1,4 +1,4 @@
-import BaseInput from "$base-input";
+import BaseInput from "@base-input";
 import SimpleMDE from "react-simplemde-editor";
 import React, {useMemo} from "react";
 import {

@@ -1,5 +1,5 @@
 const __META_COMPONENTS__ = {};
-import loopar from "$loopar";
+import loopar from "loopar";
 import {MetaComponents} from "@global/require-components";
 
 function getComponent(component, pre = "./") {

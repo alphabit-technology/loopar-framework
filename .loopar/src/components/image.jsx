@@ -1,4 +1,4 @@
-import loopar from "$loopar";
+import loopar from "loopar";
 import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 import { useEffect } from "react";

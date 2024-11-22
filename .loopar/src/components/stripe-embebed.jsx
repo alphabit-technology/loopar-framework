@@ -1,5 +1,5 @@
-import Component from "$component";
-import loopar from "$loopar";
+import Component from "@component";
+import loopar from "loopar";
 import React from "react";
 
 export default class StripeEmbebedClass extends Component {

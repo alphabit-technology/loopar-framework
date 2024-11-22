@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import loopar from "$loopar";
+import loopar from "loopar";
 import AOS from "aos";
 import { useDesigner } from "@context/@/designer-context";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { Droppable } from "$droppable";
+import { Droppable } from "@droppable";
 import { Button } from "@/components/ui/button";
 
 const BaseCarrusel = (props) => {

@@ -1,4 +1,4 @@
-import {Link} from "$link";
+import {Link} from "@link";
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export const SideNavItem = (props) => {

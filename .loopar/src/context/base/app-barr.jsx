@@ -1,8 +1,8 @@
 import { Breadcrumbs } from "@loopar/context/base/breadcrumbs";
-import loopar from "$loopar";
+import loopar from "loopar";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, GridIcon} from "lucide-react";
-import {Link} from "$link";
+import {Link} from "@link";
 
 export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;

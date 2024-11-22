@@ -1,6 +1,6 @@
 import {Button} from "@/components/ui/button";
 import {useDocument} from "@context/@/document-context";
-import loopar from "$loopar";
+import loopar from "loopar";
 
 const buttons = {
   primary: "primary",

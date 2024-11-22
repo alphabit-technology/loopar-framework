@@ -1,7 +1,7 @@
-import Component from "$component";
-import loopar from "$loopar";
+import Component from "@component";
+import loopar from "loopar";
 import React from "react";
-import {Pagination} from "$pagination";
+import {Pagination} from "@pagination";
 
 export default class DocumentHistory extends Component {
   blockComponent = true;
