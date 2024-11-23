@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
 import path from 'pathe';
 
+
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
   const alias = {};
@@ -79,7 +80,7 @@ export default defineConfig(({command}) => ({
     manifest: true,
     ssr: command === 'build:server',
     rollupOptions: {
-      input: command === 'build:server' ? './src/entry-server.jsx' : 'index.html',
+      input: command === 'build:server' ? './src/entry-server.jsx' : 'main.html',
     },
   },
   server: {

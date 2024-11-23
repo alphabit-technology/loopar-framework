@@ -33,7 +33,6 @@ class Server extends Router {
     this.server.use(this.vite.middlewares);
     this.server.use(useragent.express());
 
-
     await this.#exposePublicDirectories();
     this.#initializeSession();
     this.route();
@@ -51,17 +50,19 @@ class Server extends Router {
   }
 
   async #exposePublicDirectories() {
-    const publicDirs = [
-      'public',
-      'node_modules/particles.js',
-      'dist/assets',
-      'dist/client',
-    ];
+    const publicDirs = ['public'];
+
+    if (process.env.NODE_ENV == 'production') {
+      publicDirs.push('dist/client');
+    }else{
+      publicDirs.push('public');
+      publicDirs.push('node_modules/particles.js');
+    }
+
     publicDirs.forEach(dir => {
       this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
     });
-
-    this.server.use(express.static(path.join(__dirname, '..', 'dist')));
+    
     await this.exposeClientAppFiles();
   }
 

@@ -105,7 +105,6 @@ export default class Router {
       loopar.session.req = req;
 
       if (req.files && req.files.length > 0) {
-        console.log(["req.files", req.files]);
         req.body.reqUploadFiles = req.files;
       }
 
@@ -248,7 +247,6 @@ export default class Router {
         if (seg && seg.length > 0)
           routeStructure[RTK] = `${decodeURIComponent(RTK === 'document' ? loopar.utils.Capitalize(seg) : seg || "")}`;
       });
-
 
       if (req.__WORKSPACE_NAME__ === "web") {
         routeStructure.action ??= "view";

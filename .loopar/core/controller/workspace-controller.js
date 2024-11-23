@@ -47,7 +47,7 @@ export default class WorkspaceController extends AuthController {
 
     const isProduction = process.env.NODE_ENV == 'production';
     
-    const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/index.html' : 'index.html');
+    const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/main.html' : 'main.html');
     const serverTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? "dist/server/entry-server.js" : "src/entry-server.jsx");
 
     const url = this.req.originalUrl;
