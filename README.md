@@ -4,3 +4,4 @@
 </div>
 <img src="https://github.com/user-attachments/assets/01080dd4-aac0-4254-bca7-168991751942"/>
 
+![techs](https://github.com/user-attachments/assets/308c60f9-03a9-4473-8a0b-1ae0067b5043)
