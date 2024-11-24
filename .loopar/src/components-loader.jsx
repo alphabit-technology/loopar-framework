@@ -2,6 +2,11 @@ const __META_COMPONENTS__ = {};
 import loopar from "loopar";
 import {MetaComponents} from "@global/require-components";
 
+const components = Object.entries(import.meta.glob(['/.loopar/src/components/*.jsx'])).reduce((acc, [path, module]) => {
+  acc['src/' + path.split('/').pop().replace('.jsx', '')] = module;
+  return acc;
+}, {});
+
 function getComponent(component, pre = "./") {
   if(!component) return null;
   const cParse = component.replaceAll(/_/g, "-");
@@ -9,7 +14,8 @@ function getComponent(component, pre = "./") {
     if (__META_COMPONENTS__[component]) {
       resolve(__META_COMPONENTS__[component]);
     } else {
-      import(`./components/${cParse}.jsx`).then((c) => {
+      const moduleImport = components[`src/${cParse}`];
+      moduleImport().then((c) => {
         const promises = [];
 
         if (c?.default?.prototype?.requires && typeof window !== "undefined") {

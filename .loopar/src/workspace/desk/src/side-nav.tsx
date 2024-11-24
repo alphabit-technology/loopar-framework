@@ -3,6 +3,7 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import * as LucideIcons from "lucide-react";
+import {useId} from "react";
 
 export interface DocsSidebarNavProps {
   items: []
@@ -22,13 +23,13 @@ export function SideNav({ items=[] }: SideNavProps) {
     const hasSubitems = modules && modules.length > 0
 
     return (
-      <>
+      <li key={useId()}>
         <h5
           className="mb-1 mt-3 font-semibold text-slate-900 dark:text-slate-200"
         >
           {openNav && description}
         </h5>
-        <div key={i}>
+        <div>
           {hasSubitems && (
             <ul className="flex flex-col gap-1 px-1">
               {...modules.map((module:any, key) => {
@@ -40,19 +41,18 @@ export function SideNav({ items=[] }: SideNavProps) {
                     disabled={module.disabled}
                     external={module.external}
                     Icon={LucideIcons[module.icon] || LucideIcons.ChevronLeftIcon}
-                    //key={module.description} // Alfredo code
+                    
                     path={module.link}
                     title={module.description}
                     compact={!openNav}
                     className="rounded-md py-2 hover:bg-slate-300/50 dark:hover:bg-slate-700/80"
-                    key={key}
                   />
                 );
               })}
             </ul>
           )}
         </div>
-      </>
+      </li>
     )
   })
 

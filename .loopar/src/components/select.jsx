@@ -278,7 +278,6 @@ const Select = (props) => {
         params: { q },
         success: (r) => {
           titleFields.current = r.titleFields;
-          console.log(["getServerData", r.rows]);
           setFilteredOptions(getPrepareOptions(r.rows));
           resolve();
         },

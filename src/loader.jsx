@@ -10,7 +10,6 @@ const appSources = Object.entries(import.meta.glob([
   return acc;
 }, {});
 
-
 export async function AppSourceLoader(source) {
   if (!source) return null;
 

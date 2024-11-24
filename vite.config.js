@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
 import path from 'pathe';
 
-
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
   const alias = {};
@@ -12,8 +11,6 @@ const makeComponentToAlias = (dir) => {
       Object.assign(alias, makeComponentToAlias(path.resolve(dir, file)));
     } else {
       componentsAlias[`@${file.split(".")[0]}`] = path.resolve(__dirname, dir, file);
-      componentsAlias[`./${file}`] = path.resolve(__dirname, dir, file);
-      componentsAlias[`/components/${file}`] = path.resolve(__dirname, dir, file);
     }
   })
   return componentsAlias;
@@ -31,7 +28,7 @@ makeGroupComponentsAlias('./.loopar/src');
 
 export default defineConfig(({command}) => ({
   resolve: {
-    extensions: ['.js', '.jsx', '.json', '.mjs', '.ts', '.tsx'],
+    extensions: ['.js', '.jsx', '.ts', '.tsx'],
     alias: {
       ...componentsAlias,
       ...groupComponentesAlias,
@@ -47,10 +44,8 @@ export default defineConfig(({command}) => ({
       '@services': path.resolve(__dirname + '/.loopar/services'),
 
       '@loader': path.resolve(__dirname, 'src/loader.jsx'),
-
       "@styles": path.resolve(__dirname, 'src/app/styles'),
       "/styles": path.resolve(__dirname, 'src/app/styles'),
-
       "/scripts": path.resolve(__dirname, 'src/app/scripts')
     },
   },

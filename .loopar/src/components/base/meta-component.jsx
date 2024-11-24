@@ -11,7 +11,7 @@ import loopar from "loopar";
 import { useDocument } from "@context/@/document-context";
 import fileManager from "@tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { ErrorBoundary } from "@error-boundary";
+import { ErrorBoundary } from "@error-boundary"
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -196,6 +196,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const Fragment = (disabled && !parentHidden) ? "div" : React.Fragment;
   const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
+  
   return (
     <HiddenContext.Provider value={disabled}>
       <div

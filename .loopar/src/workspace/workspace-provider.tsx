@@ -87,14 +87,13 @@ type WorkspaceProviderState = {
   setTheme: (theme: Theme) => void,
   openNav?: boolean,
   setOpenNav?: (open: boolean) => void,
+  getDocuments: () => void,
   Documents: Documents,
   setDocuments: (Documents: Documents) => void,
   activeParentMenu?: string,
   setActiveParentMenu?: (activeParentMenu: string) => void,
   activePage?: string,
-  setActivePage?: (activePage: string) => void,
-  //currentPage?: string,
-  //setCurrentPage?: (currentPage: string) => void,
+  setActivePage?: (activePage: string) => void
 }
 
 const initialState: WorkspaceProviderState = {
@@ -102,14 +101,13 @@ const initialState: WorkspaceProviderState = {
   setTheme: () => null,
   openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
+  getDocuments: () => null,
   Documents: {},
   setDocuments: () => null,
   activeParentMenu: "",
   setActiveParentMenu: () => null,
   activePage: "",
-  setActivePage: () => null,
-  //currentPage: "",
-  //setCurrentPage: () => null,
+  setActivePage: () => null
 }
 
 export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)

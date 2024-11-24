@@ -43,13 +43,10 @@
 
     <!--__datatypes__-->
     <!--__loopar-meta-data__-->
-
   </head>
   <body class="font-sans min-h-screen antialiased theme-stone h-[100vh]">
-    <div id="loopar-root">
-      <!--ssr-outlet-->
-      <script type="module" src="/src/entry-client.jsx" async blocking="render"></script>
-    </div>
+    <div id="loopar-root"><!--ssr-outlet--></div>
+    <script type="module" src="/src/entry-client.jsx"></script>
     <script>
       const [DOWN, UP] = ['down', 'up'];
 

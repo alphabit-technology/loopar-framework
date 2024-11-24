@@ -6,7 +6,6 @@ import { Loader } from "@/loader";
 import { ServerCookiesManager } from '@services/cookie';
 import { __META_COMPONENTS__ } from "@components-loader";
 
-
 const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
   const cookieManager = new ServerCookiesManager(req, res);
 

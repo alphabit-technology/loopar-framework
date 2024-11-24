@@ -7,9 +7,7 @@ import { useWorkspace } from "@workspace/workspace-provider";
 
 const Layout = (({ ...props }) => {
   useEffect(() => {
-    particlesJS.load('particles-js', '/demo/particles.json', function() {
-      console.log('callback - particles.js config loaded');
-    });
+    particlesJS.load('particles-js', '/demo/particles.json', function() {});
   }, []);
 
   return (
@@ -61,7 +59,6 @@ export default function AuthWorkspace(props) {
   return (
     <BaseWorkspace>
       <Layout {...props}>
-        {/*--//authworkspace-outlet--*/}
         {getDocuments()}
       </Layout>
     </BaseWorkspace>

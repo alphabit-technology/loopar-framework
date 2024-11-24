@@ -21,7 +21,7 @@ export const SideNavItem = (props) => {
       {Icon && <Icon className="h-7"/>}
       { title && title.split(' ').map((word, index) => (
         <small 
-          key={index} 
+          key={path + index} 
           className="truncate text-center" 
           style={{maxWidth: collapseSidebarWidth - 10}}
         >

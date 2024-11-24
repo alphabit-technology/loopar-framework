@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useId } from "react";
 
 export function Pagination({ setPage, pagination }) {
   const getPages = () => {
@@ -56,6 +57,7 @@ export function Pagination({ setPage, pagination }) {
         >
           <li
             className={`${totalPages <= 1 || page === 1 ? "disabled" : ""}`}
+            key={useId()}
           >
             <Button
               variant="ghost"
