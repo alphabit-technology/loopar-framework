@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+import tailwindcss from '@tailwindcss/typography';
 
 export default {
   mode: 'jit',
@@ -119,6 +120,6 @@ export default {
     },
   },
   plugins: [
-    require('@tailwindcss/typography')
+    tailwindcss
   ],
 }
