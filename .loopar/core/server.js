@@ -20,19 +20,23 @@ class Server extends Router {
   express = express;
   server = new express();
   url = null;
+  isProduction = process.env.NODE_ENV == 'production';
 
   constructor() { super() }
 
   async initialize() {
     await loopar.initialize();
-    this.vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'custom'
-    });
+    
+    if(!this.isProduction){
+      this.vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'custom'
+      });
 
-    this.server.use(this.vite.middlewares);
+      this.server.use(this.vite.middlewares);
+    }
+
     this.server.use(useragent.express());
-
     await this.#exposePublicDirectories();
     this.#initializeSession();
     this.route();

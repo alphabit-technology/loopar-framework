@@ -44,19 +44,23 @@ export default class WorkspaceController extends AuthController {
     }
 
     const workSpaceName = __META__.__WORKSPACE__.name;
-
-    const isProduction = process.env.NODE_ENV == 'production';
-    
-    const clientTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? 'dist/client/main.html' : 'main.html');
-    const serverTemplateRoute = loopar.makePath(loopar.pathRoot, isProduction ? "dist/server/entry-server.js" : "src/entry-server.jsx");
-
     const url = this.req.originalUrl;
-    const vite = loopar.server.vite;
-    const { render } = isProduction ? await import(serverTemplateRoute) : await vite.ssrLoadModule(serverTemplateRoute);
+    const isProduction = process.env.NODE_ENV == 'production';
+    let HTML, template;
 
-    const HTML = await render(url, __META__, this.req, this.res);
-    const template = await vite.transformIndexHtml(url, fs.readFileSync(clientTemplateRoute, 'utf-8'));
-
+    const _p = (path) => loopar.makePath(loopar.pathRoot, path);
+    
+    if(isProduction) {
+      const { render } = await import(_p("dist/server/entry-server.js"));
+      HTML = await render(url, __META__, this.req, this.res);
+      template = fs.readFileSync("dist/client/main.html", 'utf-8');
+    }else{
+      const vite = loopar.server.vite;
+      const { render } = await vite.ssrLoadModule(_p("src/entry-server.jsx"));
+      HTML = await render(url, __META__, this.req, this.res);
+      template = await vite.transformIndexHtml(url, fs.readFileSync(_p("main.html"), 'utf-8'));
+    }
+    
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark')
 
