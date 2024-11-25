@@ -26,7 +26,7 @@ class Server extends Router {
 
   async initialize() {
     await loopar.initialize();
-    
+
     if(!this.isProduction){
       this.vite = await createViteServer({
         server: { middlewareMode: true },
@@ -62,6 +62,8 @@ class Server extends Router {
       publicDirs.push('public');
       publicDirs.push('node_modules/particles.js');
     }
+
+    publicDirs.push('node_modules/aos/dist');
 
     publicDirs.forEach(dir => {
       this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
