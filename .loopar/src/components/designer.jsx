@@ -4,19 +4,12 @@ import React, { useEffect } from "react";
 import BaseInput from "@base-input";
 import {Designer} from "./designer/base-designer";
 
-import { DesignerContext, useDesigner } from "@context/@/designer-context";
-
 export default function MetaDesigner(props) {
   const {renderInput, data, value} = BaseInput(props);
-  const {designerMode} = useDesigner();
 
   const makeElements = (elements) => {
     value(JSON.stringify(elementManage.fixElements(elements)));
   }
-
-  /*useEffect(() => {
-    makeElements(JSON.parse(value() || "[]"));
-  }, []);*/
 
   const getElements = () => {
     return JSON.parse(value() || "[]");
@@ -112,13 +105,13 @@ export default function MetaDesigner(props) {
       }
     }
 
-    const updateElement = (structure) => {
+    const updateE = (structure) => {
       return structure.map((el) => {
         if (el.data.key === key) {
           el.data = merge ? Object.assign({}, el.data, data) : data;
           el.data.key ??= elementManage.getUniqueKey();
         } else {
-          el.elements = updateElement(el.elements || []);
+          el.elements = updateE(el.elements || []);
         }
 
         if (el.data.background_image) {
@@ -160,7 +153,7 @@ export default function MetaDesigner(props) {
       });
     };
 
-    makeElements(updateElement(selfElements));
+    makeElements(updateE(selfElements));
   }
 
   const findDuplicateNames = () => {

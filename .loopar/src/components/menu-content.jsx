@@ -2,13 +2,15 @@ import elementManage from "@tools/element-manage";
 import MetaComponent from "@meta-component";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
+import ComponentDefaults from "./base/component-defaults";
 
 export default function MenuContentMeta(props) {
   const isDesigner = useDesigner().designerMode;
-  const [elements, setElements] = useState(props.children || props.elements || []);
+  const {setElements} = ComponentDefaults(props);
 
   const getElementsDict = () => {
+    const elements = props.children || props.elements || [];
     return elements.map((element) => {
       if (element.$$typeof === Symbol.for("react.element")) {
         return {
@@ -102,7 +104,7 @@ export default function MenuContentMeta(props) {
         {!isDesigner && <h6 className="px-2 pt-2">ON THIS PAGE</h6>}
         <div className="flex flex-col gap-2 p-2 w-full">
           <MetaComponent
-            key={menuElements.data.key}
+            //key={menuElements.data.key}
             elements={[
               {
                 element: "fragment",

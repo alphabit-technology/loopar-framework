@@ -4,7 +4,7 @@
   "private": false,
   "type": "module",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development && node node_modules/loopar",
