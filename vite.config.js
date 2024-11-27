@@ -58,7 +58,7 @@ export default defineConfig(({command}) => ({
       devTarget: "esnext",
     }),
     viteCompression({
-      algorithm: 'brotliCompress',
+     // algorithm: 'brotliCompress',
       threshold: 620,
       deleteOriginFile: false
     }),
