@@ -4,9 +4,8 @@ import React from "react";
 import { CookiesProvider } from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary";
-import 'vite/modulepreload-polyfill'
+import 'vite/modulepreload-polyfill';
 
-console.log(["React version", React.version]);
 interface RootLayoutProps {
   __META__: {
     __DOCUMENT__: any;
