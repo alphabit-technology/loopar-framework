@@ -3,8 +3,6 @@ import react from '@vitejs/plugin-react-swc';
 import fs from 'fs';
 import path from 'pathe';
 import viteCompression from 'vite-plugin-compression';
-import { visualizer } from 'rollup-plugin-visualizer';
-
 
 
 const componentsAlias = {};
@@ -30,7 +28,7 @@ const makeGroupComponentsAlias = (dir) => {
 makeComponentToAlias('./.loopar/src/components');
 makeGroupComponentsAlias('./.loopar/src');
 
-export default defineConfig(({command}) => ({
+export default defineConfig(({ command }) => ({
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     alias: {
@@ -59,15 +57,14 @@ export default defineConfig(({command}) => ({
     }),
     viteCompression({
       algorithm: 'brotliCompress',
-      threshold: 620,
-      deleteOriginFile: false
-    }),
-    visualizer({
-      open: false
+      threshold: 10240,
     }),
   ],
   optimizeDeps: {
-    include: ['lucide-react']
+    //include: ['lucide-react']
+  },
+  esbuild: {
+    treeShaking: true
   },
   css: {
     preprocessorOptions: {
@@ -82,20 +79,36 @@ export default defineConfig(({command}) => ({
   ssr: {
     noExternal: ['lucide-react']
   },
+  /*build: {
+    outDir: command === 'build:server' ? 'dist/server' : 'dist/client',
+    manifest: true,
+    ssr: command === 'build:server',
+    rollupOptions: {
+      input: command === 'build:server' ? './src/entry-server.jsx' : 'main.html',
+    },
+  },*/
   build: {
     outDir: command === 'build:server' ? 'dist/server' : 'dist/client',
     ssr: command === 'build:server',
-    manifest: true,
     target: 'esnext',
     minify: 'terser',
     cssCodeSplit: true,
     sourcemap: false,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       input: command === 'build:server' ? './src/entry-server.jsx' : 'main.html',
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return id
+              .toString()
+              .split('node_modules/')[1]
+              .split('/')[0]
+              .toString();
+          }
+        },
+      },
     },
-  },
-  esbuild: {
-    treeShaking: true
   },
   server: {
     hmr: true,

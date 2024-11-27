@@ -8,6 +8,12 @@ import { loopar } from "./loopar.js";
 import Router from "./router.js";
 import path from "pathe";
 
+/*const compression = require('compression');
+const serveStatic = require('serve-static');*/
+
+import compression from 'compression';
+import serveStatic from 'serve-static';
+
 import { createServer as createViteServer } from 'vite'
 
 class Server extends Router {
@@ -28,6 +34,25 @@ class Server extends Router {
       });
 
       this.server.use(this.vite.middlewares);
+    }else{
+      //Enables compression
+      this.server.use(compression());
+
+      // serve static files from your dist folder
+      this.server.use(
+        serveStatic(path.join(loopar.pathRoot, 'dist'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.gz')) {
+              res.setHeader('Content-Encoding', 'gzip');
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+            if (path.endsWith('.br')) {
+              res.setHeader('Content-Encoding', 'br');
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+          },
+        })
+      );
     }
 
     this.server.use(useragent.express());

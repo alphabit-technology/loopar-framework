@@ -289,7 +289,7 @@ export default class Router {
         'woff', 'woff2', 'ttf', 'eot', 'otf', // Fonts
         'js', 'mjs', 'jsx', 'css', 'html', 'htm', // Web files
         'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', // Documents
-        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', // Compressed files
+        'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'gzip', 'br', // Compressed files
         'json', 'xml', 'txt' // Data files
       ];
 

@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "loopar": "file:.loopar",
-    "stripe": "^17.3.1"
+    "stripe": "^17.3.1",
+    "vite-plugin-compression": "^0.5.1"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^3.7.2",
@@ -33,7 +34,9 @@
     "@typescript-eslint/parser": "^5.61.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "autoprefixer": "^10.4.17",
+    "compression": "^1.7.5",
     "cross-env": "^7.0.3",
+    "cssnano": "^7.0.6",
     "daisyui": "^4.6.0",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
@@ -41,12 +44,14 @@
     "eslint-plugin-tailwindcss": "^3.13.0",
     "mysql": "^2.18.1",
     "npm-run-all": "^4.1.5",
-    "postcss": "^8.4.41",
+    "postcss": "^8.4.49",
     "prettier": "^2.8.8",
     "react": "v19-beta",
     "react-dom": "^18.3.1",
     "rimraf": "^6.0.1",
     "rollup-plugin-critical": "^1.0.13",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "serve-static": "^1.16.2",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.5.4",
     "vite": "^6.0.0",
