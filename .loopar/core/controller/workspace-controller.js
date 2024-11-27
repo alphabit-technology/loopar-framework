@@ -72,7 +72,7 @@ export default class WorkspaceController extends AuthController {
 
     if (workSpaceName === 'web') {
       html = html.replace(`<!--web-head-->`, `
-        <link rel="stylesheet" href="aos.css">
+        <link rel="stylesheet" href="/aos.css">
       `);
     }
 

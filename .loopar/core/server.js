@@ -35,10 +35,8 @@ class Server extends Router {
 
       this.server.use(this.vite.middlewares);
     }else{
-      //Enables compression
       this.server.use(compression());
 
-      // serve static files from your dist folder
       this.server.use(
         serveStatic(path.join(loopar.pathRoot, 'dist'), {
           setHeaders: (res, path) => {
