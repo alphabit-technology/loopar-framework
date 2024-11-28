@@ -211,12 +211,10 @@ export default class Router {
     const workspaceParamsMiddleware = async (req, res, next) => {
       const getWorkspaceName = (url) => {
         const context = url.split("/")[1];
-        return ['desk', 'auth', 'api', 'loopar'].includes(context) ? context : 'web';
+        return ['desk', 'auth', 'loopar'].includes(context) ? context : 'web';
       }
 
       req.__WORKSPACE_NAME__ = getWorkspaceName(req._parsedUrl.pathname);
-
-      //next();
     }
 
     const workSpaceMiddleware = async (req, res, next) => {
