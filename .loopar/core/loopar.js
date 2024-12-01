@@ -338,7 +338,6 @@ export class Loopar {
   async makeDefaultFolders() {
     await fileManage.makeFolder('', "apps");
     await fileManage.makeFolder('public/uploads', "thumbnails");
-    await fileManage.makeFolder('public/js', 'components');
   }
 
   async build() {

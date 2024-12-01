@@ -33,6 +33,7 @@
     "@types/node": "^20.10.4",
     "@types/nprogress": "0.2.3",
     "@types/numeral": "2.0.5",
+    "@types/react": "^18.3.12",
     "@typescript-eslint/parser": "^5.61.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "autoprefixer": "^10.4.17",

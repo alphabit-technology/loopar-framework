@@ -7,9 +7,10 @@ const components = Object.entries(import.meta.glob(['/.loopar/src/components/*.j
   return acc;
 }, {});
 
-function getComponent(component, pre = "./") {
+function getComponent(component) {
   if(!component) return null;
   const cParse = component.replaceAll(/_/g, "-");
+
   return new Promise((resolve) => {
     if (__META_COMPONENTS__[component]) {
       resolve(__META_COMPONENTS__[component]);
@@ -41,8 +42,12 @@ function getComponent(component, pre = "./") {
         }
 
         Promise.all(promises).then(() => {
-          __META_COMPONENTS__[component] = c;
-          resolve(c);
+          if(c.default) {
+            __META_COMPONENTS__[component] = c;
+            resolve(c);
+          }else{
+            resolve(null)
+          }
         }).catch((error) => {
           console.error("Err on load Resourse: " + component, error);
         });

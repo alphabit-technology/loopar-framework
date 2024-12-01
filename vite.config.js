@@ -47,9 +47,9 @@ export default defineConfig(({command}) => ({
       '@services': path.resolve(__dirname + '/.loopar/services'),
 
       '@loader': path.resolve(__dirname, 'src/loader.jsx'),
-      "@styles": path.resolve(__dirname, 'src/app/styles'),
-      "/styles": path.resolve(__dirname, 'src/app/styles'),
-      "/scripts": path.resolve(__dirname, 'src/app/scripts')
+      //"@styles": path.resolve(__dirname, 'src/app/styles'),
+      "/main/styles": path.resolve(__dirname, 'src/app/styles'),
+      "/main/scripts": path.resolve(__dirname, 'src/app/scripts')
     },
   },
   plugins: [

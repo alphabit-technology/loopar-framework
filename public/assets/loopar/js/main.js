@@ -1,3 +1,18 @@
+const [DOWN, UP] = ['down', 'up'];
+
+var verticalDirection = DOWN;
+var lastY = 0;
+
+document.addEventListener('mousemove', e => {
+  if (lastY < e.clientY) {
+    verticalDirection = DOWN;
+  } else {
+    verticalDirection = UP;
+  }
+
+  lastY = e.clientY;
+});
+
 function loadStylesheet(href, { callback, options } = {}) {
   const { defer = false, position = "before", target = null } = options || {};
 
@@ -6,8 +21,6 @@ function loadStylesheet(href, { callback, options } = {}) {
 
     if (existingLink) {
       return resolve();
-      //callback && callback();
-      //return;
     }
 
     const link = document.createElement('link');
@@ -34,15 +47,6 @@ function loadStylesheet(href, { callback, options } = {}) {
       document.head.insertBefore(link, document.head.firstChild);
     }
   });
-  /*return new Promise((resolve, reject) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet'; 
-      link.href = url;
-      link.onload = resolve;
-      link.onerror = reject;
-
-      document.head.appendChild(link);
-  });*/
 }
 
 function loadScript(src, callback, options = { async: true }) {
@@ -76,7 +80,6 @@ function loadScript(src, callback, options = { async: true }) {
       } else {
         resolve(callback && window.scripts[src].callbacks.push(callback));
       }
-      //resolve();
     } else {
       callback && window.scripts[src].callbacks.push(callback);
       makeScript();

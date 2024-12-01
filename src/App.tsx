@@ -53,7 +53,7 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
 }
 
 const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: RootLayoutProps) => {
-  const [update, setUpdate] = React.useState(false);
+  const [, setUpdate] = React.useState(false);
 
   return (
     <>

@@ -5,6 +5,7 @@ import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
 import loopar from "loopar";
 import MetaComponent from "@meta-component";
+const UP = 'up';
 
 export function Droppable({data={}, children, className, Component="div", ...props}) {
   const [dropping, setDropping] = useState(false);
@@ -21,6 +22,19 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   const isDroppable = true// receiver.droppable || receiver.props.droppable || props.isDroppable;
   const droppableEvents = {};
   const dropZoneRef = useRef();
+
+  const [verticalDirection, setVerticalDirection] = useState('down');
+  const [lastY, setLastY] = useState(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setVerticalDirection(e.clientY > lastY ? 'down' : 'up');
+      setLastY(e.clientY);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, [lastY]);
 
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
@@ -75,16 +89,11 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
         setElement(
-          /*<div
-            style={{maxHeight: rect.height}}
-            className="mb-4 rounded transition-all duration-300 shadow-sm shadow-red-500/50 p-4 w-full h-20"
-          />*/
-          
-              <div 
-                style={{maxHeight: rect.height, opacity: 0.5}}
-                className={`${currentDragging?.className}`} dangerouslySetInnerHTML={{__html: currentDragging?.ref?.innerHTML}}
-              /> 
-            , position
+            <div 
+              style={{maxHeight: rect.height, opacity: 0.5}}
+              className={`${currentDragging?.className}`} dangerouslySetInnerHTML={{__html: currentDragging?.ref?.innerHTML}}
+            /> 
+          , position
         );
         return;
       }

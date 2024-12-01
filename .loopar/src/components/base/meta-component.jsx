@@ -422,15 +422,13 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
     const key = parentKey + (el.data?.key || useId());
 
     return (
-      <ErrorBoundary>
-        <MetaComponentFn 
-          el={el}
-          parent={parent}
-          className={className}
-          parentKey={parentKey}
-          key={key}
-        />
-      </ErrorBoundary>
+      <MetaComponentFn 
+        el={el}
+        parent={parent}
+        className={className}
+        parentKey={parentKey}
+        key={key}
+      />
     )
   });
 }

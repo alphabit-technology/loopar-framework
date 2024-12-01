@@ -132,7 +132,6 @@ export function WorkspaceProvider({
   const [loaded, setLoaded] = useState(false);
   const [activeParentMenu, setActiveParentMenu] = useState(__DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name);
   const [activePage, setActivePage] = useState(props.activePage || "");
-  //const [currentPage, setCurrentPage] = useState(props.currentPage || "");
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
