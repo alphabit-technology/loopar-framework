@@ -5,7 +5,6 @@ import multer from "multer";
 import WorkspaceController from './controller/workspace-controller.js';
 import BaseController from './controller/base-controller.js';
 import { getHttpError } from './global/http-errors.js';
-import { defineEventHandler } from 'h3';
 
 import { parse } from "url";
 
@@ -100,40 +99,26 @@ export default class Router {
     this.currentReq = null;
     this.baseUrl = null;
 
-    const _parsedUrl = (req) => {
-      return parse(req.url, true);
-    }
-
-    const loadHttp = defineEventHandler(async (event) => {
-      console.log(["Load HTTP Middleware", arguments]);
-      const { req, res } = event.node;
+    const loadHttp = async (req, res, next) => {
       this.currentReq = req;
       this.currentRes = res;
-
       loopar.cookie.res = res;
-      //loopar.cookie.cookies = parseCookies(event);
+      loopar.cookie.cookies = req.cookies;
       loopar.session.req = req;
 
       if (req.files && req.files.length > 0) {
-        const body = await readBody(event);
-        body.reqUploadFiles = req.files;
-        event.context.body = body;
+        req.body.reqUploadFiles = req.files;
       }
 
-      console.log(["Load HTTP Middleware End"]);
-      return;
-    });
+      next();
+    }
 
-    const authMiddleware = defineEventHandler(async (event) => {
-      console.log(["Auth Middleware"]);
-      const { req, res } = event.node;
-      if (req.__WORKSPACE_NAME__ === "loopar") return;
+    const authMiddleware = async (req, res, next) => {
+      if (req.__WORKSPACE_NAME__ === "loopar") return next();
 
       const params = req.__params__;
       const loginActions = ['login', 'register', 'logout'];
-
-
-      const url = _parsedUrl(req).pathname;
+      const url = req._parsedUrl.pathname;
 
       const isLoginAction = () => {
         return (loginActions || []).includes(params.action);
@@ -174,7 +159,7 @@ export default class Router {
             return this.redirect(res, '/desk');
           }
 
-          return;
+          return next();
         }
 
         // If it's a login action and the user is not logged in
@@ -182,12 +167,12 @@ export default class Router {
           if (url === "/auth/logout") {
             return this.redirect(res, '/auth/login');
           }
-          return;
+          return next();
         }
 
         // If the user is not logged in and the workspace is not "desk", allow access
         if (req.__WORKSPACE_NAME__ !== 'desk') {
-          return;
+          return next();
         }
 
         // In any other case, redirect to the login
@@ -199,13 +184,10 @@ export default class Router {
         // Unexpected error handling
         return loopar.throw({ code: 500, message: 'Internal Server Error' });
       }
-    });
+    };
 
-    const systemMiddleware = defineEventHandler(async (event) => {
-      console.log(["System Middleware"]);
-      const { req, res } = event.node;
-
-      const currentUrl = _parsedUrl(req).pathname;
+    const systemMiddleware = async (req, res, next) => {
+      const currentUrl = req._parsedUrl.pathname;
       const { DBServerInitialized, DBInitialized, __installed__ } = loopar;
 
       if (!DBServerInitialized && currentUrl != "/loopar/system/connect") {
@@ -218,50 +200,43 @@ export default class Router {
         return this.redirect(res, '/loopar/system/install');
       }
 
-      workspaceParamsMiddleware(req, res);
+      workspaceParamsMiddleware(req, res, next);
 
       if (DBServerInitialized && DBInitialized && __installed__ && req.__WORKSPACE_NAME__ === "loopar") {
         /**System is Installed */
         return this.redirect(res, '/desk');
       }
 
-      return;
-    });
+      next();
+    }
 
-    const workspaceParamsMiddleware = async (req) => {
-      console.log(["Workspace Params Middleware"]);
+    const workspaceParamsMiddleware = async (req, res, next) => {
       const getWorkspaceName = (url) => {
         const context = url.split("/")[1];
         return ['desk', 'auth', 'loopar'].includes(context) ? context : 'web';
       }
 
-      req.__WORKSPACE_NAME__ = getWorkspaceName(_parsedUrl(req).pathname);
+      req.__WORKSPACE_NAME__ = getWorkspaceName(req._parsedUrl.pathname);
     }
 
-    const workSpaceMiddleware = defineEventHandler(async (event) => {
-      console.log(["Workspace Middleware"]);
-      const { req, res } = event.node;
-
-      if (req.method === 'POST') return;
+    const workSpaceMiddleware = async (req, res, next) => {
+      if (req.method === 'POST') return next();
 
       const getWorkspace = async (req, res) => {
         const Controller = new WorkspaceController({ req, res });
-        Controller.dictUrl = _parsedUrl(req);
+        Controller.dictUrl = req._parsedUrl;
         Controller.workspace = req.__WORKSPACE_NAME__;
         this.App = Controller;
         return await Controller.getWorkspace();
       }
 
-      req.__WORKSPACE__ = await getWorkspace(req, res);
-      return;
-    });
+      req.__WORKSPACE__ = await getWorkspace(req, res, next);
+      next();
+    }
 
-    const buildParamsMiddleware = defineEventHandler(async (event) => {
-      console.log(["Build Params Middleware"]);
-      const { req, res } = event.node;
-
+    const buildParamsMiddleware = async (req, res, next) => {
       req.__WORKSPACE__ ??= {};
-      const url = _parsedUrl(req);
+      const url = req._parsedUrl;
       const pathname = ["web", "auth"].includes(req.__WORKSPACE_NAME__) ? url.pathname : url.pathname.split("/").slice(1).join("/");
 
       const routeStructure = { host: null, document: null, action: null };
@@ -282,13 +257,10 @@ export default class Router {
       controllerParams.method = req.method;
       req.__params__ = { ...routeStructure, ...controllerParams };
 
-      return;
-    })
+      next();
+    }
 
-    const controllerMiddleware = defineEventHandler(async (event) => {
-      console.log(["Controller Middleware"]);
-      const { req, res } = event.node;
-
+    const controllerMiddleware = async (req, res, next) => {
       await this.makeController(req, res);
       let response = req.__WORKSPACE__.__DOCUMENT__;
 
@@ -299,19 +271,15 @@ export default class Router {
       if (req.method === 'POST') {
         return this.renderAjax(res, response);
       } else {
-        return;
+        next();
       }
-    });
+    }
 
-    const fynalyMiddleware = defineEventHandler(async (event) => {
-      console.log(["Fynaly Middleware"]);
-      const { req, res } = event.node;
+    const fynalyMiddleware = async (req, res) => {
       this.render(res, await this.App.render(req.__WORKSPACE__));
-    });
+    }
 
-    const assetMiddleware = defineEventHandler(async (event) => {
-      console.log(["Asset Middleware"]);
-      const { req } = event.node;
+    const assetMiddleware = (req, res, next) => {
       this.currentReq = null;
       this.currentRes = null;
       // List of common asset file extensions (images, multimedia, fonts, web files, documents, compressed files, data files)
@@ -326,7 +294,7 @@ export default class Router {
       ];
 
       const isAsset = () => {
-        const url = _parsedUrl(req).pathname;
+        const url = req._parsedUrl.pathname;
 
         // Exclude routes that are clearly APIs or non-asset endpoints
         if (url.includes("/api/") || url.includes("/admin/")) return false;
@@ -342,14 +310,11 @@ export default class Router {
       };
 
       req.isAssetUrl = isAsset();
-      return;
-    });
+      next();
+    };
 
-    const notFoundSourceMiddleware = defineEventHandler(async (event) => {
-      console.log(["Not Found Source Middleware"]);
-      const { req, res } = event.node;
-
-      if (!req.isAssetUrl) return;
+    const notFoundSourceMiddleware = (req, res, next) => {
+      if (!req.isAssetUrl) return next();
 
       const errString = this.errTemplate({
         code: 404,
@@ -358,10 +323,10 @@ export default class Router {
       });
 
       res.status(404).send(errString);
-    });
+    }
 
-    this.server.use(assetMiddleware, notFoundSourceMiddleware);
-    this.server.use(loadHttp, systemMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
+    this.router.use(assetMiddleware, notFoundSourceMiddleware);
+    this.router.use(loadHttp, systemMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
 
   }
 

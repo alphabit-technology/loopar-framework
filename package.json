@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.1",
-    "fastify": "^5.1.0",
     "loopar": "file:.loopar",
     "stripe": "^17.3.1",
     "tailwindcss": "^3.4.15",

@@ -44,8 +44,8 @@ export const Sidebar = () => {
         <Separator/>
         <ScrollArea 
           className="h-full w-full"
+          style={{height: "calc(100% - 50px)", overflowY: "auto"}}
         >
-          <>
           {
             ["designer", "preview"].includes(designerModeType) ? (
               <DesignerForm/>
@@ -56,7 +56,6 @@ export const Sidebar = () => {
               />
             )
           }
-          </>
         </ScrollArea>
       </div>
     </div>

@@ -54,6 +54,7 @@ export default defineConfig(({command}) => ({
   },
   plugins: [
     //tailwindcss(),
+    //viteFastify(),
     react({
       devTarget: "esnext",
     }),

@@ -1,33 +1,25 @@
 'use strict';
 
-import cookieParser from "cookie-parser";
-import session from 'express-session';
-import useragent from "express-useragent";
-import express from "express";
 import { loopar } from "./loopar.js";
-import Router from "./router-h3.js";
+import Router from "./router.dev.js";
 import path from "pathe";
-
-import { createApp, createRouter, toNodeListener, serveStatic, parseCookies, readBody, send, defineEventHandler } from 'h3';
-import { createServer } from 'http';
 import { resolve } from 'path';
-import qs from 'qs';
-
+import express from "express";
 import { promisify } from 'util';
 
-//const app = createApp();
-
-/*const compression = require('compression');
-const serveStatic = require('serve-static');*/
+import Fastify from 'fastify'
+import FastifyVite from '@fastify/vite'
 
 import compression from 'compression';
 //import serveStatic from 'serve-static';
 
 import { createServer as createViteServer } from 'vite'
 
+
 class Server extends Router {
   //express = express;
-  server = createApp();
+  router = express.Router();
+  server = Fastify();
   url = null;
   isProduction = process.env.NODE_ENV == 'production';
 
@@ -35,43 +27,21 @@ class Server extends Router {
 
   async initialize() {
     await loopar.initialize();
-    const router = createRouter();
-    this.server.use(router);
-
-    this.route();
-
-    if(!this.isProduction){
-      this.vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'custom'
-      });
-
-      this.server.use(defineEventHandler(this.vite.middlewares));
-    }else{
-      this.server.use(defineEventHandler(compression()));
-
-      this.server.use(defineEventHandler(
-        serveStatic(path.join(loopar.pathRoot, 'dist'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.gz')) {
-              res.setHeader('Content-Encoding', 'gzip');
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-            if (path.endsWith('.br')) {
-              res.setHeader('Content-Encoding', 'br');
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-          },
-        })
-      ));
-    }
-
-    //this.server.use(useragent.express());
-    //await this.#exposePublicDirectories();
-    //this.#initializeSession();
+    const server = this.server;
     
+    await server.register(FastifyVite, {
+      root: import.meta.url, // where to look for vite.config.js
+      dev: process.argv.includes('--dev'),
+      spa: true
+    })
 
-    this.#start();
+    server.get('/', (req, reply) => {
+      console.log("Request received")
+      return reply.html()
+    })
+
+    await server.vite.ready()
+    await server.listen({ port: 3030 })
   }
 
   #initializeSession() {
@@ -182,15 +152,9 @@ class Server extends Router {
 
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
-    const server = createServer(toNodeListener(this.server));
-
-    server.listen(port, () => {
-      console.log("Server is started in " + port + installMessage);
+    this.server.listen({ port }, () => {
+      console.log(`Server running on http://localhost:${port}${installMessage}`);
     });
-
-    /*this.server.listen(port, () => {
-      console.log("Server is started in " + port + installMessage);
-    });*/
   }
 }
 

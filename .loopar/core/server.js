@@ -35,7 +35,6 @@ class Server extends Router {
 
       this.server.use(this.vite.middlewares);
     } else {
-      console.log("Production mode");
       this.server.use(compression());
 
       this.server.use(

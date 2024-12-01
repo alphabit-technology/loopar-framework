@@ -45,9 +45,11 @@ export default function TextBlockIcon(props) {
   ];
 
   return (
-    <Preassembled
-      {...props}
-      defaultElements={defaultElements}
-    />
+    <div className="flex gap-2 py-3 pb-4">  
+      <Preassembled
+        {...props}
+        defaultElements={defaultElements}
+      />
+    </div>
   );
 }
