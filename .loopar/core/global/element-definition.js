@@ -60,7 +60,7 @@ export const elementsDefinition = {
     { element: "text_block_icon", icon: "Outdent" },
     { element: "button", icon: "MousePointer" },
     { element: "link", icon: "MousePointerClick" },
-    { element: "icon", icon: "Icon" },
+    { element: "icon", icon: "Boxes" },
     { element: "markdown", icon: "BookOpenCheck", clientOnly: true, designerOnly: true },
     { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
     { element: "title", icon: "Heading1" },
@@ -95,7 +95,7 @@ export const elementsDefinition = {
     { element: "file_uploader", icon: "FileUp", type: TYPES.longtext },
     { element: "image_input", icon: "FileImage", type: TYPES.longtext },
     { element: "color_picker", icon: "Palette", type: TYPES.text },
-    { element: "icon_input", icon: "Icon", type: TYPES.text },
+    { element: "icon_input", icon: "Boxes", type: TYPES.text },
     { element: "radio_group", icon: "Circle", type: TYPES.text },
     { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
   ]

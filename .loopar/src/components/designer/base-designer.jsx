@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import { BrushIcon, CodepenIcon, EyeIcon, SparkleIcon } from "lucide-react";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
 import { Droppable } from "@droppable";
 import { BaseFormContext } from "@context/form-context";
 import React, { useEffect, useState } from "react";
@@ -204,7 +204,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
                 {designerModeType === "designer" ? "Preview" : "Design"}
               </Button>
               <Button variant="secondary" onClick={handleSetMeta}>
-                <CodepenIcon className="mr-2" />
+                <BracesIcon className="mr-2" />
                 META
               </Button>
               <Button
@@ -241,7 +241,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
               </div>
             </Tab>
             <Tab
-              label={<div className="flex"><CodepenIcon className="h-6 w-6 pr-2" /> META</div>}
+              label={<div className="flex"><BracesIcon className="h-6 w-6 pr-2" /> META</div>}
               name={data.name + "model_tab"}
               key={data.name + "model_tab"}
             >

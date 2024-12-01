@@ -55,7 +55,7 @@
     "js-cookie": "^3.0.5",
     "knex": "^3.1.0",
     "lodash": "^4.17.21",
-    "lucide-react": "^0.461.0",
+    "lucide-react": "^0.462.0",
     "marked": "^12.0.1",
     "mlly": "^1.7.2",
     "module-alias": "^2.2.3",

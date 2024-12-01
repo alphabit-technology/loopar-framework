@@ -176,17 +176,24 @@ class Loopar extends Router {
 
     const url = `/desk/${Document}/${method}`;
     params = typeof params === "string" ? { name: params } : params;
+    
     return this.post(url, {...params, ...curParamsObject }, { freeze: false, ...options });
   }
 
-  async getMeta(Document, action, params = {}, options = {}) {
+  async getMeta(Document, action, params = {}) {
     if (!this.#loadedMeta[Document + action]) {
-      this.#loadedMeta[Document + action] = await this.method(
-        Document,
-        action,
-        params,
-        options
-      );
+      const loadMeta = async () => {
+        return new Promise((resolve) => {
+          this.method(Document, action, params, {
+            success: (data) => {
+              this.#loadedMeta[Document + action] = data;
+              resolve();
+            },
+          });
+        });
+      };
+
+      await loadMeta();
     }
 
     return this.#loadedMeta[Document + action];

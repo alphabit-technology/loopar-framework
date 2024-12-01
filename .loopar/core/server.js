@@ -27,14 +27,15 @@ class Server extends Router {
   async initialize() {
     await loopar.initialize();
 
-    if(!this.isProduction){
+    if (!this.isProduction) {
       this.vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'custom'
       });
 
       this.server.use(this.vite.middlewares);
-    }else{
+    } else {
+      console.log("Production mode");
       this.server.use(compression());
 
       this.server.use(
@@ -75,7 +76,7 @@ class Server extends Router {
 
     if (process.env.NODE_ENV == 'production') {
       publicDirs.push('dist/client');
-    }else{
+    } else {
       publicDirs.push('public');
       publicDirs.push('node_modules/particles.js');
     }
@@ -85,7 +86,7 @@ class Server extends Router {
     publicDirs.forEach(dir => {
       this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
     });
-    
+
     await this.exposeClientAppFiles();
   }
 

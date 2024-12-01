@@ -46,6 +46,8 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     for (let i = 0; i < brothers.length; i++) {
       const rect = brothers[i];
 
+      if(!rect) return;
+
       if(verticalDirection === UP){
         if(movement.y < rect.y + rect.height / 2) return i;
       }else{
@@ -73,10 +75,16 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
         setElement(
-          <div
+          /*<div
             style={{maxHeight: rect.height}}
             className="mb-4 rounded transition-all duration-300 shadow-sm shadow-red-500/50 p-4 w-full h-20"
-          />, position
+          />*/
+          
+              <div 
+                style={{maxHeight: rect.height, opacity: 0.5}}
+                className={`${currentDragging?.className}`} dangerouslySetInnerHTML={{__html: currentDragging?.ref?.innerHTML}}
+              /> 
+            , position
         );
         return;
       }
@@ -176,8 +184,9 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   const ClassNames = cn(
     //mode !== "preview" && "h-full w-full p-3 bg-slate-200/50 dark:bg-red-500/50 pt-4" + isDroppable ? " min-h-20" : "",
     designerModeType !== "preview" && "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
-    dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow transition-all duration-300 p-4 h-full' : '',
-    className
+    dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow p-4 h-full' : '',
+    className,
+    "transition ease-in-out delay-150 duration-300"
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
@@ -199,7 +208,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         {
           (dropping && currentDropZone && currentDropZone === dropZoneRef.current && currentDragging && !currentDragging.new) && (
             <div
-              className="fixed rounded border-2 pointer-events-none"
+              className="fixed pointer-events-none"
               style={{
                 width: targetRect.width,
                 height: targetRect.height,
@@ -208,7 +217,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
                 zIndex: 100,
               }}
             >
-              <div className="p-2" dangerouslySetInnerHTML={{__html: currentDragging?.ref?.innerHTML}}></div> 
+              <div className={`${currentDragging?.className}`} dangerouslySetInnerHTML={{__html: currentDragging?.ref?.innerHTML}}/> 
             </div>
           )
         }

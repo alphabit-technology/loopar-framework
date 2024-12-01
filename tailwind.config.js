@@ -7,8 +7,8 @@ export default {
   content: [
     './src/**/*.{ts,tsx,js,jsx}',
     './.loopar/src/**/*.{ts,tsx,js,jsx}',
-    './.loopar/modules/**/*.{ts,tsx,js,jsx}',
     './apps/**/*.{tsx,jsx,json}',
+    './.loopar/apps/**/*.{tsx,jsx,json}',
     './public/src/*.{ts,tsx,js,jsx}'
   ],
   prefix: "",

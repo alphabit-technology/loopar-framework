@@ -1,7 +1,6 @@
 import { Modal } from "@dialog";
 import loopar from "loopar";
 import FileContainer from "@file-container";
-import FileUploader from "@file-uploader";
 import React from "react";
 
 export class FileBrowser extends React.Component {
@@ -57,13 +56,14 @@ export class FileBrowser extends React.Component {
 
   async getMeta() {
     if (!this.state.metaIsLoaded) {
-      const component = await loopar.getMeta("File Manager", "list");
+      //const meta = await loopar.getMeta("File Manager", "list");
+      //console.log(["meta", meta]);
       /*this.setState({   
-            metaIsLoaded: true,
-            meta: component.meta,
-            //isFetchingFiles: false,
-            component: this.state.component || await import(component.client_importer),
-         });*/
+          metaIsLoaded: true,
+          meta: meta,
+          //isFetchingFiles: false,
+          component: this.state.component || await import(meta.client_importer),
+        });*/
     }
   }
 

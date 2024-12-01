@@ -223,13 +223,16 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
             elements: element.elements
           };
 
+          e.target.style.opacity = 1;
+
           setCurrentDragging({
             el,
             key: el.data.key,
             parentKey: parentKey,
             ref: e.target,
             rect: e.target.getBoundingClientRect(),
-            mousePosition: {x: e.clientX, y: e.clientY}
+            mousePosition: {x: e.clientX, y: e.clientY},
+            className: className,
           });
         }}
         onDragEnd={(e) => {

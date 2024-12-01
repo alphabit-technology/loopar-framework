@@ -4,8 +4,7 @@ import fs from 'fs';
 import path from 'pathe';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
-
-
+//import tailwindcss from '@tailwindcss/vite';
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
@@ -54,17 +53,18 @@ export default defineConfig(({command}) => ({
     },
   },
   plugins: [
+    //tailwindcss(),
     react({
       devTarget: "esnext",
     }),
     viteCompression({
       algorithm: 'brotliCompress',
-      threshold: 620,
+      threshold: 64,
       deleteOriginFile: false
     }),
     visualizer({
       open: false
-    }),
+    })
   ],
   optimizeDeps: {
     include: ['lucide-react']
