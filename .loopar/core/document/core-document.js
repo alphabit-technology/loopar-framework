@@ -127,7 +127,6 @@ export default class CoreDocument {
     }
 
     if (!this.#fields[fieldName]) {
-
       if (field.element === FORM_TABLE) {
         const val = loopar.utils.isJSON(value) ? JSON.parse(value) : value;
 
@@ -181,7 +180,7 @@ export default class CoreDocument {
   }
 
   setUniqueName() {
-    if (this.nameIsNull() && (this.__IS_NEW__ || this.__ENTITY__.is_single) && this.getName.hidden === 1) {
+    if (this.nameIsNull() && (this.__IS_NEW__ || this.__ENTITY__.is_single) && this.getName?.hidden === 1) {
       this.name = loopar.utils.randomString(12);
     }
   }
@@ -238,6 +237,7 @@ export default class CoreDocument {
       if (validate) await this.validate();
 
       if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
+        console.log(["Inserting", this.__ENTITY__.name, this.name, this.stringifyValues, this.__ENTITY__]);
         await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
         this.__DOCUMENT_NAME__ = this.name;
       } else {

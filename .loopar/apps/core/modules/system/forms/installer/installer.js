@@ -81,7 +81,7 @@ export default class Installer extends BaseDocument {
     });
   }
 
-  async install() {
+  async install(resintall=false) {
     loopar.installingApp = this.app_name;
     console.log("Installing App", this.app_name);
 
@@ -94,7 +94,7 @@ export default class Installer extends BaseDocument {
       }
     }
 
-    await this.installData();
+    await this.installData(resintall);
 
     loopar.installingApp = null;
     const installedApps = fileManage.getConfigFile('installed-apps');
@@ -110,7 +110,7 @@ export default class Installer extends BaseDocument {
     return Object.values(modules).find(e => e.name === modu).app_name;
   }*/
 
-  async installData() {
+  async installData(reinstall = false) {
     console.log("Installing App DATA", this.app_name);
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
@@ -144,9 +144,15 @@ export default class Installer extends BaseDocument {
         if (!data) return;
         if (data.__document_status__ && data.__document_status__ === "Deleted") return;
 
-        console.log(["Inserting Document", ent.name, document.name])
+       
         if (!await loopar.db.count(ent.name, document.name)) {
+          console.log(["Installing", ent.name, document.name])
           const doc = await loopar.newDocument(ent.name, { ...data, __document_status__: "Active" });
+          await doc.save({ validate: false });
+        }else if(reinstall){
+          console.log(["Reinstalling", ent.name, document.name])
+          const doc = await loopar.getDocument(ent.name, document.name, data);
+
           await doc.save({ validate: false });
         }
 

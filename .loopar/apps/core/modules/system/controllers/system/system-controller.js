@@ -45,17 +45,16 @@ export default class SystemController extends BaseController {
     return await loopar.newDocument("Installer", { ...this.data, app_name: this.app_name });
   }
 
-  async actionInstall() {
+  async actionInstall(reinstall = false) {
     if (this.hasData()) {
       const model = await this.getInstallerModel();
       model.app_name ??= this.getAppName();
-      //Object.assign(model, this.data);
 
-      if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed') {
+      if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed' && !reinstall) {
         loopar.throw("App already installed please refresh page");
       }
 
-      await model.install();
+      await model.install(reinstall);
       return new Promise(resolve => {
         setTimeout(() => {
           resolve(this.redirect('view'));
@@ -77,23 +76,11 @@ export default class SystemController extends BaseController {
   }
 
   async actionReinstall() {
-    const model = new Installer();
-
-    if (this.hasData()) {
-      Object.assign(model, this.data);
-
-      if (await model.update()) {
-        //await lloopar.build
-        return this.success("App updated successfully");
-      }
-    } else {
-      const response = await model.__dataInstall__();
-      await this.render(response);
-    }
+    return await this.actionInstall(true);
   }
 
   async actionPull() {
-    const model = new Installer();
+    const model = await this.getInstallerModel();
 
     Object.assign(model, { app_name: this.data.app_name });
 
