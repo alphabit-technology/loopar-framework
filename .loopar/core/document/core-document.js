@@ -190,17 +190,21 @@ export default class CoreDocument {
     return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
   }
 
-  async deleteChildRecords(transaction = false) {
+  async deleteChildRecords(force=false) {
     const ID = await this.__ID__();
     const childValuesReq = this.childValuesReq;
 
     if (Object.keys(childValuesReq).length === 0) return;
 
     for (const [key, value] of Object.entries(childValuesReq)) {
-      await loopar.db.knex(loopar.db.literalTableName(key)).where({
-        parent_document: this.__ENTITY__.id,
-        parent_id: ID
-      }).del();
+      const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
+
+      if(values || force){
+        await loopar.db.knex(loopar.db.literalTableName(key)).where({
+          parent_document: this.__ENTITY__.id,
+          parent_id: ID
+        }).del();
+      }
     }
   }
 
@@ -210,7 +214,9 @@ export default class CoreDocument {
 
     async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
-        const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : [];
+        const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
+        if(!rows) continue;
+
         const nextId = await loopar.db.nextId(key);
 
         const documentsPromises = rows.map(async (row, index) => {
@@ -251,7 +257,7 @@ export default class CoreDocument {
       const childValuesReq = this.childValuesReq;
 
       if (Object.keys(childValuesReq).length) {
-        await this.deleteChildRecords(childValuesReq);
+        await this.deleteChildRecords();
         await updateChildRecords(childValuesReq, this.__ENTITY__.id, await this.__ID__());
       }
       //}

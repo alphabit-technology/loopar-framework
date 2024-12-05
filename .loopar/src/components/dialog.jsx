@@ -120,7 +120,7 @@ const MetaDialog = (props) => {
         <DialogHeader>
           <DialogTitle className="flex space-x-2">
             <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
-            <h1 className="text-2xl">{props.title}</h1>
+            <h2 className="text-2xl">{props.title}</h2>
           </DialogTitle>
         </DialogHeader>
         <DialogDescription className="overflow-auto max-h-[80vh]">
