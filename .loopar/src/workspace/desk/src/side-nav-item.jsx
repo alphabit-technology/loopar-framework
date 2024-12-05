@@ -16,13 +16,13 @@ export const SideNavItem = (props) => {
   const link = compact ? (
     <Link
       to={`/desk/${path}`}
-      className={`transition-duration-100 h-13 flex w-full flex-col justify-start space-y-0 rounded-full text-left align-middle transition-all ${props.className || ''}`}
+      className={`transition-duration-100 h-18 flex w-full flex-col justify-start space-y-0 rounded-full text-left align-middle transition-all ${props.className || ''}`}
     >
       {Icon && <Icon className="h-7"/>}
       { title && title.split(' ').map((word, index) => (
         <small 
           key={path + index} 
-          className="truncate text-center" 
+          className="truncate text-center h-auto" 
           style={{maxWidth: collapseSidebarWidth - 10}}
         >
           {word}

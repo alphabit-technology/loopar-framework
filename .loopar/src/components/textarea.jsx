@@ -20,7 +20,7 @@ export default function TextArea(props) {
           {...field}
           key={null}
           placeholder={data.placeholder || data.label} type={type} 
-          className="border border-input rounded-sm bg-transparent"
+          className="border border-input rounded-xm bg-transparent"
           rows={data.rows || 6}
         />
       </FormControl>

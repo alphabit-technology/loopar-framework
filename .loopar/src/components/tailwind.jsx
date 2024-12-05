@@ -30,7 +30,7 @@ export default function Tailwind(props){
       <FormControl className="p-2">
         <Textarea
           {...data} placeholder={data.placeholder || data.label} type={type} {...field}
-          className="bg-transparent border border-input rounded-sm"
+          className="bg-transparent border border-input rounded-xm"
           onKeyUp={handleKeyUp}
           rows={6}
         />

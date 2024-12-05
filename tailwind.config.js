@@ -1,5 +1,4 @@
 /** @type {import('tailwindcss').Config} */
-import tailwindcss from '@tailwindcss/typography';
 
 export default {
   mode: 'jit',
@@ -102,11 +101,10 @@ export default {
         sidebarWidth: "250px",
         webSidebarWidth: "270px",
         collapseSidebarWidth: "70px",
-        headerHeight:  "4rem",
+        headerHeight: "4rem",
         webHeaderHeight: "5rem",
         footerHeight: "4rem",
-        webFooterHeight: "5rem"
-
+        webFooterHeight: "5rem",
       },
       screens: {
         "2xl": "1400px",
@@ -118,8 +116,5 @@ export default {
         sans: ["Inter", "sans-serif"],
       }
     },
-  },
-  plugins: [
-    tailwindcss
-  ],
+  }
 }

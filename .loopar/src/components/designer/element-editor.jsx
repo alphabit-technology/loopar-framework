@@ -16,7 +16,8 @@ export function ElementEditor({element}) {
   
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
-  
+  const Element = __META_COMPONENTS__[elementName]?.default || {};
+
   useEffect(() => {
     setConnectedElement(designerRef.getElement(element));
   }, [element]);
@@ -28,7 +29,7 @@ export function ElementEditor({element}) {
 
   const metaFields = () => {
     const genericMetaFields = getMetaFields(data);
-    const Element = __META_COMPONENTS__[elementName]?.default || {};
+    
     const selfMetaFields = Element.metaFields && Element.metaFields() || [];
     const mergedObj = {};
 
@@ -57,8 +58,7 @@ export function ElementEditor({element}) {
   if (!connectedElement) return null;
 
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
-
-  const dontHaveMetaElements = []//connectedElement.dontHaveMetaElements || [];
+  const dontHaveMetaElements = Element.dontHaveMetaElements || [];
 
   const metaFieldsData = metaFields().map(({ group, elements }) => {
     if (group === 'form' && elementsDict[elementName]?.def?.isWritable && ["designer", "fragment"].includes(elementName) === false) {
@@ -86,9 +86,9 @@ export function ElementEditor({element}) {
       value={{}}
     >
       <div className="flex flex-col">
-        <h1 className="pt-2 text-xl">
+        <h2 className="pt-2 text-xl">
           {loopar.utils.Capitalize(elementName)} Editor
-        </h1>
+        </h2>
         <Tabs
           data={{ name: "element_editor_tabs" }}
           key={data.key + "_tabs"}

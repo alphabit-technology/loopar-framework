@@ -62,13 +62,13 @@ export function Image ({imageProps={}, coverProps={}, ...props}) {
       />
       <img
         {...renderProps}
-        className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-sm ${isImageLoading ? "opacity-0" : "opacity-100"}`}
+        className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-xm ${isImageLoading ? "opacity-0" : "opacity-100"}`}
         {...imageProps}
         onLoad={handleImageLoad}
         onError={handleImageError}
       />
       <div
-        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-sm"
+        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm"
         {...coverProps}
       />
     </div>

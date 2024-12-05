@@ -3,7 +3,9 @@
   <head>
     <!--web-head-->
     <!--desk-head-->
-    <link rel="stylesheet" href="/main/styles/globals.css">
+    <link rel="stylesheet" href="/main/styles/main.css">
+    <link rel="stylesheet" href="/main/styles/quill.css">
+    <link rel="stylesheet" href="/main/styles/quill-snow.css">
     <link rel="stylesheet" href="/main/styles/custom-scrollbar.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" href="/favicon.ico">
@@ -19,20 +21,9 @@
     <meta property="og:description" content="Loopar Framework">
     <meta property="og:site_name" content="Loopar Framework">
     <!--ssr-modulepreload-->
-    <!--app-head-->
     <script>
       window.global = window;
-      class LooparError extends Error {
-        constructor({ title, type, message, ...rest }) {
-          super(message);
-          this.name = "LooparError";
-          this.title = title;
-          this.type = type;
-          Object.assign(this, rest);
-        }
-      }
     </script>
-    <!--__datatypes__-->
     <!--__loopar-meta-data__-->
   </head>
   <body class="font-sans min-h-screen antialiased theme-stone h-[100vh]">

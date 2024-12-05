@@ -189,7 +189,7 @@ export function Prompt (props) {
           type="text"
           id={`prompt-input-${id}`}
           placeholder={props.placeholder || ""}
-          className="border border-input rounded-sm bg-transparent p-2 mt-2"
+          className="border border-input rounded-xm bg-transparent p-2 mt-2"
           onChange={handleChange}
           rows={getRows()}
         />

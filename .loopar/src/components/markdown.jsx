@@ -18,7 +18,7 @@ export default function MetaMarkdown (props) {
   
   if(!designing){
     return (
-      <div className="contents w-full prose dark:prose-invert">
+      <div className="contents w-full prose dark:prose-invert pb-10">
         <div id={props.id} dangerouslySetInnerHTML={{__html: marked.parse(data.value || "")}}/>
       </div>
     )

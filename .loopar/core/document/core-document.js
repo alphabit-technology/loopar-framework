@@ -484,15 +484,13 @@ export default class CoreDocument {
 
   get stringifyValues() {
     return Object.values(this.#fields)
-      .filter(field => (field.name !== ID || loopar.installing) && field.element !== FORM_TABLE)
+      .filter(field => field.element !== FORM_TABLE)
       //.filter(field => (field.element === PASSWORD && field.value != this.protectedPassword))
       .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 
   get valuesToSetDataBase() {
     return Object.values(this.#fields).filter(field => {
-      if (field.name === ID) return false;
-
       if ((this.__IS_NEW__ && field.set_only_time) || field.element === FORM_TABLE) return false;
 
       if (field.type === PASSWORD) {

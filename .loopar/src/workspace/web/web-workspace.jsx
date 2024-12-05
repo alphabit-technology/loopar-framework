@@ -58,7 +58,7 @@ const Layout = (({ webApp={}, ...props }) => {
       >
         <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu}/>
         <div
-          className={`ease-induration-100 w-full overflow-auto mt-webHeaderHeight ${childMenu.length > 0 && 'lg:ml-webSidebarWidth'}`}
+          className={`ease-induration-100 w-full overflow-auto mt-web-header-height ${childMenu.length > 0 && 'lg:ml-web-sidebar-width'}`}
         >
           <div className="p-3">
             {props.children}

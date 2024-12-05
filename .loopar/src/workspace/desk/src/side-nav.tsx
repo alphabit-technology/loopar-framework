@@ -76,7 +76,7 @@ export function SideNav({ items=[] }: SideNavProps) {
   return (
     <>
       <div 
-        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-headerHeight ${openNav ? 'w-sidebarWidth lg:w-sidebarWidth p-2' : 'w-0 lg:w-collapseSidebarWidth'}`}
+        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-header-height ${openNav ? 'w-sidebar-width lg:w-sidebar-width p-2' : 'w-0 lg:w-collapse-sidebar-width'}`}
       >
         <div 
           className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}
@@ -99,7 +99,7 @@ export function SideNav({ items=[] }: SideNavProps) {
             </svg>
           </button>}
           <div className="relative lg:text-sm lg:leading-6">
-            {openNav && <div className="pointer-events-none sticky top-0 -ml-0.5">
+            {openNav && <div className="pointer-events-none sticky top-0 -ml-0.5 hidden">
               <div className="pointer-events-auto relative bg-white dark:bg-slate-900">
                 <button type="button" className="dark:highlight-white/5 hidden w-full items-center rounded-md py-1.5 pl-2 pr-3 text-sm leading-6 text-slate-400 shadow-sm ring-1 ring-slate-900/10 hover:ring-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 lg:flex">
                   <svg width="24" height="24" fill="none" aria-hidden="true" className="mr-3 flex-none">

@@ -76,7 +76,7 @@ const SideNavRender = ({ menu }) => {
 
 export function SideNav({sideMenuItems}) {
   const { openNav, setOpenNav, toogleSidebarNav, activeParentMenu } = useWorkspace();
-  const baseClassName = `fixed inset-0 z-50 overflow-y-auto bg-popover/90 lg:bg-transparent border-r ${openNav ? 'w-webSidebarWidth px-2' : 'w-0'} lg:top-webHeaderHeight`
+  const baseClassName = `fixed inset-0 z-50 overflow-y-auto bg-popover/90 lg:bg-transparent border-r ${openNav ? 'w-web-sidebar-width px-2' : 'w-0'} lg:top-web-header-height`
 
   if (typeof window !== "undefined") {
     window.addEventListener("keydown", (e) => {
@@ -117,7 +117,7 @@ export function SideNav({sideMenuItems}) {
           </div>
         </>
       </div>
-      {childMenuItems.length > 0 && <div className={cn(baseClassName, "hidden lg:block w-webSidebarWidth p-2")}>
+      {childMenuItems.length > 0 && <div className={cn(baseClassName, "hidden lg:block w-web-sidebar-width p-2")}>
         <>
           <SideNavRender menu={childMenuItems} />
         </>

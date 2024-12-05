@@ -14,7 +14,7 @@ export const Sidebar = () => {
 
   return (
     <div 
-      className="w-sidebarWidth mt-headerHeight pb-headerHeight" 
+      className="w-sidebar-width mt-header-height pb-header-height" 
       style={{position: "fixed", top: 0, right: 0, zIndex: 30, width: 300, height: "100vh"}}
     >
       <div className="flex flex-col p-1 w-full h-full">

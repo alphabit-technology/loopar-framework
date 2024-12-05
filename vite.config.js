@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'pathe';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
-//import tailwindcss from '@tailwindcss/vite';
+import tailwindcss from '@tailwindcss/vite';
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
@@ -29,7 +29,7 @@ const makeGroupComponentsAlias = (dir) => {
 makeComponentToAlias('./.loopar/src/components');
 makeGroupComponentsAlias('./.loopar/src');
 
-export default defineConfig(({command}) => ({
+export default defineConfig(({ command }) => ({
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     alias: {
@@ -47,13 +47,13 @@ export default defineConfig(({command}) => ({
       '@services': path.resolve(__dirname + '/.loopar/services'),
 
       '@loader': path.resolve(__dirname, 'src/loader.jsx'),
-      //"@styles": path.resolve(__dirname, 'src/app/styles'),
+      "@main/styles": path.resolve(__dirname, 'src/app/styles'),
       "/main/styles": path.resolve(__dirname, 'src/app/styles'),
       "/main/scripts": path.resolve(__dirname, 'src/app/scripts')
     },
   },
   plugins: [
-    //tailwindcss(),
+    tailwindcss(),
     //viteFastify(),
     react({
       devTarget: "esnext",

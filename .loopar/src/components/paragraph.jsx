@@ -10,7 +10,7 @@ export function Paragraph(props) {
   }
 
   return (
-    <div className="text-pretty mt-6 text-slate-700 dark:text-slate-300">
+    <div className="text-pretty text-slate-700 dark:text-slate-300">
       <p className="mb-4 text-lg" style={style}>{props.text}</p>
     </div>
   )

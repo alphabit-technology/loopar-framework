@@ -12,6 +12,7 @@ import { useDocument } from "@context/@/document-context";
 import fileManager from "@tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary"
+import PureHTMLBlock from "@pure-html-block";
 
 const designElementProps = (el) => {
   if (!el.data) {
@@ -261,21 +262,6 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   )
 };
 
-function HTMLBlock({ element, className = "", ...props }) {
-  /*if(element.element == MARKDOWN){
-    return <Markdown id={element.data.id} className={`h-auto w-full prose dark:prose-invert pb-5`} >{element.data.value}</Markdown>
-  }else{*/
-    return (
-      <div
-        className={`h-auto w-full prose dark:prose-invert pb-5`}
-        id={element.data.id}
-        dangerouslySetInnerHTML={{ __html: element.data.value }}
-        {...props}
-      />
-    )
-  //}
-}
-
 function evaluateCondition(condition, values) {
   let sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||').replace(/=/g, '==');
 
@@ -376,7 +362,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
       Object.assign(_props, docRef.__META_DEFS__[data.name], { data: newData });
     }
 
-    if (isDesigner && Comp) {
+    if (isDesigner && Comp && data.wrapper !== true) {
       return (
         <DesignElement
           Comp={Comp}
@@ -392,7 +378,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
       const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
       if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
-        return <HTMLBlock element={el} {...loopar.utils.renderizableProps(_props)} />
+        return <PureHTMLBlock element={el} {...loopar.utils.renderizableProps(_props)} data={data}/>
       }
 
       if (!Comp) return null;

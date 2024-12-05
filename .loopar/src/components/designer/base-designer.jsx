@@ -189,7 +189,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
         <div className="">
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
-              <h1 className="text-xl">{data.label}</h1>
+              <h2 className="text-3xl">{data.label}</h2>
             </div>
             <div className="space-x-1">
               <Button

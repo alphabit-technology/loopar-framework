@@ -11,7 +11,7 @@ export function TopNav() {
       //className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
     >
       <div 
-        className="container flex items-center space-x-4 px-2 sm:justify-between sm:space-x-0 h-webHeaderHeight"
+        className="flex items-center space-x-4 px-2 sm:justify-between sm:space-x-0 h-web-header-height"
       >
         <MainNav/>
         <div className="flex flex-1 items-center justify-end space-x-4">

@@ -99,7 +99,7 @@ export default function MenuContentMeta(props) {
         />
       </div>
       <div
-        className={`${isDesigner ? 'sticky w-[250px]' : 'fixed w-0 xl:w-[250px]'} right-0 z-1 top-webHeaderHeight h-full overflow-y-auto overflow-x-hidden transition-all duration-600 ease-in-out`}
+        className={`${isDesigner ? 'sticky w-[250px]' : 'fixed w-0 xl:w-[250px]'} right-0 z-1 top-web-HeaderHeight h-full overflow-y-auto overflow-x-hidden transition-all duration-600 ease-in-out`}
       >
         {!isDesigner && <h6 className="px-2 pt-2">ON THIS PAGE</h6>}
         <div className="flex flex-col gap-2 p-2 w-full">

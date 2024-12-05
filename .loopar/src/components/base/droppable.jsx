@@ -195,7 +195,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     designerModeType !== "preview" && "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
     dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow p-4 h-full' : '',
     className,
-    "transition ease-in-out delay-150 duration-300"
+    //"transition ease-in-out delay-150 duration-300"
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);

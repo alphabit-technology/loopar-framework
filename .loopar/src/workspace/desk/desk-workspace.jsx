@@ -11,12 +11,12 @@ export default function DeskWorkspace(props){
   return (
     <BaseWorkspace menuData={menuData}>
       <TopNav openNav={openNav}></TopNav>
-      <section className="flex min-h-headerHeight">
+      <section className="flex min-h-header-height">
         <SideNav
           items={menuData}
         />
         <div 
-          className={`ease-induration-100 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${openNav ? "lg:pl-sidebarWidth" : "lg:pl-collapseSidebarWidth"}`}
+          className={`ease-induration-100 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"}`}
         >
           {getDocuments()}
         </div>

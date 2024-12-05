@@ -7,6 +7,7 @@ export default class DataBase {
   tablePrefix = 'tbl';
   transaction = false;
   transactions = [];
+  executionTimeInsertedIds = {};
 
   constructor() { }
 
@@ -467,7 +468,7 @@ export default class DataBase {
     } else {
       const nextId = await this.nextId(document);
       const currentId = parseInt(data.id || 0);
-      data.id = currentId < nextId ? nextId : currentId;
+      data.id = (currentId < nextId || !data.id) ? nextId : currentId;
 
       await this.knex(this.literalTableName(document)).insert(data);
     }
@@ -480,7 +481,15 @@ export default class DataBase {
 
   async nextId(document) {
     const maxId = await this.maxId(document);
-    return maxId ? maxId + 1 : 1;
+    const executionTimeInsertedIds = this.executionTimeInsertedIds[document] || 0;
+    
+    if (executionTimeInsertedIds < maxId) {
+      this.executionTimeInsertedIds[document] = maxId + 1;
+    }else{
+      this.executionTimeInsertedIds[document] += 1;
+    }
+
+    return this.executionTimeInsertedIds[document];
   }
 
   async setValue(document, field, value, name, { distinctToId = null, ifNotFound = "throw" } = {}) {
