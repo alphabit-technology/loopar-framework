@@ -128,7 +128,7 @@ export default function MetaTabs(props){
     const elements = props.children || props.elements || [];
 
     return elements.map((element) => {
-      if (element.$$typeof === Symbol.for("react.element") || element.$$typeof === Symbol.for("react.fragment")) {
+      if (element.$$typeof === Symbol.for("react.element") || element.$$typeof === Symbol.for("react.fragment") || element.$$typeof === Symbol.for("react.transitional.element")) {
         return {
           element: "tab",
           type: "react.element",

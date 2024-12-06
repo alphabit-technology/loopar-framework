@@ -1,4 +1,4 @@
-import "@main/styles/main.css";
+//import "@main/styles/main.css";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { CookiesProvider } from '@services/cookie';

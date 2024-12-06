@@ -466,7 +466,7 @@ export class Loopar {
 
     if (!fileManage.existFileSync(path.join('config', 'server.config.json'))) {
       await fileManage.setConfigFile('server.config', {
-        "port": 3030,
+        "port": process.env.PORT || 3000,
         "session": {
           "secret": "secrctekeyf5d665dd56ff59fbd24699e502a528f77eb786e8",
           "saveUninitialized": false,

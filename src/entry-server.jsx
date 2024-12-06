@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOMServer from "react-dom/server";
+import {renderToString } from "react-dom/server";
 import App from "@app";
 import { StaticRouter } from "react-router-dom";
 import { Loader } from "@/loader";
@@ -33,8 +33,17 @@ export async function render(url, __META__, req, res) {
   global.ENVIRONMENT = "server";
 
   const context = {};
-  const HTML = ReactDOMServer.renderToString(
-    React.createElement(Main, {
+  const HTML = renderToString(
+    <Main 
+      Workspace={Workspace}
+      Document={Document}
+      url={url}
+      context={context}
+      __META__={__META__}
+      req={req}
+      res
+    />,
+    /*React.createElement(Main, {
       Workspace,
       Document,
       location: url,
@@ -42,7 +51,7 @@ export async function render(url, __META__, req, res) {
       __META__,
       req,
       res
-    }),
+    }),*/
     context
   );
 
