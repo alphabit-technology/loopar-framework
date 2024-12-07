@@ -414,7 +414,7 @@ export class Loopar {
       data.webApp = {
         ...(webApp || {}),
         menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : [],
-        menu_actions: await this.db.getAll("Menu Action", ["*"], { '=': { parent_id: webApp.id } }) || []
+        menu_actions: webApp ? await this.db.getAll("Menu Action", ["*"], { '=': { parent_id: webApp.id } }) : []
       }
 
       await writeModules(data);
