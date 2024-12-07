@@ -338,8 +338,11 @@ export default class Router {
     }
 
     if (req.__WORKSPACE_NAME__ === "web") {
-      const webApp = loopar.webApp || { menu_items: [] };
-      const menu = webApp.menu_items.find(item => item.link === params.document);
+      const webApp = loopar.webApp || { 
+        menu_items: [],
+        action_items: [],
+      };
+      const menu = (webApp.menu_items || []).find(item => item.link === params.document);
 
       if (!webApp.name || !menu)
         return loopar.throw({ code: 404, message: !webApp.name ? "Web App not found" : "Page not found" });

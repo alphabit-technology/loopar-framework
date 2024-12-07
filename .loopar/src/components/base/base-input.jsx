@@ -90,7 +90,7 @@ const BaseInput = (props) => {
 
     return (
       <FormField
-        name={data.name}
+        name={data.name || data.key || data.id || ""}
         dontHaveForm={props.dontHaveForm}
         render={({ field }) => {
           if (!fieldControl.current) field.value = data.value;

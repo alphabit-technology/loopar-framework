@@ -21,11 +21,11 @@
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.1",
-    "@tailwindcss/vite": "^4.0.0-beta.5",
+    "@tailwindcss/vite": "^4.0.0-beta.6",
     "cmdk": "^1.0.4",
     "loopar": "file:.loopar",
     "stripe": "^17.3.1",
-    "tailwindcss": "^4.0.0-beta.5",
+    "tailwindcss": "^4.0.0-beta.6",
     "vite-plugin-compression": "^0.5.1"
   },
   "devDependencies": {

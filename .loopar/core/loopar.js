@@ -155,8 +155,8 @@ export class Loopar {
 
       return getFields(fields).filter(field => {
         const def = elementsDict[field.element]?.def || {};
-        return def.isWritable
-      }).map(field => field.data.name);
+        return def.isWritable && !!field.data.name// && !field.element.includes(FORM_TABLE);
+      }).map(field => field.data.name)
     }
 
     const refs = Object.values(docs).reduce((acc, doc) => {
@@ -413,7 +413,8 @@ export class Loopar {
 
       data.webApp = {
         ...(webApp || {}),
-        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : []
+        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : [],
+        menu_actions: await this.db.getAll("Menu Action", ["*"], { '=': { parent_id: webApp.id } }) || []
       }
 
       await writeModules(data);

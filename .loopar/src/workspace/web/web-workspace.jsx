@@ -52,7 +52,7 @@ const Layout = (({ webApp={}, ...props }) => {
 
   return (
     <div className="vaul-drawer-wrapper">
-      <TopNav />
+      <TopNav menuActions = {webApp.menu_actions}/>
       <section
         className={`flex absolute w-full`}
       >

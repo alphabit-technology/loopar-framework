@@ -96,7 +96,7 @@ function SelectFn({ search, data, onSelect, options = [], selected={} }) {
     onSelect(e);
   }, [onSelect]);
 
-  const current = selected && typeof selected === "object" ? selected : { option: selected };
+  const current = selected && (typeof selected == "object" && selected.option) ? selected : { option: "" };
 
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
@@ -156,6 +156,7 @@ function SelectFn({ search, data, onSelect, options = [], selected={} }) {
                 value={option.option}
                 key={option.option}
                 onSelect={() => setValueHandler(option.option)}
+                data-disabled="false"
                 className={cn(
                   "flex items-center",
                   option.option === current.option && "bg-secondary text-white"
@@ -350,7 +351,7 @@ const Select = (props) => {
         onSelect={field.onChange}
         selected={getCurrentSelection()}
       />
-      {data.description && (
+      {(data.description && props.simpleInput != true) && (
         <FormDescription>{data.description}</FormDescription>
       )}
     </>
@@ -366,7 +367,7 @@ Select.metaFields = () =>  {
     element: TEXTAREA,
     data: {
       description:
-        "For simple select insert the options separated by enter. For Entity Select insert the Entity Name",
+        "For simple select insert the options separated by enter. For Entity Select, insert the Entity Name",
     },
   };
 

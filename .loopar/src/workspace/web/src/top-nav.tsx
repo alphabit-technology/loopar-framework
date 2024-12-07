@@ -1,10 +1,10 @@
 import { buttonVariants } from "@/components/ui/button"
 import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
-import { TwitterLogoIcon } from "@radix-ui/react-icons"
+import * as RadixIcons from "@radix-ui/react-icons"
+import { CircleIcon } from "@radix-ui/react-icons";
 
-
-export function TopNav() {
+export function TopNav({menuActions}) {
   return (
     <header 
       className="fixed top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
@@ -16,22 +16,26 @@ export function TopNav() {
         <MainNav/>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
-
-            <a
-              href="https://twitter.com/looparinc"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div
-                className={buttonVariants({
-                  size: "icon",
-                  variant: "ghost",
-                })}
-              >
-                <TwitterLogoIcon className="h-5 w-5 fill-current" />
-                <span className="sr-only">Twitter</span>
-              </div>
-            </a>
+            {menuActions.map((action) => {
+              const Icon = RadixIcons[action.icon] || CircleIcon
+              return (
+                <a
+                  href={action.action}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <div
+                    className={buttonVariants({
+                      size: "icon",
+                      variant: "ghost",
+                    })}
+                  >
+                    <Icon className="h-5 w-5 fill-current" />
+                    <span className="sr-only">{action.label}</span>
+                  </div>
+                </a>
+              )
+            })}
             <ThemeToggle />
           </nav>
         </div>
