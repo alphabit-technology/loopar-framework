@@ -15,6 +15,7 @@ const BaseIcons = Object.keys(BaseIcons1).filter(icon => !icon.includes("Icon") 
 
 const BaseIcon = ({ icon, className }) => {
   const Icon = BaseIcons1[icon] || null;
+  if(!Icon) return null;
   return <Icon className={className} />;
 }
 
