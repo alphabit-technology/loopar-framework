@@ -1,4 +1,4 @@
-import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
+import {PiX, PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
 import * as iconModules from "@publicSRC/icon-import";
 
 export function BaseIcon({ icon, className, children }) {
