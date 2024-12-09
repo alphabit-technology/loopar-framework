@@ -10,5 +10,7 @@ export function BaseIcon({ icon, className, children }) {
 
   const Icon = iconModules[icon] || null;
 
+  if(!Icon) return null;
+
   return <Icon className={className} >{children}</Icon>;
 }
