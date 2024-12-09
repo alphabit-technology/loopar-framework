@@ -66,7 +66,6 @@ export class BaseTable extends Component {
     super(props);
     const meta = props.meta;
 
-    console.log(["Meta", props]);
     this.state = {
       ...this.state,
       meta: meta,

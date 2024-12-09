@@ -46,18 +46,18 @@ class FormTableClass extends BaseTable {
       }
 
       if (fieldIsWritable(column)) {
-        const cellName = row.name + "_" + column.data.name + "_input"
-        
+        const cellName = row.name + "_" + column.data.name;
+
         return (
           <TableCell
             {...cellProps}
-            key={column.name}
+            key={cellName + "_cell"}
           >
             <MetaComponent
               elements={[
                 {
                   element: column.element || DIV,
-                  key: cellName,
+                  key: cellName + "_input",
                   dontHaveLabel: true,
                   dontHaveForm: true,
                   data: cloneDeep({

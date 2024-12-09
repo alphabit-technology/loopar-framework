@@ -19,6 +19,7 @@ import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
 import inflection, { titleize, humanize, singularize } from "inflection";
 import { elementsDict } from "loopar";
+import * as lucideIcons from 'lucide-react'
 
 export class Loopar {
   #installingApp = false;
@@ -278,55 +279,6 @@ export class Loopar {
     return !fs.existsSync(path) ? null : fs.readFileSync(path, 'utf8');
   }
 
-  async copyAppFilesToSrc() {
-    if (await fileManage.existFolder(this.makePath("src", "__apps-source__"))) {
-      await fileManage.deleteFolder("src", "__apps-source__");
-    }
-
-    await fileManage.makeFolder("src", "__apps-source__");
-    const basePath = this.pathRoot;
-
-    this.eachApps(app => {
-      const moduleRoot = path.resolve(basePath, app, `modules`);
-      const modules = fs.readdirSync(moduleRoot);
-
-      modules.forEach(module => {
-        const coresRoot = path.resolve(`${moduleRoot}/${module}`);
-        const cores = fs.readdirSync(coresRoot);
-
-        cores.forEach(core => {
-          const entitiesRoot = path.resolve(`${coresRoot}/${core}`);
-          const entities = fs.readdirSync(entitiesRoot);
-
-          entities.forEach(entity => {
-            const clientFiles = fs.readdirSync(`${basePath}/apps/${app}/modules/${module}/${entity}/client`);
-
-            clientFiles.forEach(clientFile => {
-              if (clientFile.split(".")[1] !== "jsx") return;
-
-              const source = this.makePath(this.pathRoot, "apps", app, "modules", module, entity, "client", clientFile);
-              const destiny = this.makePath(this.pathRoot, "src", "__apps-source__", clientFile);
-
-              fs.readFile(source, (err, data) => {
-                if (err) {
-                  console.error('Err on read file:', err);
-                  return;
-                }
-
-                fs.writeFile(destiny, data, (err) => {
-                  if (err) {
-                    console.error('Err on write file:', err);
-                    return;
-                  }
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-  }
-
   async #loadConfig(data = null) {
     if (data) {
       Object.assign(this, data);
@@ -340,6 +292,53 @@ export class Loopar {
     await fileManage.makeFolder('public/uploads', "thumbnails");
   }
 
+  async buidIcons() {
+    const refs = this.getRefs();
+
+    const evalFields = (fields) => {
+      return fields.reduce((acc, field) => {
+        if (field.element == ICON_INPUT) {
+          acc.push(field.data.name);
+        }
+
+        if (field.elements) {
+          acc.push(...evalFields(field.elements));
+        }
+
+        return acc;
+      }, []);
+    }
+
+    const refIcons = {};
+    Object.values(refs).forEach(ref => {
+      if (!ref.is_single){
+        const docJson = fileManage.getConfigFile(ref.__NAME__.replaceAll(" ", "-").toLowerCase(), ref.__ROOT__);
+        
+        if (docJson) {
+          const fields = evalFields(JSON.parse(docJson.doc_structure));
+          fields.length && (refIcons[ref.__NAME__] = {fields});
+        }
+      }
+    });
+
+    let JSXImports = "";
+    const iconImports = new Set();
+    for (const [entity, ent] of Object.entries(refIcons)) {
+      for (const res of await this.db.getAll(entity, ent.fields)) {
+        for(const field of ent.fields) {
+          const icon = res[field].replaceAll(/[- ]/g, '');
+          if(lucideIcons[icon]) {
+            iconImports.add(res[field].replaceAll(/[- ]/g, ''));
+          }
+        }
+      }
+    }
+
+    JSXImports += `import {${[...iconImports].join(',')}} from "lucide-react";\nexport {${[...iconImports].join(',')}};\n`;
+
+    await fileManage.makeFile('public/src', 'iconImport', JSXImports, 'jsx', true);
+  }
+
   async build() {
     console.log('......Building Loopar.......');
 
@@ -347,6 +346,8 @@ export class Loopar {
     if (this.installingApp) return;
 
     await this.buildRefs();
+    await this.buidIcons();
+   
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);
 

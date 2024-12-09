@@ -68,7 +68,7 @@ export default defineConfig(({ command }) => ({
     })
   ],
   optimizeDeps: {
-    include: ['lucide-react']
+    include: ['lucide-react', 'react-icons/pi']
   },
   css: {
     preprocessorOptions: {
@@ -81,7 +81,7 @@ export default defineConfig(({ command }) => ({
     },
   },
   ssr: {
-    noExternal: ['lucide-react']
+    noExternal: ['lucide-react', 'react-icons/pi']
   },
   build: {
     outDir: command === 'build:server' ? 'dist/server' : 'dist/client',

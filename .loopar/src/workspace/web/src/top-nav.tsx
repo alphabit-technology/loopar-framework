@@ -1,8 +1,7 @@
 import { buttonVariants } from "@/components/ui/button"
 import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
-import * as RadixIcons from "@radix-ui/react-icons"
-import { CircleIcon } from "@radix-ui/react-icons";
+import {BaseIcon} from "@base-icons";
 
 export function TopNav({menuActions}) {
   return (
@@ -17,7 +16,6 @@ export function TopNav({menuActions}) {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             {menuActions.map((action) => {
-              const Icon = RadixIcons[action.icon] || CircleIcon
               return (
                 <a
                   href={action.action}
@@ -30,7 +28,7 @@ export function TopNav({menuActions}) {
                       variant: "ghost",
                     })}
                   >
-                    <Icon className="h-5 w-5 fill-current" />
+                    <BaseIcon icon={action.icon} className="h-5 w-5" />
                     <span className="sr-only">{action.label}</span>
                   </div>
                 </a>

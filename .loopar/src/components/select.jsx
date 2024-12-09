@@ -120,7 +120,7 @@ function SelectFn({ search, data, onSelect, options = [], selected={} }) {
             <span className="truncate text-slate-600/70">
               Select {data.label}
             </span>
-            )}
+          )}
           <div className="flex flex-row items-center justify-between">
             <Cross2Icon
               className={`h-5 w-5 shrink-0 ${active ? "opacity-50" : "opacity-0"}`}
@@ -331,15 +331,18 @@ const Select = (props) => {
 
   const getCurrentSelection = () => {
     const currentRows = rows || [];
-    const currentOptionValue = optionValue(value());
+    
+    //const currentOptionValue = optionValue(value());
+    const currentOptionValue = optionValue(value() || data.value);
 
     const filter = currentRows.filter((item) => {
-      return optionValue(item).option === currentOptionValue.option;
+      return optionValue(item).option == currentOptionValue.option;
     });
 
     return filter[0] ? optionValue(filter[0]) : currentOptionValue;
   };
 
+  const selected = getCurrentSelection()
    return renderInput((field) => (
     <>
       {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
@@ -349,7 +352,7 @@ const Select = (props) => {
         search={(delay) => search(delay)}
         data={data}
         onSelect={field.onChange}
-        selected={getCurrentSelection()}
+        selected={selected}
       />
       {(data.description && props.simpleInput != true) && (
         <FormDescription>{data.description}</FormDescription>
