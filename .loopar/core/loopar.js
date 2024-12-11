@@ -292,7 +292,8 @@ export class Loopar {
     await fileManage.makeFolder('public/uploads', "thumbnails");
   }
 
-  async buidIcons() {
+  async buildIcons() {
+    if(!this.__installed__) return;
     const refs = this.getRefs();
 
     const evalFields = (fields) => {
@@ -346,7 +347,7 @@ export class Loopar {
     if (this.installingApp) return;
 
     await this.buildRefs();
-    await this.buidIcons();
+    await this.buildIcons();
    
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);

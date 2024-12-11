@@ -3,7 +3,7 @@ import {renderToString } from "react-dom/server";
 import App from "@app";
 import { StaticRouter } from "react-router-dom";
 import { Loader } from "@/loader";
-import { ServerCookiesManager } from '@services/cookie';
+import {ServerCookiesManager} from '@services/cookie';
 import { __META_COMPONENTS__ } from "@components-loader";
 
 const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
@@ -34,24 +34,15 @@ export async function render(url, __META__, req, res) {
 
   const context = {};
   const HTML = renderToString(
-    <Main 
+    <Main
       Workspace={Workspace}
       Document={Document}
-      url={url}
+      location={url}
       context={context}
       __META__={__META__}
       req={req}
-      res
+      res={res}
     />,
-    /*React.createElement(Main, {
-      Workspace,
-      Document,
-      location: url,
-      context,
-      __META__,
-      req,
-      res
-    }),*/
     context
   );
 

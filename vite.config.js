@@ -45,6 +45,7 @@ export default defineConfig(({ command }) => ({
       "@publicSRC": path.resolve(__dirname + '/public/src'),
       '@context': path.resolve(__dirname + '/.loopar/src/context'),
       '@services': path.resolve(__dirname + '/.loopar/services'),
+      '@services1': path.resolve(__dirname + '/.loopar/services1'),
 
       '@loader': path.resolve(__dirname, 'src/loader.jsx'),
       "@main/styles": path.resolve(__dirname, 'src/app/styles'),
@@ -102,6 +103,9 @@ export default defineConfig(({ command }) => ({
     hmr: true,
     watch: {
       usePolling: true
-    }
+    },
+    fs: {
+      allow: ['.']
+    },
   }
 }));

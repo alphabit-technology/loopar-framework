@@ -1,7 +1,7 @@
 //import "@main/styles/main.css";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { CookiesProvider } from '@services/cookie';
+import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary";
 import 'vite/modulepreload-polyfill';
