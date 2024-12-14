@@ -56,7 +56,7 @@ export class ListGrid extends BaseTable {
                   <AvatarFallback className={`bg-transparent text-xl font-bold`}>{loopar.utils.avatar(row.name)}</AvatarFallback>
                 </Avatar>
                 <div className="h-ful items-left flex flex-col justify-center">
-                  <h1>{row.name}</h1>
+                  <h2>{row.name}</h2>
                   <h5 className='font-bold text-slate-500 dark:text-slate-400'>{loopar.utils.UPPERCASE(this.getDocumentTitle(row))}</h5>
                 </div>
               </Link>

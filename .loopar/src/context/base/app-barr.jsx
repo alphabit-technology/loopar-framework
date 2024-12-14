@@ -8,9 +8,9 @@ export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
   const { __ENTITY__, __DOCUMENT__ } = meta;
 
-  const title = __ENTITY__.name/* ((meta.title || context === 'module') ? meta.module_group :
+  const title = ((meta.title || context === 'module') ? meta.module_group :
       (['list', 'view'].includes(context) || meta.action === 'create' || __ENTITY__.is_single) ? __ENTITY__.name : __DOCUMENT__.name) || __ENTITY__.name;
-  */
+
       const gotoAction = (row, entity) => {
     if(["Entity", "Builder"].includes(entity.name)) return row.is_single ? "update" : "list";
     if(["Page Builder", "View Builder"].includes(entity.name)) return "view";
