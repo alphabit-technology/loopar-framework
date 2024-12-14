@@ -1,4 +1,4 @@
-import { loopar } from '../loopar.js';
+import { loopar } from 'loopar';
 import { fileManage } from "../file-manage.js";
 import {marked} from 'marked';
 

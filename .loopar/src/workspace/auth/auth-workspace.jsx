@@ -26,7 +26,7 @@ const Layout = (({ ...props }) => {
                 style={{ height: 28, width: 140 }}
               />
             </div>
-            <h1 className="h3">Sing In</h1>
+            <h2 className="h3">Sing In</h2>
           </div>
           {props.children}
         </div>

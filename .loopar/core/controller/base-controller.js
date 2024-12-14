@@ -1,6 +1,6 @@
 'use strict'
 
-import { loopar } from "../loopar.js";
+import { loopar } from "loopar";
 import CoreController from './core-controller.js';
 
 export default class BaseController extends CoreController {

@@ -1,4 +1,4 @@
-import { loopar } from "../loopar.js";
+import { loopar } from "loopar";
 
 export default class AuthController {
   loginActions = ['login', 'register', 'recovery_user', 'recovery_password'];

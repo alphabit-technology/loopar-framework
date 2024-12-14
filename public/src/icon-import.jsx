@@ -1,2 +1,2 @@
-import {Settings,LucideCode,LucideUserCheck2,ComponentIcon,Infinity,Github,Twitter} from "lucide-react";
-export {Settings,LucideCode,LucideUserCheck2,ComponentIcon,Infinity,Github,Twitter};
+import {Settings,LucideCode,LucideUserCheck2,ComponentIcon,Infinity,Github} from "lucide-react";
+export {Settings,LucideCode,LucideUserCheck2,ComponentIcon,Infinity,Github};
