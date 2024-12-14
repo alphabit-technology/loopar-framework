@@ -12,7 +12,7 @@ sudo npx loopar-env project-name --port 8080
 
 ### Clone from Git
  ````
-1. git pull https://github.com/alphabit-technology/loopar-framework.git project-name
+1. git clone https://github.com/alphabit-technology/loopar-framework.git project-name
 2. cd project-name
 3. npm install
 4. npm run dev
