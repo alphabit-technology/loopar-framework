@@ -5,16 +5,7 @@ import { cn } from "@/lib/utils";
 import { Cross1Icon } from "@radix-ui/react-icons";
 import { Item } from "@radix-ui/react-context-menu";
 
-type Items = Array<Item>
-
-type Item = {
-  link: String,
-  page: String,
-  parent_menu: String,
-  items: Items
-}
-
-const getActive = (item: Item, activePage: String) => {
+const getActive = (item, activePage) => {
   if (item.page == activePage) return true;
 
   for (const i of item.items) {
@@ -30,10 +21,10 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
   const { menuItems, activePage, activeParentMenu } = useWorkspace();
 
   const getParentLink = () => {
-    return menuItems.find((item: Item) => item.page === activeParentMenu)?.link;
+    return menuItems.find((item) => item.page === activeParentMenu && !item.parent_menu)?.link;
   }
 
-  const getLink = (item: Item) => {
+  const getLink = (item) => {
     const parentLink = getParentLink();
     return parentLink === item.page ? `/${item.link}` : `/${parentLink}/${item.link}`;
   }
@@ -52,7 +43,7 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
       >
         {treeIsActive && (
           <div className={`pl-3 ${isChild ? '' : ''}`}>
-            {item.items.map((subItem:Item) => (
+            {item.items.map((subItem) => (
               <>
                 <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
               </>
@@ -67,7 +58,7 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
 const SideNavRender = ({ menu }) => {
   return (
     <div className="w-full">
-      {menu.map((item:Item) => (
+      {menu.map((item) => (
         <MenuItemTree key={item.page} item={item}/>
       ))}
     </div>

@@ -1,15 +1,13 @@
 import { DeskLogo } from './desk-logo';
-//import { MenuIcon, XIcon } from 'lucide-react';
 import { HamburgerMenuIcon, Cross1Icon } from '@radix-ui/react-icons';
 import { useWorkspace } from "@workspace/workspace-provider";
 import {Link} from "@link"
 
 export function MainNav() {
-  const { openNav, setOpenNav, menuItems, device, activePage, activeParentMenu } = useWorkspace();
+  const { openNav, setOpenNav, menuItems, activeParentMenu } = useWorkspace();
   const Icon = openNav ? Cross1Icon : HamburgerMenuIcon;
-  //const desktop = device === "desktop"
 
-  const Items = menuItems.filter((item: { parent_menu: any; }) => !item.parent_menu).map((item, i) => {
+  const Items = menuItems.filter((item) => !item.parent_menu).map((item, i) => {
     const active = activeParentMenu === item.page ? "text-foreground/100 bg-foreground/10 px-4" : "px-4";
     return (
       <Link

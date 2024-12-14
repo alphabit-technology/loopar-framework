@@ -3,19 +3,9 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import * as LucideIcons from "lucide-react";
-import {useId} from "react";
+import {useId, useEffect} from "react";
 
-export interface DocsSidebarNavProps {
-  items: []
-}
-
-export interface SideNavProps {
-  items: []
-};
-
-import { useEffect } from "react";
-
-export function SideNav({ items=[] }: SideNavProps) {
+export function SideNav({ items=[] }) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
 
   const sideNavItems = items.map((item, i) => {
@@ -32,7 +22,7 @@ export function SideNav({ items=[] }: SideNavProps) {
         <div>
           {hasSubitems && (
             <ul className="flex flex-col gap-1 px-1">
-              {...modules.map((module:any, key) => {
+              {...modules.map((module, key) => {
                 const active = module.link ? true : false;
 
                 return (

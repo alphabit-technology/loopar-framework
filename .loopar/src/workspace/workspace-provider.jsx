@@ -8,95 +8,7 @@ const usePathname = () => {
   return useLocation();
 };
 
-type Theme = "dark" | "light" | "system"
-
-type Module = {
-  default: React.FC<any>
-}
-
-type ClientImporter = {
-  client: string,
-  context: string,
-}
-
-interface __ENTITY__ {
-  STRUCTURE: [],
-  doc_structure: string,
-}
-
-interface Meta {
-  __ENTITY__: __ENTITY__,
-  __DOCUMENT__: {},
-  __META__: {},
-  key: string,
-  client_importer: ClientImporter,
-}
-
-interface __META__ {
-  workspace: string;
-  meta: Meta;
-  key: string;
-  client_importer: ClientImporter;
-  W: string;
-  __DOCUMENT__: {},
-}
-
-interface Document {
-  Module: Module,
-  meta: Meta,
-  active: boolean,
-  __DOCUMENT__?: Meta,
-  [key: string]: any, // Add this line to allow string indexing
-}
-
-interface Documents {
-  [key: string]: Document
-}
-
-/*interface Res {
-  meta: Meta,
-  key: string,
-  client_importer: ClientImporter,
-}*/
-
-interface Element {
-  data: {
-    name: string,
-    value: string,
-    key: string,
-  },
-  elements: Element[]
-}
-
-type WorkspaceProviderProps = {
-  __META__?: __META__,
-  children: React.ReactNode
-  defaultTheme?: Theme
-  storageKey?: string,
-  workspace?: string,
-  openNav?: boolean,
-  menuItems?: [],
-  activeParentMenu?: string,
-  activePage?: string,
-  //currentPage?: string,
-  ENVIRONMENT?: string
-}
-
-type WorkspaceProviderState = {
-  theme: Theme
-  setTheme: (theme: Theme) => void,
-  openNav?: boolean,
-  setOpenNav?: (open: boolean) => void,
-  getDocuments: () => void,
-  Documents: Documents,
-  setDocuments: (Documents: Documents) => void,
-  activeParentMenu?: string,
-  setActiveParentMenu?: (activeParentMenu: string) => void,
-  activePage?: string,
-  setActivePage?: (activePage: string) => void
-}
-
-const initialState: WorkspaceProviderState = {
+const initialState = {
   theme: "system",
   setTheme: () => null,
   openNav: loopar.cookie.get("openNav"),
@@ -110,25 +22,25 @@ const initialState: WorkspaceProviderState = {
   setActivePage: () => null
 }
 
-export const WorkspaceProviderContext = createContext<WorkspaceProviderState>(initialState)
+export const WorkspaceProviderContext = createContext(initialState)
 
 export function WorkspaceProvider({
   children,
   defaultTheme = "system",
   storageKey = "vite-ui-theme",
   ...props
-}: WorkspaceProviderProps) {
+}) {
   const pathname = usePathname();
 
-  const [theme, setTheme] = useState<Theme>(
-    () => (loopar.cookie.get(storageKey) as Theme) || defaultTheme
+  const [theme, setTheme] = useState(
+    () => (loopar.cookie.get(storageKey)) || defaultTheme
   );
 
   const __META__ = props.__META__ || {}
   const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
   const __WORKSPACE_NAME__ = __META__.__WORKSPACE__?.name || "desk"
 
-  const [Documents, setDocuments] = useState(props.Documents || {} as Documents);
+  const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
   const [activeParentMenu, setActiveParentMenu] = useState(__DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name);
   const [activePage, setActivePage] = useState(props.activePage || "");
@@ -136,8 +48,8 @@ export function WorkspaceProvider({
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
 
-    const updateValue = (structure: [], Document: Document) => {
-      return structure.map((el: Element) => {
+    const updateValue = (structure, Document) => {
+      return structure.map((el) => {
         if (Object.keys(Document).includes(el.data?.name)) {
           const value = Document[el.data.name];
 
@@ -149,7 +61,7 @@ export function WorkspaceProvider({
       });
     };
 
-    toMergeDocuments.forEach((Document: Document): void => {
+    toMergeDocuments.forEach((Document) => {
       if (Document.__DOCUMENT__?.__ENTITY__) {
         Document.__DOCUMENT__.__ENTITY__.STRUCTURE ??= JSON.parse(Document.__DOCUMENT__.__ENTITY__.doc_structure);
         Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
@@ -165,7 +77,7 @@ export function WorkspaceProvider({
   const getDocuments = () => {
     return (
       <>
-        {getMergeDocument().map((Document: Document) => {
+        {getMergeDocument().map((Document) => {
           const { Module, __DOCUMENT__, active } = Document;
           return active && Module ? <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} /> : null;
         })}
@@ -215,7 +127,7 @@ export function WorkspaceProvider({
    * #param res
   */
 
-  const handleSetDocuments = (Documents: Documents) => {
+  const handleSetDocuments = (Documents) => {
     setDocuments(Documents);
   }
 
@@ -236,14 +148,14 @@ export function WorkspaceProvider({
 
   
 
-  const setDocument = (__META__: Meta) => {
+  const setDocument = (__META__) => {
     const copyDocuments = { ...Documents };
 
     Object.values(copyDocuments).forEach((Document) => {
       Document.active = false;
     });
 
-    const setDocument = (Module: Module) => {
+    const setDocument = (Module) => {
       copyDocuments[__META__.key] = {
         Module: Module.default,
         __DOCUMENT__: __META__,
@@ -253,12 +165,12 @@ export function WorkspaceProvider({
       handleSetDocuments(copyDocuments);
     }
 
-    AppSourceLoader(__META__.client_importer).then((Module: Module) => {
+    AppSourceLoader(__META__.client_importer).then((Module) => {
       setDocument(Module);
     }).catch(e => {
       __META__.client_importer.client = "app/error-view";
 
-      AppSourceLoader(__META__.client_importer).then((Module: Module) => {
+      AppSourceLoader(__META__.client_importer).then((Module) => {
         __META__.__DOCUMENT__ = {
           code: 404,
           title: "Source not found",
@@ -290,7 +202,7 @@ export function WorkspaceProvider({
   const value = {
     theme,
     __META__,
-    setTheme: (theme: Theme) => {
+    setTheme: (theme) => {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
