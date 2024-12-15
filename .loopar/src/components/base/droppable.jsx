@@ -99,7 +99,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
       }
     }
 
-    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.element') && ((el.data?.key || null) !== (currentDragging?.key))));
+    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.transitional.element') && ((el.data?.key || null) !== (currentDragging?.key))));
   }, [position, currentDragging, currentDropZone]);
 
   useEffect(() => {

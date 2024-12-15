@@ -61,7 +61,7 @@ const BaseCarrusel = (props) => {
     return (
       <div className={`relative w-full h-full ${designerMode ? "pt-3" : ""}`}>
         {items.map((element, index) => {
-          if(element.$$typeof === Symbol.for("react.element")) return element;
+          if(element.$$typeof === Symbol.for("react.transitional.element")) return element;
 
           const key = element.data.key;
 

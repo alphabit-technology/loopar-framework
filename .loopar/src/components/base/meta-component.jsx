@@ -294,7 +294,7 @@ function extractFieldNames(condition) {
 }
 
 const MetaComponentFn = ({ el, parent, parentKey, className }) => {
-  if(el && el.$$typeof === Symbol.for("react.element")){
+  if(el && el.$$typeof === Symbol.for("react.transitional.element")){
     return el;
   }
 

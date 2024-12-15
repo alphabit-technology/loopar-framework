@@ -12,7 +12,7 @@ export default function MenuContentMeta(props) {
   const getElementsDict = () => {
     const elements = props.children || props.elements || [];
     return elements.map((element) => {
-      if (element.$$typeof === Symbol.for("react.element")) {
+      if (element.$$typeof === Symbol.for("react.transitional.element")) {
         return {
           element: "div",
           type: "react.element",
