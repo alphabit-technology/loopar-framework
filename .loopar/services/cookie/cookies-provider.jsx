@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import CookiesContext from './context';
 import ClientManager from './client-manager';
 
@@ -7,11 +7,11 @@ export default function CookiesProvider(props) {
     manager: new ClientManager()
   };*/
 
-    const { manager=new ClientManager({updater: props.updater}), children, updater } = props;
+  const { manager = new ClientManager({ updater: props.updater }), children, updater } = props;
 
-    return (
-      <CookiesContext.Provider value={manager} updater={updater}>
-        {children}
-      </CookiesContext.Provider>
-    );
+  return (
+    <CookiesContext.Provider value={manager} updater={updater}>
+      {children}
+    </CookiesContext.Provider>
+  );
 }
