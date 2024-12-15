@@ -5,6 +5,7 @@ import path from 'pathe';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
 import tailwindcss from '@tailwindcss/vite';
+import image from '@rollup/plugin-image';
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
@@ -31,7 +32,7 @@ makeGroupComponentsAlias('./.loopar/src');
 
 export default defineConfig(({ command }) => ({
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    extensions: ['.js', '.jsx', '.ts', '.tsx', 'd.ts'],
     alias: {
       ...componentsAlias,
       ...groupComponentesAlias,
@@ -54,6 +55,10 @@ export default defineConfig(({ command }) => ({
     },
   },
   plugins: [
+    {
+      ...image(),
+      enforce: 'pre',
+    },
     tailwindcss(),
     //viteFastify(),
     react({

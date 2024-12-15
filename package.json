@@ -109,7 +109,6 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.0",
-    "@rollup/plugin-dynamic-import-vars": "^2.1.5",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.10.2",
     "@types/nprogress": "0.2.3",
@@ -129,10 +128,11 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-router": "^7.0.2",
-    "react-router-dom": "^7.0.2",
 
+    "@rollup/plugin-dynamic-import-vars": "^2.1.5",
     "rollup-plugin-critical": "^1.0.14",
     "rollup-plugin-visualizer": "^5.12.0",
+    "@rollup/plugin-image": "^3.0.3",
 
     "serve-static": "^1.16.2",
     "terser": "^5.36.0",

@@ -1,7 +1,7 @@
 import React from "react";
 import {renderToString } from "react-dom/server";
 import App from "@app";
-import { StaticRouter } from "react-router-dom";
+import { StaticRouter } from "react-router";
 import { Loader } from "@/loader";
 import {ServerCookiesManager} from '@services/cookie';
 import { __META_COMPONENTS__ } from "@components-loader";

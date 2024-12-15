@@ -1,7 +1,7 @@
 
 import loopar from "loopar";
 import React, { useState, useEffect } from "react";
-import { Link as ReactLink, useLocation } from 'react-router-dom';
+import { Link as ReactLink, useLocation } from 'react-router';
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";

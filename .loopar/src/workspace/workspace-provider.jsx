@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
 import { loopar } from "loopar";
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
 import { AppSourceLoader } from "@loader";
 
