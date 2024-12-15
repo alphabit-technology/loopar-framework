@@ -172,6 +172,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   if (parentHidden) {
     return (
       <Comp {...element}
+        key={element.key || null}
         ref={self => {
           if (self) {
             self.parentComponent = parent;
@@ -194,7 +195,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   delete element.key;
 
   const disabled = element.data && (element.data.hidden || element.data.disabled);
-  const Fragment = (disabled && !parentHidden) ? "div" : React.Fragment;
+  const Wrapper = (disabled && !parentHidden) ? "div" : React.Fragment;
   const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
   return (
@@ -213,6 +214,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
         }}
         onDragStart={(e) => {
           e.stopPropagation();
+
           const img = new Image();
           img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/axl7kYAAAAASUVORK5CYII=';
           e.dataTransfer.setDragImage(img, 0, 0);
@@ -250,13 +252,13 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
             style={{ top: 0 }}
           />
         }
-        <Fragment {...fragmentProps}>
+        <Wrapper {...fragmentProps}>
           <Comp {...element}
             key={element.key}
             ref={dragginElement}
             //className={className}
           />
-        </Fragment>
+        </Wrapper>
       </div>
     </HiddenContext.Provider>
   )
@@ -388,6 +390,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         <Fragment {...fragmentProps}>
           <Comp
             {..._props}
+            key={_props.key || null}
             ref={ref => {
               //console.log(["ref", docRef]);
               docRef.__REFS__[data.name] = ref;

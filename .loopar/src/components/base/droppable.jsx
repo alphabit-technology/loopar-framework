@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import { useHidden } from "@context/@/hidden-context";
 import { DroppableContext } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
@@ -16,7 +16,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
   const [elements, setElements] = useState(props.elements || []);
   const [movement, setMovement] = useState();
   const [position, setPosition] = useState();
-  const {currentDropZone, setCurrentDropZone, currentDragging, setCurrentDragging, designerMode, designerModeType, designerRef} = useDesigner();
+  const {currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, designerRef} = useDesigner();
 
   //const isDesigner = designerMode || props.isDesigner;
   const isDroppable = true// receiver.droppable || receiver.props.droppable || props.isDroppable;
@@ -84,7 +84,6 @@ export function Droppable({data={}, children, className, Component="div", ...pro
 
   useEffect(() => {
     if(typeof position != "undefined" && currentDragging){
-      
       const rect = currentDragging.targetRect;
 
       if(currentDropZone && currentDropZone === dropZoneRef.current && rect){
@@ -98,9 +97,13 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         return;
       }
     }
-
-    setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.transitional.element') && ((el.data?.key || null) !== (currentDragging?.key))));
   }, [position, currentDragging, currentDropZone]);
+
+  useEffect(() => {
+    if (!dropping) {
+      setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.transitional.element')));
+    }
+  }, [dropping]);
 
   useEffect(() => {
     if(movement){
