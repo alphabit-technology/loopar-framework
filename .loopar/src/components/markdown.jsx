@@ -6,7 +6,7 @@ import React, { useCallback, useMemo } from "react";
 import {marked} from "marked";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
-import "./markdown.css"
+import "./markdown/markdown.css"
 
 export default function MetaMarkdown (props) {
   const { set, data } = ComponentDefaults(props);

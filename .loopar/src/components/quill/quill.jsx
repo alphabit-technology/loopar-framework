@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 import ReactQuill from 'react-quill';
-import './quill-snow.css';
+import 'react-quill/dist/quill.snow.css';
 import "./quill.css";
 
 const toolbarOptions = [

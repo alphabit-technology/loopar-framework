@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/form";
 
 import "easymde/dist/easymde.min.css";
-import "./markdown.css"
+import "./markdown/markdown.css"
 
 export default function MarkdownInput(props){
   const {renderInput, data} = BaseInput(props);

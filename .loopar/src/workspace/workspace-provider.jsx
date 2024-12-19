@@ -197,6 +197,7 @@ export function WorkspaceProvider({
 
   useEffect(() => {
     loaded ? fetch(pathname) : setLoaded(true);
+    __WORKSPACE_NAME__ == "web" && setOpenNav(false);
   }, [pathname]);
 
   const value = {

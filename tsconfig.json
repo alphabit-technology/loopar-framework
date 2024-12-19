@@ -32,8 +32,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".loopar/src/**/*.ts", ".loopar/src/**/*.tsx", ".loopar/service/**/*.ts", ".loopar/service/**/*.tsx",
+    ".loopar/src/**/*.ts", ".loopar/src/**/*.tsx", ".loopar/services/**/*.ts", ".loopar/services/**/*.tsx",
     "src/**/*.ts", "src/**/*.tsx"
-, "postcss.config.js"  ],
+  ],
   "exclude": ["node_modules"]
 }
