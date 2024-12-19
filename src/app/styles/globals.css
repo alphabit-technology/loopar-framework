@@ -1,10 +1,9 @@
-@tailwind base;
-@tailwind components;
+
 @tailwind utilities;
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @variant dark (&:where(.dark, .dark *));
-@config "../../../tailwind.config.js";
+@config "main-tailwind/tailwind.config.js";
 
 @layer base {
   :root {

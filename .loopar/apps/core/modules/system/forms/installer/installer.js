@@ -1,6 +1,5 @@
-import path from "path";
-import { loopar, fileManage } from "loopar";
-import BaseDocument from "../../../../../../core/document/base-document.js";
+import path from "pathe";
+import { loopar, fileManage, BaseDocument } from "loopar";
 
 export default class Installer extends BaseDocument {
   async getDocumentData(document) {
@@ -109,9 +108,13 @@ export default class Installer extends BaseDocument {
     const modules = data.Module.documents;
     return Object.values(modules).find(e => e.name === modu).app_name;
   }*/
+  
+  async getAppFromModule(module) {
+    return await loopar.db.getValue('Module', 'app_name', module, {ifNotFound: null});
+  }
 
   async installData(reinstall = false) {
-    console.log("Installing App DATA", this.app_name);
+    console.log("Installing DATA", this.app_name);
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
     const ownEntities = loopar.getEntities(this.app_name);
@@ -123,6 +126,27 @@ export default class Installer extends BaseDocument {
         const E = await loopar.newDocument(entity, data);
         await E.save({ save: false, validate: false });
       }
+    }
+
+    const isOwn = async (entity, document, data) => {
+      if (ownEntities.find(e => e.name == entity)) {
+        return true;
+      }
+
+      if (entity == "App" && document.name == this.app_name) {
+        return true;
+      }
+
+      if (entity == "Module" && document.name == data.module) {
+        return true;
+      }
+
+      if (entity == "Module") {
+        return this.app_name == await this.getAppFromModule(document.name);
+      }
+
+      const appFromModule = await this.getAppFromModule(data.module);
+      return appFromModule == this.app_name;
     }
 
     const insertDocuments = async (entity) => {
@@ -149,11 +173,14 @@ export default class Installer extends BaseDocument {
           console.log(["Installing", ent.name, document.name])
           const doc = await loopar.newDocument(ent.name, { ...data, __document_status__: "Active" });
           await doc.save({ validate: false });
-        }else if(reinstall){
-          console.log(["Reinstalling", ent.name, document.name])
-          const doc = await loopar.getDocument(ent.name, document.name, data);
-
-          await doc.save({ validate: false });
+        } else if (reinstall) {
+          if (await isOwn(ent.name, document, data)) {
+            console.log(["Reinstalling//////////", ent.name, document.name])
+            const doc = await loopar.getDocument(ent.name, document.name, data);
+            await doc.save({ validate: false });
+          } else {
+            console.log(["Not Reinstalling", ent, document])
+          }
         }
 
         for (const child of (document.documents || [])) {

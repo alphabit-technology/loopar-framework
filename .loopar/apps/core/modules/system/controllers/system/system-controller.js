@@ -1,7 +1,6 @@
 'use strict'
 
-import BaseController from "../../../../../../core/controller/base-controller.js";
-import { loopar, fileManage } from "loopar";
+import { loopar, fileManage, BaseController } from "loopar";
 
 export default class SystemController extends BaseController {
   client = "form";

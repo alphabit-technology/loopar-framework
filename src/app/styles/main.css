@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@config "../../../tailwind.config.js";
+@config "../../../packages/main-tailwind/tailwind.config.js";
 
 @theme {
   --background: 0 0% 100%;

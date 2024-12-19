@@ -1,0 +1,12 @@
+{
+  "name": "main-vite",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "vite": "^6.0.3",
+    "vite-plugin-express": "^1.0.3",
+    "vite-plugin-preload": "^0.4.2",
+    "vite-plugin-compression": "0.5.1",
+    "@vitejs/plugin-react-swc": "3.7.2"
+  }
+}

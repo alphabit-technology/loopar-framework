@@ -1,0 +1,12 @@
+{
+  "name": "main-types",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/nprogress": "0.2.3",
+    "@types/numeral": "2.0.5",
+    "@typescript-eslint/parser": "^8.18.0",
+    "typescript": "^5.5.4"
+  }
+}
