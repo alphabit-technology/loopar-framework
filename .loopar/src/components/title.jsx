@@ -1,6 +1,7 @@
 import BaseText from "@base-text";
 import ComponentDefaults from "@component-defaults";
-import {useDesigner} from "@context/@/designer-context";
+import { useDesigner } from "@context/@/designer-context";
+import { cn } from "@/lib/utils";
 
 export default function Title(props) {
   const {designing} = useDesigner();
@@ -10,10 +11,14 @@ export default function Title(props) {
   return (
     <div className="flex">
       <h1 
-        className={`${getTextAlign()} ${getTextSize()} w-full font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]`}
+        className={cn(
+          getTextAlign(), getTextSize(),
+          "w-full font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]",
+          props.className
+        )}
         {...(designing
           ? {
-              style: {
+            style: {
                 maxHeight: "3em",
                 overflow: "auto",
                 display: "-webkit-box",
@@ -21,7 +26,9 @@ export default function Title(props) {
                 "-webkit-box-orient": "vertical",
               },
             }
-          : {})}
+          : {
+            style: props.style || {}
+          })}
       >
         {getText()}
       </h1>

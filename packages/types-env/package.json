@@ -1,5 +1,5 @@
 {
-  "name": "main-types",
+  "name": "types-env",
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {

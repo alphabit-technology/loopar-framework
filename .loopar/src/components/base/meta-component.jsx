@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useId } from "react";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "@components-loader";
-import elementManage from "@tools/element-manage";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
 import { useDroppable } from "@context/@/droppable-context";
@@ -9,153 +8,10 @@ import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
 import loopar from "loopar";
 import { useDocument } from "@context/@/document-context";
-import fileManager from "@tools/file-manager";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary"
 import PureHTMLBlock from "@pure-html-block";
-
-const designElementProps = (el) => {
-  if (!el.data) {
-    const names = elementManage.elementName(el.element);
-    el.data = {
-      label: names.label,
-      key: names.id
-    }
-  }
-
-  const newProps = {
-    ...{
-      ...el,
-      key: 'design-element' + el.data.key
-    }
-  }
-
-  return newProps;
-};
-
-function prepareMetaData(props, parent, image) {
-  const data = props.data || {};
-  
-  if (image && (!data || !data.background_image || data.background_image === '[]')) {
-    props.src = "/uploads/empty-image.svg"
-  }
-
-  const getSrc = () => {
-    if (data) {
-      return fileManager.getMappedFiles(data.background_image, data.name);
-    }
-    return [];
-  }
-
-  if (data) {
-    const backgroundColor = {};
-    if (data?.background_color) {
-      const color = loopar.utils.rgba(data.background_color);
-
-      if (color) {
-        Object.assign(backgroundColor, {
-          backgroundColor: color,
-          backgroundBlendMode: data.background_blend_mode || 'normal',
-        });
-      }
-    }
-
-    const animations = {};
-
-    if ((data.animation || parent?.data?.static_content)) {
-      const animation = parent?.data?.static_content ? loopar.reverseAnimation(parent.data.animation) : loopar.getAnimation(data.animation);
-
-      animations["data-aos"] = animation; <q></q>
-      data.static_content = parent?.data?.static_content;
-
-      if (data.animation_delay) {
-        animations["data-aos-delay"] = data.animation_delay;
-      }
-
-      if (data.animation_duration && data.animation_duration > 0) {
-        animations["data-aos-duration"] = data.animation_duration;
-      } else {
-        animations["data-aos-duration"] = 2000;
-      }
-
-      //Object.assign(props, animations);
-    }
-
-    if (data.background_image && data.background_image !== '[]') {
-      
-      const src = getSrc();
-      
-      if (src && src.length > 0) {
-        const imageUrl = src[0].src || "/uploads/empty-image.svg";
-
-        const backgroundImage = {
-          backgroundImage: `url("${imageUrl}")`,
-          backgroundSize: data.background_size || "cover",
-          backgroundPosition: data.background_position || "center",
-          backgroundRepeat: data.background_repeat || "no-repeat",
-          ...backgroundColor
-        }
-
-        props.imageProps = {
-          src: imageUrl
-        }
-
-        if (props.element === "image") {
-          Object.assign(props.imageProps, {
-            alt: data.label || "",
-            title: data.description || "",
-            style: {
-              display: "none"
-            }
-          });
-
-          props.coverProps = {
-            style: {
-              ...backgroundImage
-            },
-            ...animations
-          }
-
-          if (data.aspect_ratio) {
-            props.style = {
-              ...props.style || {}
-            }
-          }
-        } else {
-          props.style = {
-            ...props.style || {},
-            ...backgroundImage
-          };
-        }
-      }
-    }
-
-    if (props.element !== "image") {
-      props.style = {
-        ...props.style || {},
-        ...backgroundColor
-      };
-
-      Object.assign(props, animations);
-    }
-  }
-}
-
-const elementProps = ({ elDict, parent = {}, isDesigner }) => {
-  prepareMetaData(elDict, parent, false);
-
-  if (isDesigner) return designElementProps(elDict, parent);
-  elDict.data ??= {};
-  const data = elDict.data;
-
-  return {
-    element: elDict.element,
-    ...{
-      key: elDict.key || "element" + data.key,
-    },
-    ...elDict,
-  };
-};
+import{buildMetaProps, Animations, extractFieldNames, evaluateCondition} from "@meta";
 
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
@@ -264,35 +120,75 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   )
 };
 
-function evaluateCondition(condition, values) {
-  let sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||').replace(/=/g, '==');
+const MetaRender = ({ el, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const elementRef = useRef(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        } else {
+          setIsVisible(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-  const keys = Object.keys(values);
-  keys.forEach(key => {
-    const value = values[key];
-    const regex = new RegExp(`\\b${key}\\b`, 'g');
-    sanitizedCondition = sanitizedCondition.replace(regex, `'${value}'`);
-  });
+    if (elementRef.current) {
+      observer.observe(elementRef.current);
+    }
 
-  try {
-    return new Function(`return ${sanitizedCondition};`)();
-  } catch (error) {
-    console.error("Error evaluating condition:", error);
-    return false;
+    return () => observer.disconnect();
+  }, []);
+
+  let className = metaProps.className;
+  let style = metaProps.style || {};
+
+  if (data.animation && Animations[data.animation]) {
+    const animation = Animations[data.animation];
+
+    className = cn(
+      className,
+      `transform transition-all ease-in-out`,
+      isVisible ? animation.visible : animation.initial
+    );
+
+    style = {
+      ...style || {},
+      transitionDelay: `${(data?.delay || 0) * 1000}ms`,
+      transitionDuration: `${(data?.duration || 3) * 1000}ms`,
+    };
   }
-}
-
-function extractFieldNames(condition) {
-  const sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||');
-  const regex = /\b([a-zA-Z_]\w*)\b(?=\s*[=!><])/g;
-  const matches = new Set();
-  let match;
-
-  while ((match = regex.exec(sanitizedCondition)) !== null) {
-    matches.add(match[1]);
+  
+  if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
+    return <PureHTMLBlock
+      element={el} {...loopar.utils.renderizableProps(metaProps)}
+      data={data}
+      className={className}
+      style={style}
+    />
   }
 
-  return Array.from(matches);
+  if (!Comp) return null;
+
+  return (
+    <Comp
+      {...metaProps}
+      key={metaProps.key || null}
+      className={className}
+      style={style}
+      ref={ref => {
+        if (ref) {
+          elementRef.current = ref;
+        }
+        //console.log(["ref", docRef]);
+        docRef.__REFS__[data.name] = ref;
+        parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
+      }
+    } />
+  );
 }
 
 const MetaComponentFn = ({ el, parent, parentKey, className }) => {
@@ -303,7 +199,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode;
-  const _props = elementProps({ elDict: el, parent, isDesigner });
+  const metaProps = buildMetaProps({ metaProps: el, parent, isDesigner });
   
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
@@ -312,17 +208,17 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   const { ENVIRONMENT } = useWorkspace();
 
   const isDisplay = () => {
-    if (_props.data?.display_on){
-      const fields = extractFieldNames(_props.data?.display_on);
+    if (metaProps.data?.display_on){
+      const fields = extractFieldNames(metaProps.data?.display_on);
 
       const values = fields.reduce((acc, field) => {
         acc[field] = formValues[field];
         return acc;
       }, {});
 
-      return evaluateCondition(_props.data?.display_on, values);
+      return evaluateCondition(metaProps.data?.display_on, values);
     }else{
-      return ![true, "true", "1", 1].includes(_props.data?.hidden);
+      return ![true, "true", "1", 1].includes(metaProps.data?.hidden);
     }
   }
 
@@ -330,7 +226,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 
   useEffect(() => {
     docRef.__REFS__[el.data.name] = {
-      ..._props.data,
+      ...metaProps.data,
       hidden: !display
     }
 
@@ -351,9 +247,9 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   }, []);
 
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
-    const data = _props.data || {};
+    const data = metaProps.data || {};
 
-    _props.className = cn("relative", (Comp && Comp.designerClasses), _props.className, "rounded", el.className, className, data?.class);
+    metaProps.className = cn("relative", (Comp && Comp.designerClasses), metaProps.className, "rounded", el.className, className, data?.class);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {
@@ -361,14 +257,14 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         ...docRef.__META_DEFS__[data.name]?.data || {}
       };
 
-      Object.assign(_props, docRef.__META_DEFS__[data.name], { data: newData });
+      Object.assign(metaProps, docRef.__META_DEFS__[data.name], { data: newData });
     }
 
     if (isDesigner && Comp && data.wrapper !== true) {
       return (
         <DesignElement
           Comp={Comp}
-          element={_props}
+          element={metaProps}
           parent={parent}
           parentKey={parentKey}
           def={def}
@@ -376,29 +272,23 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
       )
     } else if (!data.hidden && display) {
       const disabled = data.disabled;
-      const Fragment = disabled ? "div" : React.Fragment;
+      const Wrapper = disabled ? "div" : React.Fragment;
       const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
 
-      if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
-        return <PureHTMLBlock element={el} {...loopar.utils.renderizableProps(_props)} data={data}/>
-      }
-
-      if (!Comp) return null;
-      delete _props.key;
-
       return (
-        <Fragment {...fragmentProps}>
-          <Comp
-            {..._props}
-            key={_props.key || null}
-            ref={ref => {
-              //console.log(["ref", docRef]);
-              docRef.__REFS__[data.name] = ref;
-              parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
-            }
-          } />
-        </Fragment>
-      );
+        <Wrapper {...fragmentProps}>
+          <MetaRender
+            Comp={Comp}
+            el={el}
+            parent={parent}
+            parentKey={parentKey}
+            docRef={docRef}
+            data={data}
+            threshold={0.1}
+            metaProps={metaProps}
+          />
+        </Wrapper>
+      )
     }
   } else {
     //console.warn(["Component: " + def.element + " is not loaded yet"]);
@@ -422,7 +312,7 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
   });
 }
 
-export const MetaComponent = ({ component = "div", render, parent, ...props }) => {
+export const MetaComponent = ({ component = "div", render, ...props }) => {
   const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
 

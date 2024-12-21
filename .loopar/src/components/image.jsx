@@ -2,7 +2,6 @@ import loopar from "loopar";
 import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 import { useEffect } from "react";
-import AOS from "aos"
 
 export function Image ({imageProps={}, coverProps={}, ...props}) {
   const data = props.data || {};
@@ -22,7 +21,6 @@ export function Image ({imageProps={}, coverProps={}, ...props}) {
   }
 
   useEffect(() => {
-    AOS.refresh();
     if(imageLoaded) {
       setIsImageLoading(false);
     }

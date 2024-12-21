@@ -119,7 +119,7 @@ export const getMetaFields = (data) => {
         info: <label
           style={{ paddingTop: 10 }}
           className="text-danger"
-        >Animations allowed in Website Only</label>,
+        >Animations allowed in View only</label>,
         animation: {
           element: "select",
           data: {

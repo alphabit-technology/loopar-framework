@@ -3,25 +3,9 @@ import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
-import AOS from 'aos';
 
 const Layout = (({ webApp={}, ...props }) => {
   const { menuItems, activeParentMenu } = useWorkspace();
-  const [animated, setAnimated] = useState(true);
-
-  const handlerInitAnimation = () => {
-    AOS.init({
-      duration: 100,
-      easing: 'ease-in-out',
-      once: false,
-    });
-
-    setAnimated(true);
-  }
-
-  useEffect(() => {
-    handlerInitAnimation();
-  }, [animated]);
 
   function buildMenuTree(menu) {
     const menuMap = {};

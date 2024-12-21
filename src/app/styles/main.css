@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@config "../../../packages/main-tailwind/tailwind.config.js";
+@config "../../../packages/tailwind-env/tailwind.config.js";
 
 @theme {
   --background: 0 0% 100%;
@@ -72,9 +72,4 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  
-}
-
-h1 {
-  @apply font-bold text-5xl;
 }

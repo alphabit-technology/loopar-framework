@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import loopar from "loopar";
-import AOS from "aos";
 import { useDesigner } from "@context/@/designer-context";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Droppable } from "@droppable";
@@ -193,7 +192,6 @@ const BaseCarrusel = (props) => {
 
   const resetInterval = () => {
     if (props.designer) return;
-    AOS.refresh();
     clearInterval(intervalRef.current);
     startInterval();
   };

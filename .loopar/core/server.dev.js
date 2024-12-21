@@ -110,8 +110,6 @@ class Server extends Router {
       publicDirs.push('node_modules/particles.js');
     }
 
-    publicDirs.push('node_modules/aos/dist');
-
     publicDirs.forEach(dir => {
       this.server.use(
         "/public",

@@ -247,7 +247,7 @@ class Loopar extends Router {
 
   animations(notContains) {
     const animations = {
-      random: "Random",
+      "random": "Random",
       "fade-up": "Fade Up",
       "fade-down": "Fade Down",
       "fade-left": "Fade Left",

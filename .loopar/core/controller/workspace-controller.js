@@ -70,12 +70,6 @@ export default class WorkspaceController extends AuthController {
       </script>
     `);
 
-    if (workSpaceName === 'web') {
-      html = html.replace(`<!--web-head-->`, `
-        <link rel="stylesheet" href="/aos.css">
-      `);
-    }
-
     return {
       status: 200,
       body: html,
