@@ -6,7 +6,6 @@ import { elementsDict } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
 
 class Loopar extends Router {
-  //ui = GuiManage;
   scriptManager = scriptManager;
   currentPageName = "";
   rootApp = null;

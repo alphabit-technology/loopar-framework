@@ -16,8 +16,6 @@ const initialState = {
   getDocuments: () => null,
   Documents: {},
   setDocuments: () => null,
-  activeParentMenu: "",
-  setActiveParentMenu: () => null,
   activePage: "",
   setActivePage: () => null
 }
@@ -42,7 +40,6 @@ export function WorkspaceProvider({
 
   const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
-  const [activeParentMenu, setActiveParentMenu] = useState(__DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name);
   const [activePage, setActivePage] = useState(props.activePage || "");
 
   const getMergeDocument = () => {
@@ -131,23 +128,6 @@ export function WorkspaceProvider({
     setDocuments(Documents);
   }
 
-  useEffect(() => {
-    const active = Object.values(Documents).find((Document) => Document.active);
-    
-    if (!active) return;
-
-    const { __DOCUMENT__ } = active;
-    const activeParentMenu = __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
-   
-    if (activeParentMenu){
-      setActiveParentMenu(activeParentMenu);
-      setActivePage(__DOCUMENT__?.__ENTITY__?.name);
-    }
-
-  }, [Documents, pathname]);
-
-  
-
   const setDocument = (__META__) => {
     const copyDocuments = { ...Documents };
 
@@ -200,6 +180,27 @@ export function WorkspaceProvider({
     __WORKSPACE_NAME__ == "web" && setOpenNav(false);
   }, [pathname]);
 
+  const getActiveDocument = () => {
+    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__;
+  }
+
+  const getActiveParentMenu = () => {
+    const __DOCUMENT__ = getActiveDocument();
+    return __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
+  }
+
+  useEffect(() => {
+    const __DOCUMENT__ = getActiveDocument();
+    if (!__DOCUMENT__) return;
+
+    const activeParentMenu = getActiveParentMenu();
+
+    if (activeParentMenu){
+      setActivePage(__DOCUMENT__?.__ENTITY__?.name);
+    }
+
+  }, [Documents]);
+
   const value = {
     theme,
     __META__,
@@ -216,7 +217,8 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    activeParentMenu: activeParentMenu,
+    getActiveParentMenu: getActiveParentMenu,
+    activeParentMenu: getActiveParentMenu(),
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
     getDocuments: getDocuments,

@@ -60,53 +60,53 @@ export default class HTTP {
     }, {});
   }
 
-  /*async fetchWithInterceptors(url, options) {
-    const response = await fetch(url, options);
-
-    if (response.redirected) {
-      window.location.href = response.url;
-      return;
-    }
-
-    const isJson = response.headers.get('content-type')?.includes('application/json');
-    const data = isJson ? await response.json() : null;
-
-    if (!response.ok) {
-      const error = data || { error: response.status, message: response.statusText };
-      this.throw({
-        title: error.title || error.code || 'Undefined Error',
-        message: error.message || error.description || 'Undefined Error',
-      });
-    }
-
-    return data;
-  }*/
-
   #sendPetition(options) {
     const self = this;
     const freeze = options.freeze != false;
-    freeze && self.freeze(true);
+
+    function withFreeze(promise, delay = 1000) {
+      if (!freeze) return promise;
+      let freezeTimeout;
+
+      const startFreeze = new Promise((resolve) => {
+        freezeTimeout = setTimeout(() => {
+          self.freeze(freeze);
+          resolve();
+        }, delay);
+      });
+
+      return Promise.race([
+        promise.finally(() => {
+          clearTimeout(freezeTimeout);
+          self.freeze(false);
+        }),
+        startFreeze,
+      ]);
+    }
+
 
     fetch(self.url, self.options).then(async response => {
-      return new Promise(async (resolve, reject) => {
-        if (response.redirected) {
-          window.location.href = response.url;
-          return;
-        }
+      withFreeze(
+        new Promise(async (resolve, reject) => {
+          if (response.redirected) {
+            window.location.href = response.url;
+            return;
+          }
 
-        const isJson = response.headers.get('content-type')?.includes('application/json');
-        const data = isJson ? await response.json() : null;
+          const isJson = response.headers.get('content-type')?.includes('application/json');
+          const data = isJson ? await response.json() : null;
 
-        if (!response.ok) {
-          const error = data || { error: response.status, message: response.statusText };
-          reject(error);
-        } else {
-          options.success && options.success(data);
-          data && data.notify && self.notify(data.notify);
+          if (!response.ok) {
+            const error = data || { error: response.status, message: response.statusText };
+            reject(error);
+          } else {
+            options.success && options.success(data);
+            data && data.notify && self.notify(data.notify);
 
-          resolve(data);
-        }
-      });
+            resolve(data);
+          }
+        })
+      );
     }).catch(error => {
       options.error && options.error(error);
       self.throw({

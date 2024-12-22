@@ -17,22 +17,19 @@ export const Designer = ({designerRef, metaComponents, data}) => {
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
-  const [savedEditElement, setSavedEditElement] = useCookies("editElement");
-  const [editElement, setEditElement] = useState(null);
   const [dropping, setDropping] = useState(false);
-  const [, setSidebarOpen] = useCookies("sidebarOpen");
-  const {designerMode} = useDesigner();
+  const { designerMode } = useDesigner();
+  
+  const [editElement, setEditElement] = useCookies("editElement");
+  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
+  const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
 
   useEffect(() => {
-    if(savedEditElement && designerModeType === "editor"){
-      setTimeout(() => {
-        handleEditElement(savedEditElement);
-      }, 200);
+    if (!editElement) {
+      setDesignerModeType("designer");
     }
-  }, []);
-
-  const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
-  const [sidebarOpen] = useCookies("sidebarOpen");
+  }, [editElement]);
+  
   const elements = JSON.parse(metaComponents || "[]");
 
   const handleChangeMode = (opt=null) => {
@@ -45,6 +42,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
 
   const handleSetMode = (newMode) => {
     setDesignerModeType(newMode);
+    setSidebarOpen(true);
   }
 
   const toggleDesign = (mode) => {
@@ -53,24 +51,8 @@ export const Designer = ({designerRef, metaComponents, data}) => {
 
   const handleEditElement = (element) => {
     setEditElement(element);
+    handleChangeMode("editor");
   }
-
-  useEffect(() => {
-    if(!designerMode){
-      setSavedEditElement(editElement);
-      if(editElement) handleChangeMode("editor");
-    }
-  }, [editElement]);
-  
-  useEffect(() => {
-    if(editElement && designerModeType == "editor"){
-      setSidebarOpen(true);
-    }
-  }, [editElement, designerModeType]);
-
-  /*useEffect(() => {
-    if(designerModeType !== "editor") setSavedEditElement(null);
-  }, [designerModeType]);*/
 
   const handleDeleteElement = (element) => {
     loopar.confirm("Are you sure you want to delete this element?", () => {

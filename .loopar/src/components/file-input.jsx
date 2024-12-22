@@ -264,20 +264,7 @@ const FileInput = (props) => {
               ref={inputRef}
             />
             {DroppbleArea}
-            <div
-              className={`h-full bg-background/50 flex ${!hasFiles ? "flex-col" : "flex-row"} items-center justify-center ${dropping ? "drag-over" : ""}`}
-              onDragOverCapture={(e) => {
-                e.preventDefault();
-                setDropping(true);
-              }}
-              onDragLeaveCapture={(e) => {
-                e.preventDefault();
-                setDropping(false);
-              }}
-              onDrop={handleDrop}
-            >
-              {/* Resto de la lógica para mostrar el área de arrastre y carga */}
-            </div>
+            
           </div>
         </div>
       </FormControl>

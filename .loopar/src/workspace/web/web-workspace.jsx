@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React from "react";
 import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
@@ -42,7 +42,7 @@ const Layout = (({ webApp={}, ...props }) => {
       >
         <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu}/>
         <div
-          className={`ease-induration-100 w-full overflow-auto mt-web-header-height ${childMenu.length > 0 && 'lg:ml-web-sidebar-width'}`}
+          className={`ease-induration-100 w-full overflow-aut mt-web-header-height ${childMenu.length > 0 && 'lg:ml-web-sidebar-width'}`}
         >
           <div className="p-3">
             {props.children}

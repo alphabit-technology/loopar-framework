@@ -1,5 +1,5 @@
 import { BrushIcon, EyeIcon, XIcon } from "lucide-react";
-import React from "react";
+import React, {useEffect} from "react";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
 import {DesignerForm} from "./designer-form";
@@ -14,7 +14,7 @@ export const Sidebar = () => {
 
   return (
     <div 
-      className="w-sidebar-width mt-header-height pb-header-height" 
+      className="w-sidebar-width mt-header-height pb-header-height bg-background"
       style={{position: "fixed", top: 0, right: 0, zIndex: 30, width: 300, height: "100vh"}}
     >
       <div className="flex flex-col p-1 w-full h-full">

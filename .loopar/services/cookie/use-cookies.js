@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import CookiesContext from './context';
 
-export default function useCookies(name) {
+export default function useCookies(name, initialValue) {
   const manager = useContext(CookiesContext);
 
   if (!manager) {
@@ -9,7 +9,7 @@ export default function useCookies(name) {
   }
 
   if (name) {
-    return [manager.get(name), manager.set.bind(manager, name)];
+    return [manager.get(name), manager.set.bind(manager, name) || initialValue];
   }
 
   return [manager.getAll(), manager.set.bind(manager)];
