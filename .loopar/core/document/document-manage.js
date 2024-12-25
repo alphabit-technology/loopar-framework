@@ -1,6 +1,6 @@
 import { loopar } from 'loopar';
 import { fileManage } from "../file-manage.js";
-import {marked} from 'marked';
+import { marked } from 'marked';
 
 class DocumentManage {
   constructor(props) {
@@ -65,14 +65,14 @@ class DocumentManage {
     ENTITY.__REF__ = ref;
     const doc_structure = loopar.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
 
-    ENTITY.is_single && (ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure)));
+    //ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure));
 
     return ENTITY;
   }
 
   parseDocStructure(doc_structure) {
     return doc_structure.map(field => {
-      field.data.value = field.element === MARKDOWN ? marked(field.data.value) : field.data.value;
+      //field.data.value = field.element === MARKDOWN ? marked.parse(field.data.value) : field.data.value;
 
       if (field.elements) {
         field.elements = this.parseDocStructure(field.elements);

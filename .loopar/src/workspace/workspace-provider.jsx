@@ -30,9 +30,7 @@ export function WorkspaceProvider({
 }) {
   const pathname = usePathname();
 
-  const [theme, setTheme] = useState(
-    () => (loopar.cookie.get(storageKey)) || defaultTheme
-  );
+  const [theme, setTheme] = useCookies(storageKey);
 
   const __META__ = props.__META__ || {}
   const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
@@ -198,21 +196,25 @@ export function WorkspaceProvider({
     if (activeParentMenu){
       setActivePage(__DOCUMENT__?.__ENTITY__?.name);
     }
-
   }, [Documents]);
 
-  const value = {
-    theme,
-    __META__,
-    setTheme: (theme) => {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
+  const getTheme = () => {
+    const theme = loopar.cookie.get(storageKey);
 
-      loopar.cookie.set(storageKey, theme)
-      setTheme(theme)
-    },
+    if (theme === "system") {
+      if (typeof window !== "undefined") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      }
+
+      return "dark"
+    }
+    return theme
+  }
+
+  const value = {
+    theme: getTheme(),
+    __META__,
+    setTheme,
     openNav,
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,

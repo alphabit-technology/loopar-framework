@@ -1,0 +1,25 @@
+{
+  "name": "vite-env",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lang-markdown": "^6.3.1",
+    "@codemirror/language-data": "^6.5.1",
+    "@codemirror/view": "^6.36.1",
+    "@uiw/codemirror-theme-github": "^4.23.7",
+    "@uiw/codemirror-themes": "^4.23.7",
+    "@uiw/react-codemirror": "^4.23.7",
+    "use-codemirror": "^0.2.0",
+    "react-simplemde-editor": "^5.2.0",
+    "react-markdown": "^9.0.1",
+    "quill": "2.0.3",
+    "react-editor-js": "^2.1.0",
+    "@uiw/react-markdown-editor": "^6.1.2",
+    "@uiw/react-markdown-preview": "^5.1.3"
+  }
+}
+
+
+
+

@@ -42,3 +42,15 @@
 .fullscreen {
   display: none !important;
 }
+
+.cm-header-1 {
+  font-size: 1.8em !important;
+}
+
+.cm-header-2 {
+  font-size: 1.6em !important;
+}
+
+.cm-header-3 {
+  font-size: 1.25em !important;
+}

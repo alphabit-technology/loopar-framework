@@ -30,3 +30,21 @@
   background: hsl(var(--secondary)) !important;
   opacity: 0.8 !important;
 }
+
+.wmde-markdown{
+  background-color: unset !important;
+  color: unset !important;
+}
+
+.light pre {
+  background-color: hsl(var(--secondary)) !important;
+  color: hsl(var(--text)) !important;
+}
+
+.wmde-markdown {
+  font-family: unset !important;
+}
+
+.code-highlight{
+  padding: unset !important;
+}

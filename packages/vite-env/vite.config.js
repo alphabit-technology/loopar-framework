@@ -54,7 +54,8 @@ export default defineConfig(({ command }) => ({
       '@loader': path.resolve(framework, 'src/loader.jsx'),
       "@main/styles": path.resolve(framework, 'src/app/styles'),
       "/main/styles": path.resolve(framework, 'src/app/styles'),
-      "/main/scripts": path.resolve(framework, 'src/app/scripts')
+      "/main/scripts": path.resolve(framework, 'src/app/scripts'),
+      '@uiw': path.resolve(framework, 'node_modules/@uiw/'),
     },
   },
   plugins: [

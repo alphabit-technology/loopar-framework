@@ -11,7 +11,7 @@ import { useDocument } from "@context/@/document-context";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary"
 import PureHTMLBlock from "@pure-html-block";
-import{buildMetaProps, Animations, extractFieldNames, evaluateCondition} from "@meta";
+import { buildMetaProps, Animations, extractFieldNames, evaluateCondition } from "@meta";
 
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
@@ -127,11 +127,7 @@ const MetaRender = ({ el, metaProps, Comp, docRef, parent, data, threshold = 0.1
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        } else {
-          setIsVisible(false);
-        }
+        setIsVisible(entry.isIntersecting);
       },
       { threshold: 0.1 }
     );
