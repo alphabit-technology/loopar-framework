@@ -275,6 +275,12 @@ function compare(a, b) {
   return a.replace(/[-_]/g, ' ').toLowerCase() === b.replace(/[-_]/g, ' ').toLowerCase();
 }
 
+function getArrayMax(array, col) {
+  const max = array.reduce((max, current) => Math.max(max, current[col]), -Infinity);
+  if (max == -Infinity) return 0;
+  return max;
+}
+
 export {
   Capitalize,
   UPPERCASE,
@@ -303,5 +309,6 @@ export {
   formatDate,
   formatTime,
   formatDateTime,
-  compare
+  compare,
+  getArrayMax,
 }

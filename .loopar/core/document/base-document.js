@@ -10,7 +10,7 @@ export default class BaseDocument extends CoreDocument {
 
   getFieldProperties(field_name) {
     const fields = Object.values(this.fields)
-      .filter(k => k.name !== "__ENTITY__" && k.in_list_view).map(k => k[field_name]).filter(k => loopar.utils.lowercase(k) !== ID);
+      .filter(k => k.name !== "__ENTITY__" && k.in_list_view).map(k => k[field_name]);
 
     return fields.length === 0 ? ['name'] : fields;
   }
@@ -175,7 +175,7 @@ export default class BaseDocument extends CoreDocument {
     const selfPagination = JSON.parse(JSON.stringify(pagination));
     loopar.db.pagination = pagination;
 
-    const rows = await loopar.db.getList(this.__ENTITY__.name, listFields, condition);
+    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
 
     if (rows.length === 0 && pagination.page > 1) {
       await loopar.session.set(this.__ENTITY__.name + "_page", 1);

@@ -63,7 +63,7 @@ class DocumentManage {
 
     ENTITY.is_single ??= ref.is_single;
     ENTITY.__REF__ = ref;
-    const doc_structure = loopar.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
+    //const doc_structure = loopar.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
 
     //ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure));
 

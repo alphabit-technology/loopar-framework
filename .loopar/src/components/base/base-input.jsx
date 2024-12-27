@@ -55,7 +55,7 @@ const BaseInput = (props) => {
       props.onChange && props.onChange(event);
       props.onChanged && props.onChanged(event);
     }, 0);
-  }, [props]);
+  }, [props.onChange, props.onChanged]);
 
   const validate = () => {
     if(data.hidden || parentHidden) return { valid: true };

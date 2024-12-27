@@ -193,7 +193,7 @@ export class BaseTable extends Component {
       return;
     }
 
-    this.setSelectorsStatus();
+    //this.setSelectorsStatus();
   }
 
   get viewType() {
@@ -254,13 +254,6 @@ export class BaseTable extends Component {
 
   get rowsCount() {
     return this.rows.length;
-  }
-
-  addRow() {
-    const rows = this.rows;
-    rows.push({ name: elementManage.uuid() });
-    this.state.meta.rows = rows;
-    this.setState({ meta: this.meta });
   }
 
   get mappedColumns() {
@@ -339,6 +332,7 @@ export class BaseTable extends Component {
   getRenderRows(columns, rows) {
     return rows.map((row) => {
       this.rowsRef[row.name] = {};
+
       return (
         <TableRow hover role="checkbox" tabIndex={-1} key={"row" + row.name}>
           <TableCell padding="checkbox" className="w-10">
@@ -562,7 +556,7 @@ export class BaseTable extends Component {
                 data.name = c.data.name;
                 data.label = c.data.label;
                 data.size = "sm";
-
+                
                 return (
                   <div>
                     <MetaComponent

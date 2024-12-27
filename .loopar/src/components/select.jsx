@@ -1,24 +1,7 @@
 import BaseInput from "@base-input";
-
-import React, { useState, useEffect, useRef, useCallback, useContext} from "react";
-import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useRef, useCallback} from "react";
 import loopar from "loopar";
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Select } from "./select/base-select";
 
 import {
   FormDescription,
@@ -26,185 +9,14 @@ import {
 } from "@/components/ui/form"
 
 
-function SelectFn({ search, data, onSelect, options = [], selected={} }) {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(false);
-  const containerRef = useRef(null);
-
-  options = options.filter(option => option && option.option);
-
-  const PAGE_SIZE = 20;
-  const paginatedRows = {};
-  
-  for (let i = 0; i < options.length; i += PAGE_SIZE) {
-    const pageNumber = i / PAGE_SIZE + 1;
-    paginatedRows[pageNumber] = options.slice(i, i + PAGE_SIZE);
-  }
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [visibleRows, setVisibleRows] = useState(paginatedRows[1] || []);
-
-  const loadMoreRows = useCallback(() => {
-    setCurrentPage(prevPage => prevPage + 1);
-  }, []);
-
-  useEffect(() => {
-    if (paginatedRows[currentPage]) {
-      setVisibleRows(prevRows => {
-        const newRows = [...prevRows, ...paginatedRows[currentPage]];
-        return [...new Map(newRows.map(item => [item.option, item])).values()];
-      });
-    }
-  }, [currentPage, selected]);
-
-  useEffect(() => {
-    if(!containerRef.current) return;
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-      const container = containerRef.current;
-      if (container.scrollHeight - container.scrollTop === container.clientHeight) {
-        loadMoreRows();
-      }
-    };
-
-    const container = containerRef.current;
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [loadMoreRows, containerRef.current]);
-
-  useEffect(() => {
-    if (selected && selected.option) {
-      if (!visibleRows.some(option => option.option === selected.option)) {
-        setVisibleRows(prevRows => [selected, ...prevRows]);
-      }
-    }
-  }, [selected]);
-
-  const openHandler = useCallback((e) => {
-    setOpen(e);
-    search(null, false).then(result => {
-      // handle result if needed
-    });
-  }, [search]);
-
-  const searchHandler = useCallback((e) => {
-    search(e, true);
-  }, [search]);
-
-  const setValueHandler = useCallback((e) => {
-    openHandler(false);
-    onSelect(e);
-  }, [onSelect]);
-
-  const current = selected && (typeof selected == "object" && selected.option) ? selected : { option: "" };
-
-  return (
-    <Popover open={open} onOpenChange={openHandler} className="pb-4">
-      <PopoverTrigger asChild >
-        <Button
-          variant="outline"
-          role="combobox"
-          className={cn(
-            "w-full justify-between pr-1",// max-w-sm
-            !current.option && "text-muted-foreground"
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openHandler(!open);
-          }}
-          onMouseEnter={setActive}
-          onMouseLeave={() => setActive(false)}
-        >
-          {current.option ? (current.formattedValue || current.title || current.option) : (
-            <span className="truncate text-slate-600/70">
-              Select {data.label}
-            </span>
-          )}
-          <div className="flex flex-row items-center justify-between">
-            <Cross2Icon
-              className={`h-5 w-5 shrink-0 ${active ? "opacity-50" : "opacity-0"}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setValueHandler(null);
-                //searchHandler(null);
-              }}
-            />
-            <CaretSortIcon className="ml-1 h-5 w-5 shrink-0 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[var(--radix-popover-trigger-width)]" align="start">
-        <Command>
-          <CommandInput
-            placeholder={`Search ${data.label}...`}
-            className="h-9"
-            onKeyUp={searchHandler}
-          />
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup
-            className="max-h-[250px] overflow-auto"
-            ref={containerRef}
-          >
-            {visibleRows.map((option) => { 
-              if(!option) return null;
-              const value = option.title || option.value || option.option;
-
-              return (
-              <CommandItem
-                value={option.option}
-                key={option.option}
-                onSelect={() => setValueHandler(option.option)}
-                data-disabled="false"
-                className={cn(
-                  "flex items-center",
-                  option.option === current.option && "bg-secondary text-white"
-                )}
-              >
-                {value}
-                <CheckIcon
-                  className={cn(
-                    "ml-auto h-4 w-4",
-                    option.option === current.option
-                      ? "opacity-100"
-                      : "opacity-0"
-                  )}
-                />
-              </CommandItem>
-            )})}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-const Select = (props) => {
+export default function MetaSelect(props){
   const [rows, setRows] = useState(props.rows || []);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const titleFields = useRef(["value"]);
   const model = useRef(null);
   const lastSearch = useRef(null);
-
-  const { renderInput, value, validate, data } = BaseInput(props);
-
-  //const data = props.data || { label: "Select", name: "select", value: "" };
-
-  /*const handleInputChange = useCallback((event) => {
-    if (event && typeof event === "object") {
-      event.target ??= {};
-      event.target.value = (event.target.files || event.target.value);
-    } else {
-      event = { target: { value: event } };
-    }
-
-    setTimeout(() => {
-      validate();
-      props.onChange && props.onChange(event);
-      props.onChanged && props.onChanged(event);
-    }, 0);
-  }, [props]);*/
+  const [selected, setSelected] = useState(null);
+  const { renderInput, value, data } = BaseInput(props);
 
   useEffect(() => {
     const val = value();
@@ -230,9 +42,6 @@ const Select = (props) => {
         return { option, title: option || title };
       });
     }
-
-    /*return typeof opts == 'object' && Array.isArray(opts) ? opts :
-         opts.split(/\r?\n/).map(item => ({option: item, value: item}));*/
   }
 
   const search = useCallback((target, delay = true) => {
@@ -329,24 +138,21 @@ const Select = (props) => {
     return options.map((item) => optionValue(item));
   };
 
-  const getCurrentSelection = () => {
+  useEffect(() => {
     const currentRows = rows || [];
-    
-    //const currentOptionValue = optionValue(value());
     const currentOptionValue = optionValue(value() || data.value);
 
     const filter = currentRows.filter((item) => {
       return optionValue(item).option == currentOptionValue.option;
     });
 
-    return filter[0] ? optionValue(filter[0]) : currentOptionValue;
-  };
+    setSelected(filter[0] ? optionValue(filter[0]) : currentOptionValue);
+  }, [rows, data.value]);
 
-  const selected = getCurrentSelection()
-   return renderInput((field) => (
+  return renderInput((field) => (
     <>
       {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
-      <SelectFn
+      <Select
         field={field}
         options={rows}
         search={(delay) => search(delay)}
@@ -359,11 +165,9 @@ const Select = (props) => {
       )}
     </>
   ));
-
-  //return renderInput(customRenderInput);
 };
 
-Select.metaFields = () =>  {
+MetaSelect.metaFields = () =>  {
   const data = BaseInput.metaFields()[0];
 
   data.elements.options = {
@@ -376,5 +180,3 @@ Select.metaFields = () =>  {
 
   return [data];
 }
-
-export default Select;

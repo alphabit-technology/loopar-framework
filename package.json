@@ -62,7 +62,7 @@
     "typeface-inter": "^3.18.1",
     "typeface-jetbrains-mono": "^2.0.1",
     "universal-cookie": "^7.0.1",
-    "uuid": "^9.0.1",
+    "uuid": "11.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {

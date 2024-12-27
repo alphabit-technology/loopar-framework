@@ -57,7 +57,6 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
 
   return (
     <>
-      <ErrorBoundary>
         <CookiesProvider manager={cookieManager} updater={setUpdate}>
           <Main
             __META__={__META__}
@@ -67,7 +66,6 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
             cookieManager={cookieManager}
           />
         </CookiesProvider>
-      </ErrorBoundary>
     </>
   )
 }

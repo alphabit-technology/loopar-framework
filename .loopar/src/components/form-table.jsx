@@ -1,10 +1,13 @@
 import {BaseTable} from "@base-table"
 import BaseInput from "@base-input"
-import MetaComponent from "@meta-component";
+import {MetaComponent} from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
 import { DesignerContext } from "@context/@/designer-context";
 import { useDocument } from "@context/@/document-context";
+
+import elementManage from "@tools/element-manage";
+import loopar from "loopar";
 
 import {
   TableCell
@@ -34,6 +37,17 @@ class FormTableClass extends BaseTable {
     this.props.onChange({target: {value: meta}});
   }
 
+  addRow() {
+    const rows = this.rows;
+    const maxId = loopar.utils.getArrayMax(rows, "id") || 0;
+
+    console.log("maxId", maxId);
+    
+    rows.push({ id: maxId + 1, name: elementManage.uuid() });
+    this.state.meta.rows = rows;
+    this.setState({ meta: this.meta });
+  }
+
   getRenderColumns(columns, row) {
     return columns.map((column) => {
       const cellProps = column.cellProps ?? {};
@@ -47,38 +61,37 @@ class FormTableClass extends BaseTable {
 
       if (fieldIsWritable(column)) {
         const cellName = row.name + "_" + column.data.name;
-
+        
         return (
           <TableCell
             {...cellProps}
             key={cellName + "_cell"}
           >
             <MetaComponent
-              elements={[
-                {
-                  element: column.element || DIV,
-                  key: cellName + "_input",
-                  dontHaveLabel: true,
-                  dontHaveForm: true,
-                  data: cloneDeep({
+              component={column.element}
+              render={C => (
+                <C
+                  key={cellName + "_input"}
+                  dontHaveForm={true}
+                  dontHaveLabel={true}
+                  simpleInput={true}
+                  data={cloneDeep({
                     ...cloneDeep(column.data),
                     name: cellName,
                     value: row[column.data.name],
                     label: column.data.label,
-                  }),
-                  simpleInput: true,
-                  onChange: e => {
+                  })}
+                  onChange={(e) => {
                     clearTimeout(this.lastUpdate);
                     this.lastUpdate = setTimeout(() => {
                       handleInputChange(row, column,  e.target.value);
                     }, [SELECT, SWITCH, CHECKBOX].includes(column.element) ? 0: 300);
-                  }
-                },
-              ]}
-              parent={this}
+                  }}
+                />
+              )}
             />
           </TableCell>
-        )
+        );
       }else if (column.data.name === "actions") {
         return (
           <TableCell

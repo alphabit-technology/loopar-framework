@@ -200,7 +200,7 @@ export default class CoreDocument {
 
       if(values || force){
         await loopar.db.knex(loopar.db.literalTableName(key)).where({
-          parent_document: this.__ENTITY__.id,
+          //parent_document: this.__ENTITY__.name,
           parent_id: ID
         }).del();
       }
@@ -211,24 +211,24 @@ export default class CoreDocument {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
 
-    async function updateChildRecords(childValuesReq, parentDocumentId, parentId) {
+    async function updateRows(Ent, rows, parentType, parentId) {
+      const nextId = await loopar.db.nextId(Ent);
+      for (const [index, row] of rows.sort((a, b) => a.id - b.id).entries()) {
+        row.id = nextId + index;
+        row.name = loopar.utils.randomString(15);
+        row.parent_document = parentType;
+        row.parent_id = parentId;
+
+        const document = await loopar.newDocument(Ent, row);
+        await document.save();
+      }
+    }
+    async function updateChildRecords(childValuesReq, parentType, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
         if(!rows) continue;
 
-        const nextId = await loopar.db.nextId(key);
-
-        const documentsPromises = rows.map(async (row, index) => {
-          row.id = nextId + index;
-          row.name = loopar.utils.randomString(15);
-          row.parent_document = parentDocumentId;
-          row.parent_id = parentId;
-
-          const document = await loopar.newDocument(key, row);
-          return await document.save();
-        });
-
-        await Promise.all(documentsPromises);
+        await updateRows(key, rows, parentType, parentId);
       }
     }
 
@@ -237,7 +237,6 @@ export default class CoreDocument {
       if (validate) await this.validate();
 
       if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
-        console.log(["Inserting", this.__ENTITY__.name, this.name, this.stringifyValues, this.__ENTITY__]);
         await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
         this.__DOCUMENT_NAME__ = this.name;
       } else {
@@ -258,7 +257,7 @@ export default class CoreDocument {
 
       if (Object.keys(childValuesReq).length) {
         await this.deleteChildRecords();
-        await updateChildRecords(childValuesReq, this.__ENTITY__.id, await this.__ID__());
+        await updateChildRecords(childValuesReq, this.__ENTITY__.name, await this.__ID__());
       }
       //}
 
@@ -472,7 +471,7 @@ export default class CoreDocument {
     return await loopar.getList(field, {
       filters: {
         "=": {
-          parent_document: this.__ENTITY__.id,
+          //parent_document: this.__ENTITY__.id,
           parent_id: await this.__ID__()
         }
       }
@@ -482,7 +481,7 @@ export default class CoreDocument {
   async getChildRawValues(field) {
     return await loopar.db.getAll(field, ["*"], {
       "=": {
-        parent_document: this.__ENTITY__.id,
+        //parent_document: this.__ENTITY__.name,
         parent_id: await this.__ID__()
       }
     })
@@ -515,7 +514,7 @@ export default class CoreDocument {
 
   get formattedValues() {
     return Object.values(this.#fields)
-      .filter(field => field.name !== ID)
+      //.filter(field => field.name !== ID)
       .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.formattedValue }), {});
   }
 }
