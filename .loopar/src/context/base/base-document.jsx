@@ -10,11 +10,31 @@ export default class BaseDocument extends React.Component {
 
   constructor(props) {
     super(props);
-
+  
     this.state = {
       ...this.state,
-      meta: props.meta
+      meta: props.meta,
     };
+  }
+
+  get __hasSidebar__() {
+    return typeof this.props.hasSidebar !== "undefined" ? this.props.hasSidebar : this.hasSidebar;
+  }
+
+  get __hasHeader__() {
+    return typeof this.props.hasHeader !== "undefined" ? this.props.hasHeader : this.hasHeader;
+  }
+
+  get __hasFooter__() {
+    return typeof this.props.hasFooter !== "undefined" ? this.props.hasFooter : this.hasFooter;
+  }
+
+  get __hasSearchForm__() {
+    return typeof this.props.hasSearchForm !== "undefined" ? this.props.hasSearchForm : this.hasSearchForm;
+  }
+
+  get __hasBreadcrumb__() {
+    return typeof this.props.hasBreadcrumb !== "undefined" ? this.props.hasBreadcrumb : this.hasBreadcrumb;
   }
 
   render(content) {

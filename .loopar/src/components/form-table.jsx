@@ -5,13 +5,25 @@ import pkg from "lodash";
 const { cloneDeep } = pkg;
 import { DesignerContext } from "@context/@/designer-context";
 import { useDocument } from "@context/@/document-context";
+import { AlertTriangleIcon } from "lucide-react";
 
 import elementManage from "@tools/element-manage";
 import loopar from "loopar";
 
+
+import { Checkbox } from "@/components/ui/checkbox"
+
 import {
-  TableCell
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
+
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -41,8 +53,6 @@ class FormTableClass extends BaseTable {
     const rows = this.rows;
     const maxId = loopar.utils.getArrayMax(rows, "id") || 0;
 
-    console.log("maxId", maxId);
-    
     rows.push({ id: maxId + 1, name: elementManage.uuid() });
     this.state.meta.rows = rows;
     this.setState({ meta: this.meta });
@@ -69,8 +79,8 @@ class FormTableClass extends BaseTable {
           >
             <MetaComponent
               component={column.element}
-              render={C => (
-                <C
+              render={Comp => (
+                <Comp
                   key={cellName + "_input"}
                   dontHaveForm={true}
                   dontHaveLabel={true}
@@ -109,6 +119,93 @@ class FormTableClass extends BaseTable {
         );
       }
     })
+  }
+
+  getRenderRows(columns, rows) {
+    return rows.map((row) => {
+      this.rowsRef[row.name] = {};
+
+      return (
+        <TableRow
+          hover
+          role="checkbox"
+          tabIndex={-1} key={"row" + row.name}
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            console.log("drag start");
+          }}
+        >
+          <TableCell padding="checkbox" className="w-10">
+            <Checkbox
+              onCheckedChange={(event) => {
+                this.selectRow(row, event);
+              }}
+              checked={this.selectedRows.includes(row.name)}
+            />
+          </TableCell>
+          {this.getRenderColumns(columns, row)}
+        </TableRow>
+      );
+    })
+  }
+
+  getTableRender(columns, rows) {
+    columns = columns.filter(
+      (c) => !this.hiddenColumns.includes(c.data.name)
+    );
+
+    const rowsCount = rows.length;
+    const selectedRows = this.selectedRows.length;
+
+    const selectorAllStatus = (rowsCount > 0 && selectedRows > 0 && selectedRows < rowsCount) ? "indeterminate" :
+      rowsCount > 0 && selectedRows === rowsCount;
+
+    return (
+      <Table stickyHeader aria-label="sticky table">
+        <TableHeader className="bg-slate-300/50 dark:bg-slate-800/50">
+          <TableRow>
+            <TableHead padding="checkbox" className="w-10 p-2" colSpan={2}>
+              {this.popPopRowActions(selectorAllStatus, rowsCount, selectedRows)}
+            </TableHead>
+            {columns.map((c) => {
+              if(c.data.name === "name") {
+                return null
+              }
+
+              const data = c.data;
+              const cellProps = c.cellProps ?? {};
+
+              return (
+                <TableCell {...cellProps}>
+                  {typeof data.label == "function" ? data.label() : data.label ? loopar.utils.UPPERCASE(data.label) : "..."}
+                </TableCell>
+              );
+            })}
+          </TableRow>
+        </TableHeader>
+        <TableBody
+          droppable
+          onDragEnter={(e) => {
+            e.preventDefault();
+            console.log("drag enter");
+          }}
+        >
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length+2}>
+                <div className="flex flex-col bg-background w-full p-3 place-items-center">
+                  <AlertTriangleIcon className="w-10 h-10"/>
+                  <div className="text-lg">No rows to show</div>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : (
+            this.getRenderRows(columns, rows)
+          )}
+        </TableBody>
+      </Table>
+    );
   }
 
   getFooter(){
@@ -176,6 +273,7 @@ export default function FormTable (props) {
     return (
       <DesignerContext.Provider value={{}}>
         <FormTableClass
+          field={field}
           meta={field.value}
           onChange={handleChange}
         />

@@ -92,7 +92,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
 
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
-      <PopoverTrigger asChild >
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"

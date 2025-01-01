@@ -48,3 +48,7 @@
 .code-highlight{
   padding: unset !important;
 }
+
+[data-radix-popper-content-wrapper] {
+  pointer-events: all !important;
+}

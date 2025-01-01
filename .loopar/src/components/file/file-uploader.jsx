@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { UploadIcon } from "lucide-react";
 import { useState } from "react";
 
+const origins = ["Local", "Trash"];
+
 export default function FileUploader(props) {
-  const origins = ["Local", "Trash"];
   const [files, setFiles] = useState([]);
 
   const upload = () => {
     const formData = new FormData();
-    files.forEach((file) => {
+    (files.target?.value || []).forEach((file) => {
       if (file.rawFile instanceof File) {
         formData.append("files[]", file.rawFile);
       }
@@ -57,7 +58,7 @@ export default function FileUploader(props) {
         buttons={[]}
       >
         <div>{FileInputFn()}</div>
-        <div>
+        <div className="flex justify-end mt-3">
           <Button
             variant="secondary"
             onClick={upload}

@@ -462,7 +462,7 @@ export class BaseTable extends Component {
             const color = loopar.bgColor(row.name);
 
             return this.docRef.gridTemplate ? (
-              this.docRef.gridTemplate(row, action)
+              this.docRef.gridTemplate(row, action, () => {this.selectRow(row, action, !this.selectedRows.includes(row.name))})
             ) : (
               <div>
                 <Card className="w-full min-w-[300px]">

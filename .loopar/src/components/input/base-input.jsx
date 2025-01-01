@@ -130,7 +130,7 @@ const BaseInput = (props) => {
   return { renderInput, value, validate, readOnly, hasLabel, data: getData(), handleInputChange, fieldControl };
 }
 
-BaseInput.metaFields = () =>{
+BaseInput.metaFields = (extend={}) =>{
   return [
     {
       group: "form",
@@ -180,6 +180,7 @@ BaseInput.metaFields = () =>{
         readonly: { element: SWITCH },
         in_list_view: { element: SWITCH },
         searchable: { element: SWITCH },
+        ...extend || {},
       },
     },
   ];

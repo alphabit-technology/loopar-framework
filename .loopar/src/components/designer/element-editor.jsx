@@ -3,7 +3,7 @@ import { __META_COMPONENTS__ } from "@components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
 import Tabs from "@tabs";
-import { MetaComponent } from "@meta-component";
+import { MetaComponent } from "@@base/meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";

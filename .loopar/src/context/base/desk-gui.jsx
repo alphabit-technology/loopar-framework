@@ -48,7 +48,7 @@ export default function DeskGUI(props) {
 
   return (
     <> 
-      {docRef.hasSidebar && <Button 
+      {docRef.__hasSidebar__ && <Button 
         className="fixed right-0 p-1"
         variant="ghost"
         style={{top: headerHeight + "rem"}}
@@ -58,9 +58,9 @@ export default function DeskGUI(props) {
       </Button>}
       <div className = "flex flex-row">
         <div 
-          className={`space-y-4 ${sidebarOpen ? `lg:w-[calc(100%-300px)]` : `w-full`}`}
+          className={`space-y-4 ${sidebarOpen && docRef.__hasSidebar__ ? `lg:w-[calc(100%-300px)]` : `w-full`}`}
         >
-          {docRef.hasHeader && 
+          {docRef.__hasHeader__ && 
             <AppBarr 
               docRef={docRef} 
               meta={docRef.meta} 
@@ -68,12 +68,13 @@ export default function DeskGUI(props) {
               viewTypeToggle={props.viewTypeToggle}
               viewType={props.viewType}
               sidebarOpen={sidebarOpen}
+              hasBreadcrumb={docRef.__hasBreadcrumb__}
             />
           }
           {props.children}
         </div>
         {
-          sidebarOpen && 
+          docRef.__hasSidebar__ && sidebarOpen && 
           <InnerSidebar
             toggleSidebar={toggleSidebar}
           >

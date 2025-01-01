@@ -34,6 +34,6 @@
     "**/*.tsx",
     ".loopar/src/**/*.ts", ".loopar/src/**/*.tsx", ".loopar/services/**/*.ts", ".loopar/services/**/*.tsx",
     "src/**/*.ts", "src/**/*.tsx"
-  ],
+, ".loopar/src/components/base/base-icons.jsx"  ],
   "exclude": ["node_modules"]
 }

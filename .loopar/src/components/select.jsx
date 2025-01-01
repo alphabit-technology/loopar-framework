@@ -8,14 +8,13 @@ import {
   FormLabel
 } from "@/components/ui/form"
 
-
 export default function MetaSelect(props){
   const [rows, setRows] = useState(props.rows || []);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const titleFields = useRef(["value"]);
   const model = useRef(null);
   const lastSearch = useRef(null);
-  const [selected, setSelected] = useState(null);
+  
   const { renderInput, value, data } = BaseInput(props);
 
   useEffect(() => {
@@ -138,15 +137,20 @@ export default function MetaSelect(props){
     return options.map((item) => optionValue(item));
   };
 
-  useEffect(() => {
-    const currentRows = rows || [];
+  const currentValue = () => {
     const currentOptionValue = optionValue(value() || data.value);
 
-    const filter = currentRows.filter((item) => {
+    const filter = (rows || []).filter((item) => {
       return optionValue(item).option == currentOptionValue.option;
     });
 
-    setSelected(filter[0] ? optionValue(filter[0]) : currentOptionValue);
+    return filter[0] ? optionValue(filter[0]) : currentOptionValue;
+  }
+
+  const [selected, setSelected] = useState(currentValue);
+
+  useEffect(() => {
+    setSelected(currentValue());
   }, [rows, data.value]);
 
   return renderInput((field) => (

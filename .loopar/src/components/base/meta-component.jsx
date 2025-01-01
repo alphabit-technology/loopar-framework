@@ -11,7 +11,7 @@ import { useDocument } from "@context/@/document-context";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { ErrorBoundary } from "@error-boundary"
 import PureHTMLBlock from "@pure-html-block";
-import { buildMetaProps, Animations, extractFieldNames, evaluateCondition } from "@meta";
+import { buildMetaProps, Animations, extractFieldNames, evaluateCondition } from "@@meta/meta";
 
 const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
@@ -120,7 +120,7 @@ const DesignElement = ({ parent, element, Comp, parentKey}) => {
   )
 };
 
-const MetaRender = ({ el, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
+const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const elementRef = useRef(null);
   
@@ -158,9 +158,9 @@ const MetaRender = ({ el, metaProps, Comp, docRef, parent, data, threshold = 0.1
     };
   }
   
-  if ([HTML_BLOCK, MARKDOWN].includes(el.element)) {
+  if ([HTML_BLOCK, MARKDOWN].includes(meta.element)) {
     return <PureHTMLBlock
-      element={el} {...loopar.utils.renderizableProps(metaProps)}
+      element={meta} {...loopar.utils.renderizableProps(metaProps)}
       data={data}
       className={className}
       style={style}
@@ -187,20 +187,20 @@ const MetaRender = ({ el, metaProps, Comp, docRef, parent, data, threshold = 0.1
   );
 }
 
-const MetaComponentFn = ({ el, parent, parentKey, className }) => {
-  if(el && el.$$typeof === Symbol.for("react.transitional.element")){
-    return el;
+const MetaComponentFn = ({ meta, parent, parentKey, className }) => {
+  if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
+    return meta;
   }
 
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode;
-  const metaProps = buildMetaProps({ metaProps: el, parent, isDesigner });
+  const metaProps = buildMetaProps({ metaProps: meta, parent, isDesigner });
   
-  const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
+  const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
-  const def = baseElementsDict[el.element]?.def || {};
+  const def = baseElementsDict[meta.element]?.def || {};
   const { ENVIRONMENT } = useWorkspace();
 
   const isDisplay = () => {
@@ -230,22 +230,22 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
   }, [formValues]);*/
 
   if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
-    global.__REQUIRE_COMPONENTS__.push(el.element);
+    global.__REQUIRE_COMPONENTS__.push(meta.element);
   }
 
   const display = isDisplay();
   useEffect(() => {
     if (!Comp && (isDesigner || def.designerOnly !== true)) {
-      ComponentsLoader([el.element], () => {
-        setLoadedComponents(Object.keys(__META_COMPONENTS__).find(c => c === el.element));
+      ComponentsLoader([meta.element], () => {
+        setLoadedComponents(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
       });
     }
   }, []);
 
-  if (Comp || [HTML_BLOCK, MARKDOWN].includes(el.element)) {
+  if (Comp || [HTML_BLOCK, MARKDOWN].includes(meta.element)) {
     const data = metaProps.data || {};
 
-    metaProps.className = cn("relative", (Comp && Comp.designerClasses), metaProps.className, "rounded", el.className, className, data?.class);
+    metaProps.className = cn("relative", (Comp && Comp.designerClasses), metaProps.className, "rounded", meta.className, className, data?.class);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {
@@ -275,7 +275,7 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
         <Wrapper {...fragmentProps}>
           <MetaRender
             Comp={Comp}
-            el={el}
+            meta={meta}
             parent={parent}
             parentKey={parentKey}
             docRef={docRef}
@@ -293,12 +293,16 @@ const MetaComponentFn = ({ el, parent, parentKey, className }) => {
 };
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey }) {
-  return elements.map((el) => {
-    const key = parentKey + (el.data?.key || useId());
+  return elements.map((meta) => {
+    if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
+      return meta;
+    }
+    
+    const key = parentKey + (meta.data?.key || useId());
 
     return (
       <MetaComponentFn 
-        el={el}
+        meta={meta}
         parent={parent}
         className={className}
         parentKey={parentKey}

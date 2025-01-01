@@ -13,7 +13,7 @@ export default function Title(props) {
       <h1 
         className={cn(
           getTextAlign(), getTextSize(),
-          "w-full font-bold leading-tight tracking-tighter md:text-6xl lg:leading-[1.1]",
+          "w-full font-bold leading-tight tracking-tighter md:text-6xl text-4xl lg:leading-[1.1]",
           props.className
         )}
         {...(designing

@@ -14,20 +14,6 @@ function ListContextFn({isModal, content, meta, docRef, hasSearchForm = true, re
     setViewType(viewType === 'List' ? 'Grid' : 'List');
   }
 
-  content = [
-    content,
-    (!content || renderGrid) &&
-      <ListGrid
-        hasSearchForm={hasSearchForm}
-        meta={meta}
-        viewType={getViewType()}
-        viewTypeToggle={viewTypeToggle}
-        docRef={docRef}
-      />
-  ];
-  
-  if(isModal) return content;
-
   return (
    <DeskGUI
       docRef={docRef}
@@ -35,6 +21,15 @@ function ListContextFn({isModal, content, meta, docRef, hasSearchForm = true, re
       viewType={getViewType()}
     >
       {content}
+      {(!content || renderGrid) && (
+        <ListGrid
+          hasSearchForm={hasSearchForm}
+          meta={meta}
+          viewType={getViewType()}
+          viewTypeToggle={viewTypeToggle}
+          docRef={docRef}
+        />
+      )}
     </DeskGUI>
   )
 }
@@ -48,7 +43,6 @@ export default class ListContext extends BaseDocument {
   render(content) {
     return super.render(
       <ListContextFn
-        isModal={this.modal}
         content={content}
         meta={this.props.meta} 
         hasSearchForm={this.hasSearchForm}

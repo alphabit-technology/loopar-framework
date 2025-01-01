@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, GridIcon} from "lucide-react";
 import {Link} from "@link";
 
-export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
+export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType, ...props}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
   const { __ENTITY__, __DOCUMENT__ } = meta;
 
@@ -88,7 +88,7 @@ export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType}) {
         <div className="gap-1">
           <h1 className="text-4xl font-bold">{title}</h1>
           <div className="flex flex-row items-center gap-1">
-            <Breadcrumbs meta={meta} />
+            {props.hasBreadcrumb ? <Breadcrumbs meta={meta}/> : <div className="py-2"/>}
           </div>
         </div>
         <div className="flex flex-row space-x-1 overflow-auto" style={{height: "fit-content"}}>

@@ -87,6 +87,6 @@ export class ListGrid extends BaseTable {
         names: JSON.stringify(rowsSelected),
       });
       //this.search();
-  });
+    });
   }
 }

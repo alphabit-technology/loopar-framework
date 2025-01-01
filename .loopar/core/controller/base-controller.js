@@ -19,7 +19,7 @@ export default class BaseController extends CoreController {
 
     const data = { ...loopar.session.get(this.document + '_q') || {} };
 
-    const list = await loopar.getList(this.document, { q: (data && Object.keys(data).length > 0) ? data : null });
+    const list = await loopar.getList(this.document, { data, q: (data && Object.keys(data).length > 0) ? data : null });
     return await this.render(list);
   }
 

@@ -38,6 +38,7 @@
     "express-useragent": "^1.0.15",
     "file-type": "^18.5.0",
     "flatted": "^3.3.2",
+    "highlight.js": "^11.11.1",
     "inflection": "^3.0.0",
     "js-cookie": "^3.0.5",
     "knex": "^3.1.0",
