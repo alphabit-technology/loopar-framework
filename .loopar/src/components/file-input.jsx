@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect} from 'react';
+import React, { useState, useEffect} from 'react';
 import BaseInput from "@base-input";
 import fileManager from "@tools/file-manager";
-import {FileDrop} from "@@file/file-drop"
+import { FileDrop } from "@@file/file-drop";
+import _ from "lodash";
 
 import {
   FormControl,
@@ -18,9 +19,7 @@ const FileInput = (props) => {
 
   useEffect(() => {
     const mappedFiles = fileManager.getMappedFiles(value());
-    if (JSON.stringify(files) !== JSON.stringify(mappedFiles)) {
-      setFiles(mappedFiles);
-    }
+    !_.isEqual(files, mappedFiles) && setFiles(mappedFiles);
   }, [value]);
 
   const hasFiles = files.length > 0;
@@ -48,10 +47,17 @@ const FileInput = (props) => {
 };
 
 FileInput.metaFields = () => {
-  return BaseInput.metaFields({
-    accept: { element: INPUT, data: { label: "Accept", placeholder: "image/*" } },
-    multiple: { element: SWITCH }
-  });
+  return [
+    ...BaseInput.metaFields(),
+    [
+      {
+        group: "form",
+        elements: {
+          accept: { element: INPUT, data: { label: "Accept", placeholder: "image/*" } },
+          multiple: { element: SWITCH }
+        }
+      }
+  ]];
 }
 
 export default FileInput;

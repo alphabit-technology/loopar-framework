@@ -197,16 +197,11 @@ export function Droppable({data={}, children, className, Component="div", ...pro
     //mode !== "preview" && "h-full w-full p-3 bg-slate-200/50 dark:bg-red-500/50 pt-4" + isDroppable ? " min-h-20" : "",
     designerModeType !== "preview" && "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
     dropping && designerModeType !== "preview" ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow p-4 h-full' : '',
-    className,
-    //"transition ease-in-out delay-150 duration-300"
+    className
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
   const C = (designerMode && isDroppable && !hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
-
-  /*const getCurrentDragKey = () => {
-    return currentDragging?.key;
-  }*/
 
   const getTargetRect = () => {
     return currentDragging?.targetRect || {};
@@ -234,10 +229,16 @@ export function Droppable({data={}, children, className, Component="div", ...pro
           )
         }
         <C
-          {...renderizableProps}
-          className={ClassNames}
-          {...droppableEvents}
-          ref={dropZoneRef}
+          {...(C.toString() == 'Symbol(react.fragment)' ? {} : {
+            ...renderizableProps,
+            className: ClassNames,
+            ...droppableEvents,
+            ref: dropZoneRef
+          })}
+          // {...renderizableProps}
+          // className={ClassNames}
+          // {...droppableEvents}
+          // ref={dropZoneRef}
         >
           {children}
           <DroppableContext.Provider value={{droppable: isDroppable, setDroppable: () => {}, __REFS__}}>
@@ -249,7 +250,7 @@ export function Droppable({data={}, children, className, Component="div", ...pro
         </C>
       </>
         :
-      <C {...(C.toString() === 'Symbol(react.fragment)' ? {} : {...renderizableProps, className: className})}>
+      <C {...(C.toString() == 'Symbol(react.fragment)' ? {} : {...renderizableProps, className: className})}>
         {children || <MetaComponent elements={elements} parentKey={data.key} />}
       </C>
   );

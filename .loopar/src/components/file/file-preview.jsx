@@ -1,12 +1,11 @@
-import React, {use, useEffect} from "react";
+import React, {useState} from "react";
 import fileManager from "@tools/file-manager";
 import {cn} from "@/lib/utils";
 import { fileIcons } from "./defaults";
-import { FallbackImage } from "./fallback-image";
+import { FallbackFile } from "./fallback-file";
 
 export default function FilePreview(props) {
-  const [selected, setSelected] = React.useState(props.selected);
-
+  const [selected, setSelected] = useState(props.selected);
   const file = props.file;
   const type = fileManager.getFileType(file);
   const size = fileManager.getFileSize(file?.rawFile?.size || file.size)
@@ -32,22 +31,11 @@ export default function FilePreview(props) {
       onClick={handleSetlect}
       key={data.name}
     >
-      <>
-        {type === "image" ? (
-          <FallbackImage
-            className="img-fluid"
-            src={file.previewSrc || file.src}
-            fallbackSrc='/assets/images/blank-image.svg'
-            alT={data.name}
-        />) : null}
-
-        {type !== "image" ? (
-          <div className="flex items-center justify-center w-full pt-5">
-            <Icon className={`w-20 h-20 ${color}`} />
-          </div>
-        ) : null}
-
-      </>
+      <FallbackFile
+        src={file.previewSrc || file.src}
+        icon={Icon}
+        iconColor={color}
+      />
       <div className="space-y-1 text-sm w-full flex flex-col absolute bottom-0 p-1">
         <h3 className="font-medium leading-none truncate w-full">{data.name}</h3>
         <p className="text-xs text-muted-foreground">{size}</p>

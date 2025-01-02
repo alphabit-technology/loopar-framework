@@ -5,7 +5,8 @@ import FileContainer from "@@file/file-container";
 import fileManager from "@tools/file-manager";
 import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import loopar from "loopar";
-import {validateFile} from "@@file/defaults"
+import { validateFile } from "@@file/defaults";
+import _ from "lodash";
 
 const origins = [
   { name: "Local", icon: MonitorUpIcon, color: "bg-secondary" },
@@ -82,15 +83,13 @@ export const FileDrop = (props) => {
     }));
 
     Promise.all(promises).then((newPreviews) => {
-      if (JSON.stringify(previews) !== JSON.stringify(newPreviews)) {
-        setPreviews(newPreviews);
-      }
+      !_.isEqual(previews, newPreviews) && setPreviews(newPreviews);
       setLoaded(true);
       setDropping(false);
     }).catch((error) => {
       setLoaded(true);
       setDropping(false);
-      console.error("Error reading files:", error);
+      loopar.alert("An error occurred while reading the files. Please try again.");
     });
   }
   

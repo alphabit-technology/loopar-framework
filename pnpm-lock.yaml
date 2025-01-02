@@ -57,7 +57,7 @@ importers:
         specifier: ^1.0.15
         version: 1.0.15
       file-type:
-        specifier: ^18.5.0
+        specifier: ^18.7.0
         version: 18.7.0
       flatted:
         specifier: ^3.3.2

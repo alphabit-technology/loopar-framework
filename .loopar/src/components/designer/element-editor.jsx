@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { __META_COMPONENTS__ } from "@components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
@@ -9,11 +9,50 @@ import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 
-export function ElementEditor({element}) {
-  const {designerRef} = useDesigner();
+function mergeGroups(...arrays) {
+  const groupMap = new Map();
+
+  const flattenedArrays = arrays.flat();
+
+  flattenedArrays.forEach(group => {
+    const groupName = group.group;
+
+    if (!groupMap.has(groupName)) {
+      groupMap.set(groupName, { ...group, elements: { ...group.elements } });
+    } else {
+      const existingGroup = groupMap.get(groupName);
+      const mergedElements = {
+        ...existingGroup.elements,
+        ...group.elements,
+      };
+      groupMap.set(groupName, { ...existingGroup, elements: mergedElements });
+    }
+  });
+
+  const allElements = new Set();
+
+  flattenedArrays.forEach(group => {
+    Object.keys(group.elements).forEach(elementKey => {
+      if (allElements.has(elementKey)) {
+        groupMap.forEach((mappedGroup, groupName) => {
+          if (groupName !== group.group && mappedGroup.elements[elementKey]) {
+            delete mappedGroup.elements[elementKey];
+          }
+        });
+      } else {
+        allElements.add(elementKey);
+      }
+    });
+  });
+
+  return Array.from(groupMap.values());
+}
+
+export function ElementEditor({ element }) {
+  const { designerRef } = useDesigner();
   const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
-  if(!connectedElement) return null;
-  
+  if (!connectedElement) return null;
+
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   const Element = __META_COMPONENTS__[elementName]?.default || {};
@@ -29,26 +68,8 @@ export function ElementEditor({element}) {
 
   const metaFields = () => {
     const genericMetaFields = getMetaFields(data);
-    
     const selfMetaFields = Element.metaFields && Element.metaFields() || [];
-    const mergedObj = {};
-
-    genericMetaFields.concat(selfMetaFields).forEach(item => {
-      const group = item.group;
-      if (!mergedObj[group]) {
-        mergedObj[group] = { elements: {} };
-      }
-
-      const elements = item.elements;
-      for (const key in elements) {
-        mergedObj[group].elements[key] = elements[key];
-      }
-    });
-
-    return Object.keys(mergedObj).map(group => ({
-      group,
-      elements: mergedObj[group].elements,
-    }));
+    return mergeGroups(genericMetaFields, ...selfMetaFields);
   };
 
   const saveData = () => {
@@ -72,7 +93,6 @@ export function ElementEditor({element}) {
           ...data,
           key: data.key + "_default",
           label: "Default",
-          //name: "default_value",
           hidden: 0
         }
       };
@@ -82,7 +102,7 @@ export function ElementEditor({element}) {
   });
 
   return (
-    <DesignerContext.Provider 
+    <DesignerContext.Provider
       value={{}}
     >
       <div className="flex flex-col">
@@ -105,7 +125,7 @@ export function ElementEditor({element}) {
                   return props;
                 }
 
-                if(!data[field]) {
+                if (!data[field]) {
                   data[field] = props.data?.value;
                 }
 

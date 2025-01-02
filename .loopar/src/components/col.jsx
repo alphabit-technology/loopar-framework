@@ -24,7 +24,7 @@ Col.metaFields = () => {
     };
   });
 
-  return [
+  return [[
     {
       group: "general",
       elements: inputs.reduce((acc, input) => {
@@ -32,5 +32,5 @@ Col.metaFields = () => {
         return acc;
       }, {}),
     },
-  ];
+  ]];
 }

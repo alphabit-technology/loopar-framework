@@ -71,9 +71,6 @@ export function prepareMeta(metaProps, parent, image){
           Object.assign(metaProps.imageProps, {
             alt: data.label || "",
             title: data.description || "",
-            style: {
-              display: "none"
-            }
           });
 
           metaProps.coverProps = {

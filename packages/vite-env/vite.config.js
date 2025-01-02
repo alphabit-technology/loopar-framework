@@ -72,6 +72,7 @@ export default defineConfig(({ command }) => ({
       "/main/scripts": path.resolve(framework, 'src/app/scripts'),
       '@uiw': path.resolve(framework, 'node_modules/@uiw/'),
       'lucide-react': path.resolve(framework, 'node_modules/lucide-react'),
+      'file-type': path.resolve(framework, 'node_modules/file-type'),
     },
   },
   plugins: [

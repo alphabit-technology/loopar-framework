@@ -1,35 +1,21 @@
-import loopar from "loopar";
-import { useState } from "react";
-import { ImageIcon } from "lucide-react";
-import { useEffect } from "react";
+import React, {useEffect, useState} from "react";
+import {ImageIcon} from "lucide-react";
+import LazyLoad from 'react-lazy-load';
 
-export function Image ({imageProps={}, coverProps={}, ...props}) {
-  const data = props.data || {};
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [isImageLoading, setIsImageLoading] = useState(true);
+export function FallbackImage(props) {
+  const [loading, setLoading] = useState(true);
+  const [isValidImage, setIsValidImage] = useState(false);
+  const [imgRef, setImgRef] = useState(null);
+  const { coverProps, imageProps, data } = props;
 
-  const [visibleIcon, setVisibleIcon] = useState(false);
-  const [renderProps] = useState(loopar.utils.renderizableProps(props));
-
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-  }
-
-  const handleImageError = () => {
-    setImageLoaded(false);
-    setIsImageLoading(false);
+  const handleLoad = (valid) => {
+    setIsValidImage(valid);
   }
 
   useEffect(() => {
-    if(imageLoaded) {
-      setIsImageLoading(false);
-    }
-  }, [imageLoaded]);
-
-  useEffect(() => {
-    setVisibleIcon(!isImageLoading && !imageLoaded);
-  }, [isImageLoading, imageLoaded]);
-
+    if(imgRef) setTimeout(() => setLoading(false), 100);
+  }, [imgRef]);
+  
   const aspectRatio = () => {
     if(data.aspect_ratio) {
       const [w=1, h=1] = data.aspect_ratio.split(":");
@@ -39,49 +25,53 @@ export function Image ({imageProps={}, coverProps={}, ...props}) {
     return 60;
   }
 
-  useEffect(() => {
-    if(!imageProps.src) {
-      setVisibleIcon(true);
-    }
-  }, [imageProps.src]);
-
   return (
-    <div 
-      className="top-0"
-      style={{paddingTop: `${aspectRatio()}%`}}
-    >
-      <ImageIcon
-        style={{
-          marginTop: `-${aspectRatio()}%`, 
-          display: visibleIcon ? "block" : "none",
-          border: "12px solid #fff"
-        }}
-        className={`h-full w-full transition-all ease-in opacity-5 duration-300 hover:scale-105 aspect-square border-4 rounded-lg`}
-      />
-      <img
-        {...renderProps}
-        className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-xm ${isImageLoading ? "opacity-0" : "opacity-100"}`}
-        {...imageProps}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
-      <div
-        className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm"
-        {...coverProps}
-      />
-    </div>
-  );
-}
+    <>
+      <LazyLoad>
+        <>
+          <div className="overflow-hidden w-full h-full p-0 m-0">
+            <img
+              className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-xm ${isValidImage ? "opacity-0" : "opacity-100"}`}
+              {...imageProps}
+              src={imageProps?.src || "/"}
+              onLoad={() => handleLoad(true)}
+              onError={() => handleLoad(false)}
+              ref={setImgRef}
+            />
+          </div>
+        </>
+      </LazyLoad>
 
+      <div
+        className="top-0"
+        style={{ paddingTop: `${aspectRatio()}%` }}
+      >
+        {(!isValidImage && !loading ) &&
+          <ImageIcon
+            style={{
+              marginTop: `-${aspectRatio()}%`, 
+              border: "12px solid #fff"
+            }}
+            className={`h-full w-full transition-all ease-in opacity-5 duration-300 hover:scale-105 aspect-square border-4 rounded-lg`}
+          />
+        }
+        <div
+          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm"
+          {...coverProps}
+        />
+      </div>
+    </>
+  )
+}
 
 export default function MetaImage(props) {
   return (
-    <Image {...props} />
+    <FallbackImage {...props} />
   )
 }
 
  MetaImage.metaFields = () => {
-  return [
+  return [[
     {
       group: "custom",
       elements: {
@@ -102,5 +92,16 @@ export default function MetaImage(props) {
         },
       },
     },
-  ];
+    {
+      group: "form",
+      elements: {
+        background_image: {
+          element: IMAGE_INPUT,
+          data: { 
+            accept: "image/*",
+          }
+        }
+      }
+    }
+  ]];
 }

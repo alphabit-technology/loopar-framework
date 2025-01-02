@@ -36,7 +36,7 @@ export default function FileUploader(props) {
           name: "file_upload_input",
           label: "Upload",
           multiple: true,
-          accept: "*",
+          accept: "/*",
         }}
         withoutLabel={true}
         origins={origins}

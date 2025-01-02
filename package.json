@@ -36,7 +36,6 @@
     "eventemitter3": "^5.0.1",
     "express-session": "^1.17.3",
     "express-useragent": "^1.0.15",
-    "file-type": "^18.5.0",
     "flatted": "^3.3.2",
     "highlight.js": "^11.11.1",
     "inflection": "^3.0.0",
