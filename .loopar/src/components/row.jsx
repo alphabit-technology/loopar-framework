@@ -120,7 +120,7 @@ export default function Row(props) {
  
 Row.droppable = true;
 Row.metaFields = () => {
-  return {
+  return [{
     group: "custom",
     elements: {
       layout: {
@@ -185,5 +185,5 @@ Row.metaFields = () => {
         },
       },
     },
-  };
+  }];
 }

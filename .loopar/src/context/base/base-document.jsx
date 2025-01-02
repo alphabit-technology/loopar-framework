@@ -7,6 +7,7 @@ export default class BaseDocument extends React.Component {
   customActions = {};
   __REFS__ = {};
   __META_DEFS__ = {};
+  hasBreadcrumb = true;
 
   constructor(props) {
     super(props);

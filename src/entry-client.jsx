@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import App from "@app";
-import { Loader } from "@/loader";
+import { Loader } from "@loader";
 
 (async () => {
   const __META_SCRIPT__ = document.getElementById('__loopar-meta-data__');

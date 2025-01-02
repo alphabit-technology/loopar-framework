@@ -93,7 +93,7 @@ export default function MetaImage(props) {
       },
     },
     {
-      group: "form",
+      group: "general",
       elements: {
         background_image: {
           element: IMAGE_INPUT,

@@ -1,6 +1,6 @@
 
 import loopar from "loopar";
-import fileManager from "@tools/file-manager";
+import fileManager from "@@file/file-manager";
 import React from "react";
 import elementManage from "@tools/element-manage";
 

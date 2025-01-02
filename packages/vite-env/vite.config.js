@@ -66,7 +66,7 @@ export default defineConfig(({ command }) => ({
       '@context': path.resolve(framework, `${loopar}/src/context`),
       '@services': path.resolve(framework, `${loopar}/services`),
 
-      '@loader': path.resolve(framework, 'src/loader.jsx'),
+      //'@loader': path.resolve(framework, 'src/loader.jsx'),
       "@main/styles": path.resolve(framework, 'src/app/styles'),
       "/main/styles": path.resolve(framework, 'src/app/styles'),
       "/main/scripts": path.resolve(framework, 'src/app/scripts'),

@@ -1,5 +1,5 @@
 import elementManage from "@tools/element-manage";
-import fileManager from "@tools/file-manager";
+import fileManager from "@@file/file-manager";
 import loopar from "loopar";
 
 export function designElementProps(el){

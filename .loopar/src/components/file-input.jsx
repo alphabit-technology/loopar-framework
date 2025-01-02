@@ -1,6 +1,6 @@
 import React, { useState, useEffect} from 'react';
 import BaseInput from "@base-input";
-import fileManager from "@tools/file-manager";
+import fileManager from "@@file/file-manager";
 import { FileDrop } from "@@file/file-drop";
 import _ from "lodash";
 

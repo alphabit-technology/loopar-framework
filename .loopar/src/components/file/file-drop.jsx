@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect} from 'react';
-import { FileBrowser } from "@@file/file-browser";
-import FilePreview from "@@file/file-preview";
-import FileContainer from "@@file/file-container";
-import fileManager from "@tools/file-manager";
+import { FileBrowser } from "./file-browser";
+import FilePreview from "./file-preview";
+import FileContainer from "./file-container";
+import fileManager from "./file-manager";
 import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import loopar from "loopar";
 import { validateFile } from "@@file/defaults";

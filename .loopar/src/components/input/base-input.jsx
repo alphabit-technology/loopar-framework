@@ -135,6 +135,7 @@ BaseInput.metaFields = () => {
     {
       group: "form",
       elements: {
+        id: { element: INPUT },
         label: { element: INPUT },
         name: { element: INPUT },
         description: { element: TEXTAREA },

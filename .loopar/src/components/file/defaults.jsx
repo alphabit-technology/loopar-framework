@@ -5,7 +5,7 @@ import { BsFillFileEarmarkPdfFill } from "react-icons/bs";
 import { FaFile, FaFileAudio, FaFolder } from "react-icons/fa";
 import { IoVideocamSharp } from "react-icons/io5";
 import { RiFileWord2Fill } from "react-icons/ri";
-import fileManager from "@tools/file-manager";
+import fileManager, {getExtention} from "./file-manager";
 import loopar from "loopar";
 
 export const fileIcons = {
@@ -61,7 +61,7 @@ export const fileIcons = {
 
 export const validateFile = (file, acceptedTypes = "*/*") => {
   const fileType = fileManager.getFileType(file);
-  const fileExtension = fileManager.getExtention(file);
+  const fileExtension = getExtention(file.name);
   acceptedTypes = Array.isArray(acceptedTypes) ? acceptedTypes : acceptedTypes.split(',');
 
   for (let i = 0; i < acceptedTypes.length; i++) {

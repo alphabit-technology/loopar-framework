@@ -57,11 +57,11 @@ function _Import(source) {
   return lazy(() => __loader__(source));
 }
 
-export function Dynamic({ Entity, action, fallback, ...props }) {
+export function Entity({ name, action, fallback, ...props }) {
   const [model, setModel] = useState(null);
 
   useEffect(() => {
-    loopar.getMeta(Entity, action).then((meta) => {
+    loopar.getMeta(name, action).then((meta) => {
       if (meta) setModel({ Component: _Import(meta.client_importer), meta } );
     });
   }, []);

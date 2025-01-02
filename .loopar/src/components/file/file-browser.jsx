@@ -1,11 +1,11 @@
 import { Modal } from "@dialog";
 import React from "react";
-import { Dynamic } from "@loader";
+import { Entity } from "@loader";
 
 export function Browser(props) {
   return (
-    <Dynamic
-      Entity="File Manager"
+    <Entity
+      name="File Manager"
       action="list"
       hasBreadcrumb={false}
       hasSidebar={false}

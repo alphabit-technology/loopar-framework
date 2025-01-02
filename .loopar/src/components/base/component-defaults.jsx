@@ -1,5 +1,5 @@
 
-import fileManager from "@tools/file-manager";
+import fileManager from "@@file/file-manager";
 import {useDesigner} from "@context/@/designer-context";
 
 export default function ComponentDefaults(props) {

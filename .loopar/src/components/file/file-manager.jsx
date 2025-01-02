@@ -1,6 +1,9 @@
-//import { div, span, a, p, small, image, figure, h6, strong} from "/components/elements.js";
-//import { elementManage } from "../element-manage.js";
 import elementManage from "@tools/element-manage";
+
+export const getExtention = (file="")=>{
+  const match = file.match(/\.([a-z0-9]+)$/i);
+  return match ? match[1] : '';
+}
 
 class FileManager {
   groupElement = FILE_INPUT;
@@ -59,21 +62,13 @@ class FileManager {
     return 'default';
   }
 
-  getExtention(file) {
-    if(!file) return null;
-    const explit = file.name.split('.');
-    if (explit.length === 1) return 'folder';
-
-    return explit.pop().toLowerCase();
-  }
-
   getFileType(file) {
     if (!file) return null;
     if (elementManage.isJSON(file)) {
       file = JSON.parse(file);
     }
 
-    return file.type === "folder" ? "folder" : this.getTypeByExtension(this.getExtention(file));
+    return file.type === "folder" ? "folder" : this.getTypeByExtension(getExtention(file.name));
   }
 
   getFileSize(bytes, decimals = 2) {
@@ -136,7 +131,7 @@ class FileManager {
     }
 
     return (files || []).filter(file => (typeof file == "object" && file.name) && !Array.isArray(file)).map(file => {
-      const ext = this.getExtention(file);
+      const ext = getExtention(file.name);
       return file instanceof File ? file : {
         ...file,
         type: this.getFileType(file),
@@ -152,75 +147,6 @@ class FileManager {
       return encodeURI(file.src);
     }
     return encodeURI("/uploads/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
-  }
-
-  getImagePreview(file) {
-    return (
-      <div className="card card-figure">
-        <figure className="figure">
-          <div className="figure-img">
-            <img
-              className="img-fluid"
-              src={file.previewSrc || file.src}
-              alt={file.name}
-            />
-            <div className="figure-description">
-              <h6 className="figure-title">{file.name}</h6>
-              <p className="text-muted mb-0">
-                <small>{file.size}</small>
-              </p>
-            </div>
-            <div className="figure-tools">
-              <a href="#" className="tile tile-circle tile-sm mr-auto">
-                <span className="oi oi-data-transfer-download" />
-              </a>
-              {/* Commented out badge element as it was commented out in the original code */}
-              {/* <span className="badge badge-danger">Social</span> */}
-            </div>
-            <div className="figure-action">
-              <button className="btn btn-block btn-sm btn-primary" onClick={() => clearFiles()}>
-                Remove
-              </button>
-            </div>
-          </div>
-        </figure>
-      </div>
-    )
-  }
-
-  async makePreviews(files) {
-    const promises = Array.from(files).map((file) => {
-      return new Promise((resolve, reject) => {
-        if (file instanceof File) {
-          if (file.type.match('image.*')) {
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-              const imageFile = { name: file.name, src: e.target.result, type: "image" }
-              resolve(this.getImagePreview(imageFile));
-            };
-
-            reader.onerror = (e) => {
-              reject(e);
-            };
-
-            return reader.readAsDataURL(file);
-          }
-        } else if (file.type === "image") {
-          return resolve(this.getImagePreview(file));
-        }
-
-        resolve(p({ class: "text-muted mb-0" }, file.name))
-      });
-    });
-
-    return new Promise((resolve, reject) => {
-      Promise.all(promises).then((previews) => {
-        resolve(previews);
-      }).catch((error) => {
-        reject(error);
-      });
-    });
   }
 
   getImage(data = {}, field, avatar = null) {

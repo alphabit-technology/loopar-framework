@@ -20,13 +20,13 @@ export function FallbackFile({ src, ...props }) {
   const iconColor = props.iconColor || "text-slate-600/50";
 
   return (
-    <LazyLoad height={120} width={120} offset={100} debounce={false} throttle={100} threshold={0.95}
-      className="inset-0 bg-gradient-to-b from-slate-900/70 to-slate-500/80 bg-no-repeat bg-center bg-cover p-0 m-0"
+    <LazyLoad height={115} offset={100} debounce={false} throttle={100} threshold={0.95}
+      className="inset-0 bg-gradient-to-b from-slate-900/20 to-slate-700/30 bg-no-repeat bg-center bg-cover p-0 m-0"
     >
       <>
         {(!isValidImage && !loading) &&
           <Icon
-            className={cn(`w-full h-full object-cover transition-all ease-in duration-300 hover:scale-105 aspect-square`, iconColor)}
+            className={cn(`w-full p-3 h-full object-cover transition-all ease-in duration-300 hover:scale-105 aspect-square`, iconColor)}
           />
         }
         <div className="overflow-hidden w-full h-full p-0 m-0">
@@ -35,7 +35,7 @@ export function FallbackFile({ src, ...props }) {
             loading="lazy"
             decoding="async" 
             data-nimg="1" 
-            className={`h-auto w-auto object-cover transition-all hover:scale-105 aspect-square`}
+            className={`object-containt object-cover object-center w-full h-full transition-all hover:scale-105 aspect-square`}
             srcSet={src}
             style={{color: "transparent", ...(!isValidImage ? {width: 0, height: 0} : {height: "100%"})}}
             onLoad={() => handleLoad(true)}

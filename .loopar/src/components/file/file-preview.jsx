@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import fileManager from "@tools/file-manager";
+import fileManager, {getExtention} from "./file-manager";
 import {cn} from "@/lib/utils";
 import { fileIcons } from "./defaults";
 import { FallbackFile } from "./fallback-file";
@@ -36,9 +36,12 @@ export default function FilePreview(props) {
         icon={Icon}
         iconColor={color}
       />
-      <div className="space-y-1 text-sm w-full flex flex-col absolute bottom-0 p-1">
+      <div className="relative pt-2 space-y-0 text-sm w-full flex flex-col absolute bottom-0 p-1">
         <h3 className="font-medium leading-none truncate w-full">{data.name}</h3>
-        <p className="text-xs text-muted-foreground">{size}</p>
+        <p className="text-xs text-muted-foreground flex flex-row items-center justify-between">
+          <span>{size}</span>
+          <span>.{getExtention(data.name)}</span>
+        </p>
       </div>
     </div>
   );
