@@ -15,9 +15,6 @@ export default {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        //"2xl": "1400px",
-      },
     },
     extend: {
       colors: {
@@ -137,6 +134,38 @@ export default {
       scale: {
         '95': '0.95',
         '105': '1.05',
+      },
+      gridTemplateColumns: {
+        // One column, full width
+        '[100]': '100%',
+        // Two equal columns
+        '[50,50]': '50% 50%',
+        // Three equal columns
+        '[33,33,33]': '33.33% 33.33% 33.33%',
+        // Four equal columns
+        '[25,25,25,25]': '25% 25% 25% 25%',
+        // Five equal columns
+        '[20,20,20,20,20]': '20% 20% 20% 20% 20%',
+        // Two columns with different widths
+        '[66,33]': '66% 33%',
+        '[33,66]': '33% 66%',
+        '[75,25]': '75% 25%',
+        '[25,75]': '25% 75%',
+        '[40,60]': '40% 60%',
+        '[60,40]': '60% 40%',
+        // Three columns with different layouts
+        '[20,40,40]': '20% 40% 40%',
+        '[40,20,40]': '40% 20% 40%',
+        '[50,25,25]': '50% 25% 25%',
+        '[25,50,25]': '25% 50% 25%',
+        // Six equal columns
+        '[16,16,16,16,16,16]': '16.66% 16.66% 16.66% 16.66% 16.66% 16.66%',
+        // Two columns with large differences
+        '[80,20]': '80% 20%',
+        '[20,80]': '20% 80%',
+        // Three columns with varied sizes
+        '[50,30,20]': '50% 30% 20%',
+        '[70,15,15]': '70% 15% 15%',
       },
     },
   }

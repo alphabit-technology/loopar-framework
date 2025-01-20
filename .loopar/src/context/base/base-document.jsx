@@ -1,6 +1,7 @@
 import loopar from "loopar";
-import {DocumentContext} from "@context/@/document-context";
+import {DocumentProvider} from "@context/@/document-context";
 import React from "react";
+import { useWorkspace } from "@workspace/workspace-provider";
 
 export default class BaseDocument extends React.Component {
   dontHaveContainer = true;
@@ -8,6 +9,7 @@ export default class BaseDocument extends React.Component {
   __REFS__ = {};
   __META_DEFS__ = {};
   hasBreadcrumb = true;
+  static contextType = useWorkspace;
 
   constructor(props) {
     super(props);
@@ -40,9 +42,13 @@ export default class BaseDocument extends React.Component {
 
   render(content) {
     return (
-      <DocumentContext.Provider value={{ docRef: this, formValues: this.getFormValues ? this.getFormValues() : {} }}>
+      <DocumentProvider
+        docRef={this}
+        formValues={this.getFormValues ? this.getFormValues() : {}}
+        name={this.state.meta?.__DOCUMENT_NAME__}
+      >
         {content}
-      </DocumentContext.Provider>
+      </DocumentProvider>
     );
   }
 
@@ -113,11 +119,15 @@ export default class BaseDocument extends React.Component {
   setCustomActions() { }
 
   initActions() {
-
     this.__WRITABLE_FIELDS__.forEach(field => {
-      //this.get(field.data.name)?.handleChange()
-      this.on(field.data.name, "changed", (value) => {
-        this.setState({});
+      this.on(field.data.name, "changed", (e) => {
+        //console.log(["context", this.meta])
+        //this.state.meta.__DOCUMENT__ = e.target.value;
+        //this.hydrate();;
+        this.setState({})
+        // const meta = { ...this.state.meta };
+        // meta.__DOCUMENT__[field.data.name] = e.target.value;
+        // this.setState({meta: meta})
       });
     });
 
@@ -127,6 +137,14 @@ export default class BaseDocument extends React.Component {
     this.initScroll();
     this.initActions();
   }
+
+  // componentDidUpdate(prevProps) {
+  //   // Compara las props anteriores con las actuales
+  //   if (prevProps.meta !== this.props.meta) {
+  //     // Actualiza el estado si las props han cambiado
+  //     this.setState({ meta: this.props.meta });
+  //   }
+  // }
 
   getPageKey() {
     return this.meta.key;

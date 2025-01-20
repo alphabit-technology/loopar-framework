@@ -20,6 +20,7 @@ import { getHttpError } from './global/http-errors.js';
 import inflection, { titleize, humanize, singularize } from "inflection";
 import { elementsDict } from "loopar";
 import * as lucideIcons from 'lucide-react'
+import jwt from 'jsonwebtoken';
 
 export class Loopar {
   #installingApp = false;
@@ -253,6 +254,7 @@ export class Loopar {
       colector += `<div className="${filterSpecialChars(classes)}"/>`;
     }
 
+    console.log(["colector", colector])
     const fn = `
   export function Tailwind() {
     return (
@@ -327,7 +329,7 @@ export class Loopar {
     for (const [entity, ent] of Object.entries(refIcons)) {
       for (const res of await this.db.getAll(entity, ent.fields)) {
         for(const field of ent.fields) {
-          const icon = res[field].replaceAll(/[- ]/g, '');
+          const icon = (res[field] || "").replaceAll(/[- ]/g, '');
           lucideIcons[icon] && iconImports.add(res[field].replaceAll(/[- ]/g, ''));
         }
       }
@@ -486,7 +488,8 @@ export class Loopar {
       this.printError('LOOPAR: uncaughtException', err);
 
       try {
-        this.server && this.server.renderError({ error: getHttpError(err) });
+        console.log('LOOPAR: render error', err);
+        this.server && this.server.renderError({ error: getHttpError(err), redirect: err?.redirect });
       } catch (error) {
         this.printError(['LOOPAR: uncaughtException', err]);
         this.printError(['LOOPAR: uncaughtException produced by', error]);
@@ -554,38 +557,33 @@ export class Loopar {
     }
   }
 
-  throw(error) {
+  throw(error, redirect = null) {
     error = typeof error === 'string' ? { code: 400, message: error } : error
     const err = new Error(error.message);
     err.code = error.code;
+    err.redirect = redirect;
 
     this.#installingApp = null;
     throw err;
   }
 
-  async getUser(user_id) {
-    const user = await this.db.getList('User',
-      ['name', 'email', 'password', 'disabled', 'profile_picture'],
-      {
-        '=': { name: user_id },
-        "OR": {
-          '=': { email: user_id }
-        }
-      });
+  async getUser(user_id=null) {
+    if (!this.__installed__ && this.installing) {
+      return {
+        name: "Administrator"
+      }
+    }
 
-    return user.length > 0 ? user[0] : null;
-  }
-
-  /*get session() {
-    return this.server && this.server.req && this.server.req.session ? this.server.req.session : {};
-  }*/
-
-  isLoggedIn() {
-    return this.currentUser;
+    return await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
+      .select('name', 'email', 'password', 'disabled', 'profile_picture').first();
   }
 
   get currentUser() {
-    return this.session.get('user') || null;
+    try {
+      return jwt.verify(loopar.cookie.get('auth_token'), 'user-auth');
+    } catch (error) {
+      return {};
+    }
   }
 
   async appStatus(appName) {

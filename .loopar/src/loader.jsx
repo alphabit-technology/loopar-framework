@@ -1,6 +1,6 @@
 import { WorkspaceLoader } from "@loopar/workspace-loader";
 import { MetaComponentsLoader } from "@loopar/components-loader";
-import React, { useEffect, lazy, useState } from "react";
+import React, { useEffect, lazy, useState, use } from "react";
 
 import { loopar } from "loopar";
 
@@ -57,14 +57,32 @@ function _Import(source) {
   return lazy(() => __loader__(source));
 }
 
-export function Entity({ name, action, fallback, ...props }) {
+export function Entity({ name, action, entityName, fallback, ...props }) {
   const [model, setModel] = useState(null);
 
   useEffect(() => {
-    loopar.getMeta(name, action).then((meta) => {
+    loopar.getMeta("Viewer", action, { document: name, name: entityName }).then((meta) => {
       if (meta) setModel({ Component: _Import(meta.client_importer), meta } );
     });
   }, []);
+
+  const updateValue = (structure, Document) => {
+    return structure.map((el) => {
+      if (Object.keys(Document).includes(el.data?.name)) {
+        const value = Document[el.data.name];
+
+        el.data.value = value;
+      }
+
+      el.elements = updateValue(el.elements || [], Document);
+      return el;
+    });
+  };
+
+  useEffect(() => {
+    if(model && model.meta)
+    model.meta.__ENTITY__.doc_structure = JSON.stringify(updateValue(JSON.parse(model.meta.__ENTITY__.doc_structure), model.meta.__DOCUMENT__))
+  }, [model])
   
   if (model) {
     const { Component, meta } = model;

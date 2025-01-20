@@ -1,11 +1,12 @@
-import { DeskLogo } from './desk-logo';
+import { Logo } from './logo';
 import { HamburgerMenuIcon, Cross1Icon } from '@radix-ui/react-icons';
 import { useWorkspace } from "@workspace/workspace-provider";
-import {Link} from "@link"
+import { Link } from "@link";
 
 export function MainNav() {
-  const { openNav, setOpenNav, menuItems, activeParentMenu } = useWorkspace();
+  const { openNav, setOpenNav, webApp, activeParentMenu } = useWorkspace();
   const Icon = openNav ? Cross1Icon : HamburgerMenuIcon;
+  const menuItems = webApp.menu_items;
 
   const Items = menuItems.filter((item) => !item.parent_menu).map((item, i) => {
     const active = activeParentMenu === item.page ? "text-foreground/100 bg-foreground/10 px-4" : "px-4";
@@ -33,7 +34,7 @@ export function MainNav() {
         >
           <Icon className="h-11 w-11 fill-current" />
         </button>
-        <DeskLogo />
+        <Logo />
       </div>
       <div className="items-center text-sm hidden lg:block">
         {Items}

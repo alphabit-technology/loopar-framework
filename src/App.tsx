@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
-import { ErrorBoundary } from "@error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import 'vite/modulepreload-polyfill';
 
 interface RootLayoutProps {
@@ -57,15 +57,15 @@ const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: Root
 
   return (
     <>
-        <CookiesProvider manager={cookieManager} updater={setUpdate}>
-          <Main
-            __META__={__META__}
-            Workspace={Workspace}
-            Document={Document}
-            ENVIRONMENT={ENVIRONMENT}
-            cookieManager={cookieManager}
-          />
-        </CookiesProvider>
+      <CookiesProvider manager={cookieManager} updater={setUpdate}>
+        <Main
+          __META__={__META__}
+          Workspace={Workspace}
+          Document={Document}
+          ENVIRONMENT={ENVIRONMENT}
+          cookieManager={cookieManager}
+        />
+      </CookiesProvider>
     </>
   )
 }

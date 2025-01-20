@@ -3,6 +3,7 @@
 import BaseController from './base-controller.js';
 
 export default class SingleController extends BaseController {
+   client="view";
    constructor(props) {
       super(props);
 

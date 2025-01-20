@@ -36,7 +36,7 @@ export function AppsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="grid grid-cols-2 p-2">
-          <MakeButton Icon={FileJson2Icon} text="Documents" link="/desk/Document/list" />
+          <MakeButton Icon={FileJson2Icon} text="Builder" link="/desk/Builder/list" />
           <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/Module/list" />
           <MakeButton Icon={CircuitBoardIcon} text="Apps" link="/desk/App Manager/view"/>
           <MakeButton Icon={FileArchiveIcon} text="Files" link="/desk/File Manager/list" />

@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { dataInterface } from "@global/element-definition";
 import { FormItem, FormMessage } from "@/components/ui/form";
-import { FormField } from "@form-field";
+import { FormField } from "./form-field";
 import { cn } from "@/lib/utils";
 import elementManage from "@tools/element-manage";
 import loopar from "loopar";
@@ -29,18 +29,22 @@ const BaseInput = (props) => {
     }
   }
 
+  const [data, setData] = useState(getData());
+
+  useEffect(() => {
+    setData(getData())
+  }, [props.data, props.data.value]);
+
   useEffect(() => {
     if(docRef){
       const data = getData();
       docRef.__REFS__[data.name] = getData();
+
       return () => {
         delete docRef.__REFS__[data.name];
       };
     }
   }, []);
-
-
-  const data = getData();
 
   const handleInputChange = useCallback((event) => {
     if (event && typeof event === "object") {
@@ -64,12 +68,6 @@ const BaseInput = (props) => {
     return validation;
   };
 
-  /*useImperativeHandle(ref, () => ({
-    visible() {
-      return !data.hidden && !parentHidden;
-    }
-  }));*/
-
   const value = (val) => {
     if (typeof val === "undefined") return fieldControl.current?.value;
 
@@ -92,8 +90,11 @@ const BaseInput = (props) => {
       <FormField
         name={data.name || data.key || data.id || ""}
         dontHaveForm={props.dontHaveForm}
+        {...props}
         render={({ field }) => {
-          if (!fieldControl.current) field.value = data.value;
+          if (!fieldControl.current) {
+            field.value = props.value || data.value;
+          }
 
           fieldControl.current = field;
           const oldChange = field.onChange;
@@ -117,8 +118,6 @@ const BaseInput = (props) => {
             </FormItem>
           );
         }}
-        //onChange={handleInputChange}
-        data={data}
       />
     );
   };
@@ -127,7 +126,7 @@ const BaseInput = (props) => {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data: getData(), handleInputChange, fieldControl };
+  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange, fieldControl };
 }
 
 BaseInput.metaFields = () => {
@@ -158,22 +157,6 @@ BaseInput.metaFields = () => {
             selected: "data",
           },
         },
-        type: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: "default", value: "Default" },
-              { option: "primary", value: "Primary" },
-              { option: "success", value: "Success" },
-              { option: "info", value: "Info" },
-              { option: "link", value: "link" },
-            ],
-            selected: "default",
-            description: "Valid for not preformated inputs",
-          },
-        },
-        //action: { element: INPUT },
-
         not_validate_type: { element: SWITCH },
         required: { element: SWITCH },
         unique: { element: SWITCH },

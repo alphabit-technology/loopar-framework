@@ -37,9 +37,9 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
   
-  const { menuItems, currentLink, currentPage, setOpenNav, workspace, activeParentMenu, activePage } = useWorkspace();
+  const {setOpenNav, currentPage, workspace, activeParentMenu, activePage } = useWorkspace();
 
-  //console.log({activeParentMenu, activePage});
+  //console.log({activePage, currentPage});
   const handleSetCalled = (called) => {
     setCalled(called);
   };
@@ -171,7 +171,7 @@ export default function MetaLink(props) {
 }
 
 MetaLink.metaFields = () => {
-  return {
+  return [{
     group: "form",
     elements: {
       to: {
@@ -198,5 +198,5 @@ MetaLink.metaFields = () => {
         },
       },
     },
-  };
+  }];
 }

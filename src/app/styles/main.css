@@ -73,3 +73,9 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@media (min-width: 1280px) {
+  .grid-container.dynamic {
+    grid-template-columns: var(--column-layout);
+  }
+}

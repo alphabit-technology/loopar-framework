@@ -15,10 +15,6 @@ export default class Router {
     this.uploader = multer({ storage: multer.memoryStorage() }).any();
   }
 
-  initialize() {
-
-  }
-
   errTemplate = (err) => {
     return (`
       <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
@@ -55,7 +51,6 @@ export default class Router {
   }
 
   renderAjax(res, response) {
-    //response = typeof response === 'string' ? { message: response } : response;
     if (response) {
       const status = parseInt(response.status) || parseInt(response.code) || 200;
       if (!res.headersSent) {
@@ -72,13 +67,17 @@ export default class Router {
     }
   }
 
-  async renderError({ req = this.currentReq, res = this.currentRes, error }) {
+  async renderError({ req = this.currentReq, res = this.currentRes, error, redirect }) {
     if (!res || res.headersSent) return;
 
     try {
       if (req.method === 'POST') {
         return this.renderAjax(res, error);
       } else {
+        if (redirect && req._parsedUrl.pathname !== redirect) {
+          console.log(["Redirecting to", redirect]);
+          return this.redirect(res, redirect);
+        }
         const errControlled = new BaseController({ req, res });
         errControlled.dictUrl = req._parsedUrl;
         const e = await errControlled.getError(error.code, error);
@@ -110,79 +109,6 @@ export default class Router {
 
       next();
     }
-
-    const authMiddleware = async (req, res, next) => {
-      if (req.__WORKSPACE_NAME__ === "loopar") return next();
-
-      const params = req.__params__;
-      const loginActions = ['login', 'register', 'logout'];
-      const url = req._parsedUrl.pathname;
-
-      const isLoginAction = () => {
-        return (loginActions || []).includes(params.action);
-      }
-
-      this.temporaryLogin();
-
-      try {
-        // User is logged in
-        if (req.session.user) {
-          const user = loopar.getUser(req.session.user.name);
-
-          if (url === "/auth/logout") {
-            // Close the session and redirect to the login page
-            req.session.destroy(err => {
-              if (err) {
-                return loopar.throw({ code: 500, message: 'Error destroying session' });
-              }
-              return this.redirect(res, '/auth/login');
-            });
-            return;
-          }
-
-          // If the user is disabled and is not an administrator
-          if (user && user.name !== 'Administrator' && user.disabled) {
-            return req.method === 'POST' ?
-              loopar.throw({ code: 403, message: 'User is disabled' }) :
-              this.redirect(res, '/auth/logout');
-          }
-
-          // If the user tries to access a login action, redirect to the desktop
-          if (isLoginAction()) {
-            return this.redirect(res, '/desk');
-          }
-
-          // If it's a GET request and the workspace is "auth", redirect to the desktop
-          if (params.method === "GET" && req.__WORKSPACE_NAME__ === "auth") {
-            return this.redirect(res, '/desk');
-          }
-
-          return next();
-        }
-
-        // If it's a login action and the user is not logged in
-        if (isLoginAction()) {
-          if (url === "/auth/logout") {
-            return this.redirect(res, '/auth/login');
-          }
-          return next();
-        }
-
-        // If the user is not logged in and the workspace is not "desk", allow access
-        if (req.__WORKSPACE_NAME__ !== 'desk') {
-          return next();
-        }
-
-        // In any other case, redirect to the login
-        return req.method === 'POST' ?
-          loopar.throw({ code: 403, message: 'You need to be logged in to access this page' }) :
-          this.redirect(res, '/auth/login');
-
-      } catch (err) {
-        // Unexpected error handling
-        return loopar.throw({ code: 500, message: 'Internal Server Error' });
-      }
-    };
 
     const systemMiddleware = async (req, res, next) => {
       const currentUrl = req._parsedUrl.pathname;
@@ -221,9 +147,10 @@ export default class Router {
       if (req.method === 'POST') return next();
 
       const getWorkspace = async (req, res) => {
-        const Controller = new WorkspaceController({ req, res });
+        const Controller = new WorkspaceController({ req, res, method: req.method });
         Controller.dictUrl = req._parsedUrl;
         Controller.workspace = req.__WORKSPACE_NAME__;
+
         this.App = Controller;
         return await Controller.getWorkspace();
       }
@@ -324,14 +251,19 @@ export default class Router {
     }
 
     this.server.use(assetMiddleware, notFoundSourceMiddleware);
-    this.server.use(loadHttp, systemMiddleware, buildParamsMiddleware, authMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
+    this.server.use(loadHttp, systemMiddleware, buildParamsMiddleware, workSpaceMiddleware/*, uploaderMiddleware*/, controllerMiddleware, fynalyMiddleware);
 
   }
 
   async makeController(req, res) {
     const params = req.__params__;
+    
+    if (!params.document && !params.action && req.__WORKSPACE_NAME__ === 'desk') {
+      params.document = "Desk";
+      params.action = "view";
+    }
 
-    if (!params.action || !params.document === "Module") {
+    if (!params.action || !params.document) {
       params.name = params.document;
       params.document = 'Module'; //Because Module is the Entity
       params.action ??= 'view'; //Because in ModuleController the default action is view
@@ -352,16 +284,27 @@ export default class Router {
 
     const ref = loopar.getRef(params.document, false);
 
-    if (!ref) return loopar.throw({ code: 404, message: `Document ${params.document} not found` }, res);
+    if (!ref) {
+      if (req.method === 'POST') {
+        return this.renderAjax(res, { code: 404, message: `Document ${params.document} not found` });
+      }
+
+      const errControlled = new BaseController({ req, res });
+      errControlled.dictUrl = req._parsedUrl;
+      const e = await errControlled.getError(404, { title: "Not found", message: `Document ${params.document} not found` });
+      req.__WORKSPACE__.__DOCUMENT__ = e;
+      return this.render(res, await this.App.render(req.__WORKSPACE__, true));
+    }
 
     const makeController = async (query, body) => {
       const C = await fileManage.importClass(loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`));
 
       const Controller = new C({
-        ...params, ...query, data: body
+        ...params, ...query, data: body, request: req
       });
 
       const action = params.action && params.action.length > 0 ? params.action : Controller.defaultAction;
+      Controller.action = action;
       req.__WORKSPACE__.__DOCUMENT__ = await Controller.sendAction(action);
     }
 
@@ -369,7 +312,7 @@ export default class Router {
       return new Promise(resolve => {
         this.uploader(req, res, async err => {
           if (err) console.log(["Multer Error", err]);
-          if (err) loopar.throw(err, res);
+          if (err) loopar.throw(err);
 
           return resolve(await makeController(req.query, req.body));
         });
@@ -377,17 +320,6 @@ export default class Router {
     } else {
       return await makeController(req.query, req.body);
     }
-  }
-
-  async temporaryLogin() {
-    return new Promise(resolve => {
-      loopar.session.set('user', {
-        name: "Administrator",
-        email: "mail@mail.com",
-        avatar: "AD",
-        profile_picture: "",
-      }, resolve());
-    });
   }
 
   makeUrl = (href, currentURL) => {

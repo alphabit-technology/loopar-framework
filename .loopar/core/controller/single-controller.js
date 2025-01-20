@@ -17,6 +17,7 @@ export default class SingleController extends BaseController {
   }
 
   async sendAction(action) {
+    await this.beforeAction();
     const selfAction = `action${loopar.utils.Capitalize(action)}`;
     if (typeof this[selfAction] == 'function') {
       return await this[selfAction]();

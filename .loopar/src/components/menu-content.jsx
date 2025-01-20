@@ -2,9 +2,8 @@ import MetaComponent from "@meta-component";
 import { useDesigner } from "@context/@/designer-context";
 import { useEffect } from "react";
 import { Link } from "@link"
-import { useState, useRef } from "react";
-import { Droppable } from "./base/droppable";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { Droppable } from "./droppable/droppable";
 
 const Section = ({ element }) => {
   return (

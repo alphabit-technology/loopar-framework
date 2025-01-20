@@ -1,120 +1,74 @@
 import {Droppable} from "@droppable";
+import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
+import ComponentDefaults from "./base/component-defaults";
+import { loopar } from "loopar";
+import { useEffect, useState } from "react";
+import Emitter from '@services/emitter/emitter';
+import { cn } from "@/lib/utils";
 
 export default function Row(props) {
-  /*blockComponent = true;
-  dontHaveMetaElements = ["label", "text"];
-  droppable = true;*/
+  const { data, setElements, set } = ComponentDefaults(props);
+  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
+  const [cols, setCols] = useState(props.elements || []);
 
-  //static contextType = WorkspaceProviderContext;  
+  const conciliateCols = () => {
+    const addCols = [
+      ...cols
+    ]
+    if (cols.length < layout.length) {
+      const diff = layout.length - cols.length;
 
-  const setLayout = (layout) => {
-    /*const meta = this.props;
+      for (let i = 0; i < diff; i++){
+        addCols.push({
+          element: "col",
+          data: {key: data.key + i}
+        })
+      }
 
-    this.props.designerRef.updateElement(
-      meta.data.key,
-      {
-        layout: JSON.stringify(layout),
-      },
-      true
-    );*/
+      setElements(addCols, setCols(addCols));
+    }
   }
 
-  const getLayout = () => {
-    /*const meta = this.props || {};
-    meta.data ??= {};
-    return meta.data.layout && loopar.utils.isJSON(meta.data.layout)
-      ? JSON.parse(meta.data.layout)
-      : [];*/
-  }
+  useEffect(() => {
+    const newLayout = loopar.utils.JSONparse(data.layout);
+    if (newLayout && data.layout != JSON.stringify(layout)){
+      setLayout(newLayout);
+    }
+  }, [data.layout]);
 
-  const getColumnsSelector = () => {
-    const sizes = [
-      [100],
-      [50, 50],
-      [66, 33],
-      [33, 67],
-      [25, 25, 25, 25],
-      [25, 75],
-      [75, 25],
-      [40, 60],
-      [60, 40],
-      [20, 20, 20, 20, 20, 20],
-      [20, 40, 40],
-      [40, 20, 40],
-    ];
-    const buttonsCount = sizes.length;
-    const bottonSize = 100 / sizes.length;
-
-    return (<div></div>)
-
-    /*return sizes.map((layout, layoutIndex) => {
-      return (
-        <div
-          className={`progress ${layoutIndex < buttonsCount - 1 ? "mr-1" : ""}`}
-          style={{
-            width: bottonSize + "%",
-            borderRadius: 0,
-            backgroundColor: "transparent",
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this.setLayout(layout);
-          }}
-        >
-          {layout.map((size, index) => {
-            return (
-              <div
-                className="progress-bar"
-                style={{
-                  width: size + "%",
-                  border: "unset",
-                  backgroundColor: `rgba(255,${Math.abs(150 - index * 50)},0,${
-                    (index + 1) / layout.length
-                  })`,
-                }}
-              ></div>
-            );
-          })}
-        </div>
-      );
-    });*/
-  }
-
-  const spacing = () => {
-    return {
-      0: "gap-0",
-      1: "gap-1",
-      2: "gap-2",
-      3: "gap-3",
-      4: "gap-4",
-      5: "gap-5",
-    }[props?.data?.spacing || 3]
-  }
-
-  const colsDistribution = () => {
-    let columsCount = props.elements?.length || 1;
-    columsCount = columsCount > 6 ? 6 : columsCount;
-    return {
-      1: "md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1",
-      2: "md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2",
-      3: "md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3",
-      4: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4",
-      5: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5",
-      6: "md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6"
-    }[columsCount]
-  }
-
-  const cols = (props.elements || []);
+  useEffect(() => {
+    conciliateCols();
+    Emitter.emit("currentElementEdit", data.key)
+  }, [layout])
   
+  const handleSetLayout = (layout) => {
+    set("layout", JSON.stringify(layout));
+  }
+
+  useEffect(() => {
+    setCols(props.elements || [])
+  }, [props.elements]);
+
+  const spacing = data.spacing || 1;
+  const gap = spacing / 2;
+
   return (
-    <Droppable 
-      //{...loopar.utils.renderizableProps(this.props)}
-      {...props}
-      elements={cols}
-      //receiver={this}
-      className={`grid xm:grid-cols-1 sm:grid-cols-1 ${colsDistribution()} ${spacing()}`}
-    />
+    <div className="flex flex-col">
+      <Droppable
+        {...props}
+        elements={cols}
+        className={cn(
+          `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
+          'grid-container dynamic scrollbar-hide box-border'
+        )}
+        style={{
+          "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,
+          "--grid-gap": `${gap}rem`,
+          gap: `${spacing}rem`
+        }}
+      />
+      <LayoutSelector setLayout={handleSetLayout} current={layout}/>
+    </div>
   );
 }
  
@@ -124,9 +78,9 @@ Row.metaFields = () => {
     group: "custom",
     elements: {
       layout: {
-        element: INPUT,
+        element: SELECT,
         data: {
-          disabled: true,
+          options: gridLayouts.map(l => `[${l}]`)
         },
       },
       horizontal_alignment: {

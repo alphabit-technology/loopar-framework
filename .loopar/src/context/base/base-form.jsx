@@ -10,15 +10,15 @@ export default class BaseForm extends BaseDocument {
   lastData = null;
   __FORM_REFS__ = {};
   #Form = null;
-  static contextType = useWorkspace;
+  //static contextType = useWorkspace;
 
   save() {
     this.send({ action: this.props.meta.action });
   }
 
-  hydrate() {
-    loopar.rootApp.updateDocument(this.props.key, this.getFormValues(), false);
-  }
+  // hydrate() {
+  //   loopar.rootApp.updateDocument(this.props.key, this.getFormValues(), false);
+  // }
 
   send({ action, params={}, ...options } = {}) {
     //options = typeof options === 'string' ? { action: options } : options;
@@ -117,6 +117,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   #getFormValues(toSave = false) {
+    //return this.meta.__DOCUMENT__//
     if(!this.Form)  return this.meta.__DOCUMENT__;
     
     const fields = this.__FIELDS__;

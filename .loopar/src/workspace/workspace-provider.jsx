@@ -33,11 +33,12 @@ export function WorkspaceProvider({
   const [theme, setTheme] = useCookies(storageKey);
 
   const __META__ = props.__META__ || {}
-  const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
+  //const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
   const __WORKSPACE_NAME__ = __META__.__WORKSPACE__?.name || "desk"
 
   const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
+  //console.log(["props.activepage", props.activePage])
   const [activePage, setActivePage] = useState(props.activePage || "");
 
   const getMergeDocument = () => {
@@ -133,7 +134,7 @@ export function WorkspaceProvider({
       Document.active = false;
     });
 
-    const setDocument = (Module) => {
+    const setDocument1 = (Module) => {
       copyDocuments[__META__.key] = {
         Module: Module.default,
         __DOCUMENT__: __META__,
@@ -144,7 +145,7 @@ export function WorkspaceProvider({
     }
 
     AppSourceLoader(__META__.client_importer).then((Module) => {
-      setDocument(Module);
+      setDocument1(Module);
     }).catch(e => {
       __META__.client_importer.client = "app/error-view";
 
@@ -155,7 +156,7 @@ export function WorkspaceProvider({
           description: e.message
         };
 
-        setDocument(Module);
+        setDocument1(Module);
       });
     });
   }
@@ -193,8 +194,9 @@ export function WorkspaceProvider({
 
     const activeParentMenu = getActiveParentMenu();
 
-    if (activeParentMenu){
-      setActivePage(__DOCUMENT__?.__ENTITY__?.name);
+    if (activeParentMenu) {
+      const activeDocumentName = __DOCUMENT__?.__ENTITY__?.name;
+      activeDocumentName && activeDocumentName != activePage && setActivePage(activeDocumentName);
     }
   }, [Documents]);
 
@@ -210,7 +212,7 @@ export function WorkspaceProvider({
     }
     return theme
   }
-
+  
   const value = {
     theme: getTheme(),
     __META__,
@@ -225,6 +227,8 @@ export function WorkspaceProvider({
     Documents: Documents,
     getDocuments: getDocuments,
     activePage: activePage,
+    setDocument: setDocument
+    //webApp: props.webApp || {}
   }
 
   return (

@@ -37,7 +37,7 @@ export default function FilePreview(props) {
         iconColor={color}
       />
       <div className="relative pt-2 space-y-0 text-sm w-full flex flex-col absolute bottom-0 p-1">
-        <h3 className="font-medium leading-none truncate w-full">{data.name}</h3>
+        <h3 className="font-medium leading-none truncate w-full">{data.name.replace(/\.[^/.]+$/, '')}</h3>
         <p className="text-xs text-muted-foreground flex flex-row items-center justify-between">
           <span>{size}</span>
           <span>.{getExtention(data.name)}</span>

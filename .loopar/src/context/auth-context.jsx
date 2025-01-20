@@ -1,5 +1,5 @@
 import MetaComponent from "@meta-component";
-import {FormWrapper} from "@context/form-context";
+import {FormWrapper} from "@context/form-provider";
 import BaseForm from "@context/base/base-form";
 
 export default class AuthContext extends BaseForm {
@@ -7,7 +7,7 @@ export default class AuthContext extends BaseForm {
     const meta = this.props.meta;
 
     return super.render([
-      <FormWrapper meta={meta} docRef={this}>
+      <FormWrapper __DOCUMENT__={meta.__DOCUMENT__} docRef={this}>
         <MetaComponent elements={JSON.parse(meta.__ENTITY__.doc_structure)} parent={this} />
         {content}
       </FormWrapper>

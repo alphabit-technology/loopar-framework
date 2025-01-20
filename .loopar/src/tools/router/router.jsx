@@ -3,15 +3,8 @@ import HTTP from '@tools/router/http';
 
 export default class Router extends HTTP {
   #route = global.location;
-  //routeHistory = [];
   routeOptions = null;
   currentRoute = null;
-  //http = HTTP;
-
-  constructor() {
-    super();
-    this.#bindEvents();
-  }
 
   setRoute() {
     return this.#setRoute.apply(this, arguments);
@@ -23,13 +16,8 @@ export default class Router extends HTTP {
 
   sendRoute() {
     this.currentRoute = this.getSubPath();
-    //this.setHistory(this.currentRoute);
     this.change();
   }
-
-  /*setHistory() {
-    //this.routeHistory.push(this.currentRoute);
-  }*/
 
   #setRoute() {
     this.pushState(this.makeUrl(arguments));
@@ -55,8 +43,6 @@ export default class Router extends HTTP {
   pushState(url) {
     if (global.location.pathname !== url) {
       global.location.hash = '';
-
-      //history.pushState(null, null, url);
     }
 
     this.sendRoute();
@@ -99,39 +85,8 @@ export default class Router extends HTTP {
 
   change() {
     this.#route = global.location;
-   // return this.loadDocument();
   }
-
-  async loadDocument() {
-    //this.rootApp.progress(20);
-    //this.rootApp.setDocument(await this.#fetch())
-  }
-
-  /*#fetch() {
-    return new Promise((resolve, reject) => {
-      this.send({
-        action: this.route.pathname,
-        params: this.route.search,
-        success: r => {
-          resolve(r);
-        },
-        error: r => {
-          reject(r);
-        },
-        freeze: true
-      });
-    });
-  }
-*/
-  #bindEvents() {
-    global.addEventListener && global.addEventListener('popstate', (e) => {
-      e.preventDefault();
-
-      this.sendRoute();
-      return false;
-    });
-  }
-
+  
   navigate(route, query = {}) {
     const isLoggedIn = this.isLoggedIn();
     const isAuthRoute = route.split('/')[1] === 'auth' && !isLoggedIn;

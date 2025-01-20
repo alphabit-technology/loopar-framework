@@ -4,9 +4,9 @@ import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 
-const Layout = (({ webApp={}, ...props }) => {
-  const { menuItems, activeParentMenu } = useWorkspace();
-
+const Layout = (({ ...props }) => {
+  const { activeParentMenu, webApp } = useWorkspace();
+  
   function buildMenuTree(menu) {
     const menuMap = {};
 
@@ -31,7 +31,7 @@ const Layout = (({ webApp={}, ...props }) => {
     return menuTree;
   }
 
-  const menuItemsTree = buildMenuTree(menuItems);
+  const menuItemsTree = buildMenuTree(webApp.menu_items);
   const childMenu = menuItemsTree.find(item => item.page === activeParentMenu)?.items || [];
 
   return (
@@ -69,24 +69,18 @@ const Layout = (({ webApp={}, ...props }) => {
 });
 
 export default function WebWorkspace(props) {
-  const { getDocuments, __META__} = useWorkspace();
+  const { getDocuments, __META__ } = useWorkspace();
 
   const getWebApp = () => {
     const workspace =__META__.__WORKSPACE__ || {};
     return workspace.web_app || {};
   }
 
-  const webApp = getWebApp();
-
-  const menuItems = () => {
-    return webApp.menu_items || [];
-  }
-
-  const activePage = __META__.__DOCUMENT__?.__ENTITY__?.name
+  const activePage = __META__.__DOCUMENT__?.__ENTITY__?.name;
 
   return (
-    <BaseWorkspace menuItems={menuItems} activePage={activePage}>
-      <Layout {...props} webApp={webApp}>
+    <BaseWorkspace activePage={activePage} webApp={getWebApp()}>
+      <Layout {...props}>
         {getDocuments()}
       </Layout>
     </BaseWorkspace>

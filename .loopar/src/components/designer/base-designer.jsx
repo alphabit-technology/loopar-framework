@@ -1,7 +1,7 @@
 import loopar from "loopar";
 import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
 import { Droppable } from "@droppable";
-import { BaseFormContext } from "@context/form-context";
+import { BaseFormContext } from "@context/form-provider";
 import React, { useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@/components/ui/button";
@@ -10,26 +10,20 @@ import Tab from "@tab";
 import Tabs from "@tabs";
 import {useCookies} from "@services/cookie";
 import {cn} from "@/lib/utils";
-import {Sidebar} from "./sidebar";
+import { Sidebar } from "./sidebar";
+import {useDocument} from "@context/@/document-context";
 
 export const Designer = ({designerRef, metaComponents, data}) => {
-  const [designing, setDesigning] = useState(false);
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [dropping, setDropping] = useState(false);
-  const { designerMode } = useDesigner();
+  const {designerMode} = useDesigner();
+  const { name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   
-  const [editElement, setEditElement] = useCookies("editElement");
-  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
-  const [designerModeType, setDesignerModeType] = useCookies("designer-mode-type");
-
-  useEffect(() => {
-    if (!editElement) {
-      setDesignerModeType("designer");
-    }
-  }, [editElement]);
-  
+  const [editElement, setEditElement] = useCookies(name + "editElement");
+  const [designerModeType = "designer", setDesignerModeType] = useCookies(name + "designer-mode-type");
+  //const [elements, setElements] = useState(JSON.parse(metaComponents || "[]"))
   const elements = JSON.parse(metaComponents || "[]");
 
   const handleChangeMode = (opt=null) => {
@@ -40,14 +34,24 @@ export const Designer = ({designerRef, metaComponents, data}) => {
     handleSetMode(newMode);
   }
 
+  useEffect(() => {
+    //setElements(JSON.parse(metaComponents || "[]"))
+  }, [metaComponents])
+
   const handleSetMode = (newMode) => {
     setDesignerModeType(newMode);
-    setSidebarOpen(true);
+    handleSetSidebarOpen(true);
   }
 
-  const toggleDesign = (mode) => {
-    setDesigning(mode !== undefined ? mode : !designing)
-  }
+  useEffect(() => {
+    if (designerMode) return;
+
+    if (!editElement || editElement == "null") {
+      handleSetMode("designer");
+    } else if (!designerRef.findElement("key", editElement)) {
+      setEditElement(null);
+    }
+  }, []);
 
   const handleEditElement = (element) => {
     setEditElement(element);
@@ -126,7 +130,26 @@ export const Designer = ({designerRef, metaComponents, data}) => {
     });
   }
 
+  // useEffect(() => {
+  //   if (designerMode) return;
+
+  //   const handleMouseMove = (event) => {
+  //     event.preventDefault();
+  //     event.stopPropagation();
+  //     currentDropZone && setCurrentDropZone(null);
+  //     currentDragging && setCurrentDragging(null);
+  //   };
+
+  //   document.addEventListener('mouseup', handleMouseMove);
+
+  //   return () => {
+  //     document.removeEventListener('mouseup', handleMouseMove);
+  //   };
+  // }, [currentDropZone]);
+
   useEffect(() => {
+    if (designerMode) return;
+    
     const handleMouseMove = (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -143,6 +166,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
     };
   }, [currentDropZone]);
 
+
   return (
     <DesignerContext.Provider
       value={{
@@ -150,7 +174,6 @@ export const Designer = ({designerRef, metaComponents, data}) => {
         designerModeType,
         designerRef,
         designing: designerModeType === "designer" || designerModeType === "editor",
-        toggleDesign,
         currentEditElement: editElement,
         handleEditElement,
         handleDeleteElement,
@@ -212,7 +235,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
                 className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
                 <Tailwind/>
-                {!designerMode && sidebarOpen && <Sidebar/>}
+                {(!designerMode && sidebarOpen) && <Sidebar/>}
                 {!designerMode ?
                   <Droppable
                     className={designerModeType !== "preview" ? "min-h-20 rounded p-4" : "p-1"}

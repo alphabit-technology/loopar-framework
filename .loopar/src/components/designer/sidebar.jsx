@@ -6,15 +6,15 @@ import {DesignerForm} from "./designer-form";
 import {ElementEditor} from "./element-editor";
 import {Separator} from "@/components/ui/separator";
 import {ScrollArea} from "@/components/ui/scroll-area";
-import {useCookies} from "@services/cookie";
+import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {
-  const [, setSidebarOpen] = useCookies("sidebarOpen");
-  const {currentEditElement, handleChangeMode, designerModeType} = useDesigner();
-
+  const { handleSetSidebarOpen } = useDocument();
+  const { currentEditElement, handleChangeMode, designerModeType } = useDesigner();
+  
   return (
     <div 
-      className="w-sidebar-width mt-header-height pb-header-height bg-background"
+      className="w-sidebar-width mt-header-height pb-header-height"
       style={{position: "fixed", top: 0, right: 0, zIndex: 30, width: 300, height: "100vh"}}
     >
       <div className="flex flex-col p-1 w-full h-full">
@@ -27,15 +27,15 @@ export const Sidebar = () => {
               handleChangeMode();
             }}
           >
-            {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-            <span>{designerModeType === "designer" ? "Preview" : "Design"}</span>
+            {designerModeType == "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
+            <span>{designerModeType == "designer" ? "Preview" : "Design"}</span>
           </Button>
           <Button
             variant="secondary"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setSidebarOpen(false);
+              handleSetSidebarOpen(false);
             }}
           >
             <XIcon className="float-right" />
@@ -47,14 +47,12 @@ export const Sidebar = () => {
           style={{height: "calc(100% - 50px)", overflowY: "auto"}}
         >
           {
-            ["designer", "preview"].includes(designerModeType) ? (
-              <DesignerForm/>
-            ) : (currentEditElement) && (
+            (currentEditElement && currentEditElement != "null" && designerModeType == "editor") ? (
               <ElementEditor 
-                key={currentEditElement?.data?.key} 
+                key={currentEditElement + "_editor"} 
                 element={currentEditElement} 
               />
-            )
+            ) : <DesignerForm/>
           }
         </ScrollArea>
       </div>

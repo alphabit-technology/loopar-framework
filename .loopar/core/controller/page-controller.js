@@ -2,4 +2,9 @@
 
 import SingleConrtroller from './single-controller.js';
 
-export default SingleConrtroller;
+export default class PageController extends SingleConrtroller {
+  client= 'page';
+  constructor(props) {
+    super(props);
+  }
+}

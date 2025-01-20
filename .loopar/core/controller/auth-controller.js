@@ -1,4 +1,5 @@
 import { loopar } from "loopar";
+import jwt from 'jsonwebtoken';
 
 export default class AuthController {
   loginActions = ['login', 'register', 'recovery_user', 'recovery_password'];
@@ -19,49 +20,46 @@ export default class AuthController {
     }
   }
 
-  isAuthenticated() {
-    return new Promise(async resolve => {
-      const executeAction = (method, message, url) => {
-        if (method === AJAX) {
-          return loopar.throw(message);
-        } else {
-          //return this.res.redirect(url);
-        }
-      }
-
-      if (this.req.session.user) { /** User is logged */
-        //const user = {name: "Administrator", "email": "test"}//loopar.get_user(this.req.session.user.name);
-        const user = loopar.getUser(this.req.session.user.name);
-
-        if (user && user.name !== 'Administrator' && user.disabled) {
-          executeAction(this.req.method, 'Not permitted', '/auth/login');
-          return resolve(false);
-        }
-
-        if (this.isLoginAction) {
-          executeAction(this.method, 'You are already logged in, refresh this page', '/desk/desk/view');
-          return resolve(false);
-        } else if (this.isEnableAction) {
-          return resolve(true);
-        } else {
-          executeAction(this.method, 'Action not valid in Desk App', '/desk/desk/view');
-          return resolve(false);
-        }
-      } else if (this.isLoginAction && (this.isFreeAction || this.isEnableAction)) {
-        return resolve(true);
-      } else if (this.free_access && this.workspace !== 'desk') {
-        return resolve(true);
-      }/* else if(this.isFreeAction) {
-            resolve(true);
-         }*/else {
-        executeAction(this.method, 'Your session has ended, please log in again.', '/auth/login');
-        return resolve(false);
-      }
-    });
+  authUser() {
+    try {
+      return jwt.verify(loopar.cookie.get('auth_token'), 'user-auth');
+    } catch (error) {
+      return null;
+    }
   }
 
-  get isFreeAction() {
-    return !this.freeActions || this.freeActions.includes(this.action);
+  async isAuthenticated() {
+    //const url = this.req._parsedUrl.pathname
+    const action = this.action;
+    const workspace = this.req.__WORKSPACE_NAME__;
+
+    const resolve = (message, url) => {
+      return loopar.throw(message, this.method !=  AJAX && url || "/auth/login")
+    }
+
+    if (workspace == "web") return true;
+    const user = await loopar.getUser(this.authUser()?.name);
+
+    if (user) {
+      if (workspace == "auth") {
+        if (action == "logout") return true;
+        return resolve('You are already logged in, refresh this page', "/desk/Desk/view");
+      }
+
+      if (user.name !== 'Administrator' && user.disabled) {
+        resolve('Not permitted');
+      }
+    } else {
+      if (workspace == "desk") return resolve('You must be logged in to access this page', "/auth/login");
+      
+      if (workspace == "auth") {
+        if (this.isLoginAction) return true;
+      } else {
+        if (this.isEnableAction) return true;
+      }
+
+      resolve('You must be logged in to access this page');
+    }
   }
 
   get isLoginAction() {
@@ -69,7 +67,7 @@ export default class AuthController {
   }
 
   get isEnableAction() {
-    return !this.actionsEnabled || this.actionsEnabled.includes(this.action);
+    return this.actionsEnabled ? this.actionsEnabled.includes(this.action) : false;
   }
 
   isAuthorized() {
@@ -78,7 +76,7 @@ export default class AuthController {
     });
   }
 
-  beforeAction() {
+  async beforeAction() {
     return Promise.all([this.isAuthenticated(), this.isAuthorized()]);
   }
 }

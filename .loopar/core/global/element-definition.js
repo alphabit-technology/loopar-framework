@@ -66,6 +66,8 @@ export const elementsDefinition = {
     { element: "title", icon: "Heading1" },
     { element: "subtitle", icon: "Heading2" },
     { element: "paragraph", icon: "Pilcrow" },
+    { element: "direct-preview", icon: "View" },
+    { element: "direct-preview-iframe", icon: "View" },
     //{element: "link", icon: "fa fa-link"},
     //{element: "list", icon: "fa fa-list"},
     { element: "stripe", icon: "CreditCard" },

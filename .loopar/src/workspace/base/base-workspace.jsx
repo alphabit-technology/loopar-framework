@@ -121,7 +121,8 @@ export default function BaseWorkspace(props) {
         value={
           {
             ...workspace,
-            menuItems: props.menuItems && props.menuItems() || [],
+            //menuItems: props.menuItems && props.menuItems() || [],
+            webApp: props.webApp || {},
             refresh: () => props.refresh || (() => { }),
             activePage: activePage,
           }

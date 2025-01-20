@@ -66,8 +66,8 @@ export class Cookie{
     this.#res = res;
   }
 
-  set(name, value) {
-    if(this.#res) this.#res.cookie(name, JSON.stringify({ key: value }));
+  set(name, value, options = {}) {
+    if(this.#res) this.#res.cookie(name, value, options);
   }
 
   get(name) {

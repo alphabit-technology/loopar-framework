@@ -176,7 +176,8 @@ function JSONstringify(obj) {
   return Flatted.stringify(obj);
 }
 
-function JSONparse(obj) {
+function JSONparse(obj, ifNotValid) {
+  return isJSON(obj) ? JSON.parse(obj) : ifNotValid || null;
   const text = fixJSON(obj);
 
   return typeof obj == "object" ? obj : JSON.parse(fixJSON(obj));

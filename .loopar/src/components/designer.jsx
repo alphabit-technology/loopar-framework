@@ -2,10 +2,11 @@ import loopar from "loopar";
 import elementManage from "@tools/element-manage";
 import React, { useEffect } from "react";
 import BaseInput from "@base-input";
-import {Designer} from "./designer/base-designer";
+import { Designer } from "./designer/base-designer";
+import Emitter from '@services/emitter/emitter';
 
 export default function MetaDesigner(props) {
-  const {renderInput, data, value} = BaseInput(props);
+  const { renderInput, data, value } = BaseInput(props);
 
   const makeElements = (elements) => {
     value(JSON.stringify(elementManage.fixElements(elements)));
@@ -56,19 +57,21 @@ export default function MetaDesigner(props) {
   }
 
   const findElement = (field, value, elements = getElements()) => {
+    if (!value || value === "null" || value.length == 0) return null;
+    
     for (let i = 0; i < elements.length; i++) {
-      if (elements[i].data[field] === value) {
+      if (elements[i]?.data?.[field] === value) {
         return elements[i];
-      } else if (elements[i].elements) {
+      } else if (Array.isArray(elements[i]?.elements)) {
         const found = findElement(field, value, elements[i].elements);
         if (found) {
           return found;
         }
       }
     }
-    
     return null;
-  }
+  };
+
 
   const getElement = (key) => {
     return findElement("key", key);
@@ -84,7 +87,7 @@ export default function MetaDesigner(props) {
         }
 
         return true;
-      }); 
+      });
     };
 
     makeElements(removeElement());
@@ -114,15 +117,6 @@ export default function MetaDesigner(props) {
           el.elements = updateE(el.elements || []);
         }
 
-        if (el.data.background_image) {
-          //if(el.data.label === "Image2") console.log(["background_image", el.data.background_image])
-          /*el.data.background_image = JSON.stringify(
-            fileManager.getMappedFiles(el.data.background_image)
-          );
-
-          el.data.background_image = fileManager.getMappedFiles(el.data.background_image);*/
-        }
-
         /**Purify Data */
         el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
           if (
@@ -132,17 +126,7 @@ export default function MetaDesigner(props) {
             return obj;
           }
 
-          if (
-            ![
-              null,
-              undefined,
-              "",
-              "0",
-              "false",
-              false,
-              '{"color":"#000000","alpha":0.5}',
-            ].includes(value)
-          ) {
+          if (![null,undefined,"","0","false",false,'{"color":"#000000","alpha":0.5}',].includes(value)) {
             obj[key] = value;
           }
           return obj;
@@ -154,6 +138,7 @@ export default function MetaDesigner(props) {
     };
 
     makeElements(updateE(selfElements));
+    Emitter.emit("currentElementEdit", data.key);
   }
 
   const findDuplicateNames = () => {
@@ -189,13 +174,14 @@ export default function MetaDesigner(props) {
   return renderInput((field) => {
     return (
       <Designer
-        metaComponents={field.value}          
+        metaComponents={field.value}
         designerRef={{
           updateElements,
           getElement,
           deleteElement,
           updateElement,
-          setMeta: makeElements
+          setMeta: makeElements,
+          findElement
         }}
         data={data}
       />

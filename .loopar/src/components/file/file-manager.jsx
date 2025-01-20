@@ -155,4 +155,11 @@ class FileManager {
   }
 }
 
-export default new FileManager();
+const fileManager = new FileManager();
+
+export default fileManager;
+
+export const getImage = (data = {}, field, avatar = null) => {
+  const img = fileManager.getMappedFiles((data || {})[field])[0];
+  return img ? img.previewSrc : avatar ? `/assets/images/avatars/${avatar}` : null;
+}

@@ -3,11 +3,13 @@ import { __META_COMPONENTS__ } from "@components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
 import Tabs from "@tabs";
-import { MetaComponent } from "@@base/meta-component";
+import {MetaComponent} from "@@meta/meta-component";
 import { Separator } from "@/components/ui/separator";
 import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
+import Emitter from '@services/emitter/emitter';
+import { FormWrapper } from "@context/form-provider";
 
 function mergeGroups(...arrays) {
   const groupMap = new Map();
@@ -28,7 +30,7 @@ function mergeGroups(...arrays) {
       groupMap.set(groupName, { ...existingGroup, elements: mergedElements });
     }
   });
-
+  
   const allElements = new Set();
 
   flattenedArrays.forEach(group => {
@@ -51,20 +53,40 @@ function mergeGroups(...arrays) {
 export function ElementEditor({ element }) {
   const { designerRef } = useDesigner();
   const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
+
   if (!connectedElement) return null;
 
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   const Element = __META_COMPONENTS__[elementName]?.default || {};
 
+  const handleSetConnectedElement = (e) => {
+    if (!e) return;
+    const el = designerRef.getElement(e);
+    el && setConnectedElement(el);
+  }
+
   useEffect(() => {
-    setConnectedElement(designerRef.getElement(element));
+    const handleEdit = (el) => {
+      el == element && handleSetConnectedElement(el);
+    };
+
+    Emitter.on('currentElementEdit', handleEdit);
+    return () => {
+      Emitter.off('currentElementEdit', handleEdit);
+    };
+  }, []);
+  
+  useEffect(() => {
+    handleSetConnectedElement(element);
   }, [element]);
 
   useEffect(() => {
+    if (!connectedElement) return;
+
     setData(connectedElement?.data || {});
     setElementName(connectedElement?.element || "");
-  }, [element, connectedElement]);
+  }, [element, connectedElement, connectedElement.data]);
 
   const metaFields = () => {
     const genericMetaFields = getMetaFields(data);
@@ -75,8 +97,6 @@ export function ElementEditor({ element }) {
   const saveData = () => {
     designerRef.updateElement(data.key, data, false);
   };
-
-  if (!connectedElement) return null;
 
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
   const dontHaveMetaElements = Element.dontHaveMetaElements || [];
@@ -101,61 +121,63 @@ export function ElementEditor({ element }) {
     return { group, elements };
   });
 
+  // useEffect(() => {
+  //   if(JSON.stringify(connectedElement.data) !== JSON.stringify(data))
+  //   //if(data != oldData)
+  //   saveData()
+  // }, [data])
+
   return (
     <DesignerContext.Provider
       value={{}}
     >
-      <div className="flex flex-col">
-        <h2 className="pt-2 text-xl">
-          {loopar.utils.Capitalize(elementName)} Editor
-        </h2>
-        <Tabs
-          data={{ name: "element_editor_tabs" }}
-          key={data.key + "_tabs"}
-        >
-          {metaFieldsData.map(({ group, elements }) => (
-            <Tab
-              label={loopar.utils.Capitalize(group)}
-              name={group + "_tab"}
-              key={group + "_tab"}
-            >
-              {Object.entries(elements).map(([field, props]) => {
-                if (dontHaveMetaElements.includes(field)) return null;
-                if (!props.element) {
-                  return props;
-                }
+     
+        <div className="flex flex-col">
+          <h2 className="pt-2 text-xl">
+            {loopar.utils.Capitalize(elementName)} Editor
+          </h2>
+          <Tabs
+            data={{ name: "element_editor_tabs" }}
+            key={data.key + "_tabs"}
+          >
+            {metaFieldsData.map(({ group, elements }) => (
+              <Tab
+                label={loopar.utils.Capitalize(group)}
+                name={group + "_tab"}
+                key={group + "_tab"}
+              >
+                 <FormWrapper __DOCUMENT__={data} docRef={{save: saveData}}>
+                  {Object.entries(elements).map(([field, props]) => {
+                    if (dontHaveMetaElements.includes(field)) return null;
+                    if (!props.element) return props;
 
-                if (!data[field]) {
-                  data[field] = props.data?.value;
-                }
+                    const value = data[field];
 
-                const value = data[field];
-
-                return (
-                  <MetaComponent
-                    component={props.element}
-                    render={Component => (
-                      <Component
-                        dontHaveForm={true}
-                        data={{
-                          ...props.data,
-                          name: data.key + field,
-                          value: value,
-                          label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
-                        }}
-                        onChange={(e) => {
-                          data[field] = e.target ? e.target.value : e;
-                          saveData();
-                        }}
+                    return (
+                      <MetaComponent
+                        component={props.element}
+                        render={Component => (
+                          <Component
+                            data={{
+                              ...props.data,
+                              name: data.key + field,
+                              value: value,
+                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
+                            }}
+                            onChange={(e) => {
+                              data[field] = e.target ? e.target.value : e;
+                              saveData();
+                            }}
+                          />
+                        )}
                       />
-                    )}
-                  />
-                )
-              })}
-            </Tab>
-          ))}
-        </Tabs>
-      </div>
+                    )
+                  })}
+                </FormWrapper>
+              </Tab>
+            ))}
+          </Tabs>
+        </div>
     </DesignerContext.Provider>
   );
 };

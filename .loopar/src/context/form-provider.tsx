@@ -31,17 +31,25 @@ interface Element {
   ref: Function,
 }
 
-interface MetaInterface {
-  key: String,
-  __ENTITY__: {
-    STRUCTURE: Array<Element>
-  },
-  __DOCUMENT__: {}
+interface __DOCUMENT__ {
+
+}
+
+// interface MetaInterface {
+//   key: String,
+//   __ENTITY__: {
+//     STRUCTURE: Array<Element>
+//   },
+//   __DOCUMENT__: {}
+// }
+
+interface docRef {
+
 }
 
 export const BaseFormContext = createContext({});
 
-export const FormProvider = ({ children, defaultValues, docRef, meta }: any) => {
+export const FormProvider = ({ children, values, docRef }: any) => {
   const FormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
@@ -49,11 +57,10 @@ export const FormProvider = ({ children, defaultValues, docRef, meta }: any) => 
   })
 
   const form = useForm({
-    defaultValues,
+    values,
     resolver: zodResolver(FormSchema),
   });
 
-  //docRef && (docRef.formValues = form.watch());
   docRef && (docRef.Form = form);
 
   function onSubmit(values: z.infer<typeof FormSchema>) {
@@ -75,9 +82,9 @@ export const FormProvider = ({ children, defaultValues, docRef, meta }: any) => 
 
 export const useFormContext = () => useContext(BaseFormContext);
 
-export function FormWrapper({ meta, docRef, children }: { meta: MetaInterface, docRef: FormContext, children: React.ReactNode }) {
+export function FormWrapper({ __DOCUMENT__, docRef, children }: { __DOCUMENT__:__DOCUMENT__, docRef: docRef, children: React.ReactNode }) {
   return (
-    <FormProvider defaultValues={meta.__DOCUMENT__} docRef={docRef} meta={meta}>
+    <FormProvider values={__DOCUMENT__} docRef={docRef}>
       {children}
     </FormProvider>
   )

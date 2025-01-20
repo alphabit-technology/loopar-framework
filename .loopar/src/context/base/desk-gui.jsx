@@ -3,15 +3,18 @@ import {AppBarr} from "@context/base/app-barr";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { MoreVertical } from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {useCookies} from "@services/cookie";
+import { useDocument } from "@context/@/document-context";
+import {cn} from "@/lib/utils";
 
-const sidebarWidth = 300;
-
-const InnerSidebar = ({toggleSidebar, ...props}) => {  
+const InnerSidebar = ({ toggleSidebar, sidebarWidth, ...props }) => {  
   return (
     <div 
-      className="fixed flex flex-col right-0 h-full z-10 p-2 border-l bg-background shadow-lg transition-all"
-      style={{top: "4rem", height: "calc(100% - 4rem)", width: sidebarWidth, transition: "width 0.2s"}}
+      className={cn(
+        "fixed flex flex-col right-0 h-full z-10 p-2 border-l bg-background transition-all",
+        "border-l border-border dark:border-border-dark",
+        sidebarWidth
+      )}
+      style={{top: "4rem", height: "calc(100% - 4rem)", transition: "width 0.2s"}}
     >
       <div className="flex flex-col w-full">
         <div>
@@ -34,12 +37,9 @@ const InnerSidebar = ({toggleSidebar, ...props}) => {
 
 export default function DeskGUI(props) {
   const docRef = props.docRef;
+  const { sidebarOpen, handleSetSidebarOpen, sidebarWidth, documentWidth} = useDocument();
   const {headerHeight} = useWorkspace();
-  const [sidebarOpen, setSidebarOpen] = useCookies("sidebarOpen");
 
-  const handleSetSidebarOpen = (value) => {
-    setSidebarOpen(value);
-  }
 
   const toggleSidebar = (e) => {
     e && e.preventDefault();
@@ -48,7 +48,7 @@ export default function DeskGUI(props) {
 
   return (
     <> 
-      {docRef.__hasSidebar__ && <Button 
+      {docRef.__hasSidebar__ && !sidebarOpen && <Button 
         className="fixed right-0 p-1"
         variant="ghost"
         style={{top: headerHeight + "rem"}}
@@ -58,7 +58,7 @@ export default function DeskGUI(props) {
       </Button>}
       <div className = "flex flex-row">
         <div 
-          className={`space-y-4 ${sidebarOpen && docRef.__hasSidebar__ ? `lg:w-[calc(100%-300px)]` : `w-full`}`}
+          className={`space-y-4 ${sidebarOpen ? documentWidth : `w-full`}`}
         >
           {docRef.__hasHeader__ && 
             <AppBarr 
@@ -76,6 +76,7 @@ export default function DeskGUI(props) {
         {
           docRef.__hasSidebar__ && sidebarOpen && 
           <InnerSidebar
+            sidebarWidth={sidebarWidth}
             toggleSidebar={toggleSidebar}
           >
             <div>

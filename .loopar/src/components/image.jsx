@@ -56,7 +56,7 @@ export function FallbackImage(props) {
           />
         }
         <div
-          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm"
+          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm "
           {...coverProps}
         />
       </div>

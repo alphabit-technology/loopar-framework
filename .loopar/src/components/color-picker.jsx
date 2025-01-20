@@ -52,7 +52,7 @@ export default function ColorPicker(props) {
             {data.label}
           </FormLabel>
           <FormControl>
-            <>
+            <div>
               <style>{`
                 .${key} input[type="range"]::-webkit-slider-thumb,
                 .${key} input[type="range"]::-moz-range-thumb {
@@ -118,7 +118,7 @@ export default function ColorPicker(props) {
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           </FormControl>
           {data.description && <FormDescription>{data.description}</FormDescription>}
         </div>

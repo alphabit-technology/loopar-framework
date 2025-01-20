@@ -33,7 +33,11 @@ export default class WorkspaceController extends AuthController {
     }
   }
 
-  async render(__META__) {
+  async render(__META__, checkAuth = false) {
+    if (checkAuth) {
+      await this.beforeAction();
+    }
+    
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {
         this.buffer = Buffer.from(buffer);
@@ -43,7 +47,7 @@ export default class WorkspaceController extends AuthController {
       }
     }
 
-    const workSpaceName = __META__.__WORKSPACE__.name;
+    //const workSpaceName = __META__.__WORKSPACE__.name;
     const url = this.req.originalUrl;
     const isProduction = process.env.NODE_ENV == 'production';
     let HTML, template;

@@ -9,7 +9,6 @@ export default class CoreController extends AuthController {
   error = {};
   defaultImporterFiles = ['index', 'form'];
   response = {};
-  #engineTemplate = 'pug';
 
   hasData() {
     return Object.keys(this.data || {}).length > 0;
@@ -20,16 +19,14 @@ export default class CoreController extends AuthController {
   }
 
   async sendAction(action) {
-    action = `action${loopar.utils.Capitalize(action)}`
+    action = `action${loopar.utils.Capitalize(action)}`;
     if (typeof this[action] !== 'function') {
       return await this.notFound(`Action ${action} not found`);
     }
 
-    return await this[action]();
-  }
+    await this.beforeAction();
 
-  get engineTemplate() {
-    return "." + this.#engineTemplate;
+    return await this[action]();
   }
 
   async notFound(message = null) {

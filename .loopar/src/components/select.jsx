@@ -139,6 +139,7 @@ export default function MetaSelect(props){
 
   const currentValue = () => {
     const currentOptionValue = optionValue(value() || data.value);
+    //const currentOptionValue = optionValue(data.value);
 
     const filter = (rows || []).filter((item) => {
       return optionValue(item).option == currentOptionValue.option;
@@ -147,12 +148,18 @@ export default function MetaSelect(props){
     return filter[0] ? optionValue(filter[0]) : currentOptionValue;
   }
 
-  const [selected, setSelected] = useState(currentValue);
+  const [selected, setSelected] = useState(currentValue());
+
+  // useEffect(() => {
+  //   setSelected(currentValue());
+  // }, [rows, data.value]);
 
   useEffect(() => {
     setSelected(currentValue());
   }, [rows, data.value]);
 
+  //if(data.label == 'Layout')
+  //console.log(["select4d", data.label, selected])
   return renderInput((field) => (
     <>
       {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
@@ -171,16 +178,22 @@ export default function MetaSelect(props){
   ));
 };
 
-MetaSelect.metaFields = () =>  {
-  const data = BaseInput.metaFields()[0];
-
-  data.elements.options = {
-    element: TEXTAREA,
-    data: {
-      description:
-        "For simple select insert the options separated by enter. For Entity Select, insert the Entity Name",
-    },
-  };
-
-  return [data];
+MetaSelect.metaFields = () => {
+  return [
+  ...BaseInput.metaFields(),
+    [
+      {
+        group: "form",
+        elements: {
+          options: {
+            element: TEXTAREA,
+            data: {
+              description:
+                "For simple select insert the options separated by enter. For Entity Select, insert the Entity Name",
+            },
+          },
+        },
+      },
+    ]
+  ];
 }
