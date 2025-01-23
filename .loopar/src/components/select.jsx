@@ -23,40 +23,17 @@ export default function MetaSelect(props){
     setRows(getPrepareOptions(initialRows));
   }, []);
 
-  const optionsSelect = () => {
-    const opts = data.options || "";
-
-    if (typeof opts == "object") {
-      if (Array.isArray(opts)) {
-        return opts;
-      } else {
-        return Object.keys(opts).map((key) => ({
-          option: key,
-          title: opts[key],
-        }));
-      }
-    } else if (typeof opts == "string") {
-      return opts.split(/\r?\n/).map((item) => {
-        const [option, title] = item.split(":");
-        return { option, title: option || title };
-      });
-    }
-  }
-
   const search = useCallback((target, delay = true) => {
     const q = target?.target?.value || "";
     return new Promise((resolve, reject) => {
       if (isLocal()) {
-        setFilteredOptions(optionsSelect()
-          .filter((row) => {
-            return (typeof row == "object" ? `${row.option} ${row.title}` : row)
-              .toLowerCase()
-              .includes(q);
-          })
-          .map((row) => {
-            return typeof row == "object" ? row : { option: row, title: row };
-          }));
-
+        setFilteredOptions(optionsSelect().filter((row) => {
+          return (typeof row == "object" ? `${row.option} ${row.title}` : row)
+            .toLowerCase()
+            .includes(q);
+        }).map((row) => {
+          return typeof row == "object" ? row : { option: row, title: row };
+        }));
         resolve();
       } else {
         model.current = optionsSelect()[0];
@@ -133,33 +110,51 @@ export default function MetaSelect(props){
       }) : { null: null };
   };
 
+  const optionsSelect = () => {
+    const opts = data.options || "";
+
+    if (typeof opts == "object") {
+      if (Array.isArray(opts)) {
+        return opts.map(i => optionValue(i))
+      } else {
+        return Object.keys(opts).map((key) => ({
+          option: key,
+          title: opts[key],
+        }));
+      }
+    } else if (typeof opts == "string") {
+      return opts.split(/\r?\n/).map((item) => {
+        const [option, title] = item.split(":");
+        return { option, title: option || title };
+      });
+    } else if (Array.isArray(opts)) {
+      return opts.reduce((acc, item) => {
+        acc.push({ option: `${item}`, title: `${item}` })
+        
+        return acc;
+      }, []);
+    }
+  }
+
   const getPrepareOptions = (options) => {
     return options.map((item) => optionValue(item));
   };
 
   const currentValue = () => {
     const currentOptionValue = optionValue(value() || data.value);
-    //const currentOptionValue = optionValue(data.value);
-
     const filter = (rows || []).filter((item) => {
       return optionValue(item).option == currentOptionValue.option;
     });
 
-    return filter[0] ? optionValue(filter[0]) : currentOptionValue;
+    return filter[0] != null ? optionValue(filter[0]) : currentOptionValue;
   }
 
   const [selected, setSelected] = useState(currentValue());
-
-  // useEffect(() => {
-  //   setSelected(currentValue());
-  // }, [rows, data.value]);
 
   useEffect(() => {
     setSelected(currentValue());
   }, [rows, data.value]);
 
-  //if(data.label == 'Layout')
-  //console.log(["select4d", data.label, selected])
   return renderInput((field) => (
     <>
       {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}

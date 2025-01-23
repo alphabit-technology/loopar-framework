@@ -9,7 +9,7 @@ import {ScrollArea} from "@/components/ui/scroll-area";
 import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {
-  const { handleSetSidebarOpen } = useDocument();
+  const { handleSetSidebarOpen, sidebarOpen } = useDocument();
   const { currentEditElement, handleChangeMode, designerModeType } = useDesigner();
   
   return (
@@ -28,7 +28,7 @@ export const Sidebar = () => {
             }}
           >
             {designerModeType == "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-            <span>{designerModeType == "designer" ? "Preview" : "Design"}</span>
+            <span>{designerModeType == "designer" && sidebarOpen ? "Preview" : "Design"}</span>
           </Button>
           <Button
             variant="secondary"

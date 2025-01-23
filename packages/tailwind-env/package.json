@@ -4,8 +4,8 @@
   "main": "tailwind.config.js",
   "type": "module",
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0-beta.9",
-    "tailwindcss": "^4.0.0-beta.9",
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0",
     "react-tailwindcss-datetimepicker": "^3.0.7",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",

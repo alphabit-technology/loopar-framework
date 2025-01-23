@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, Eye } from "lucide-react";
 import { Droppable } from "@droppable";
 import { BaseFormContext } from "@context/form-provider";
 import React, { useEffect, useState } from "react";
@@ -28,7 +28,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
 
   const handleChangeMode = (opt=null) => {
     const newMode = opt !== null ? opt : (
-      ["preview", "editor"].includes(designerModeType) ? "designer": "preview"
+      ["preview", "editor"].includes(designerModeType) ? (!sidebarOpen ? "preview" : "designer"): "preview"
     );
 
     handleSetMode(newMode);
@@ -166,6 +166,23 @@ export const Designer = ({designerRef, metaComponents, data}) => {
     };
   }, [currentDropZone]);
 
+  const getDesignerButton = () => {
+    if (designerModeType == "preview") {
+      return <><BrushIcon className="mr-2" /> Design</>
+    }
+  
+    if (designerModeType == "editor") {
+      if (sidebarOpen) {
+        return <><BrushIcon className="mr-2" /> Design</>
+      } else {
+        return <><EyeIcon className="mr-2" /> Preview</>
+      }
+    }
+
+    if (designerModeType == "designer") {
+      return <><EyeIcon className="mr-2" /> Preview</>
+    }
+  }
 
   return (
     <DesignerContext.Provider
@@ -205,8 +222,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
                   !designerMode && handleChangeMode();
                 }}
               >
-                {designerModeType === "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
-                {designerModeType === "designer" ? "Preview" : "Design"}
+                {getDesignerButton()}
               </Button>
               <Button variant="secondary" onClick={handleSetMeta}>
                 <BracesIcon className="mr-2" />

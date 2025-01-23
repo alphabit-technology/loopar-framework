@@ -1,11 +1,13 @@
 import { Droppable } from "@droppable";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
+import {useRowContext} from "./row/RowContext"
 
 export default function Col(props) {
   const { designerMode, designing } = useDesigner();
+  const { colPadding } = useRowContext();
 
-  const className = cn((!designerMode || !designing) && "p-4", props.className, 'h-full', props.data?.class);
+  const className = cn((!designerMode || !designing) && colPadding, props.className, 'h-full', props.data?.class);
   return (
     <Droppable
       {...props}

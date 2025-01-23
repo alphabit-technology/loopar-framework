@@ -38,7 +38,6 @@ export function WorkspaceProvider({
 
   const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
-  //console.log(["props.activepage", props.activePage])
   const [activePage, setActivePage] = useState(props.activePage || "");
 
   const getMergeDocument = () => {
@@ -91,7 +90,6 @@ export function WorkspaceProvider({
 
   const handleToogleSidebarNav = useCallback(
     () => {
-      console.log("toogleSidebarNav");
       handleSetOpenNav(!openNav);
     },
     [setOpenNav]
@@ -210,7 +208,8 @@ export function WorkspaceProvider({
 
       return "dark"
     }
-    return theme
+
+    return theme || "dark"
   }
   
   const value = {

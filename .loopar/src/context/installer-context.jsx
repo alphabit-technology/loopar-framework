@@ -1,5 +1,5 @@
 import MetaComponent from "@meta-component";
-import { FormWrapper } from "@context/form-context";
+import { FormWrapper } from "./form-provider";
 import BaseForm from "@context/base/base-form";
 
 export default class InstallerContext extends BaseForm {

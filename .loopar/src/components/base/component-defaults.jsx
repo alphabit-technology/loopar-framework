@@ -4,7 +4,7 @@ import {useDesigner} from "@context/@/designer-context";
 
 export default function ComponentDefaults(props) {
   const data = props.data || {};
-  const {updateElement, designerRef} = useDesigner();
+  const {updateElement, designerRef, designerMode} = useDesigner();
 
   const getSrc = () => {
     if (data) {
@@ -53,6 +53,7 @@ export default function ComponentDefaults(props) {
   }
 
   const set = (key, value) => {
+    if (!designerMode) return;
     if (typeof key == "object") {
       Object.assign(data, key);
     } else {

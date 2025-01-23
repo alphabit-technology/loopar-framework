@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import BaseDialog, {Prompt} from "@dialog";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
@@ -41,6 +41,7 @@ const Loading = () => {
 export function DialogContextProvider() {
   const [dialogs, setDialogs] = useState({});
   const dialogsRef = useRef({});
+  const { theme } = useWorkspace();
 
   const handleSetDialogs = (dialogs) => {
     setDialogs(dialogs);
@@ -55,7 +56,7 @@ export function DialogContextProvider() {
     (toast[type] || toast)(title || loopar.utils.Capitalize(type), {
       description: message,
       duration: timeout,
-      theme: "light"
+      theme: theme
     });
   }
 
@@ -121,7 +122,6 @@ export default function BaseWorkspace(props) {
         value={
           {
             ...workspace,
-            //menuItems: props.menuItems && props.menuItems() || [],
             webApp: props.webApp || {},
             refresh: () => props.refresh || (() => { }),
             activePage: activePage,

@@ -5,11 +5,15 @@ import { loopar } from "loopar";
 import { useEffect, useState } from "react";
 import Emitter from '@services/emitter/emitter';
 import { cn } from "@/lib/utils";
+import { RowContextProvider } from "./row/RowContext";
+const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
+import { useWorkspace } from "@workspace/workspace-provider";
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
-  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
+  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50,50]));
   const [cols, setCols] = useState(props.elements || []);
+  const { webApp } = useWorkspace();
 
   const conciliateCols = () => {
     const addCols = [
@@ -40,6 +44,12 @@ export default function Row(props) {
     conciliateCols();
     Emitter.emit("currentElementEdit", data.key)
   }, [layout])
+
+  useEffect(() => {
+    if (loopar.utils.JSONparse(data.layout, []).length == 0) {
+      set("layout", JSON.stringify([50,50]));
+    }
+  }, [])
   
   const handleSetLayout = (layout) => {
     set("layout", JSON.stringify(layout));
@@ -49,26 +59,33 @@ export default function Row(props) {
     setCols(props.elements || [])
   }, [props.elements]);
 
-  const spacing = data.spacing || 1;
+  const spacing = data.spacing || webApp.spacing || 1;
   const gap = spacing / 2;
 
   return (
-    <div className="flex flex-col">
-      <Droppable
-        {...props}
-        elements={cols}
-        className={cn(
-          `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
-          'grid-container dynamic scrollbar-hide box-border'
-        )}
-        style={{
-          "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,
-          "--grid-gap": `${gap}rem`,
-          gap: `${spacing}rem`
-        }}
-      />
-      <LayoutSelector setLayout={handleSetLayout} current={layout}/>
-    </div>
+    <RowContextProvider
+      colPadding={data.col_padding || webApp.col_padding}
+      colMargin={data.col_margin || webApp.col_margin}
+      spacing={data.spacing || webApp.spacing}
+    >
+      <div className="flex flex-col">
+        <Droppable
+          {...props}
+          elements={cols}
+          className={cn(
+            '@container',
+            `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
+            'grid-container dynamic scrollbar-hide box-border'
+          )}
+          style={{
+            "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,
+            "--grid-gap": `${gap}rem`,
+            gap: `${spacing}rem`
+          }}
+        />
+        <LayoutSelector setLayout={handleSetLayout} current={layout}/>
+      </div>
+    </RowContextProvider>
   );
 }
  
@@ -86,33 +103,19 @@ Row.metaFields = () => {
       horizontal_alignment: {
         element: SELECT,
         data: {
-          options: [
-            { option: "left", value: "left" },
-            { option: "center", value: "center" },
-            { option: "right", value: "right" },
-          ],
+          options: ["left","center","right"],
         },
       },
       vertical_alignment: {
         element: SELECT,
         data: {
-          options: [
-            { option: "top", value: "top" },
-            { option: "center", value: "center" },
-            { option: "bottom", value: "bottom" },
-          ],
+          options: ["top", "center","bottom"],
         },
       },
       row_height: {
         element: SELECT,
         data: {
-          options: [
-            { option: "auto", value: "auto" },
-            { option: "100", value: "100%" },
-            { option: "75", value: "75%" },
-            { option: "50", value: "50%" },
-            { option: "25", value: "25%" },
-          ],
+          options: ["auto",100,75,50,25],
           description:
             "Define the height of the row based on the screen height.",
         },
@@ -127,14 +130,14 @@ Row.metaFields = () => {
       spacing: {
         element: SELECT,
         data: {
-          options: [
-            { option: "0", value: 0 },
-            { option: "1", value: 1 },
-            { option: "2", value: 2 },
-            { option: "3", value: 3 },
-            { option: "4", value: 4 },
-            { option: "5", value: 5 },
-          ],
+          options: [1,2,3,4,5,6],
+          description: "Spacing between columns in rem.",
+        },
+      },
+      col_padding: {
+        element: SELECT,
+        data: {
+          options: colPadding,
           description: "Spacing between columns in rem.",
         },
       },
