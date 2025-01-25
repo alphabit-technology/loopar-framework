@@ -254,7 +254,6 @@ export class Loopar {
       colector += `<div className="${filterSpecialChars(classes)}"/>`;
     }
 
-    console.log(["colector", colector])
     const fn = `
   export function Tailwind() {
     return (
