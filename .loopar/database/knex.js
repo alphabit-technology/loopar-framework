@@ -894,7 +894,7 @@ export default class DataBase {
       return false;
     }
 
-    const testColumns = async (entity, columns) => {
+    const testFields = async (entity, columns) => {
       try {
         return await this.knex(this.literalTableName(entity)).whereRaw("1=2").select(columns);
       } catch (error) {
@@ -907,9 +907,9 @@ export default class DataBase {
       if (ref.is_single || ref.is_builder) continue;
 
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
+      const fieldsIsCorrect = await testFields(entity.name, ref.__FIELDS__);
 
-      if (!exist && !await testColumns(entity.name, ref.__FIELDS__)) {
-        //console.log(["_______________ENTITY NOT FOUND_______________", entity.name]);
+      if (!exist || !fieldsIsCorrect) {
         loopar.printError(`Loopar framework is not installed`);
         return false;
       }
