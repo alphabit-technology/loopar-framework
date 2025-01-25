@@ -894,14 +894,23 @@ export default class DataBase {
       return false;
     }
 
+    const testColumns = async (entity, columns) => {
+      try {
+        return await this.knex(this.literalTableName(entity)).whereRaw("1=2").select(columns);
+      } catch (error) {
+        return false;
+      }
+    }
+
     for (const entity of entities) {
       const ref = loopar.getRef(entity.name);
+      console.log(["_______________ENTITY_______________", entity.name, ref]);
       if (ref.is_single || ref.is_builder) continue;
 
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
-      if (!exist) {
-        console.log(["_______________ENTITY NOT FOUND_______________", entity.name]);
+      if (!exist && await testColumns(entity.name, ref.__FIELDS__)) {
+        //console.log(["_______________ENTITY NOT FOUND_______________", entity.name]);
         loopar.printError(`Loopar framework is not installed`);
         return false;
       }
