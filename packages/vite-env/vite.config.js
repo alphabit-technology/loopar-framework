@@ -72,6 +72,7 @@ export default defineConfig(({ command }) => ({
       '@uiw': path.resolve(framework, 'node_modules/@uiw/'),
       'lucide-react': path.resolve(framework, 'node_modules/lucide-react'),
       'file-type': path.resolve(framework, 'node_modules/file-type'),
+      'particles.js': path.resolve(framework, 'node_modules/particles.js'),
     },
   },
   plugins: [

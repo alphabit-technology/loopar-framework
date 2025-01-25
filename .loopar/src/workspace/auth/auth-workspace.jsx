@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { useEffect } from "react";
 import { useWorkspace } from "@workspace/workspace-provider";
 
+
 const Layout = (({ ...props }) => {
   useEffect(() => {
     particlesJS.load('particles-js', '/demo/particles.json', function() {});
