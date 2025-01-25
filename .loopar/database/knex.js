@@ -896,7 +896,8 @@ export default class DataBase {
 
     const testFields = async (entity, columns) => {
       try {
-        return await this.knex(this.literalTableName(entity)).whereRaw("1=2").select(columns);
+        await this.knex(this.literalTableName(entity)).whereRaw("1=2").select([...columns]);
+        return true;
       } catch (error) {
         return false;
       }

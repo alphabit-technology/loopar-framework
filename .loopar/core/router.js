@@ -75,7 +75,6 @@ export default class Router {
         return this.renderAjax(res, error);
       } else {
         if (redirect && req._parsedUrl.pathname !== redirect) {
-          console.log(["Redirecting to", redirect]);
           return this.redirect(res, redirect);
         }
         const errControlled = new BaseController({ req, res });

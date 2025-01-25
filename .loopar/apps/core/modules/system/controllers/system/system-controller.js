@@ -4,6 +4,7 @@ import { loopar, fileManage, BaseController } from "loopar";
 
 export default class SystemController extends BaseController {
   client = "form";
+  freeActions = ['connect', 'install', 'update', 'reinstall'];
   constructor(props) {
     super(props);
   }
@@ -80,7 +81,7 @@ export default class SystemController extends BaseController {
       model.app_name ??= this.getAppName();
 
       await model.install(true);
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           resolve(this.redirect('view'));

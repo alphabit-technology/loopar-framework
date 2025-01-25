@@ -85,6 +85,7 @@ export class Loopar {
 
     await this.db.initialize();
     await this.build();
+    await this.buildIcons();
 
     this.tailwindClasses = {};
     await this.setTailwind();
@@ -346,7 +347,6 @@ export class Loopar {
     if (this.installingApp) return;
 
     await this.buildRefs();
-    await this.buildIcons();
    
     const writeFile = async (data) => {
       await fileManage.setConfigFile('loopar.config', data);

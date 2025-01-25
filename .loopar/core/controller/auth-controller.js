@@ -37,9 +37,12 @@ export default class AuthController {
       return loopar.throw(message, this.method !=  AJAX && url || "/auth/login")
     }
 
-    if (workspace == "web") return true;
-    const user = await loopar.getUser(this.authUser()?.name);
+    if(this.actionsEnabled && !this.actionsEnabled.includes(action)) return resolve('Not permitted');
 
+    if (workspace == "web") return true;
+    if(workspace == "loopar") return true;
+    const user = await loopar.getUser(this.authUser()?.name);
+  
     if (user) {
       if (workspace == "auth") {
         if (action == "logout") return true;
@@ -54,8 +57,7 @@ export default class AuthController {
       
       if (workspace == "auth") {
         if (this.isLoginAction) return true;
-      } else {
-        if (this.isEnableAction) return true;
+        if (this.freeActions && this.freeActions.includes(this.action)) return true;
       }
 
       resolve('You must be logged in to access this page');
