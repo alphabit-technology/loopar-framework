@@ -904,12 +904,11 @@ export default class DataBase {
 
     for (const entity of entities) {
       const ref = loopar.getRef(entity.name);
-      console.log(["_______________ENTITY_______________", entity.name, ref]);
       if (ref.is_single || ref.is_builder) continue;
 
       const exist = await this.knex.schema.hasTable(this.literalTableName(entity.name));
 
-      if (!exist && await testColumns(entity.name, ref.__FIELDS__)) {
+      if (!exist && !await testColumns(entity.name, ref.__FIELDS__)) {
         //console.log(["_______________ENTITY NOT FOUND_______________", entity.name]);
         loopar.printError(`Loopar framework is not installed`);
         return false;
