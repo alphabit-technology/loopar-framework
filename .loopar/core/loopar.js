@@ -298,6 +298,7 @@ export class Loopar {
     if(!this.__installed__) return;
     const refs = this.getRefs();
 
+    
     const evalFields = (fields) => {
       return fields.reduce((acc, field) => {
         if (field.element == ICON_INPUT) {
