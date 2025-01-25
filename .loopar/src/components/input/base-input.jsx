@@ -20,8 +20,9 @@ const BaseInput = (props) => {
     if(props.element) {
       const data = props.data || {};
 
-      data.id ??= names.id;
-      data.name ??= names.name;
+      data.id ??= names.id || names.key;
+      data.name ??= names.name || data.id;
+
       data.label ??= loopar.utils.Capitalize(data.name.replaceAll("_", " "));
       return data;
     } else {

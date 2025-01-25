@@ -4,11 +4,11 @@ export default {
   mode: 'jit',
   darkMode: ["class"],
   content: [
-    './src/**/*.{ts,tsx,js,jsx}',
-    './.loopar/src/**/*.{ts,tsx,js,jsx}',
-    './apps/**/*.{tsx,jsx,json}',
-    './.loopar/apps/**/*.{tsx,jsx,json}',
-    './public/src/*.{ts,tsx,js,jsx}'
+    '../../src/**/*.{ts,tsx,js,jsx}',
+    '../../.loopar/src/**/*.{ts,tsx,jsx}',
+    '../../apps/**/*.{tsx,jsx,json}',
+    '../../.loopar/apps/**/*.{tsx,jsx,json}',
+    '../../public/src/*.{ts,tsx,js,jsx}'
   ],
   prefix: "",
   theme: {

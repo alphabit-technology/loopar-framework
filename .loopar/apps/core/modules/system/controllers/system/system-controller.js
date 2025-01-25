@@ -63,12 +63,32 @@ export default class SystemController extends BaseController {
       const model = await loopar.newDocument("Installer", this.data)
       const response = await model.__data__();
 
-      response.__DOCUMENT__ = {
-        company: "AlphaBit Technology Test123",
-        email: "alfredrz2012@gmail.com",
-        admin_password: "admin",
-        confirm_password: "admin",
-      }
+      // response.__DOCUMENT__ = {
+      //   company: "AlphaBit Technology Test123",
+      //   email: "alfredrz2012@gmail.com",
+      //   admin_password: "admin",
+      //   confirm_password: "admin",
+      // }
+
+      return await this.render(response);
+    }
+  }
+
+  async actionUpdate() {
+    if (this.app_name) {
+      const model = await this.getInstallerModel();
+      model.app_name ??= this.getAppName();
+
+      await model.install(true);
+      
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(this.redirect('view'));
+        }, 1000);
+      });  
+    } else {
+      const model = await loopar.newDocument("Update", this.data)
+      const response = await model.__data__();
 
       return await this.render(response);
     }

@@ -55,7 +55,6 @@ export default defineConfig(({ command }) => ({
       ...groupComponentsAlias,
       '@loopar': path.resolve(framework, `${loopar}/src/`),
       '@_loopar': path.resolve(framework, `/apps/loopar/modules/`),
-      //'@apps': path.resolve(framework, 'apps/**/modules/**/entities/**/client/'),
       '@': path.resolve(framework, 'src/'),
       '@app': path.resolve(framework, 'src/App.tsx'),
 

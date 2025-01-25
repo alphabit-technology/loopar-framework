@@ -1,0 +1,28 @@
+{
+  "name": "Update",
+  "__APP__": "core",
+  "__ENTITY__": "Form Builder",
+  "doc_structure" : [
+    {
+      "element": "markdown",
+      "data": {
+        "label": "Company",
+        "key": "input2_el160742627248",
+        "name": "company",
+        "required": true,
+        "value": "> Your system has new updates available. Please update your system to the latest version."
+      },
+      "elements": []
+    },
+    {
+      "element": "button",
+      "data": {
+        "label": "Update",
+        "key": "button1_el1074140857913",
+        "variant": "destructive",
+        "class": "w-full",
+        "action": "update"
+      }
+    }
+  ]
+}

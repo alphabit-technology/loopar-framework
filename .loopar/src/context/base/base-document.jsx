@@ -46,6 +46,7 @@ export default class BaseDocument extends React.Component {
         docRef={this}
         formValues={this.getFormValues ? this.getFormValues() : {}}
         name={this.state.meta?.__DOCUMENT_NAME__}
+        spacing={this.state.meta?.__SPACING__}
       >
         {content}
       </DocumentProvider>

@@ -7,7 +7,7 @@ export const DocumentContext = createContext({
   setEditElement: () => {},
 });
 
-export const DocumentProvider = ({ children, docRef, name, formValues, ...props }) => {
+export const DocumentProvider = ({ children, docRef, name, formValues, spacing, ...props }) => {
   const [sidebarOpen, setSidebarOpen] = useCookies(name + "sidebaeOpen");
 
   const handleSetSidebarOpen = (value) => {
@@ -20,7 +20,8 @@ export const DocumentProvider = ({ children, docRef, name, formValues, ...props 
       documentWidth: 'lg:w-[calc(100%-300px)] w-full',
       sidebarWidth: 'w-[300px]',
       handleSetSidebarOpen,
-      formValues
+      formValues,
+      spacing,
     }}>
       {children}
     </DocumentContext.Provider>

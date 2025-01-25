@@ -518,6 +518,7 @@ export default class DataBase {
 
   async updateRow(document, data = {}, name) {
     data = this.getParseData(data);
+    delete data.id;
     await this.knex(this.literalTableName(document)).where({ name }).update(data);
   }
 

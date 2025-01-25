@@ -130,7 +130,7 @@ export class Loopar {
               data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
               data.type = titleize(singularize(core.name));
               //replace all - with space and titleize
-              data.__APP__ = titleize(humanize(app.name)).replace(/-/g, ' ');
+              data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
 
               acc.push(data);
             } else {

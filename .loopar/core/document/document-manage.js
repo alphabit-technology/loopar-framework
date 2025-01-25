@@ -1,6 +1,6 @@
 import { loopar } from 'loopar';
 import { fileManage } from "../file-manage.js";
-import { marked } from 'marked';
+import { array } from 'zod';
 
 class DocumentManage {
   constructor(props) {
@@ -30,12 +30,14 @@ class DocumentManage {
   async newDocument(document, data = {}, name) {
     const ENTITY = this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
+    const spacing = await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]);
 
     const instance = await new DOCUMENT({
       __ENTITY__: ENTITY,
       __DOCUMENT_NAME__: name,
       __DOCUMENT__: data,
-      __IS_NEW__: !name
+      __IS_NEW__: !name,
+      __SPACING__: spacing,
     });
 
     await instance.__init__();
@@ -58,15 +60,17 @@ class DocumentManage {
 
     /**Testing get fileRef only */
     ENTITY = fileManage.getConfigFile(document, ref.__ROOT__);
-
+    
     if (!ENTITY) return throwError(entityName);
+
+    if (ENTITY.doc_structure) {
+      if (Array.isArray(ENTITY.doc_structure)) {
+        ENTITY.doc_structure = JSON.stringify(ENTITY.doc_structure)
+      }
+    }
 
     ENTITY.is_single ??= ref.is_single;
     ENTITY.__REF__ = ref;
-    //const doc_structure = loopar.utils.isJSON(ENTITY.doc_structure) ? JSON.parse(ENTITY.doc_structure) : typeof ENTITY.doc_structure === 'object' ? ENTITY.doc_structure : [];
-
-    //ENTITY.doc_structure = JSON.stringify(this.parseDocStructure(doc_structure));
-
     return ENTITY;
   }
 

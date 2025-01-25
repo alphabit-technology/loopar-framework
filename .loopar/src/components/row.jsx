@@ -8,12 +8,14 @@ import { cn } from "@/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
 import { useWorkspace } from "@workspace/workspace-provider";
+import { useDocument } from "@context/@/document-context";
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
-  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50,50]));
+  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
   const [cols, setCols] = useState(props.elements || []);
   const { webApp } = useWorkspace();
+  const { spacing={} } = useDocument();
 
   const conciliateCols = () => {
     const addCols = [
@@ -22,10 +24,10 @@ export default function Row(props) {
     if (cols.length < layout.length) {
       const diff = layout.length - cols.length;
 
-      for (let i = 0; i < diff; i++){
+      for (let i = 0; i < diff; i++) {
         addCols.push({
           element: "col",
-          data: {key: data.key + i}
+          data: { key: data.key + i }
         })
       }
 
@@ -35,7 +37,7 @@ export default function Row(props) {
 
   useEffect(() => {
     const newLayout = loopar.utils.JSONparse(data.layout);
-    if (newLayout && data.layout != JSON.stringify(layout)){
+    if (newLayout && data.layout != JSON.stringify(layout)) {
       setLayout(newLayout);
     }
   }, [data.layout]);
@@ -47,7 +49,7 @@ export default function Row(props) {
 
   useEffect(() => {
     if (loopar.utils.JSONparse(data.layout, []).length == 0) {
-      set("layout", JSON.stringify([50,50]));
+      set("layout", JSON.stringify([50, 50]));
     }
   }, [])
   
@@ -59,14 +61,14 @@ export default function Row(props) {
     setCols(props.elements || [])
   }, [props.elements]);
 
-  const spacing = data.spacing || webApp.spacing || 1;
-  const gap = spacing / 2;
+  const _spacing = parseInt(data.spacing || spacing.spacing || webApp.spacing || 1);
+  const gap = _spacing / 2;
 
   return (
     <RowContextProvider
-      colPadding={data.col_padding || webApp.col_padding}
-      colMargin={data.col_margin || webApp.col_margin}
-      spacing={data.spacing || webApp.spacing}
+      colPadding={data.col_padding || spacing.col_padding || webApp.col_padding}
+      colMargin={data.col_margin || spacing.col_margin || webApp.col_margin}
+      spacing={_spacing}
     >
       <div className="flex flex-col">
         <Droppable
@@ -80,7 +82,7 @@ export default function Row(props) {
           style={{
             "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,
             "--grid-gap": `${gap}rem`,
-            gap: `${spacing}rem`
+            gap: `${_spacing}rem`
           }}
         />
         <LayoutSelector setLayout={handleSetLayout} current={layout}/>

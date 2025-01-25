@@ -119,9 +119,18 @@ export default class Router {
         return this.redirect(res, '/loopar/system/connect');
       }
 
-      if (DBServerInitialized && (!DBInitialized || !loopar.__installed__) && currentUrl != "/loopar/system/install") {
+      if (DBServerInitialized && (!DBInitialized || !loopar.__installed__)) {
         /**System not detected a Database */
-        return this.redirect(res, '/loopar/system/install');
+        if (loopar.db.database) {
+          if (currentUrl != "/loopar/system/update") {
+            return this.redirect(res, '/loopar/system/update');
+          }
+        } else {
+          if (currentUrl != "/loopar/system/install") {
+            return this.redirect(res, '/loopar/system/install');
+          }
+        }
+        //return this.redirect(res, '/loopar/system/install');
       }
 
       workspaceParamsMiddleware(req, res, next);
