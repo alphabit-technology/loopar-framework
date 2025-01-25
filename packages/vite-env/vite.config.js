@@ -128,7 +128,7 @@ export default defineConfig(({ command }) => ({
     treeShaking: true
   },
   server: {
-    host: true,
+    allowedHosts: true,
     hmr: true,
     watch: {
       usePolling: true
