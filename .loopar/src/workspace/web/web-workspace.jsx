@@ -3,10 +3,11 @@ import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
+import { Markdown } from "@components/base/pure-html-block";
 
 const Layout = (({ ...props }) => {
   const { activeParentMenu, webApp } = useWorkspace();
-  
+
   function buildMenuTree(menu) {
     const menuMap = {};
 
@@ -20,7 +21,7 @@ const Layout = (({ ...props }) => {
       if (item.parent_menu) {
         if (menuMap[item.parent_menu]) {
           menuMap[item.parent_menu].items.push(menuMap[item.link]);
-        }else{
+        } else {
           menuTree.push(menuMap[item.link]);
         }
       } else {
@@ -36,11 +37,11 @@ const Layout = (({ ...props }) => {
 
   return (
     <div className="vaul-drawer-wrapper">
-      <TopNav menuActions = {webApp.menu_actions}/>
+      <TopNav menuActions={webApp.menu_actions} />
       <section
-        className={`flex absolute w-full`}
+        className={`flex flex-col absolute w-full`}
       >
-        <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu}/>
+        <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu} />
         <div
           className={`ease-induration-100 w-full overflow-aut mt-web-header-height ${childMenu.length > 0 && 'lg:ml-web-sidebar-width'}`}
         >
@@ -48,22 +49,18 @@ const Layout = (({ ...props }) => {
             {props.children}
           </div>
         </div>
+        <footer className="py-6 border-t">
+          <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+            {webApp.has_footer ? (
+              <Markdown className="w-full text-center">{webApp.footer}</Markdown>
+            ) : null}
+            {webApp.has_copyright ? (
+              <Markdown className="w-full text-center">{webApp.copyright}</Markdown>
+            ) : null}
+          </div>
+        </footer>
       </section>
-      <footer className="py-6 md:px-8 md:py-0 border-t">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-          {webApp.has_footer ? (
-            <div className="">
-              <div dangerouslySetInnerHTML={{ __html: webApp.footer }} />
-            </div>
-          ) : null}
-          {webApp.has_copyright ? (
-            <div className="">
-              <hr className="my-4" />
-              <div dangerouslySetInnerHTML={{ __html: webApp.copyright }} />
-            </div>
-          ) : null}
-        </div>
-      </footer>
+
     </div>
   );
 });
@@ -72,7 +69,7 @@ export default function WebWorkspace(props) {
   const { getDocuments, __META__ } = useWorkspace();
 
   const getWebApp = () => {
-    const workspace =__META__.__WORKSPACE__ || {};
+    const workspace = __META__.__WORKSPACE__ || {};
     return workspace.web_app || {};
   }
 

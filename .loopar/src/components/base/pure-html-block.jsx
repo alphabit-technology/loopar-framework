@@ -9,6 +9,7 @@ const s = {
   5: "text-base font-bold",
   6: "text-sm font-bold",
 }
+
 const H = ({t, c}) => {
   const T = `h${t}`;
   return <T className={s[t]}>{c[1]}</T>
@@ -23,8 +24,11 @@ const customComponents = {
   h6: ({ node, ...props }) => <H t={6} c={props.children} />
 };
 
-export default function PureHTMLBlock({ element, className = "", data, ...props }) {
+export function Markdown({ className, children }) {
+  return <MarkdownPreview className={className} source={children} components={customComponents}/>
+}
 
+export default function PureHTMLBlock({ element, className = "", data, ...props }) {
   if (element.element == MARKDOWN) {
     return (
       <div
@@ -32,7 +36,7 @@ export default function PureHTMLBlock({ element, className = "", data, ...props 
         {...props}
       >
         <div className={cn(className, "pb-10")} id={data.id}>
-          <MarkdownPreview source={data.value} components={customComponents}/>
+          <Markdown>{data.value}</Markdown>
         </div>
       </div>
     )
