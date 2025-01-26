@@ -11,7 +11,7 @@ export default function SubTitle(props) {
   return (
     <h3
       className={cn(
-        'font-bold leading-tight tracking-tighter md:text-xl lg:leading-[1.1]',
+        'font-bold leading-tight tracking-tighter md:text-xl lg:leading-[1.1] text-center',
         getTextAlign(), getTextSize(),
         props.className
       )}

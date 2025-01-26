@@ -67,7 +67,7 @@ export const Meta = ({ meta, parent, parentKey, className }) => {
   if (Comp || [HTML_BLOCK, MARKDOWN].includes(meta.element)) {
     const data = metaProps.data || {};
 
-    metaProps.className = cn("relative", (Comp && Comp.designerClasses), metaProps.className, "rounded", meta.className, className, data?.class);
+    metaProps.className = cn("relative", (Comp && Comp.designerClasses), metaProps.className, meta.className, className, data?.class);
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {

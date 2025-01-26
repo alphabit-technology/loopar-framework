@@ -11,7 +11,7 @@ export default function MetaIcon(props) {
   const rounded = data?.rounded ? "rounded-full" : "rounded-md";
   const size = getSize();
   
-  const className = cn("border-white p-2", size, newProps.className, rounded);
+  const className = cn(" p-2", size, newProps.className, rounded);
 
   return (
     <div {...newProps} className={className} >

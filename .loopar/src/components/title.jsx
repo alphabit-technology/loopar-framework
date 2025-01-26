@@ -9,11 +9,11 @@ export default function Title(props) {
   const {getTextSize, getTextAlign} = ComponentDefaults(props);
 
   return (
-    <div className="flex">
+    <div className="">
       <h1 
         className={cn(
           getTextAlign(), getTextSize(),
-          "w-full font-bold leading-tight tracking-tighter md:text-6xl text-4xl lg:leading-[1.1]",
+          "font-bold leading-tight tracking-tighter md:text-6xl text-4xl lg:leading-[1.1]",
           props.className
         )}
         {...(designing

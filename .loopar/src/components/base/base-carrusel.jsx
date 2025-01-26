@@ -69,8 +69,8 @@ const BaseCarrusel = (props) => {
             animation: index === 0 && !designerMode ? null : transition,
             static_content: baseData.static_content,
             delay: 300,
-            background_color: baseData.background_color,
-            background_blend_mode: baseData.background_blend_mode,
+            background_color: element.data.background_color || baseData.background_color,
+            background_blend_mode: element.data.background_blend_mode || baseData.background_blend_mode,
             key,
           };
 
@@ -106,7 +106,7 @@ const BaseCarrusel = (props) => {
     const _position = position === "left" ? "left-5" : "right-5";
     return (
       <button
-        className={`hidden md:d-block lg:d-block z-10 md:inline-flex lg:inline-flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-background/60 shadow-sm hover:bg-accent absolute rounded-full top-1/2 -translate-y-1/2 h-20 w-20 ${
+        className={`hidden md:d-block lg:d-block z-10 md:inline-flex lg:inline-flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-background/10 shadow-sm hover:bg-accent/50 absolute rounded-full top-1/2 -translate-y-1/2 h-20 w-20 ${
           focus ? "" : ""
         } ${_position}`}
         onClick={(e) => {

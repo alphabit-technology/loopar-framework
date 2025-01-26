@@ -90,6 +90,20 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
 
   const current = selected && (typeof selected == "object" && selected.option) ? selected : { option: "" };
 
+  let renderValue = current.option ?
+    current.formattedValue || current.title || current.option :
+    <span className="truncate text-slate-600/70">
+      Select {data.label}
+    </span>;
+
+  const RenderValue = () => {
+    if (typeof renderValue == "object" && renderValue.$$typeof !== Symbol.for("react.transitional.element")) {
+      return <>{[...renderValue]}</>
+    } else {
+      return renderValue
+    }
+  }
+
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild>
@@ -108,11 +122,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
           onMouseEnter={setActive}
           onMouseLeave={() => setActive(false)}
         >
-          {current.option ? (current.formattedValue || current.title || current.option) : (
-            <span className="truncate text-slate-600/70">
-              Select {data.label}
-            </span>
-          )}
+          {RenderValue()}
           <div className="flex flex-row items-center justify-between">
             <Cross2Icon
               className={`h-5 w-5 shrink-0 ${active ? "opacity-50" : "opacity-0"}`}

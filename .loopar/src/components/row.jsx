@@ -62,7 +62,7 @@ export default function Row(props) {
   }, [props.elements]);
 
   const _spacing = parseInt(data.spacing || spacing.spacing || webApp.spacing || 1);
-  const gap = _spacing / 2;
+  const gap = (_spacing / 2) + 1 ;
 
   return (
     <RowContextProvider

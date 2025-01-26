@@ -60,6 +60,7 @@ export function prepareMeta(metaProps, parent, image){
           backgroundSize: data.background_size || "cover",
           backgroundPosition: data.background_position || "center",
           backgroundRepeat: data.background_repeat || "no-repeat",
+
           ...backgroundColor
         }
 
@@ -93,7 +94,7 @@ export function prepareMeta(metaProps, parent, image){
       }
     }
 
-    if (metaProps.element !== "image") {
+    if (metaProps.element != "image") {
       metaProps.style = {
         ...metaProps.style || {},
         ...backgroundColor

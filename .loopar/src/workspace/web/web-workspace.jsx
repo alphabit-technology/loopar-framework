@@ -44,7 +44,7 @@ const Layout = (({ ...props }) => {
         <div
           className={`ease-induration-100 w-full overflow-aut mt-web-header-height ${childMenu.length > 0 && 'lg:ml-web-sidebar-width'}`}
         >
-          <div className="p-3">
+          <div className="">
             {props.children}
           </div>
         </div>
