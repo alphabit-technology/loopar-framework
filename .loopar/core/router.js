@@ -28,6 +28,7 @@ export default class Router {
   }
 
   throw(err, res) {
+    console.log(["Router Error", err]);
     const error = getHttpError(err);
     const errString = this.errTemplate(error);
 
@@ -81,6 +82,7 @@ export default class Router {
         errControlled.dictUrl = req._parsedUrl;
         const e = await errControlled.getError(error.code, error);
         req.__WORKSPACE__.__DOCUMENT__ = e;
+        req.__WORKSPACE__.__DOCUMENT__.__DOCUMENT_TITLE__ = error.title;
 
         this.render(res, await this.App.render(req.__WORKSPACE__));
       }

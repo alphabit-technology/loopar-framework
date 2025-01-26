@@ -80,7 +80,7 @@ export default class Router extends HTTP {
   }
 
   slug(name) {
-    return name.toLowerCase().replace(/ /g, '-');
+    return (name || "").toLowerCase().replace(/ /g, '-');
   }
 
   change() {
