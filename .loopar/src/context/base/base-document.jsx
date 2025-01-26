@@ -39,16 +39,25 @@ export default class BaseDocument extends React.Component {
   get __hasBreadcrumb__() {
     return typeof this.props.hasBreadcrumb !== "undefined" ? this.props.hasBreadcrumb : this.hasBreadcrumb;
   }
-
+  
+  
   render(content) {
     return (
       <DocumentProvider
         docRef={this}
         formValues={this.getFormValues ? this.getFormValues() : {}}
         name={this.state.meta?.__DOCUMENT_NAME__}
+        title={this.state.meta?.__DOCUMENT_TITLE__}
         spacing={this.state.meta?.__SPACING__}
       >
-        {content}
+        <>
+          <meta name="title" content="Loopar Framework"/>
+          <meta property="og:title" content="Loopar Framework"/>
+          <meta name="description" content="Loopar Framework"/>
+          <meta property="og:description" content="Loopar Framework"/>
+          <meta property="og:site_name" content="Loopar Framework"/>       
+          {content}
+        </>
       </DocumentProvider>
     );
   }

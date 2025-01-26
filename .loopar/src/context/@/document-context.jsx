@@ -1,4 +1,4 @@
-import { useContext, createContext } from 'react';
+import { useContext, createContext, useEffect } from 'react';
 import { useCookies } from "@services/cookie";
 
 export const DocumentContext = createContext({
@@ -7,12 +7,16 @@ export const DocumentContext = createContext({
   setEditElement: () => {},
 });
 
-export const DocumentProvider = ({ children, docRef, name, formValues, spacing, ...props }) => {
+export const DocumentProvider = ({ children, docRef, name, title, formValues, spacing, ...props }) => {
   const [sidebarOpen, setSidebarOpen] = useCookies(name + "sidebaeOpen");
 
   const handleSetSidebarOpen = (value) => {
     setSidebarOpen(value);
   }
+
+  useEffect(() => {
+    document.title = title;
+  }, [name]);
 
   return (
     <DocumentContext.Provider value={{
@@ -23,7 +27,9 @@ export const DocumentProvider = ({ children, docRef, name, formValues, spacing, 
       formValues,
       spacing,
     }}>
-      {children}
+      <>
+        {children}
+      </>
     </DocumentContext.Provider>
   );
 }
