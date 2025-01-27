@@ -77,8 +77,9 @@ class Server extends Router {
       publicDirs.push('dist/client');
     } else {
       publicDirs.push('public');
-      publicDirs.push('node_modules/particles.js');
     }
+
+    publicDirs.push('node_modules/particles.js');
 
     publicDirs.forEach(dir => {
       this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
