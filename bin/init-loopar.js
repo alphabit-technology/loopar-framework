@@ -1,9 +1,5 @@
 #!/usr/bin/env node
 import { execSync } from 'child_process';
-import path from 'pathe';
-
-const framework = process.cwd();
-const localModulePath = path.resolve(framework, '.loopar');
 
 function runCommand(command) {
   try {
@@ -14,4 +10,5 @@ function runCommand(command) {
   }
 }
 
-runCommand(`cd ${localModulePath} && npm link`);
+runCommand(`cd .loopar && npm link`);
+runCommand(`cd .. && npm link loopar`);
