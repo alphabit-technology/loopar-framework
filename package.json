@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "preinstall": "node bin/installer-clean.js",
+    "postinstall": "node bin/init-loopar.js",
     "dev": "cross-env NODE_ENV=development && node node_modules/loopar",
     "start": "cross-env NODE_ENV=production && node node_modules/loopar",
     "start-backend": "node node_modules/loopar",

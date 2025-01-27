@@ -7,6 +7,8 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import tailwindcss from '@tailwindcss/vite';
 import image from '@rollup/plugin-image';
 const framework = process.cwd();
+import commonjs from '@rollup/plugin-commonjs';
+
 
 const componentsAlias = {};
 const makeComponentToAlias = (dir) => {
@@ -92,6 +94,11 @@ export default defineConfig(({ command }) => ({
     }),
     visualizer({
       open: false
+    }),
+    commonjs({
+      include: /node_modules/,
+      // Si es necesario, puedes añadir otras opciones como:
+      // transformMixedEsModules: true
     })
   ],
   optimizeDeps: {
