@@ -67,8 +67,8 @@ const SideNavRender = ({ menu }) => {
 }
 
 export function SideNav({sideMenuItems}) {
-  const { openNav, setOpenNav, toogleSidebarNav, activeParentMenu } = useWorkspace();
-  const baseClassName = `fixed inset-0 z-50 overflow-y-auto bg-popover/90 lg:bg-transparent border-r ${openNav ? 'w-web-sidebar-width px-2' : 'w-0'} lg:top-web-header-height`
+  const { openNav, setOpenNav, toogleSidebarNav, activeParentMenu, webApp } = useWorkspace();
+  const baseClassName = `inset-0 z-50 overflow-y-auto bg-popover/90 border-r ${openNav ? 'w-web-sidebar-width px-2' : 'w-0'}`
 
   if (typeof window !== "undefined") {
     window.addEventListener("keydown", (e) => {
@@ -85,7 +85,7 @@ export function SideNav({sideMenuItems}) {
 
   return (
     <>
-      <div className={cn(baseClassName, "lg:hidden")}>
+      <div className={cn("fixed", baseClassName, "lg:hidden")}>
         <>
           {openNav && (
             <>
@@ -109,11 +109,20 @@ export function SideNav({sideMenuItems}) {
           </div>
         </>
       </div>
-      {childMenuItems.length > 0 && <div className={cn(baseClassName, "hidden lg:block w-web-sidebar-width p-2")}>
-        <>
-          <SideNavRender menu={childMenuItems} />
-        </>
-      </div>}
+      {childMenuItems.length > 0 && (
+        <div className="relative col-start-1 row-start-1 max-lg:hidden">
+          <div className="absolute inset-0">
+            <div
+              className={"sticky top-web-header-height bottom-web-header-height left-0 max-h-[calc(100dvh-(var(--spacing)*14.25))] w-2xs overflow-y-auto p-2"}
+              // style={{overflowY: "auto"}}
+            >
+              <>
+                <SideNavRender menu={childMenuItems} />
+              </>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
