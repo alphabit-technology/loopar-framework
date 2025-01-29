@@ -11,7 +11,7 @@ export default function DeskWorkspace(props){
   return (
     <BaseWorkspace menuData={menuData}>
       <TopNav openNav={openNav}></TopNav>
-      <section className="flex min-h-header-height">
+      <section className="flex-grow  min-h-header-height">
         <SideNav
           items={menuData}
         />

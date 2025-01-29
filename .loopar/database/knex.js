@@ -1,6 +1,7 @@
 'use strict';
 import { loopar, fileManage } from "loopar";
 import knex from 'knex';
+import { is } from "date-fns/locale";
 
 export default class DataBase {
   #connection = null;
@@ -292,7 +293,51 @@ export default class DataBase {
     return "WHERE(`from_document` = 'Menu' AND `from_id` = 8) AND ((`from_document` = 'Menu' AND `from_id` = 8) OR (to_document BETWEEN 'a' AND 'z' AND to_document IN('a', 'z') AND CONCAT(`to_document`, `from_id`) LIKE '%TEST%'))"
   }*///
 
-  async WHERE(__CONDITIONS__ = null) {
+  async WHERE_EAV(__CONDITIONS__ = null) {
+    const WHERE = (__CONDITIONS__) => {
+        return Object.entries(__CONDITIONS__ || {}).reduce((acc, [operand, DEF]) => {
+            operand = this.getOperand(operand);
+
+            if (['AND', 'OR'].includes(operand)) {
+                const W = WHERE(DEF);
+                if (W.length) {
+                    return [...acc, `(${W.join(` ${operand} `)})`];
+                }
+                return acc;
+            } else {
+                return [
+                    ...acc,
+                    ...Object.entries(DEF).map(([FIELD, VALUE]) => {
+                        if (!VALUE || (Array.isArray(VALUE) && VALUE.length === 0)) VALUE = [null];
+
+                        if (["IN", "NOT IN"].includes(operand)) {
+                            return `(field = ${this.#escape(FIELD)} AND value ${operand} (${VALUE.map(v => this.#escape(v)).join(',')}))`;
+                        } else if (["BETWEEN", "NOT BETWEEN"].includes(operand)) {
+                            return `(field = ${this.#escape(FIELD)} AND value ${operand} ${VALUE.map(v => this.#escape(v)).join(' AND ')})`;
+                        } else if (["LIKE", "NOT LIKE"].includes(operand)) {
+                            return `(field = ${this.#escape(FIELD)} AND value ${operand} ${this.#escape(`%${VALUE}%`)})`;
+                        } else if (["IS", "IS NOT"].includes(operand)) {
+                            return `(field = ${this.#escape(FIELD)} AND value ${operand} ${this.#escape(VALUE)})`;
+                        } else {
+                            return `(field = ${this.#escape(FIELD)} AND LOWER(value) ${operand} LOWER(${this.#escape(VALUE)}))`;
+                        }
+                    })
+                ];
+            }
+        }, []);
+    };
+
+    const query = WHERE(__CONDITIONS__);
+
+    return query.length 
+        ? `${query.join(' AND ')} GROUP BY document HAVING COUNT(document) = ${query.length}`
+        : '';
+}
+
+
+  async WHERE(__CONDITIONS__ = null, isSingle = false) {
+    if (isSingle) return this.WHERE_EAV(__CONDITIONS__);
+    
     const WHERE = (__CONDITIONS__) => {
       return Object.entries(__CONDITIONS__ || {}).reduce((acc, [operand, DEF]) => {
         operand = this.getOperand(operand);
@@ -728,18 +773,21 @@ export default class DataBase {
 
   async getRow(table, id, fields = ['*'], { isSingle = false, includeDeleted = false } = {}) {
     this.setPage(1);
-    const row = await this.getList(table, fields, typeof id == 'object' ? id : {
+    const row = await this.getList(table, fields, id ? typeof id == 'object' ? id : {
       '=': {
         'name': id
-      }
-    }, { isSingle, includeDeleted });
+      } 
+    } : null, { isSingle, includeDeleted });
 
     return row.length ? row[0] : null;
   }
 
   async getList(document, fields = ['*'], condition = null, { isSingle = false, all = false, includeDeleted = false } = {}) {
     if (isSingle) {
-      const result = await this.knex(this.literalTableName('Document Single Values')).where({ document: document }).select(["field", "value"]);
+      const result = await this.knex(this.literalTableName('Document Single Values'))
+        .where({ document: document })
+        .andWhereRaw(await this.WHERE(condition, isSingle))
+        .select(["field", "value"]);
       return [result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {})];
     } else {
       condition = await this.WHERE(condition);

@@ -90,7 +90,7 @@ export default function MetaSelect(props){
               ...a,
               [...a.map((item) => item.toLowerCase())].includes(typeof b === "string" ? b.toLowerCase() : b) ? "" : b,
             ];
-          }, []).join(" ");
+          }, [])//.join(" ");
         } else {
           return data[titleFields.current];
         }

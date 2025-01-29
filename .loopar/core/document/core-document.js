@@ -1,7 +1,6 @@
 'use strict'
-
 import DynamicField from './dynamic-field.js';
-import { loopar, documentManage } from 'loopar';
+import { loopar, documentManage, fileManage} from 'loopar';
 
 export default class CoreDocument {
   #fields = {};
@@ -76,49 +75,43 @@ export default class CoreDocument {
   }
 
   async getConnectedDocuments() {
-    const documents = await loopar.db.getAll("Entity", ["name", "module", "doc_structure", "is_single"]);
+    const refs = Object.values(loopar.getRefs());
+    const relatedEntities = [];
+    for (const ref of refs) {
+      const ent = await fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
 
-    const connexions = documents.reduce((acc, cur) => {
-      const fields = loopar.utils.fieldList(cur.doc_structure);
+      const fields = loopar.utils.fieldList(ent.doc_structure);
 
-      return [
-        ...acc,
-        ...fields.filter(field => (field.element === SELECT || field.element === FORM_TABLE) && field.data.options).map(field => {
-          const options = Array.isArray(field.data.options) ? field.data.options : (field.data.options || "").split("\n")[0];
-          if (options === this.__ENTITY__.name) {
-            return {
-              module: cur.module,
-              type: cur.type,
-              name: cur.name,
-              field: field.data.name,
-              is_single: cur.is_single
-            }
-          }
-        }).filter(e => e)
-      ]
-    }, []);
-
-    let connectedDocuments = [];
-
-    for (const document of connexions) {
-      const dosc = await loopar.db.getAll(document.name, ["name"], {
-        "=": {
-          [document.field]: this.name
+      fields.filter(field => (field.element === SELECT || field.element === FORM_TABLE) && field.data.options).map(field => {
+        const options = Array.isArray(field.data.options) ? field.data.options : (field.data.options || "").split("\n")[0];
+        if (options === this.__ENTITY__.name) {
+          relatedEntities.push({
+            is_single: ref.is_single,
+            entity: ref.__NAME__,
+            field: field.data.name,
+          })
         }
-      }, { isSingle: document.is_single });
-
-      connectedDocuments = [...connectedDocuments, ...dosc.map(doc => {
-        return {
-          module: document.module,
-          type: document.type,
-          document: document.name,
-          record: doc.name
-        }
-        //return `${document.name}.${doc.name}`;
-      })];
+      });
+      
     }
 
-    return connectedDocuments;
+    const rels = []
+    for (const r of relatedEntities) {
+      const docs = await loopar.db.getAll(r.entity, ["name"], {
+        "=": {
+          [r.field]: this.name
+        }
+      }, { isSingle: r.is_single });
+
+      rels.push(...docs.filter(doc => doc.name).map(doc => {
+        return {
+          entity: r.entity,
+          name: doc.name,
+        }
+      }));
+    }
+
+    return rels
   }
 
   #makeField({ field, fieldName = field.data.name, value = null } = {}) {
@@ -350,8 +343,12 @@ export default class CoreDocument {
   async delete() {
     const { sofDelete, force, updateHistory } = arguments[0] || {};
     const connections = await this.getConnectedDocuments();
-    const connectorMessage = connections.map(e => `<span class='fa fa-circle text-red pr-2'></span><a href="/desk/${e.module}/${e.document}/update?name=${e.record}" target="_blank"><strong>${e.document}</strong>.${e.record}</a>`).join("<br/>");
-    const message = `Is not possible to delete ${this.__ENTITY__.name}.${this.name} because it is connected to:<br/> ${connectorMessage}`;
+
+    let message = connections.map((e, index) => {
+      return `<a href='/desk/${e.entity}/update?name=${e.name}'>${index+1}: <strong>${e.entity}</strong>.${e.name}</a>`;
+    }).join("<br/>");
+    
+    message = `<h2>Is not possible to delete ${this.__ENTITY__.name}.${this.name} because it is connected to:</h2><br/> ${message}`;
 
     if (connections.length > 0 && !force) {
       loopar.throw({
@@ -365,21 +362,6 @@ export default class CoreDocument {
     await this.deleteChildRecords(true);
     await loopar.db.deleteRow(this.__ENTITY__.name, this.__DOCUMENT_NAME__, sofDelete);
     updateHistory && await this.updateHistory("Deleted");
-
-    /*const deleteConnectedDocuments = async () => {
-       const connectedDocuments = await loopar.db.getAll("Connected Document", ["name"], {
-          "=": {
-             from_document: this.__ENTITY__.name,
-             from_id: await this.__ID__()
-          }
-       });
-
-       for (const doc of connectedDocuments) {
-          await loopar.db.deleteRow("Connected Document", doc.name);
-       }
-    }
-
-    await deleteConnectedDocuments();*/
 
     await loopar.db.endTransaction();
     console.log(["Deleting", this.__ENTITY__.name, this.name]);

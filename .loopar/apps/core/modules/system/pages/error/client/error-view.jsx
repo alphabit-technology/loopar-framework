@@ -6,13 +6,11 @@ import React, { useState } from 'react';
 
 const ImageWithPlaceholder = ({ data }) => {
   const message = data.message || data.description || 'An error occurred';
-  const height = 800;
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
     <div
-      className="relative flex justify-center items-center w-full"
-      style={{ height }}
+      className="flex-grow justify-center items-center w-full"
     >
       {!imageLoaded && <div className="absolute inset-0 animate-pulse"></div>}
 

@@ -21,7 +21,11 @@ export default class CoreController extends AuthController {
   async sendAction(action) {
     action = `action${loopar.utils.Capitalize(action)}`;
     if (typeof this[action] !== 'function') {
-      return await this.notFound(`Action ${action} not found`);
+      return await this.notFound({
+        code: 404,
+        title: "Action not found",
+        description: `The action ${action} not found.`
+      });
     }
 
     await this.beforeAction();
@@ -29,13 +33,13 @@ export default class CoreController extends AuthController {
     return await this[action]();
   }
 
-  async notFound(message = null) {
+  async notFound({code = 404, title = "Not Found", description = "The page you are looking for does not exist"} = {}) {
     const document = await loopar.newDocument("Error");
 
     document.__DOCUMENT__ = {
-      code: 404,
-      title: `Document ${titleize(this.document)} not found`,
-      description: "The document you are looking for does not exist",
+      code: code || 404,
+      title: title || `Document ${titleize(this.document)} not found`,
+      description: description || "The document you are looking for does not exist",
     };
 
     return await this.render(document);
@@ -72,7 +76,9 @@ export default class CoreController extends AuthController {
     if (!__DOCUMENT__.__ENTITY__) return {};
 
     const getClient = () => {
+      if(["Page", "View"].includes(__DOCUMENT__.__ENTITY__.type)) return "view";
       if (this.client) return this.client;
+      
 
       const action = this.action;
       if (['create', 'update'].includes(action)) {

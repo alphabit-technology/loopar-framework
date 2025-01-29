@@ -4,7 +4,7 @@ import React, { useEffect, lazy, useState, use } from "react";
 
 import { loopar } from "loopar";
 
-import {LoaderCircleIcon} from "lucide-react";
+import { LoaderCircleIcon } from "lucide-react";
 
 const Fallback = () => (
   <div className="flex flex-row justify-center items-center h-full">
@@ -36,16 +36,18 @@ export async function AppSourceLoader(source) {
 export const Loader = (__META__, ENVIRONMENT) => {
   return new Promise((resolve) => {
     WorkspaceLoader(__META__.__WORKSPACE__.name).then(Workspace => {
+
       __META__.__DOCUMENT__ ? AppSourceLoader(__META__.__DOCUMENT__.client_importer).then(Document => {
-          MetaComponentsLoader(__META__, ENVIRONMENT).then(() => {
-            resolve({ Workspace: Workspace.default, Document: Document.default });
-          })
-        }) : resolve({ Workspace: Workspace.default, Document: null});
+
+        MetaComponentsLoader(__META__, ENVIRONMENT).then(() => {
+          resolve({ Workspace: Workspace.default, Document: Document.default });
+        })
+      }) : resolve({ Workspace: Workspace.default, Document: null });
     });
   });
 }
 
-async function __loader__(source ) {
+async function __loader__(source) {
   return new Promise((resolve) => {
     AppSourceLoader(source).then(module => {
       resolve(module);
@@ -62,7 +64,7 @@ export function Entity({ name, action, entityName, fallback, ...props }) {
 
   useEffect(() => {
     loopar.getMeta("Viewer", action, { document: name, name: entityName }).then((meta) => {
-      if (meta) setModel({ Component: _Import(meta.client_importer), meta } );
+      if (meta) setModel({ Component: _Import(meta.client_importer), meta });
     });
   }, []);
 
@@ -80,10 +82,10 @@ export function Entity({ name, action, entityName, fallback, ...props }) {
   };
 
   useEffect(() => {
-    if(model && model.meta)
-    model.meta.__ENTITY__.doc_structure = JSON.stringify(updateValue(JSON.parse(model.meta.__ENTITY__.doc_structure), model.meta.__DOCUMENT__))
+    if (model && model.meta)
+      model.meta.__ENTITY__.doc_structure = JSON.stringify(updateValue(JSON.parse(model.meta.__ENTITY__.doc_structure), model.meta.__DOCUMENT__))
   }, [model])
-  
+
   if (model) {
     const { Component, meta } = model;
     return <Component {...props} meta={meta} />
