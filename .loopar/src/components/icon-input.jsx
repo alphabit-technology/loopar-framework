@@ -25,18 +25,11 @@ export default function IconInput(props) {
   const options = BaseIcons.map((icon) => {
     return {
       option: icon,
-      value: <><BaseIcon icon={icon} className="w-7 h-7"/><span className="pl-2">{icon}</span></>,
+      formattedValue: <><BaseIcon icon={icon} className="w-7 h-7"/><span className="pl-2">{icon}</span></>,
     }
   });
 
   return renderInput(field => {
-    if(options.findIndex(option => option.option == field.value) === -1){
-      options.unshift({
-        option: field.value,
-        title: <><BaseIcon icon={field.value} className="w-7 h-7"/><span className="pl-2">{field.value}</span></>,
-      });
-    }
-    
     return (
       <Select
         data={{

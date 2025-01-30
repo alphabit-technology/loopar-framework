@@ -6,7 +6,7 @@ import { Select } from "./select/base-select";
 import {
   FormDescription,
   FormLabel
-} from "@/components/ui/form"
+} from "@/components/ui/form";
 
 export default function MetaSelect(props){
   const [rows, setRows] = useState(props.rows || []);
@@ -90,7 +90,7 @@ export default function MetaSelect(props){
               ...a,
               [...a.map((item) => item.toLowerCase())].includes(typeof b === "string" ? b.toLowerCase() : b) ? "" : b,
             ];
-          }, [])//.join(" ");
+          }, [])// .join(" ");
         } else {
           return data[titleFields.current];
         }
@@ -101,12 +101,12 @@ export default function MetaSelect(props){
       ? {
         option: option.option || option.name,
         title: getValue(option),
-        formattedValue: props.formattedValue
+        formattedValue: option.formattedValue,
       }
       : {
         option: option || value(),
-        title: option || value(),
-        formattedValue: props.formattedValue
+        title:  option || value(),
+        //formattedValue: <h1>Test</h1>
       }) : { null: null };
   };
 
@@ -142,15 +142,19 @@ export default function MetaSelect(props){
 
   const currentValue = () => {
     const currentOptionValue = optionValue(value() || data.value);
-    const filter = (rows || []).filter((item) => {
+    const filter = (rows || []).find((item) => {
       return optionValue(item).option == currentOptionValue.option;
     });
 
-    return filter[0] != null ? optionValue(filter[0]) : currentOptionValue;
+    return {
+      ...(filter || currentOptionValue),
+      formattedValue: props.formattedValue,
+    };
   }
 
   const [selected, setSelected] = useState(currentValue());
 
+  
   useEffect(() => {
     setSelected(currentValue());
   }, [rows, data.value]);

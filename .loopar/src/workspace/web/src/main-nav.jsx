@@ -9,7 +9,7 @@ export function MainNav() {
   const menuItems = webApp.menu_items;
 
   const Items = menuItems.filter((item) => !item.parent_menu).map((item, i) => {
-    const active = activeParentMenu === item.page ? "text-foreground/100 bg-foreground/10 px-4" : "px-4";
+    const active = activeParentMenu === item.page ? "text-foreground/100 bg-foreground/10 px-2" : "px-2";
     return (
       <Link
         className={`transition-colors hover:text-foreground/80 text-foreground/60 px-2 py-1 rounded-full ${active}`}

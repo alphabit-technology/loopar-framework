@@ -12,28 +12,32 @@ const Layout = (({ ...props }) => {
   }, []);
 
   return (
-    <div className="w-full h-[100vh]">
+    <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
       <section
-        className="flex h-full"
+        className="flex-grow flex"
       >
         <div
           className={`p-5 sm:p-10 w-full lg:w-[524px] ease-induration-100 overflow-auto duration-100 ease-in`}
         >
-          <div className="mb-4 w-full grid  place-items-center">
-            <div className="mb-3">
-              <img
-                src="/assets/images/logo.svg"
-                alt="My Happy SVG"
-                style={{ height: 28, width: 140 }}
-              />
+          <div className="flex flex-col w-full h-full">
+            <div className="mb-4 w-full grid  place-items-center">
+              <div className="mb-3">
+                <img
+                  src="/assets/images/logo.svg"
+                  alt="My Happy SVG"
+                  style={{ height: 28, width: 140 }}
+                />
+              </div>
+            </div>
+            <div className="flex-grow rounded-lg">
+              {props.children}
             </div>
           </div>
-          {props.children}
         </div>
-        <div className="w-full hidden lg:block">
+        <div className="w-full flex-col hidden lg:flex">
           <div 
             id="particles-js" 
-            className="particles-js w-full h-full bg-cover bg-center bg-no-repeat bg-fixed bg-gray-100 dark:bg-gray-800  overflow-auto duration-100 ease-in"
+            className="particles-js w-full h-dvh bg-cover bg-center bg-no-repeat bg-fixed bg-gray-100 dark:bg-gray-800  overflow-auto duration-100 ease-in"
             style={{
               "background-image": "url(/assets/images/illustration/builder.svg)"
             }}

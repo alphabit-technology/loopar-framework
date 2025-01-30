@@ -98,7 +98,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
 
   const RenderValue = () => {
     if (typeof renderValue == "object" && renderValue.$$typeof !== Symbol.for("react.transitional.element")) {
-      return <>{[...renderValue]}</>
+      return <>{renderValue}</>
     } else {
       return renderValue
     }
@@ -150,8 +150,11 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
             ref={containerRef}
           >
             {visibleRows.map((option) => { 
-              if(!option) return null;
-              const value = option.title || option.value || option.option;
+              if (!option) return null;
+
+              //if(data.name == "icon")
+              //console.log("option", option.formattedValue);
+              const value = option.formattedValue || option.title || option.value || option.option;
 
               return (
               <CommandItem
@@ -164,7 +167,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
                   option.option === current.option && "bg-secondary text-white"
                 )}
               >
-                {value}
+                  {value}
                 <CheckIcon
                   className={cn(
                     "ml-auto h-4 w-4",
