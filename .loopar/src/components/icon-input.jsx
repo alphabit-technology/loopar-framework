@@ -24,7 +24,7 @@ export default function IconInput(props) {
   
   const options = BaseIcons.map((icon) => {
     return {
-      option: icon,
+      value: icon,
       formattedValue: <><BaseIcon icon={icon} className="w-7 h-7"/><span className="pl-2">{icon}</span></>,
     }
   });

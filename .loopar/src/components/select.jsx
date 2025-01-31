@@ -19,7 +19,7 @@ export default function MetaSelect(props){
 
   useEffect(() => {
     const val = value();
-    const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ option: val, title: val }];
+    const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ value: val, label: val }];
     setRows(getPrepareOptions(initialRows));
   }, []);
 
@@ -27,16 +27,17 @@ export default function MetaSelect(props){
     const q = target?.target?.value || "";
     return new Promise((resolve, reject) => {
       if (isLocal()) {
-        setFilteredOptions(optionsSelect().filter((row) => {
-          return (typeof row == "object" ? `${row.option} ${row.title}` : row)
+        setFilteredOptions(buildOptions().filter((row) => {
+          return (typeof row == "object" ? `${row.value} ${row.label}` : row)
             .toLowerCase()
             .includes(q);
         }).map((row) => {
-          return typeof row == "object" ? row : { option: row, title: row };
+          return typeof row == "object" ? row : { value: row, label: row };
         }));
+
         resolve();
       } else {
-        model.current = optionsSelect()[0];
+        model.current = buildOptions()[0];
         if (delay) {
           clearTimeout(lastSearch.current);
           lastSearch.current = setTimeout(() => {
@@ -50,11 +51,11 @@ export default function MetaSelect(props){
   }, []);
 
   const isLocal = () => {
-    return optionsSelect().length > 1;
+    return buildOptions().length > 1;
   };
 
   const getModel = () => {
-    return model.current?.option || model.current?.name;
+    return model.current?.value;
   }
 
   const getServerData = (q) => {
@@ -64,7 +65,7 @@ export default function MetaSelect(props){
         params: { q },
         success: (r) => {
           titleFields.current = r.titleFields;
-          setFilteredOptions(getPrepareOptions(r.rows));
+          setFilteredOptions(getPrepareOptions(r.rows.map((row) => ({ value: row.name, label: row }))));
           resolve();
         },
         error: (r) => {
@@ -79,57 +80,56 @@ export default function MetaSelect(props){
     setRows(filteredOptions);
   }, [filteredOptions]);
 
-  const optionValue = (option) => {
-    const getValue = (data) => {
-      if (data && typeof data === "object") {
+  const buildOption = (option) => {
+    const buildLabel = (opt) => {
+      if (opt && typeof opt === "object") {
         if (Array.isArray(titleFields.current)) {
-          const values = titleFields.current.map((item) => data[item]).filter((item) => item);
+          const values = titleFields.current.map((item) => opt[item]).filter((item) => item);
 
           return values.reduce((a, b) => {
             return [
               ...a,
               [...a.map((item) => item.toLowerCase())].includes(typeof b === "string" ? b.toLowerCase() : b) ? "" : b,
             ];
-          }, [])// .join(" ");
+          }, [])
         } else {
-          return data[titleFields.current];
+          return opt[titleFields.current];
         }
       }
     };
 
     return option ? (typeof option === "object"
       ? {
-        option: option.option || option.name,
-        title: getValue(option),
+        value: option.value,
+        label: buildLabel(option),
         formattedValue: option.formattedValue,
       }
       : {
-        option: option || value(),
-        title:  option || value(),
-        //formattedValue: <h1>Test</h1>
+        value: option || value(),
+        label:  option || value(),
       }) : { null: null };
   };
 
-  const optionsSelect = () => {
+  const buildOptions = () => {
     const opts = data.options || "";
 
     if (typeof opts == "object") {
       if (Array.isArray(opts)) {
-        return opts.map(i => optionValue(i))
+        return opts.map(i => buildOption(i))
       } else {
         return Object.keys(opts).map((key) => ({
-          option: key,
-          title: opts[key],
+          value: key,
+          label: opts[key],
         }));
       }
     } else if (typeof opts == "string") {
       return opts.split(/\r?\n/).map((item) => {
-        const [option, title] = item.split(":");
-        return { option, title: option || title };
+        const [value, label] = item.split(":");
+        return { value, label: label || value };
       });
     } else if (Array.isArray(opts)) {
       return opts.reduce((acc, item) => {
-        acc.push({ option: `${item}`, title: `${item}` })
+        acc.push({ value: `${item}`, label: `${item}` })
         
         return acc;
       }, []);
@@ -137,26 +137,26 @@ export default function MetaSelect(props){
   }
 
   const getPrepareOptions = (options) => {
-    return options.map((item) => optionValue(item));
+    return options.map(option => buildOption(option));
   };
 
-  const currentValue = () => {
-    const currentOptionValue = optionValue(value() || data.value);
-    const filter = (rows || []).find((item) => {
-      return optionValue(item).option == currentOptionValue.option;
-    });
+  const currentOption = (option) => {
+    const current = buildOption(option);
 
-    return {
-      ...(filter || currentOptionValue),
-      formattedValue: props.formattedValue,
-    };
+    if (current) {
+      return {
+        ...current,
+        formattedValue: props.formattedValue,
+      };
+    }
+    return null;
   }
 
-  const [selected, setSelected] = useState(currentValue());
+  const [selected, setSelected] = useState(currentOption(data.value));
 
   
   useEffect(() => {
-    setSelected(currentValue());
+    setSelected(currentOption(value()));
   }, [rows, data.value]);
 
   return renderInput((field) => (

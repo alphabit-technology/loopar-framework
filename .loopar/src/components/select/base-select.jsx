@@ -22,7 +22,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
 
-  options = options.filter(option => option && option.option);
+  options = options.filter(option => option && option.value);
 
   const PAGE_SIZE = 20;
   const paginatedRows = {};
@@ -43,14 +43,14 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
     if (paginatedRows[currentPage]) {
       setVisibleRows(prevRows => {
         const newRows = [...prevRows, ...paginatedRows[currentPage]];
-        return [...new Map(newRows.map(item => [item.option, item])).values()];
+        return [...new Map(newRows.map(item => [item.value, item])).values()];
       });
     }
   }, [currentPage, selected]);
 
   useEffect(() => {
-    if (selected && selected.option) {
-      if (!visibleRows.some(option => option.option === selected.option)) {
+    if (selected && selected.value) {
+      if (!visibleRows.some(option => option.value === selected.value)) {
         setVisibleRows(prevRows => [selected, ...prevRows]);
       }
     }
@@ -88,21 +88,24 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
     onSelect(e);
   }, [onSelect]);
 
-  const current = selected && (typeof selected == "object" && selected.option) ? selected : { option: "" };
+  const current = selected && (typeof selected == "object" && selected.value) ? selected : { value: null};
 
-  let renderValue = current.option ?
-    current.formattedValue || current.title || current.option :
+  let renderOption = current.value ?
+    current.formattedValue || current.label || current.value :
     <span className="truncate text-slate-600/70">
       Select {data.label}
     </span>;
 
-  const RenderValue = () => {
-    if (typeof renderValue == "object" && renderValue.$$typeof !== Symbol.for("react.transitional.element")) {
-      return <>{renderValue}</>
+  const RenderOption = () => {
+    if (typeof renderOption == "object" && renderOption.$$typeof !== Symbol.for("react.transitional.element")) {
+      return <>{renderOption}</>
     } else {
-      return renderValue
+      return renderOption
     }
   }
+
+  if (data.name == "icon")
+    console.log("selected", renderOption);
 
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
@@ -112,7 +115,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
           role="combobox"
           className={cn(
             "w-full justify-between pr-1",// max-w-sm
-            !current.option && "text-muted-foreground"
+            !current.value && "text-muted-foreground"
           )}
           onClick={(e) => {
             e.preventDefault();
@@ -122,7 +125,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
           onMouseEnter={setActive}
           onMouseLeave={() => setActive(false)}
         >
-          {RenderValue()}
+          {RenderOption()}
           <div className="flex flex-row items-center justify-between">
             <Cross2Icon
               className={`h-5 w-5 shrink-0 ${active ? "opacity-50" : "opacity-0"}`}
@@ -154,24 +157,24 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
 
               //if(data.name == "icon")
               //console.log("option", option.formattedValue);
-              const value = option.formattedValue || option.title || option.value || option.option;
+              const value = option.formattedValue || option.label || option.value;
 
               return (
               <CommandItem
-                value={option.option}
-                key={option.option}
-                onSelect={() => setValueHandler(option.option)}
+                value={option.value}
+                key={option.value}
+                onSelect={() => setValueHandler(option.value)}
                 data-disabled="false"
                 className={cn(
                   "flex items-center",
-                  option.option === current.option && "bg-secondary text-white"
+                  option.value === current.value && "bg-secondary text-white"
                 )}
               >
                   {value}
                 <CheckIcon
                   className={cn(
                     "ml-auto h-4 w-4",
-                    option.option === current.option
+                    option.value === current.value
                       ? "opacity-100"
                       : "opacity-0"
                   )}

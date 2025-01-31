@@ -60,60 +60,60 @@ export default class HTTP {
     }, {});
   }
 
-  #sendPetition(options) {
+  async #sendPetition(options) {
     const self = this;
-    const freeze = options.freeze != false;
+    const freeze = options.freeze !== false;
 
-    function withFreeze(promise, delay = 1000) {
+    const withFreeze = async (promise, delay = 100) => {
       if (!freeze) return promise;
-      let freezeTimeout;
 
-      const startFreeze = new Promise((resolve) => {
+      let freezeTimeout;
+      const startFreeze = new Promise(resolve => {
         freezeTimeout = setTimeout(() => {
-          self.freeze(freeze);
+          self.freeze(true);
           resolve();
         }, delay);
       });
 
-      return Promise.race([
-        promise.finally(() => {
-          clearTimeout(freezeTimeout);
-          self.freeze(false);
-        }),
-        startFreeze,
-      ]);
-    }
-    
-    fetch(self.url, self.options).then(async response => {
-      new Promise(async (resolve, reject) => {
-        if (response.redirected) {
-          window.location.href = response.url;
-          return;
-        }
+      try {
+        return await Promise.race([startFreeze, promise]).then(() => promise);
+      } finally {
+        clearTimeout(freezeTimeout);
+        self.freeze(false);
+      }
+    };
 
-        const isJson = response.headers.get('content-type')?.includes('application/json');
-        const data = isJson ? await response.json() : null;
+    try {
+      const fetchPromise = fetch(self.url, self.options)
+        .then(async response => {
+          if (response.redirected) {
+            window.location.href = response.url;
+            return;
+          }
 
-        if (!response.ok) {
-          const error = data || { error: response.status, message: response.statusText };
-          reject(error);
-        } else {
-          options.success && options.success(data);
-          data && data.notify && self.notify(data.notify);
+          const isJson = response.headers.get('content-type')?.includes('application/json');
+          const data = isJson ? await response.json() : null;
 
-          resolve(data);
-        }
-      }).catch(error => {
-        options.error && options.error(error);
-        self.throw({
-          title: error.title || error.code || 'Undefined Error',
-          message: error.message || error.description || 'Undefined Error',
+          if (!response.ok) {
+            const error = data || { error: response.status, message: response.statusText };
+            throw error;
+          }
+
+          options.success?.(data);
+          data?.notify && self.notify(data.notify);
+          return data;
         });
-      }).finally(() => {
-        freeze && self.freeze(false);
-        options.always && options.always();
+
+      return await withFreeze(fetchPromise);
+    } catch (error) {
+      options.error?.(error);
+      self.throw({
+        title: error.title || error.code || 'Undefined Error',
+        message: error.message || error.description || 'Undefined Error',
       });
-    });
+    } finally {
+      options.always?.();
+    }
   }
 
   get(url, params, options = {}) {

@@ -176,7 +176,7 @@ class Loopar extends Router {
     const url = `/desk/${Document}/${method}`;
     params = typeof params === "string" ? { name: params } : params;
     
-    return this.post(url, {...params, ...curParamsObject }, { freeze: false, ...options });
+    return this.post(url, {...params, ...curParamsObject }, { freeze: true, ...options });
   }
 
   async getMeta(Document, action, params = {}) {

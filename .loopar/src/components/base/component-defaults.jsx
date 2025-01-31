@@ -82,7 +82,7 @@ export default function ComponentDefaults(props) {
       });
     }
 
-    designerRef.updateElements(props, removeDuplicates(newElements), null, callback);
+    designerRef?.updateElements(props, removeDuplicates(newElements), null, callback);
   }
 
   return {
