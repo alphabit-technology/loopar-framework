@@ -41,7 +41,7 @@ export default class SingleController extends BaseController {
     }
     const parent = await this.getParent();
     document.activeParentMenu = parent;
-    document.__DOCUMENT_TITLE__ = menu.link;
+    document.__DOCUMENT_TITLE__ = menu?.link || this.document;
 
     return await this.render(document);
   }
