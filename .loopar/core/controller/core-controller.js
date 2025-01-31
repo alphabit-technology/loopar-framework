@@ -67,8 +67,8 @@ export default class CoreController extends AuthController {
     return {
       client_importer: this.clientImporter(__DOCUMENT__),
       key: this.getKey(),
-      ...__DOCUMENT__,
       __DOCUMENT_TITLE__: titleize(this.name || this.document || "Document"),
+      ...__DOCUMENT__,
     }
   }
 

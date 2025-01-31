@@ -16,7 +16,7 @@ export const DocumentProvider = ({ children, docRef, name, title, formValues, sp
 
   useEffect(() => {
     document.title = title;
-  }, [name]);
+  }, [title]);
 
   return (
     <DocumentContext.Provider value={{

@@ -104,9 +104,6 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
     }
   }
 
-  if (data.name == "icon")
-    console.log("selected", renderOption);
-
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild>
@@ -154,9 +151,6 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
           >
             {visibleRows.map((option) => { 
               if (!option) return null;
-
-              //if(data.name == "icon")
-              //console.log("option", option.formattedValue);
               const value = option.formattedValue || option.label || option.value;
 
               return (
