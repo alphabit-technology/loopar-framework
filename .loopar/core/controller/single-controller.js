@@ -32,7 +32,7 @@ export default class SingleController extends BaseController {
   
   async sendDocument(action=this.document) {
     const webApp = loopar.webApp || { menu_items: [] };
-    const menu = webApp.menu_items.find(item => item.link === action.replaceAll('_', ' '));
+    const menu = webApp.menu_items.find(item => [item.page, item.link].includes(action));
 
     const document = await loopar.getDocument(menu?.page || action);
     document.__ENTITY__ = {
