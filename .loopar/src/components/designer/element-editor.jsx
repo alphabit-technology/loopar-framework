@@ -164,6 +164,7 @@ export function ElementEditor({ element }) {
                               value: value,
                               label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
                             }}
+                            value={value}
                             onChange={(e) => {
                               data[field] = e.target ? e.target.value : e;
                               saveData();

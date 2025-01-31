@@ -153,10 +153,9 @@ export default function MetaSelect(props){
   }
 
   const [selected, setSelected] = useState(currentOption(data.value));
-
   
   useEffect(() => {
-    setSelected(currentOption(value()));
+    setSelected(currentOption(value() || props.value));
   }, [rows, data.value]);
 
   return renderInput((field) => (

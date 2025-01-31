@@ -91,6 +91,7 @@ class FormTableClass extends BaseTable {
                     value: row[column.data.name],
                     label: column.data.label,
                   })}
+                  value={row[column.data.name]}
                   onChange={(e) => {
                     clearTimeout(this.lastUpdate);
                     this.lastUpdate = setTimeout(() => {
