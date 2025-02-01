@@ -21,13 +21,19 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
   const { webApp, activePage, activeParentMenu } = useWorkspace();
   const menuItems = webApp.menu_items;
 
-  const getParentLink = () => {
-    return menuItems.find((item) => item.page === activeParentMenu && !item.parent_menu)?.link;
+  const getParentLink = (parentLink) => {
+    const parent = menuItems.find(item => item.link == parentLink);
+
+    if (parent && parent.parent_menu) {
+      return getParentLink(parent.parent_menu);
+    }
+
+    return parent?.link;
   }
 
   const getLink = (item) => {
-    const parentLink = getParentLink();
-    return parentLink === item.page ? `/${item.link}` : `/${parentLink}/${item.link}`;
+    const parentLink = getParentLink(item.parent_menu);
+    return parentLink ? `/${parentLink}/${item.link}` : `/${item.link}`;
   }
 
   const treeIsActive = getActive(item, activePage);
