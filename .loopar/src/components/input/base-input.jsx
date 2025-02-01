@@ -6,8 +6,10 @@ import { cn } from "@/lib/utils";
 import elementManage from "@tools/element-manage";
 import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
+import _ from "lodash";
 
 import { useDocument } from "@context/@/document-context";
+import { da } from 'date-fns/locale';
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
@@ -15,7 +17,7 @@ const BaseInput = (props) => {
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
   const parentHidden = useHidden();
   const { docRef } = useDocument();
-    
+  
   const getData = () => {
     if(props.element) {
       const data = props.data || {};
@@ -32,8 +34,14 @@ const BaseInput = (props) => {
 
   const [data, setData] = useState(getData());
 
+  const prevData = useRef(data);
+
   useEffect(() => {
-    setData(getData())
+    const newData = getData();
+    if(!_.isEqual(prevData.current, newData)){
+      setData(newData);
+      prevData.current = newData;
+    }
   }, [props.data, props.data.value]);
 
   useEffect(() => {

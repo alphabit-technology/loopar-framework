@@ -3,11 +3,11 @@ import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
-import {Markdown} from "@components/base/pure-html-block";
+import { Markdown } from "@components/base/pure-html-block";
 
 const Layout = (({ ...props }) => {
   const { activeParentMenu, webApp } = useWorkspace();
-  
+
   function buildMenuTree(menu) {
     const menuMap = {};
 
@@ -21,7 +21,7 @@ const Layout = (({ ...props }) => {
       if (item.parent_menu) {
         if (menuMap[item.parent_menu]) {
           menuMap[item.parent_menu].items.push(menuMap[item.link]);
-        }else{
+        } else {
           menuTree.push(menuMap[item.link]);
         }
       } else {
@@ -38,7 +38,7 @@ const Layout = (({ ...props }) => {
   const containerClass = childMenu.length > 0
     ? 'lg:grid-cols-[var(--container-2xs)_minmax(0,1fr)] xl:grid-cols-[var(--container-2xs)_minmax(0,1fr)]'
     : 'grid-cols-1 w-full';
-  
+
   const className = `grid min-h-dvh w-full grid-rows-[1fr_auto] pt-web-header-height ${containerClass}`;
   const itemClass = `relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`;
 
@@ -49,11 +49,11 @@ const Layout = (({ ...props }) => {
         <section
           className={className}
         >
-          <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu}/>
+          <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu} />
           <div
-            className={itemClass}
+            className={` relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`}
           >
-            <div>
+            <div className="grid grid-cols-1">
               {props.children}
             </div>
           </div>
@@ -68,7 +68,7 @@ const Layout = (({ ...props }) => {
                 <Markdown className="w-full text-center">{webApp.copyright}</Markdown>
               ) : null}
             </div>
-          </footer> 
+          </footer>
         </section>
       </main>
     </div>
@@ -79,7 +79,7 @@ export default function WebWorkspace(props) {
   const { getDocuments, __META__ } = useWorkspace();
 
   const getWebApp = () => {
-    const workspace =__META__.__WORKSPACE__ || {};
+    const workspace = __META__.__WORKSPACE__ || {};
     return workspace.web_app || {};
   }
 

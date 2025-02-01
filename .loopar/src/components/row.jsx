@@ -2,20 +2,22 @@ import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
 import ComponentDefaults from "./base/component-defaults";
 import { loopar } from "loopar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Emitter from '@services/emitter/emitter';
 import { cn } from "@/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";
+import _ from "lodash";
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
   const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
   const [cols, setCols] = useState(props.elements || []);
   const { webApp } = useWorkspace();
-  const { spacing={} } = useDocument();
+  const { spacing = {} } = useDocument();
+  const prevElementsRef = useRef(props.elements);
 
   const conciliateCols = () => {
     const addCols = [
@@ -58,7 +60,10 @@ export default function Row(props) {
   }
 
   useEffect(() => {
-    setCols(props.elements || [])
+    if (!_.isEqual(prevElementsRef.current, props.elements)) {
+      setCols(props.elements || []);
+      prevElementsRef.current = props.elements;
+    }
   }, [props.elements]);
 
   const _spacing = parseInt(data.spacing || spacing.spacing || webApp.spacing || 1);

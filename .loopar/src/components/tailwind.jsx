@@ -18,6 +18,7 @@ export default function Tailwind(props){
   const type = props.type || data.type || "input";
 
   const handleKeyUp = (e) => {
+    e.preventDefault();
     clearTimeout(timerId);
     if(e.target.value.toString().length > 0)
     setSaving(true);

@@ -7,6 +7,7 @@ import loopar from "loopar";
 import MetaComponent from "@meta-component";
 import { DragGhost } from "./drag-ghost";
 const UP = 'up';
+import _ from "lodash";
 
 export function Droppable({ data = {}, children, className, Component = "div", ...props }) {
   const [dropping, setDropping] = useState(false);
@@ -19,23 +20,17 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   const [position, setPosition] = useState();
   const { currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, designerRef } = useDesigner();
 
-  //const isDesigner = designerMode || props.isDesigner;
-  const isDroppable = true// receiver.droppable || receiver.props.droppable || props.isDroppable;
+  const isDroppable = true;
   const droppableEvents = {};
   const dropZoneRef = useRef();
+  const prevElements = useRef(props.elements);
 
-  // const [verticalDirection, setVerticalDirection] = useState('down');
-  // const [lastY, setLastY] = useState(0);
-
-  // useEffect(() => {
-  //   const handleMouseMove = (e) => {
-  //     setVerticalDirection(e.clientY > lastY ? 'down' : 'up');
-  //     setLastY(e.clientY);
-  //   };
-
-  //   //document.addEventListener('mousemove', handleMouseMove);
-  //   return () => document.removeEventListener('mousemove', handleMouseMove);
-  // }, [lastY]);
+  const handleSetElements = (elements) => {
+    if (!_.isEqual(prevElements.current, elements)) {
+      setElements(elements);
+      prevElements.current = elements;
+    }
+  }
 
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
@@ -44,7 +39,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
 
     element && newElements.splice(afterAt, 0, element);
 
-    setElements(newElements);
+    handleSetElements(newElements);
   };
 
   const getBrothers = (current) => {
@@ -113,14 +108,14 @@ export function Droppable({ data = {}, children, className, Component = "div", .
 
   useEffect(() => {
     if (!dropping) {
-      setElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.transitional.element')));
+      handleSetElements((elements || []).filter(el => el.$$typeof !== Symbol.for('react.transitional.element')));
     }
   }, [dropping]);
 
   /**TODO: Check optimization on render */
   useEffect(() => {
     if (!currentDragging) {
-      setElements(props.elements || []);
+      handleSetElements(props.elements || []);
     }
   }, [props.elements]);
   /**TODO: Check optimization on render */

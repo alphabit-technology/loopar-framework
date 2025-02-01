@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { __META_COMPONENTS__ } from "@components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
@@ -10,6 +10,7 @@ import { getMetaFields } from "@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import Emitter from '@services/emitter/emitter';
 import { FormWrapper } from "@context/form-provider";
+import _ from "lodash";
 
 function mergeGroups(...arrays) {
   const groupMap = new Map();
@@ -53,17 +54,23 @@ function mergeGroups(...arrays) {
 export function ElementEditor({ element }) {
   const { designerRef } = useDesigner();
   const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
+  const prevConnectedElement = useRef(connectedElement);
 
   if (!connectedElement) return null;
 
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
+  const prevData = useRef({ ...data });
+
   const Element = __META_COMPONENTS__[elementName]?.default || {};
 
   const handleSetConnectedElement = (e) => {
     if (!e) return;
     const el = designerRef.getElement(e);
-    el && setConnectedElement(el);
+    if (el && el.data.key !== connectedElement?.data.key) {
+      setConnectedElement(el);
+      prevConnectedElement.current = el;
+    }
   }
 
   useEffect(() => {
@@ -95,7 +102,10 @@ export function ElementEditor({ element }) {
   };
 
   const saveData = () => {
-    designerRef.updateElement(data.key, data, false);
+    if(!_.isEqual(prevData.current, data)){
+      designerRef.updateElement(data.key, data, false);
+      prevData.current = { ...data };
+    }
   };
 
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
@@ -120,12 +130,6 @@ export function ElementEditor({ element }) {
 
     return { group, elements };
   });
-
-  // useEffect(() => {
-  //   if(JSON.stringify(connectedElement.data) !== JSON.stringify(data))
-  //   //if(data != oldData)
-  //   saveData()
-  // }, [data])
 
   return (
     <DesignerContext.Provider
