@@ -101,6 +101,7 @@ export const elementsDefinition = {
     { element: "icon_input", icon: "Boxes", type: TYPES.text },
     { element: "radio_group", icon: "Circle", type: TYPES.text },
     { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
+    { element: "theme", icon: "Brush", type: TYPES.text },
   ]
 }
 

@@ -7,11 +7,12 @@ import {
   FormDescription,
   FormLabel
 } from "@/components/ui/form";
+import { sep } from "pathe";
 
 export default function MetaSelect(props){
   const [rows, setRows] = useState(props.rows || []);
   const [filteredOptions, setFilteredOptions] = useState([]);
-  const titleFields = useRef(["value"]);
+  const titleFields = useRef(["label"]);
   const model = useRef(null);
   const lastSearch = useRef(null);
   
@@ -22,6 +23,8 @@ export default function MetaSelect(props){
     const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ value: val, label: val }];
     setRows(getPrepareOptions(initialRows));
   }, []);
+
+  //const [valueDescriptive, setValueDescriptive] = useState(data.value_descriptive);
 
   const search = useCallback((target, delay = true) => {
     const q = target?.target?.value || "";
@@ -38,6 +41,7 @@ export default function MetaSelect(props){
         resolve();
       } else {
         model.current = buildOptions()[0];
+
         if (delay) {
           clearTimeout(lastSearch.current);
           lastSearch.current = setTimeout(() => {
@@ -64,8 +68,8 @@ export default function MetaSelect(props){
         action: `/desk/${getModel()}/search`,
         params: { q },
         success: (r) => {
-          titleFields.current = r.titleFields;
-          setFilteredOptions(getPrepareOptions(r.rows.map((row) => ({ value: row.name, label: row }))));
+          titleFields.current = r.title_fields;
+          setFilteredOptions(getPrepareOptions(r.rows.map(row => ({ value: row.name, label: row }))));
           resolve();
         },
         error: (r) => {
@@ -81,19 +85,25 @@ export default function MetaSelect(props){
   }, [filteredOptions]);
 
   const buildOption = (option) => {
+    const separator = (arr, separator) => 
+      arr.reduce((acc, el, index) => {
+        acc.push(el);
+        if (index < arr.length - 1) acc.push(separator);
+        return acc;
+      }, []);
+    
     const buildLabel = (opt) => {
-      if (opt && typeof opt === "object") {
-        if (Array.isArray(titleFields.current)) {
-          const values = titleFields.current.map((item) => opt[item]).filter((item) => item);
-
-          return values.reduce((a, b) => {
-            return [
-              ...a,
-              [...a.map((item) => item.toLowerCase())].includes(typeof b === "string" ? b.toLowerCase() : b) ? "" : b,
-            ];
-          }, [])
+      if (opt) {
+        if (typeof opt === "object") {
+          if (Array.isArray(titleFields.current)) {
+            const values = titleFields.current.map(lbl => opt[lbl]).filter(val => val);
+            
+            return separator(values, " - ");
+          } else {
+            return opt[titleFields.current];
+          }
         } else {
-          return opt[titleFields.current];
+          return opt;
         }
       }
     };
@@ -101,7 +111,7 @@ export default function MetaSelect(props){
     return option ? (typeof option === "object"
       ? {
         value: option.value,
-        label: buildLabel(option),
+        label: buildLabel(option.label || option.value),
         formattedValue: option.formattedValue,
       }
       : {
@@ -129,7 +139,8 @@ export default function MetaSelect(props){
       });
     } else if (Array.isArray(opts)) {
       return opts.reduce((acc, item) => {
-        acc.push({ value: `${item}`, label: `${item}` })
+        acc.push(buildOption(item))
+        //acc.push({ value: `${item}`, label: `${item}` })
         
         return acc;
       }, []);
@@ -140,23 +151,24 @@ export default function MetaSelect(props){
     return options.map(option => buildOption(option));
   };
 
-  const currentOption = (option) => {
-    const current = buildOption(option);
-
-    if (current) {
+  const currentOption = (option, formattedValue) => {
+    if (option) {
+      const rowOption = rows.find(r => r.value === option);
+      const valueDescriptive =  rowOption?.label || data.value_descriptive;
       return {
-        ...current,
-        formattedValue: props.formattedValue,
+        ...(rowOption || buildOption(option)),
+        formattedValue: props.formattedValue || valueDescriptive
       };
     }
+
     return null;
   }
 
-  const [selected, setSelected] = useState(currentOption(data.value));
+  const [selected, setSelected] = useState(currentOption(props.value || data.value));
   
   useEffect(() => {
     setSelected(currentOption(value() || props.value));
-  }, [rows, data.value]);
+  }, [rows, props.value]);
 
   return renderInput((field) => (
     <>

@@ -22,17 +22,23 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
 
-  options = options.filter(option => option && option.value);
+  //options = options.filter(option => option && option.value);
 
   const PAGE_SIZE = 20;
-  const paginatedRows = {};
+  //const paginatedRows = {};
   
-  for (let i = 0; i < options.length; i += PAGE_SIZE) {
-    const pageNumber = i / PAGE_SIZE + 1;
-    paginatedRows[pageNumber] = options.slice(i, i + PAGE_SIZE);
+  const getPaginatedRows = () => {
+    const paginatedRows = {};
+    for (let i = 0; i < options.length; i += PAGE_SIZE) {
+      const pageNumber = i / PAGE_SIZE + 1;
+      paginatedRows[pageNumber] = options.slice(i, i + PAGE_SIZE);
+    }
+
+    return paginatedRows;
   }
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [paginatedRows, setPaginateRows] = useState(getPaginatedRows());
   const [visibleRows, setVisibleRows] = useState(paginatedRows[1] || []);
 
   const loadMoreRows = useCallback(() => {
@@ -40,21 +46,25 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
   }, []);
 
   useEffect(() => {
-    if (paginatedRows[currentPage]) {
+    setPaginateRows(getPaginatedRows());
+  }, [options]);
+
+  useEffect(() => {
+    if (paginatedRows[currentPage] && open) {
       setVisibleRows(prevRows => {
         const newRows = [...prevRows, ...paginatedRows[currentPage]];
         return [...new Map(newRows.map(item => [item.value, item])).values()];
       });
     }
-  }, [currentPage, selected]);
+  }, [currentPage, selected, open, paginatedRows]);
 
-  useEffect(() => {
-    if (selected && selected.value) {
-      if (!visibleRows.some(option => option.value === selected.value)) {
-        setVisibleRows(prevRows => [selected, ...prevRows]);
-      }
-    }
-  }, [selected]);
+  // useEffect(() => {
+  //   if (selected && selected.value) {
+  //     if (!visibleRows.some(option => option.value === selected.value)) {
+  //       setVisibleRows(prevRows => [selected, ...prevRows]);
+  //     }
+  //   }
+  // }, [selected]);
   
   useEffect(() => {
     if (!containerRef.current) return;
@@ -88,7 +98,7 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
     onSelect(e);
   }, [onSelect]);
 
-  const current = selected && (typeof selected == "object" && selected.value) ? selected : { value: null};
+  const current = selected && (typeof selected == "object" && selected.value) ? selected : {};
 
   let renderOption = current.value ?
     current.formattedValue || current.label || current.value :

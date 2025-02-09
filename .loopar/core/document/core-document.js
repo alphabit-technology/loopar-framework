@@ -314,7 +314,11 @@ export default class CoreDocument {
         if (!value || value === "") continue;
 
         if (options.length > 1) {
-          if (!options.includes(value)) {
+          const keys = options.map(opt => {
+            return opt.split(":")[0]
+          });
+
+          if (!keys.includes(value)) {
             errors.push(`The value ${value} for ${field.name} can only be one of the list of options`);
           }
         } else {
@@ -384,7 +388,49 @@ export default class CoreDocument {
 
     if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
 
-    const __ENTITY__ = this.__ENTITY__;
+    const __DOCUMENT__ = await this.values();
+      
+    if (!this.__IS_NEW__) {
+      const updateValue = async (structure) => {
+        return Promise.all(structure.map(async (el) => {
+          const data = el.data;
+          if (Object.keys(__DOCUMENT__).includes(data?.name)) {
+            data.value = __DOCUMENT__[data.name];
+      
+            if (el.element === SELECT) {
+              const options = (data.options || "").split("\n");
+      
+              if (options.length > 1) {
+                const [value, label] = (options.find(opt => (opt || "").split(":")[0] === data.value) || "").split(":");
+                el.data.value_descriptive = label || value;
+              } else {
+                // const db = loopar.db;
+                // if (await db.hastEntity(data.options) && await db.count(data.options, data.value) > 0) {
+                //   const doc = await loopar.getDocument(data.options, data.value);
+                //   el.data.value_descriptive = await doc.getValueDescriptive();
+                // }
+              }
+            }
+          }
+      
+          el.elements = await updateValue(el.elements || []);
+          return el;
+        }));
+      };
+  
+      const updateDocStructure = async () => {
+        entity.doc_structure = JSON.stringify(await updateValue(
+          JSON.parse(entity.doc_structure)
+        ));
+      };
+
+      updateDocStructure();
+      // entity.doc_structure = JSON.stringify(updateValue(
+      //   JSON.parse(entity.doc_structure)
+      // ))
+    }
+
+    const __ENTITY__ = entity;// this.__ENTITY__;
     delete __ENTITY__.__REF__;
     return {
       __ENTITY__: __ENTITY__,

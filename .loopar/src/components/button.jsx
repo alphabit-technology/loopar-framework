@@ -40,7 +40,7 @@ export default function MetaButton(props){
 }
 
 MetaButton.metaFields =()=>{
-  return {
+  return [{
     group: "form",
     elements: {
       action: {
@@ -62,5 +62,5 @@ MetaButton.metaFields =()=>{
         },
       },
     },
-  };
+  }];
 }

@@ -14,6 +14,7 @@ import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.
 import * as Helpers from "./core/global/helper.js";
 import { elementsNames, elementsNameByType, elementsDict } from "./core/global/element-definition.js";
 import { MetaComponents } from "./core/global/require-components.js";
+export {themes, showColors} from "./core/global/themes.js";
 
 export {
   loopar,

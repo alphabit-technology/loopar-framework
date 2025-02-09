@@ -15,7 +15,7 @@ export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
   const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
   const [cols, setCols] = useState(props.elements || []);
-  const { webApp } = useWorkspace();
+  const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();
   const prevElementsRef = useRef(props.elements);
 

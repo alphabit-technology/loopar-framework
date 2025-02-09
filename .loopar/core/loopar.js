@@ -21,6 +21,7 @@ import inflection, { titleize, humanize, singularize } from "inflection";
 import { elementsDict } from "loopar";
 import * as lucideIcons from 'lucide-react'
 import jwt from 'jsonwebtoken';
+import Auth from './auth.js';
 
 export class Loopar {
   #installingApp = false;
@@ -28,16 +29,23 @@ export class Loopar {
   pathRoot = process.cwd();
   pathCore = process.argv[1];
   session = new Session();
-  cookie = new Cookie();
+  #cookie = new Cookie();
+  auth = new Auth(this.cookie, this.getUser.bind(this), this.disabledUser.bind(this));
   tailwindClasses = {}
   #server = {};
-
-  constructor() { }
 
   validateGitRepository(appName, repository) {
     if (!this.gitRepositoryIsValid(repository)) {
       this.throw(`The app ${appName} does not have a valid git repository`);
     }
+  }
+
+  get cookie() {
+    return this.#cookie;
+  }
+
+  set cookie(cookie) {
+    this.#cookie = cookie;
   }
 
   set server(server) {
@@ -576,6 +584,15 @@ export class Loopar {
 
     return await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
       .select('name', 'email', 'password', 'disabled', 'profile_picture').first();
+  }
+
+  async disabledUser(user_id) {
+    if ((!this.__installed__ && this.installing) || user_id === "Administrator") return false;
+
+     const status = await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
+      .select('disabled').first();
+    
+    return !status || !status.disabled;
   }
 
   get currentUser() {

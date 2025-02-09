@@ -20,16 +20,7 @@ export default class AuthController {
     }
   }
 
-  authUser() {
-    try {
-      return jwt.verify(loopar.cookie.get('auth_token'), 'user-auth');
-    } catch (error) {
-      return null;
-    }
-  }
-
   async isAuthenticated() {
-    //const url = this.req._parsedUrl.pathname
     const action = this.action;
     const workspace = this.req.__WORKSPACE_NAME__;
 
@@ -40,8 +31,9 @@ export default class AuthController {
     if(this.actionsEnabled && !this.actionsEnabled.includes(action)) return resolve('Not permitted');
 
     if (workspace == "web") return true;
-    if(workspace == "loopar") return true;
-    const user = await loopar.getUser(this.authUser()?.name);
+    if (workspace == "loopar") return true;
+
+    const user = await loopar.auth.award();
   
     if (user) {
       if (workspace == "auth") {

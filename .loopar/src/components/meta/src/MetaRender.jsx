@@ -60,6 +60,7 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
       key={metaProps.key || null}
       className={className}
       style={style}
+      value={data.value}
       ref={ref => {
         if (ref) {
           elementRef.current = ref;

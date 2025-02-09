@@ -48,6 +48,7 @@ export default function ColorPicker(props) {
     const gradient = `rgba(${rgbaSection(color, 1)}, ${rgbaSection(color, 3)}, ${rgbaSection(color, 5)}, 0.3)`; // #ffffff
       
     const handleColorChange = (color, alpha) => {
+      setColor({ color, alpha });
       field.onChange(color ? JSON.stringify({ color, alpha }) : "");
     }
 

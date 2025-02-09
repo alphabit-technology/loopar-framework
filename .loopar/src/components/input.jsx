@@ -50,7 +50,7 @@ export default function Input(props) {
           <FormInput {..._props}
             placeholder={data.placeholder || data.label}
             {...field}
-            onChange={field.onChange}
+            //onChange={field.onChange}
             {..._type}
           />
         </FormControl>

@@ -195,6 +195,10 @@ export default class BaseDocument extends CoreDocument {
     return { 'LIKE': [this.getFieldSelectNames(), `%${q}%`] };
   }
 
+  getTitleFields() {
+    return this.__ENTITY__?.title_fields || 'name';
+  }
+
   getSearchedFields() {
     return this.__ENTITY__?.search_fields || 'name';
   }
@@ -204,7 +208,7 @@ export default class BaseDocument extends CoreDocument {
   }
 
   getFieldSelectLabels() {
-    return Array.from(new Set([...this.getSearchedFields().split(',').filter(field => field !== ''), 'name']));
+    return Array.from(new Set([...this.getTitleFields().split(',').filter(field => field !== '')]));
   }
 
   async getListToSelectElement(q = null) {
@@ -221,7 +225,7 @@ export default class BaseDocument extends CoreDocument {
 
     const listFields = this.getFieldSelectLabels();
 
-    const rows = await loopar.db.getList(this.__ENTITY__.name, listFields, this.buildConditionToSelect(q));
+    const rows = await loopar.db.getList(this.__ENTITY__.name, ["name", ...listFields], this.buildConditionToSelect(q));
 
     
     pagination.totalRecords = await this.records();
@@ -231,6 +235,13 @@ export default class BaseDocument extends CoreDocument {
       title_fields: listFields,
       rows: rows
     });
+  }
+
+  async getValueDescriptive(name) {
+    const listFields = this.getFieldSelectLabels();
+    const values = await loopar.db.getRow(this.__ENTITY__.name, name, listFields);
+
+    return Object.values(values).map(value => value).join(" - ");
   }
 
   async records(condition = []) {
