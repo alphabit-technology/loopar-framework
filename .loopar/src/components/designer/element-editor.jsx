@@ -64,12 +64,19 @@ export function ElementEditor({ element }) {
 
   const Element = __META_COMPONENTS__[elementName]?.default || {};
 
+  const handleSetData = (data) => {
+    if (!_.isEqual(prevData.current, data)) {
+      setData(data);
+      prevData.current = { ...data };
+    }
+  }
+
   const handleSetConnectedElement = (e) => {
     if (!e) return;
     const el = designerRef.getElement(e);
-    if (el && el.data.key !== connectedElement?.data.key) {
-      setConnectedElement(el);
-      prevConnectedElement.current = el;
+
+    if (el && el.data.key == connectedElement?.data.key) {
+      handleSetData(el.data);
     }
   }
 
@@ -91,7 +98,7 @@ export function ElementEditor({ element }) {
   useEffect(() => {
     if (!connectedElement) return;
 
-    setData(connectedElement?.data || {});
+    handleSetData(connectedElement?.data || {});
     setElementName(connectedElement?.element || "");
   }, [element, connectedElement, connectedElement.data]);
 

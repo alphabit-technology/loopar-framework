@@ -9,7 +9,6 @@ import { useHidden } from "@context/@/hidden-context";
 import _ from "lodash";
 
 import { useDocument } from "@context/@/document-context";
-import { da } from 'date-fns/locale';
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);

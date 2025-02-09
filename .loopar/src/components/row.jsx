@@ -2,7 +2,7 @@ import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
 import ComponentDefaults from "./base/component-defaults";
 import { loopar } from "loopar";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import Emitter from '@services/emitter/emitter';
 import { cn } from "@/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
@@ -10,6 +10,7 @@ const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";
 import _ from "lodash";
+import elementManage from "@tools/element-manage"; 
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
@@ -29,7 +30,7 @@ export default function Row(props) {
       for (let i = 0; i < diff; i++) {
         addCols.push({
           element: "col",
-          data: { key: data.key + i }
+          data: { key: elementManage.getUniqueKey() },
         })
       }
 
