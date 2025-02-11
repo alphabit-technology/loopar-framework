@@ -39,16 +39,7 @@ export const SideNavItem = (props) => {
       to={`/desk/${path}`}  
     >
       {Icon && <Icon className="mr-2"/> }
-      {title}
+      <span className="w-full">{title}</span>
     </Link>
   );
 };
-
-/*SideNavItem.propTypes = {
-  active: PropTypes.bool,
-  disabled: PropTypes.bool,
-  external: PropTypes.bool,
-  Icon: PropTypes.node,
-  path: PropTypes.string,
-  title: PropTypes.string.isRequired,
-};*/

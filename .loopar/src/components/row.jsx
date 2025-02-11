@@ -83,7 +83,7 @@ export default function Row(props) {
           className={cn(
             '@container',
             `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
-            'grid-container dynamic scrollbar-hide box-border'
+            'grid-container dynamic box-border'
           )}
           style={{
             "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,

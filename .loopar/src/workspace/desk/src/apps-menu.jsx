@@ -15,8 +15,8 @@ const MakeButton = ({ Icon, text, link }) => (
     to={link}
     variant="ghost"
   >
-    <Icon className="h-7 w-7 mr-2" />
-    {text}
+    <Icon className="h-10 w-10" />
+    <span className="w-full px-2">{text}</span>
   </Link>
 )
 
