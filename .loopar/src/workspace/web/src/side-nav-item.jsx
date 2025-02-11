@@ -1,7 +1,8 @@
 import React, {useEffect} from "react";
 import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
-import {useCookies} from "@services/cookie";
+import { useCookies } from "@services/cookie";
+import { activeBgLink, activeTextLink } from "../../defaults";
 
 import { DotFilledIcon, Cross1Icon } from "@radix-ui/react-icons";
 
@@ -25,9 +26,9 @@ export const SideNavItem = (props) => {
   };
 
   const linkProps = path ? external : {};
-  const activeBg = isChild ? '' : 'bg-secondary'
-  const activeClass = active ? `${activeBg} text-primary` : ``;
-  const activeText = active ? "text-primary" : "text-primary/60 hover:text-slate/60";
+  const activeBg = isChild ? '' : activeBgLink;
+  const activeClass = active ? `${activeBg}` : ``;
+  const activeText = active ? activeTextLink : "text-primary/60 hover:text-slate/60";
 
   const handleToggleCollapse = (e) => {
     e.preventDefault();
@@ -43,11 +44,12 @@ export const SideNavItem = (props) => {
   return (
     <>
       <Link
-        className={`w-full text-neutral-400 grow whitespace-nowrap font-sans text-[14px] font-semibold leading-6 no-underline ${activeClass} justify-between ${isChild ? 'border-l-2 rounded-l-none' : ''}`}
+        className={`w-full grow whitespace-nowrap text-[14px] leading-6 no-underline justify-between ${isChild ? 'border-l-2 rounded-l-none bg-transparent' : ''}`}
         to={`${path}`}
+        active={active}
       >
         <button
-          className={`transition-colors hover:text-foreground/80 text-foreground/60 ${activeText}`}  
+          className={`${activeText}`}  
           {...linkProps}
         >
           {Icon && <Icon className="mr-2"/> }

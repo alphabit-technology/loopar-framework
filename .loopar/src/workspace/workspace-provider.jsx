@@ -227,7 +227,6 @@ export function WorkspaceProvider({
     getDocuments: getDocuments,
     activePage: activePage,
     setDocument: setDocument
-    //webApp: props.webApp || {}
   }
 
   return (

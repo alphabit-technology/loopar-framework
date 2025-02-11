@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";
 
+import { activeBgLink, activeLink } from "@workspace/defaults";
+
 export const makeUrl = (href) => {
   if (href.startsWith("http") || href.startsWith("/")) return href;
 
@@ -113,10 +115,12 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
 
   const className = cn(
     buttonVariants({ variant, size }),
-    "justify-normal text-left text-primary cursor-pointer p-2",
+    "justify-normal cursor-pointer p-2",
+    activeLink(props.active || (active === to.split("#")[1] || (currentPage && (currentPage === to)))),
     props.className,
-    active === to.split("#")[1] ? "bg-red-600/50" : "",
-    currentPage && (currentPage === to) ? "bg-red-600/50" : ""
+    // active === to.split("#")[1] ? activeBgLink : "",
+    //currentPage && (currentPage === to) ? activeBgLink : "",
+    "text-left justify-between"  
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
@@ -129,7 +133,6 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
         className={className}
         href={to}
         target={props._target}
-        active
       >
         {children}
       </a>

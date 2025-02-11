@@ -16,7 +16,8 @@ export default function MetaSelect(props){
   const model = useRef(null);
   const lastSearch = useRef(null);
   
-  const { renderInput, value, data } = BaseInput(props);
+  const { renderInput, value, data, fieldControl } = BaseInput(props);
+  const [initialValue, setInitialValue] = useState(value());
 
   useEffect(() => {
     const val = value();
@@ -173,6 +174,17 @@ export default function MetaSelect(props){
   useEffect(() => {
     setSelected(currentOption(data.value));
   }, [data.value]);
+
+  // useEffect(() => {
+  //   setInitialValue(value());
+  // }, [value()]);
+
+  useEffect(() => {
+    const val = value();
+    if (val) {
+      setSelected(currentOption(val));
+    }
+  }, [fieldControl.current?.value]);
 
   return renderInput((field) => (
     <>

@@ -11,8 +11,7 @@ import {
 import { useWorkspace } from "@workspace/workspace-provider"
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useWorkspace();
-  //const themeIcon = theme === "dark" ? Moon : SunIcon;
+  const { setTheme } = useWorkspace();
   
   return (
     <DropdownMenu>

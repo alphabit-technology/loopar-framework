@@ -120,7 +120,6 @@ export function SideNav({sideMenuItems}) {
           <div className="absolute inset-0">
             <div
               className={"sticky top-web-header-height bottom-web-header-height left-0 max-h-[calc(100dvh-(var(--spacing)*14.25))] w-2xs overflow-y-auto p-2"}
-              // style={{overflowY: "auto"}}
             >
               <>
                 <SideNavRender menu={childMenuItems} />

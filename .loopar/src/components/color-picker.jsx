@@ -37,7 +37,7 @@ export default function ColorPicker(props) {
   useEffect(() => {
     setColor(getColor(value()));
     //setSelected(currentValue());
-  }, [data.value]);
+  }, [value()]);
 
   return renderInput((field) => {
     const rgbaSection = (color = "", index = 1) => parseInt(color.color.slice(index, index + 2), 16);
