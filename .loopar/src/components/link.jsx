@@ -120,9 +120,7 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
     "justify-normal cursor-pointer p-2",
     activeLink(isAsctive, activeClassName),
     props.className,
-    // active === to.split("#")[1] ? activeBgLink : "",
-    //currentPage && (currentPage === to) ? activeBgLink : "",
-    "text-left justify-between"  
+    //"text-left justify-between"  
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
