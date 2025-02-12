@@ -17,7 +17,9 @@ const initialState = {
   Documents: {},
   setDocuments: () => null,
   activePage: "",
-  setActivePage: () => null
+  setActivePage: () => null,
+  activeModule: "",
+  setActiveModule: () => null
 }
 
 export const WorkspaceProviderContext = createContext(initialState)
@@ -39,6 +41,7 @@ export function WorkspaceProvider({
   const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
   const [activePage, setActivePage] = useState(props.activePage || "");
+  const [activeModule, setActiveModule] = useState(null);
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
@@ -59,10 +62,10 @@ export function WorkspaceProvider({
     toMergeDocuments.forEach((Document) => {
       if (Document.__DOCUMENT__?.__ENTITY__) {
         Document.__DOCUMENT__.__ENTITY__.STRUCTURE ??= JSON.parse(Document.__DOCUMENT__.__ENTITY__.doc_structure);
-        // Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
-        //   Document.__DOCUMENT__.__ENTITY__.STRUCTURE,
-        //   Document.__DOCUMENT__.__DOCUMENT__
-        // );
+        Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
+          Document.__DOCUMENT__.__ENTITY__.STRUCTURE,
+          Document.__DOCUMENT__.__DOCUMENT__
+        );
       }
     });
 
@@ -190,13 +193,17 @@ export function WorkspaceProvider({
     const __DOCUMENT__ = getActiveDocument();
     if (!__DOCUMENT__) return;
 
-    const activeParentMenu = getActiveParentMenu();
+    const activeParentMenu = __DOCUMENT__.activeParentMenu || __DOCUMENT__.__ENTITY__?.name;
+    const module = (activeParentMenu !== "Module" ? __DOCUMENT__.__DOCUMENT__?.module || __DOCUMENT__.__MODULE__  || __DOCUMENT__.__ENTITY__?.module : null) || null;
 
     if (activeParentMenu) {
       const activeDocumentName = __DOCUMENT__?.__ENTITY__?.name;
       activeDocumentName && activeDocumentName != activePage && setActivePage(activeDocumentName);
     }
-  }, [Documents]);
+
+    setActiveModule(module)
+
+  }, [Documents, pathname]);
 
   const getTheme = () => {
     const theme = loopar.cookie.get(storageKey);
@@ -220,13 +227,14 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    getActiveParentMenu: getActiveParentMenu,
+    //getActiveParentMenu: getActiveParentMenu,
     activeParentMenu: getActiveParentMenu(),
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
     getDocuments: getDocuments,
     activePage: activePage,
-    setDocument: setDocument
+    setDocument: setDocument,
+    activeModule
   }
 
   return (

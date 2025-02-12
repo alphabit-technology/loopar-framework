@@ -32,7 +32,7 @@ export const makeUrl = (href) => {
   return `/${Object.values(urlObject).filter(e => e && e !== "").join("/")}${queryString ? "?" + queryString : ""}`;
 }
 
-export function Link({ to = "", variant = "link", size, children, notControlled, ...props }) {
+export function Link({ to = "", variant = "link", size, children, notControlled, activeClassName, ...props }) {
   const [called, setCalled] = useState(false);
   const url = makeUrl(to);
   const location = useLocation();
@@ -113,10 +113,12 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
     });
   }
 
+  const isAsctive = props.active || (active === to.split("#")[1] || (currentPage && (currentPage === to)));
+
   const className = cn(
     buttonVariants({ variant, size }),
     "justify-normal cursor-pointer p-2",
-    activeLink(props.active || (active === to.split("#")[1] || (currentPage && (currentPage === to)))),
+    activeLink(isAsctive, activeClassName),
     props.className,
     // active === to.split("#")[1] ? activeBgLink : "",
     //currentPage && (currentPage === to) ? activeBgLink : "",

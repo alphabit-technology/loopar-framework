@@ -47,6 +47,7 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
         active={treeIsActive}
         hasChildren={item.items.length > 0}
         isChild={isChild}
+        solid={webApp.solid}
       >
         {treeIsActive && (
           <div className={`pl-3 ${isChild ? '' : ''}`}>

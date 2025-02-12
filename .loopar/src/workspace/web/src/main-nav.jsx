@@ -12,12 +12,13 @@ export function MainNav() {
     md: "rounded-md",
     lg: "rounded-lg",
     full: "rounded-full",
-  }[webApp.rounded];
+  }[webApp.rounded] || "rounded-md";
 
+  const solid = webApp.solid;
   const Items = menuItems.filter((item) => !item.parent_menu).map((item, i) => {
     return (
       <Link
-        className={`transition-colors px-6 py-1 ${rounded}`}
+        className={`transition-colors px-6 py-1 ${rounded} ${!solid && 'focus:bg-transparent hover:bg-transparent bg-transparent'}`}
         active={activeParentMenu === item.page}
         key={item.id + i} 
         to={`/${item.link}`}

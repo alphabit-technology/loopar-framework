@@ -2,9 +2,10 @@ import React, {useEffect} from "react";
 import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { useCookies } from "@services/cookie";
-import { activeBgLink, activeTextLink } from "../../defaults";
+import { activeTextLink } from "../../defaults";
+import {cn} from "@/lib/utils";
 
-import { DotFilledIcon, Cross1Icon } from "@radix-ui/react-icons";
+import { DotFilledIcon } from "@radix-ui/react-icons";
 
 export const SideNavItem = (props) => {
   const {
@@ -15,19 +16,16 @@ export const SideNavItem = (props) => {
     active,
     hasChildren,
     isChild,
+    solid,
   } = props;
 
   const [open, setOpen] = useCookies(path, active);
 
   const external = {
     href: path,
-    //target: '_blank',
-    //rel: 'noopener noreferrer',
   };
 
   const linkProps = path ? external : {};
-  const activeBg = isChild ? '' : activeBgLink;
-  const activeClass = active ? `${activeBg}` : ``;
   const activeText = active ? activeTextLink : "text-primary/60 hover:text-slate/60";
 
   const handleToggleCollapse = (e) => {
@@ -38,13 +36,16 @@ export const SideNavItem = (props) => {
   
   useEffect(() => {
     !open && setOpen(active);
-    //setOpen((children && children.length > 0 || active) || activeParent);
   }, [active]);
 
   return (
     <>
       <Link
-        className={`w-full grow whitespace-nowrap text-[14px] leading-6 no-underline justify-between ${isChild ? 'border-l-2 rounded-l-none bg-transparent' : ''}`}
+        className={cn(
+          'w-full grow whitespace-nowrap text-[14px] leading-6 no-underline justify-between',
+          isChild && 'border-l-2 rounded-l-none bg-transparent',
+          !solid && 'focus:bg-transparent hover:bg-transparent bg-transparent',
+        )}
         to={`${path}`}
         active={active}
       >

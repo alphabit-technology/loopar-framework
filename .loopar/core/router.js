@@ -316,6 +316,7 @@ export default class Router {
       const action = params.action && params.action.length > 0 ? params.action : Controller.defaultAction;
       Controller.action = action;
       req.__WORKSPACE__.__DOCUMENT__ = await Controller.sendAction(action);
+      req.__WORKSPACE__.__DOCUMENT__.__MODULE__ = ref.__MODULE__
     }
 
     if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {

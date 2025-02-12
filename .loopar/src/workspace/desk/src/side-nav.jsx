@@ -3,7 +3,8 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import * as LucideIcons from "lucide-react";
-import {useId, useEffect} from "react";
+import { useId, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function SideNav({ items=[] }) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
@@ -64,10 +65,9 @@ export function SideNav({ items=[] }) {
   }, [])
 
   return (
-    <>
-      <div 
-        className={`fixed inset-0 z-50 overflow-y-auto duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-header-height ${openNav ? 'w-sidebar-width lg:w-sidebar-width p-2' : 'w-0 lg:w-collapse-sidebar-width'}`}
-      >
+    <div 
+      className={`fixed inset-0 z-50 duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-header-height ${openNav ? 'w-sidebar-width lg:w-sidebar-width' : 'w-0 lg:w-collapse-sidebar-width'}`}
+    >
         <div 
           className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}
           area-hidden 
@@ -88,25 +88,14 @@ export function SideNav({ items=[] }) {
               <path d="M0 0L10 10M10 0L0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
             </svg>
           </button>}
-          <div className="relative lg:text-sm lg:leading-6">
-            {openNav && <div className="pointer-events-none sticky top-0 -ml-0.5 hidden">
-              <div className="pointer-events-auto relative bg-white dark:bg-slate-900">
-                <button type="button" className="dark:highlight-white/5 hidden w-full items-center rounded-md py-1.5 pl-2 pr-3 text-sm leading-6 text-slate-400 shadow-sm ring-1 ring-slate-900/10 hover:ring-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 lg:flex">
-                  <svg width="24" height="24" fill="none" aria-hidden="true" className="mr-3 flex-none">
-                    <path d="m19 19-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></circle>
-                  </svg>
-                  Quick search...
-                  <span className="ml-auto flex-none pl-3 text-xs font-semibold">Ctrl K</span>
-                </button>
-              </div>
-            </div>}
-            <ul>
-              {sideNavItems}
-            </ul>
-          </div>
+        <div className="relative lg:text-sm lg:leading-6">
+        <ScrollArea className="h-[100vh]">
+          <ul className={`h-[calc(100vh-theme('spacing.header-height'))] flex flex-1 flex-col gap-y-5 border-t-2 border-t-slate-200/10 ${openNav ? 'px-2' : ''}`}>
+            {sideNavItems}
+          </ul>
+        </ScrollArea>
         </div>
       </div>
-    </>
+    </div>
   )
 }

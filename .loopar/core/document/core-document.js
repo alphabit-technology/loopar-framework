@@ -430,8 +430,9 @@ export default class CoreDocument {
       // ))
     }
 
-    const __ENTITY__ = entity;// this.__ENTITY__;
+    const __ENTITY__ = entity;
     delete __ENTITY__.__REF__;
+
     return {
       __ENTITY__: __ENTITY__,
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,

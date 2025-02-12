@@ -138,6 +138,7 @@ export class Loopar {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
               data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
               data.type = titleize(singularize(core.name));
+              data.__MODULE__ = module.name;
               //replace all - with space and titleize
               data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
 
@@ -186,6 +187,7 @@ export class Loopar {
           __APP__: doc.__APP__,
           __ID__: doc.id,
           __TYPE__: doc.type,
+          __MODULE__: doc.__MODULE__,
           __FIELDS__: getEntityFields(fields)
         }
       }
@@ -197,6 +199,7 @@ export class Loopar {
         __ROOT__: doc.entityRoot,
         is_single: isSingle,
         is_builder: isBuilder,
+        __MODULE__: doc.__MODULE__,
         __TYPE__: doc.type,
         __FIELDS__: getEntityFields(fields)
       }
