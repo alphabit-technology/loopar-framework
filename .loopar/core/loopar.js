@@ -1,11 +1,8 @@
 
 'use strict';
 
-
-import { access } from 'fs'
 import Knex from '../database/knex.js';
 import { GlobalEnvironment } from './global/element-definition.js';
-import { documentManage } from './document/document-manage.js';
 import path from "pathe";
 import { fileManage } from "./file-manage.js";
 import sha1 from "sha1";
@@ -15,15 +12,13 @@ import { simpleGit, CleanOptions } from 'simple-git';
 import { Session, Cookie } from "./session.js";
 import dayjs from "dayjs";
 import crypto from "crypto-js";
-import fs from "fs";
 import { getHttpError } from './global/http-errors.js';
-import inflection, { titleize, humanize, singularize } from "inflection";
-import { elementsDict } from "loopar";
 import * as lucideIcons from 'lucide-react'
 import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
+import { Document } from './loopar/document.js';
 
-export class Loopar {
+export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
@@ -99,161 +94,6 @@ export class Loopar {
     await this.setTailwind();
   }
 
-  getApps() {
-    const baseApps = this.getDirList(this.makePath(this.pathRoot, "apps")).map(app => {
-      return {
-        ...app,
-        appRoot: this.makePath("apps", app.name)
-      }
-    });
-    const coreApp = this.getDirList(this.makePath(this.pathRoot, ".loopar", "apps")).map(app => {
-      return {
-        ...app,
-        appRoot: this.makePath(".loopar", "apps", app.name)
-      }
-    });
-
-    return [...coreApp, ...baseApps];
-  }
-
-  getEntities(appName) {
-    return this.getApps().reduce((acc, app) => {
-      if (appName && !loopar.utils.compare(app.name, appName)) return acc;
-
-      const moduleRoot = this.makePath(this.pathRoot, app.appRoot, `modules`);
-      const modules = this.getDirList(moduleRoot);
-
-      modules.forEach(module => {
-        const coresRoot = path.resolve(`${moduleRoot}/${module.name}`);
-        const cores = this.getDirList(coresRoot) || [];
-
-        cores.forEach(core => {
-          const entitiesRoot = path.resolve(`${coresRoot}/${core.name}`);
-          const entities = this.getDirList(entitiesRoot);
-
-          entities.forEach(entity => {
-            let data = this.getFile(this.makePath(entitiesRoot, entity.name, entity.name) + ".json");
-
-            if (data) {
-              data = this.utils.isJSON(data) ? JSON.parse(data) : null;
-              data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
-              data.type = titleize(singularize(core.name));
-              data.__MODULE__ = module.name;
-              //replace all - with space and titleize
-              data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
-
-              acc.push(data);
-            } else {
-              console.log([`Entity [${entity.name}] not found`]);
-            }
-          });
-        });
-      });
-
-      return acc;
-    }, []);
-  }
-
-  entityIsSingle(ENT) {
-    return (["Page", "Form", "Report", "View", "Controller"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
-  }
-
-  async buildRefs() {
-    let types = {};
-    const docs = this.getEntities();
-
-    const getEntityFields = (fields) => {
-      const getFields = fields => fields.reduce((acc, field) => acc.concat(field, ...getFields(field.elements || [])), []);
-
-      return getFields(fields).filter(field => {
-        const def = elementsDict[field.element]?.def || {};
-        return def.isWritable && !!field.data.name// && !field.element.includes(FORM_TABLE);
-      }).map(field => field.data.name)
-    }
-
-    const refs = Object.values(docs).reduce((acc, doc) => {
-      if (doc.__document_status__ == "Deleted") return acc;
-      
-      const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
-      const isSingle = this.entityIsSingle(doc);
-      const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
-
-      if (isBuilder) {
-        types[doc.name] = {
-          __ROOT__: doc.entityRoot,
-          __NAME__: doc.name,
-          __ENTITY__: doc.__ENTITY__ || "Entity",
-          __BUILD__: doc.build || doc.name,
-          __APP__: doc.__APP__,
-          __ID__: doc.id,
-          __TYPE__: doc.type,
-          __MODULE__: doc.__MODULE__,
-          __FIELDS__: getEntityFields(fields)
-        }
-      }
-
-      acc[doc.name] = {
-        __NAME__: doc.name,
-        __APP__: doc.__APP__,
-        __ENTITY__: doc.__ENTITY__ || "Entity",
-        __ROOT__: doc.entityRoot,
-        is_single: isSingle,
-        is_builder: isBuilder,
-        __MODULE__: doc.__MODULE__,
-        __TYPE__: doc.type,
-        __FIELDS__: getEntityFields(fields)
-      }
-
-      return acc;
-    }, {});
-
-    await fileManage.setConfigFile('refs', {
-      types,
-      refs
-    });
-  }
-
-  getRef(entity, alls=true) {
-    return this.getRefs(null, alls)[entity];
-  }
-
-  getRefs(app, alls = false) {
-    const refs = fileManage.getConfigFile('refs', null, {}).refs;
-    const installedApps = alls ? [] : Object.keys(fileManage.getConfigFile('installed-apps')).map(
-      app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
-    );
-
-    const result = {};
-    for (const key in refs) {
-      if (Object.hasOwn(refs, key)) {
-        const ref = refs[key];
-
-        if (app && ref.__APP__ !== app) continue;
-
-        const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
-        if (alls || installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp)) {
-          result[ref.__NAME__] = ref;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  getType(type) {
-    return this.getTypes()[type];
-  }
-
-  getTypes(app) {
-    const types = fileManage.getConfigFile('refs', null, {}).types;
-
-    if (app) {
-      return Object.values(types).filter(type => type.__APP__ === app);
-    }
-
-    return types;
-  }
-
   async setTailwind(toElement, classes) {
     toElement && (this.tailwindClasses[toElement] = classes);
     let colector = "";
@@ -274,22 +114,6 @@ export class Loopar {
   }`
 
     await fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
-  }
-
-  eachAppsSync(fn) {
-    fs.readdirSync(this.makePath(this.pathRoot, "apps")).forEach(app => {
-      if (fs.lstatSync(this.makePath(this.pathRoot, "apps", app)).isDirectory()) {
-        fn(app);
-      }
-    });
-  }
-
-  getDirList(path) {
-    return fs.readdirSync(path, { withFileTypes: true });
-  }
-
-  getFile(path) {
-    return !fs.existsSync(path) ? null : fs.readFileSync(path, 'utf8');
   }
 
   async #loadConfig(data = null) {
@@ -443,26 +267,6 @@ export class Loopar {
     await this.server.vite.ws.send({ type: 'full-reload' });
   }
 
-  printMessage() {
-    console.log(`__________________________________________________________`);
-    console.log(...arguments);
-    console.log(`***********************************************************\n`);
-  }
-
-  printSuccess() {
-    console.log("\x1b[32m__________________________________________________________");
-    console.log(...arguments);
-    console.log(`\x1b[32m***********************************************************`);
-    console.log("\x1b[0m", "");
-  }
-
-  printError() {
-    console.log("\x1b[31m__________________________________________________________");
-    console.error(...arguments);
-    console.log(`\x1b[31m***********************************************************`);
-    console.log("\x1b[0m", "");
-  }
-
   async systemsSettings() {
     return await this.getDocument("System Settings");
   }
@@ -507,7 +311,6 @@ export class Loopar {
       }
     });
 
-    //global.__META_COMPONENTS__ = {};
     global.Crypto = crypto;
     global.AJAX = 'POST';
     global.env = {};
@@ -518,54 +321,6 @@ export class Loopar {
     env.dbConfig = fileManage.getConfigFile('db.config');
     env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
     env.serverConfig = fileManage.getConfigFile('server.config');
-  }
-
-  /**
-   * 
-   * @param {*} document DocumentType name
-   * @param {*} name Document name
-   * @param {*} data
-   * @param {*} ifNotFound
-   * @returns 
-   */
-  async getDocument(document, name, data = null, ifNotFound = 'throw') {
-    return await documentManage.getDocument(document, name, data, ifNotFound);
-  }
-
-  /**
-   * 
-   * @param {*} document 
-   * @param {*} data 
-   * @returns 
-   */
-  async newDocument(document, data = {}) {
-    return await documentManage.newDocument(document, data);
-  }
-
-  async deleteDocument(document, name, { sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
-    const Doc = await this.getDocument(document, name);
-    await Doc.delete({ sofDelete, force, updateHistory });
-  }
-
-  exist(path) {
-    return new Promise(res => {
-      access(path, (err) => {
-        return res(!err);
-      });
-    });
-  }
-
-  async getList(document, { data={}, fields=null, filters={}, orderBy='name', limit=10, offset=0, q=null, rowsOnly=false } = {}, ifNotFound = null) {
-    const doc = await this.newDocument(document, data);
-    return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
-  }
-
-  jsonParse(json) {
-    try {
-      return JSON.parse(json);
-    } catch (e) {
-      return {};
-    }
   }
 
   throw(error, redirect = null) {
@@ -600,46 +355,10 @@ export class Loopar {
 
   get currentUser() {
     try {
-      return jwt.verify(loopar.cookie.get('auth_token'), 'user-auth');
+      return jwt.verify(this.cookie.get('auth_token'), 'user-auth');
     } catch (error) {
       return {};
     }
-  }
-
-  async appStatus(appName) {
-    return await loopar.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
-  }
-
-  async unInstallApp(appName) {
-    if (this.installing) return;
-    const installerRoute = this.makePath('apps', appName, 'installer.js');
-
-    const installer = await fileManage.importClass(installerRoute, () => {
-      this.throw(`App ${appName} does not have an installer`);
-    });
-
-    const Installer = new installer({ app_name: appName });
-    return await Installer.unInstall();
-  }
-
-  async getApp(appName) {
-    if (await this.appStatus(appName) === 'installed') {
-      return await loopar.db.getDoc('App', appName);
-    } else {
-      return null;
-    }
-  }
-
-  makePath(...args) {
-    let pathArray = args;
-
-    if (!args[0].startsWith("./")) {
-      pathArray = ["/", ...args];
-    }
-
-    const joinedPath = path.join(...pathArray);
-
-    return loopar.utils.decamelize(joinedPath, { separator: '-' });
   }
 
   async getSettings() {

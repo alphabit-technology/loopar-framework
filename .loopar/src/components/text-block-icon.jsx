@@ -31,16 +31,21 @@ export default function TextBlockIcon(props) {
 
   return (
     <div className="flex gap-2 py-3 pb-4">
-      <div className={`flex ${orientation == "Horizontal" ? "flex-row justify-items-center" : "flex-col"} gap-2`}>
-        <div className={`${orientation == "Horizontal" ? iconSizeContainer : "w-full"} justify-items-center items-top rounded-3`}>
-          <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-2">
+      <div className={cn(
+        `flex ${orientation == "Horizontal" ? "flex-col justify-items-center" : "flex-col"} gap-2`
+      )}>
+        <div
+          className={"flex gap-2 items-center"}
+        >
+          <div className={`rounded-full ${iconSize} bg-gray-100 dark:bg-gray-800`}>
             <Icon className={`${iconSize}`} data={{ icon: data.icon }} />
           </div>
-        </div>
-        <div className="items-top">
           <div className={`font-bold text-2xl mb-2 ${orientation == "Vertical" ? "text-center" : ""}`}>
             {data.title}
           </div>
+        </div>
+        <div className="items-top">
+          
           <Paragraph
             alignment={orientation == "Vertical" ? "center" : "left"}
             textSize= {data.text_size || "xl"}

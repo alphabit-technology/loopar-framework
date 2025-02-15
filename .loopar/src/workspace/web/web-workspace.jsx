@@ -40,7 +40,7 @@ const Layout = (({ ...props }) => {
     : 'grid-cols-1 w-full';
 
   const className = `grid min-h-dvh w-full grid-rows-[1fr_auto] pt-web-header-height ${containerClass}`;
-  const itemClass = `relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`;
+  //const itemClass = `relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`;
 
   return (
     <div className="vaul-drawer-wrapper flex flex-col min-h-screen">

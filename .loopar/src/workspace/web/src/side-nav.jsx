@@ -18,7 +18,7 @@ const getActive = (item, activePage) => {
 }
 
 const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
-  const { webApp, activePage, activeParentMenu } = useWorkspace();
+  const { webApp, activePage } = useWorkspace();
   const menuItems = webApp.menu_items;
 
   const getParentLink = (parentLink) => {

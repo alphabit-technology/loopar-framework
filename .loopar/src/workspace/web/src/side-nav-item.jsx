@@ -2,7 +2,6 @@ import React, {useEffect} from "react";
 import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { useCookies } from "@services/cookie";
-import { activeTextLink } from "../../defaults";
 import {cn} from "@/lib/utils";
 
 import { DotFilledIcon } from "@radix-ui/react-icons";
@@ -26,7 +25,6 @@ export const SideNavItem = (props) => {
   };
 
   const linkProps = path ? external : {};
-  const activeText = active ? activeTextLink : "text-primary/60 hover:text-slate/60";
 
   const handleToggleCollapse = (e) => {
     e.preventDefault();
@@ -42,7 +40,7 @@ export const SideNavItem = (props) => {
     <>
       <Link
         className={cn(
-          'w-full grow whitespace-nowrap text-[14px] leading-6 no-underline justify-between',
+          'w-full grow whitespace-nowrap leading-6 justify-between',
           isChild && 'border-l-2 rounded-l-none bg-transparent',
           !solid && 'focus:bg-transparent hover:bg-transparent bg-transparent',
         )}
@@ -50,7 +48,6 @@ export const SideNavItem = (props) => {
         active={active}
       >
         <button
-          className={`${activeText}`}  
           {...linkProps}
         >
           {Icon && <Icon className="mr-2"/> }

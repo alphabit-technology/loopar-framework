@@ -89,11 +89,9 @@ export function SideNav({ items=[] }) {
             </svg>
           </button>}
         <div className="relative lg:text-sm lg:leading-6">
-        <ScrollArea className="h-[100vh]">
-          <ul className={`h-[calc(100vh-theme('spacing.header-height'))] flex flex-1 flex-col gap-y-5 border-t-2 border-t-slate-200/10 ${openNav ? 'px-2' : ''}`}>
+          <ul className={`overflow-auto h-[calc(100vh-theme('spacing.header-height'))] flex flex-1 flex-col gap-y-5 border-t-2 border-t-slate-200/10 ${openNav ? 'px-2' : ''}`}>
             {sideNavItems}
           </ul>
-        </ScrollArea>
         </div>
       </div>
     </div>

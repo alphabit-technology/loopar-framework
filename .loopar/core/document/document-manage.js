@@ -1,6 +1,5 @@
 import { loopar } from 'loopar';
 import { fileManage } from "../file-manage.js";
-import { array } from 'zod';
 
 class DocumentManage {
   constructor(props) {
@@ -12,8 +11,7 @@ class DocumentManage {
     const databaseData = await loopar.db.getDoc(ENTITY, name, ENTITY.__REF__.__FIELDS__);
 
     if (databaseData) {
-      data = Object.assign(databaseData, data || {});
-      return await this.newDocument(document, data, name);
+      return await this.newDocument(document, {...databaseData, ...(data || {})}, name);
     } else {
       if (ifNotFound === 'new') {
         return await this.newDocument(document, data, name);
