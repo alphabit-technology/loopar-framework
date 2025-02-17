@@ -17,7 +17,7 @@ const appSources = Object.entries(import.meta.glob([
   '/.loopar/apps/core/modules/**/**/**/client/*.jsx',
   '/.loopar/src/context/*.jsx',
 ])).reduce((acc, [path, module]) => {
-  acc['app/' + path.split('/').pop().replace('.jsx', '')] = module;
+  acc[path.split('/').pop().replace('.jsx', '')] = module;
   return acc;
 }, {});
 
