@@ -93,8 +93,7 @@ export default class CoreController extends AuthController {
     const document = __DOCUMENT__.__ENTITY__.name;
 
     return {
-      context: `${this.context}-context`,
-      client: `app/${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
+      client: `${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
     }
   }
 
