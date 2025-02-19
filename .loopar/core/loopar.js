@@ -345,12 +345,12 @@ export class Loopar extends Document {
   }
 
   async disabledUser(user_id) {
-    if ((!this.__installed__ && this.installing) || user_id === "Administrator") return false;
+    if (!this.__installed__ && this.installing && user_id === "Administrator") return false;
 
-     const status = await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
+    const status = await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
       .select('disabled').first();
     
-    return !status || !status.disabled;
+    return !status || status.disabled;
   }
 
   get currentUser() {

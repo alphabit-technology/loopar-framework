@@ -27,10 +27,12 @@ export default class Auth {
 
   async award() {
     const token = this.cookie.get('auth_token');
+
     if (!token) return this.killSession();
 
     try {
       const userData = jwt.verify(token, 'user-auth', { ignoreExpiration: true });
+
       if(await this.disabledUser(userData?.name)) return this.killSession();
 
       const now = Math.floor(Date.now() / 1000);

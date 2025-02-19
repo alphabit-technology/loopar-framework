@@ -1,5 +1,4 @@
 import { loopar } from "loopar";
-import jwt from 'jsonwebtoken';
 
 export default class AuthController {
   loginActions = ['login', 'register', 'recovery_user', 'recovery_password'];
@@ -9,7 +8,6 @@ export default class AuthController {
   }
 
   __execute() {
-    const [req, res] = [this.req, this.res];
     const action = this.action;
     const data = this.data;
 
@@ -25,7 +23,7 @@ export default class AuthController {
     const workspace = this.req.__WORKSPACE_NAME__;
 
     const resolve = (message, url) => {
-      return loopar.throw(message, this.method !=  AJAX && url || "/auth/login")
+      return loopar.throw(message, this.method != AJAX && url || "/auth/login")
     }
 
     if(this.actionsEnabled && !this.actionsEnabled.includes(action)) return resolve('Not permitted');
@@ -44,6 +42,8 @@ export default class AuthController {
       if (user.name !== 'Administrator' && user.disabled) {
         resolve('Not permitted');
       }
+
+      return true;
     } else {
       if (workspace == "desk") return resolve('You must be logged in to access this page', "/auth/login");
       

@@ -7320,7 +7320,7 @@ longest-streak@^3.0.0:
   integrity sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==
 
 "loopar@file:.loopar":
-  version "2.0.0"
+  version "2.0.3"
 
 loose-envify@^1.4.0:
   version "1.4.0"
