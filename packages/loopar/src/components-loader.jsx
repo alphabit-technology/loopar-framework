@@ -2,7 +2,7 @@ const __META_COMPONENTS__ = {};
 import loopar from "loopar";
 import {MetaComponents} from "@global/require-components";
 
-const components = Object.entries(import.meta.glob(['/.loopar/src/components/*.jsx'])).reduce((acc, [path, module]) => {
+const components = Object.entries(import.meta.glob(['./components/*.jsx'])).reduce((acc, [path, module]) => {
   acc['src/' + path.split('/').pop().replace('.jsx', '')] = module;
   return acc;
 }, {});

@@ -19,33 +19,33 @@ const makeComponentToAlias = (dir) => {
   });
 }
 
-makeComponentToAlias(`${framework}/.loopar/src/components`);
+makeComponentToAlias(`${framework}/packages/loopar/src/components`);
 
-const groupSRCAlias = fs.readdirSync(`${framework}/.loopar/src`).reduce((acc, name) => {
-  if (fs.lstatSync(path.resolve(framework, `${framework}/.loopar/src`, name)).isDirectory()) {
-    acc[`@${name}`] = path.resolve(framework, `${framework}/.loopar/src`, name);
+const groupSRCAlias = fs.readdirSync(`${framework}/packages/loopar/src`).reduce((acc, name) => {
+  if (fs.lstatSync(path.resolve(framework, `${framework}/packages/loopar/src`, name)).isDirectory()) {
+    acc[`@${name}`] = path.resolve(framework, `${framework}/packages/loopar/src`, name);
   } else {
     if (name.split(".")[0].length > 0 && name.split(".")[0] != 'index' && ['jsx', 'tsx'].includes(name.split(".")[1])) {
-      acc[`@${name.split(".")[0]}`] = path.resolve(framework, `${framework}/.loopar/src`, name);
+      acc[`@${name.split(".")[0]}`] = path.resolve(framework, `${framework}/packages/loopar/src`, name);
     }
   }
   return acc;
 }, {});
 
 
-const groupComponentsAlias = fs.readdirSync(`${framework}/.loopar/src/components`).reduce((acc, name) => {
-  if (fs.lstatSync(path.resolve(`${framework}/.loopar/src/components`, name)).isDirectory()) {
-    acc[`@@${name}`] = path.resolve(framework, `${framework}/.loopar/src/components`, name);
+const groupComponentsAlias = fs.readdirSync(`${framework}/packages/loopar/src/components`).reduce((acc, name) => {
+  if (fs.lstatSync(path.resolve(`${framework}/packages/loopar/src/components`, name)).isDirectory()) {
+    acc[`@@${name}`] = path.resolve(framework, `${framework}/packages/loopar/src/components`, name);
   } else {
     if(name.split(".")[0].length > 0) {
-      acc[`@${name.split(".")[0]}`] = path.resolve(framework, `${framework}/.loopar/src/components`, name);
+      acc[`@${name.split(".")[0]}`] = path.resolve(framework, `${framework}/packages/loopar/src/components`, name);
     }
   }
   return acc;
 }, {});
 
 
-const loopar = '.loopar';
+const loopar = 'node_modules/loopar';
 export default defineConfig(({ command }) => ({
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', 'd.ts'],

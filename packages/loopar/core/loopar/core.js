@@ -13,10 +13,12 @@ export class Core {
         appRoot: this.makePath("apps", app.name)
       }
     });
-    const coreApp = this.getDirList(this.makePath(this.pathRoot, ".loopar", "apps")).map(app => {
+
+    const pathCore = this.pathCore.split(this.pathRoot).pop();
+    const coreApp = this.getDirList(this.makePath(this.pathRoot, pathCore, "apps")).map(app => {
       return {
         ...app,
-        appRoot: this.makePath(".loopar", "apps", app.name)
+        appRoot: this.makePath(pathCore, "apps", app.name)
       }
     });
 

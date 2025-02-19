@@ -14,8 +14,8 @@ const Fallback = () => (
 
 const appSources = Object.entries(import.meta.glob([
   '/apps/**/modules/**/**/**/client/*.jsx',
-  '/.loopar/apps/core/modules/**/**/**/client/*.jsx',
-  '/.loopar/src/context/*.jsx',
+  '../apps/core/modules/**/**/**/client/*.jsx',
+  './context/*.jsx',
 ])).reduce((acc, [path, module]) => {
   acc[path.split('/').pop().replace('.jsx', '')] = module;
   return acc;
