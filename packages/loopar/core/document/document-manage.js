@@ -1,5 +1,6 @@
 import { loopar } from 'loopar';
 import { fileManage } from "../file-manage.js";
+import { renderMarkdownSSR } from "markdownt";
 
 class DocumentManage {
   constructor(props) {
@@ -7,7 +8,7 @@ class DocumentManage {
   }
 
   async getDocument(document, name, data = null, ifNotFound = 'throw') {
-    const ENTITY = this.#GET_ENTITY(document);
+    const ENTITY = await this.#GET_ENTITY(document);
     const databaseData = await loopar.db.getDoc(ENTITY, name, ENTITY.__REF__.__FIELDS__);
 
     if (databaseData) {
@@ -26,9 +27,10 @@ class DocumentManage {
   }
 
   async newDocument(document, data = {}, name) {
-    const ENTITY = this.#GET_ENTITY(document);
+    const ENTITY = await this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
-    const spacing = loopar.__installed__ ? await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
+    const spacing = loopar.__installed__ ? 
+      await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
 
     const instance = await new DOCUMENT({
       __ENTITY__: ENTITY,
@@ -42,7 +44,7 @@ class DocumentManage {
     return instance;
   }
 
-  #GET_ENTITY(document) {
+  async #GET_ENTITY(document) {
     const throwError = (type) => {
       loopar.throw({
         code: 404,
@@ -63,27 +65,35 @@ class DocumentManage {
 
     if (ENTITY.doc_structure) {
       if (Array.isArray(ENTITY.doc_structure)) {
-        ENTITY.doc_structure = JSON.stringify(ENTITY.doc_structure)
+        ENTITY.doc_structure = JSON.stringify(ENTITY.doc_structure);
       }
+
+      ENTITY.doc_structure = JSON.stringify(
+        await this.parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure))
+      );
     }
+
 
     ENTITY.is_single ??= ref.is_single;
     ENTITY.__REF__ = ref;
     return ENTITY;
   }
 
-  parseDocStructure(doc_structure) {
-    return doc_structure.map(field => {
-      //field.data.value = field.element === MARKDOWN ? marked.parse(field.data.value) : field.data.value;
+  async parseDocStructure(doc_structure) {
+    return Promise.all(
+      doc_structure.map(async (field) => {
+        if (field.element === MARKDOWN) {
+          field.data.value = await renderMarkdownSSR(field.data.value);
+        }
 
-      if (field.elements) {
-        field.elements = this.parseDocStructure(field.elements);
-      }
+        if (field.elements) {
+          field.elements = await this.parseDocStructure(field.elements);
+        }
 
-      return field;
-    });
+        return field;
+      })
+    );
   }
-
 
   async #importDocument(ENTITY) {
     const documentPathFile = loopar.makePath(ENTITY.__REF__.__ROOT__, `${ENTITY.name}.js`);

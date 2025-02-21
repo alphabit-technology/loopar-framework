@@ -31,9 +31,6 @@ config
 # turbo
 .turbo
 
-#vscode
-.vscode
-
 #dist
 dist
 
@@ -43,6 +40,7 @@ dist
 # ides
 .idea
 .env.dist
+.vscode
 
 #uploads
 public/uploads
@@ -55,5 +53,3 @@ public/js/components
 
 #path
 /path
-
-!/.loopar/apps

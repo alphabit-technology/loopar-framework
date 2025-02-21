@@ -48,15 +48,18 @@ export function requireComponents(__META__) {
   const ENTITY = __DOCUMENT__?.__ENTITY__ || {};
   const DOCUMENT = __DOCUMENT__?.__DOCUMENT__ || {};
 
+  const entityDocStructure = JSON.parse(ENTITY.doc_structure || "[]");
+  const documentDocStructure = JSON.parse(DOCUMENT.doc_structure || "[]");
+
   if (action === "list") {
     return [
-      ...filterByWritable(JSON.parse(ENTITY.doc_structure || "[]")),
-      ...filterByWritable(JSON.parse(DOCUMENT.doc_structure || "[]"))
+      ...filterByWritable(Array.isArray(entityDocStructure) ? entityDocStructure : []),
+      ...filterByWritable(Array.isArray(documentDocStructure) ? documentDocStructure : [])
     ];
   } else {
     return [
-      ...JSON.parse(ENTITY.doc_structure || "[]"),
-      ...JSON.parse(DOCUMENT.doc_structure || "[]")
+      ...(Array.isArray(entityDocStructure) ? entityDocStructure : []),
+      ...(Array.isArray(documentDocStructure) ? documentDocStructure : []),
     ];
   }
 }

@@ -178,9 +178,6 @@ function JSONstringify(obj) {
 
 function JSONparse(obj, ifNotValid) {
   return isJSON(obj) ? JSON.parse(obj) : ifNotValid || null;
-  const text = fixJSON(obj);
-
-  return typeof obj == "object" ? obj : JSON.parse(fixJSON(obj));
 }
 
 function randomString(length = 15) {

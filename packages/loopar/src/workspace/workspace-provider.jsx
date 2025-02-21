@@ -62,6 +62,9 @@ export function WorkspaceProvider({
     toMergeDocuments.forEach((Document) => {
       if (Document.__DOCUMENT__?.__ENTITY__) {
         Document.__DOCUMENT__.__ENTITY__.STRUCTURE ??= JSON.parse(Document.__DOCUMENT__.__ENTITY__.doc_structure);
+        if(Array.isArray(Document.__DOCUMENT__.__ENTITY__.STRUCTURE)) {} else{
+          console.log([Document.__DOCUMENT__, "Document.__DOCUMENT__.__ENTITY__.STRUCTURE", Document.__DOCUMENT__.__ENTITY__.STRUCTURE]);
+        }
         Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
           Document.__DOCUMENT__.__ENTITY__.STRUCTURE,
           Document.__DOCUMENT__.__DOCUMENT__

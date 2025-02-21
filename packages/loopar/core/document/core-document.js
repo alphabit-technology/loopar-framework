@@ -386,7 +386,7 @@ export default class CoreDocument {
       }
     }
 
-    if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
+    //if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
 
     const __DOCUMENT__ = await this.values();
       

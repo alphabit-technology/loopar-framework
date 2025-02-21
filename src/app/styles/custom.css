@@ -52,3 +52,26 @@
 [data-radix-popper-content-wrapper] {
   pointer-events: all !important;
 }
+
+.alert {
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-left: 5px solid;
+  background-color: #f9f9f9;
+}
+
+.alert-note {
+  border-color: #0366d6;
+  background-color: #f0f8ff;
+}
+
+.alert-important {
+  border-color: #d73a49;
+  background-color: #fff5f5;
+}
+
+.alert-warning {
+  border-color: #ffab00;
+  background-color: #fff8e1;
+}
