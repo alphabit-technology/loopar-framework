@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { __META_COMPONENTS__ } from "@components-loader";
+import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
 import { useDroppable } from "@context/@/droppable-context";

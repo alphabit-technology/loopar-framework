@@ -1,4 +1,4 @@
-import { Entity } from '@loader';
+import { Entity } from '@loopar/loader';
 import {useEffect, useState} from 'react';
 
 export function DirectPreview({ name, action, entityName }) {

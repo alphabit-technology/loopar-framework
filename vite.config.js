@@ -1,2 +1,2 @@
-import viteConfig from "./packages/vite-env/vite.config.js";
+import viteConfig from "vite-env";
 export default viteConfig;

@@ -1,10 +1,10 @@
 import React from "react";
 import {renderToString } from "react-dom/server";
-import App from "@app";
+import App from "@/App";
 import { StaticRouter } from "react-router";
-import { Loader } from "@loader";
+import { Loader } from "@loopar/loader";
 import {ServerCookiesManager} from '@services/cookie';
-import { __META_COMPONENTS__ } from "@components-loader";
+import { __META_COMPONENTS__ } from "@loopar/components-loader";
 
 const Main = ({ Workspace, Document, url, context, __META__, req, res }) => {
   const cookieManager = new ServerCookiesManager(req, res);

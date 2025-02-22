@@ -2,15 +2,17 @@ import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
 import ComponentDefaults from "./base/component-defaults";
 import { loopar } from "loopar";
-import { useEffect, useState, useRef, useId } from "react";
+import { useEffect, useState, useRef } from "react";
 import Emitter from '@services/emitter/emitter';
 import { cn } from "@/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
-const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";
+import { useDesigner } from "@context/@/designer-context";
 import _ from "lodash";
 import elementManage from "@tools/element-manage"; 
+
+const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
@@ -19,6 +21,7 @@ export default function Row(props) {
   const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();
   const prevElementsRef = useRef(props.elements);
+  const {designing} = useDesigner();
 
   const conciliateCols = () => {
     const addCols = [
@@ -83,7 +86,8 @@ export default function Row(props) {
           className={cn(
             '@container',
             `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
-            'grid-container dynamic box-border'
+            'grid-container dynamic box-border',
+            designing && 'overflow-x-auto'
           )}
           style={{
             "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,

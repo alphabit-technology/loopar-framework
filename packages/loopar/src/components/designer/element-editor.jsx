@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { __META_COMPONENTS__ } from "@components-loader";
+import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
 import Tabs from "@tabs";

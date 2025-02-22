@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
-import { __META_COMPONENTS__, ComponentsLoader } from "@components-loader";
+import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@/lib/utils";
 import { useDocument } from "@context/@/document-context";

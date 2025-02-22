@@ -1,5 +1,5 @@
 {
-  "name": "markdown-env",
+  "name": "markdown",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
@@ -18,7 +18,7 @@
     "@uiw/react-codemirror": "^4.23.8",
     "@uiw/react-markdown-editor": "^6.1.2",
     "@uiw/react-markdown-preview": "^5.1.3",
-    "@uiw/codemirror-extensions-basic-setup": "^4.23.8",
+    "@uiw/codemirror-extensions-basic-setup": "^4.23.8"
   }
 }
 

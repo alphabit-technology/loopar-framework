@@ -2,7 +2,7 @@ import path from 'pathe';
 import fs from 'fs';
 import { build } from 'vite';
 
-const selfRoute = path.resolve(process.cwd(), "packages/markdownt");
+const selfRoute = path.resolve(process.cwd(), "packages/markdown");
 const distPath = path.resolve(selfRoute, "dist/ssr");
 
 if (!fs.existsSync(distPath)) {

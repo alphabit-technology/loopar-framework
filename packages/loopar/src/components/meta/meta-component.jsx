@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from "react";
-import { __META_COMPONENTS__, ComponentsLoader } from "@components-loader";
+import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 import { useDesigner } from "@context/@/designer-context";
 import { DesignElement } from "./src/DesignElement.jsx";
 import { Meta } from "./src/Meta.jsx"
