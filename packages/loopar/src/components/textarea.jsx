@@ -4,8 +4,8 @@ import {
   FormDescription,
   FormLabel,
   FormMessage
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea"
+} from "@cn/components/ui/form";
+import { Textarea } from "@cn/components/ui/textarea"
 
 export default function TextArea(props) {
   const { renderInput, data } = BaseInput(props);

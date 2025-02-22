@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import fileManager, {getExtention} from "./file-manager";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 import { fileIcons } from "./defaults";
 import { FallbackFile } from "./fallback-file";
 

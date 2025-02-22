@@ -2,7 +2,7 @@ import { Modal } from "@dialog";
 import loopar from "loopar";
 import FileInput from "@file-input";
 import { FormWrapper } from "@context/form";
-import { Button } from "@/components/ui/button";
+import { Button } from "@cn/components/ui/button";
 import { UploadIcon } from "lucide-react";
 import { useState } from "react";
 

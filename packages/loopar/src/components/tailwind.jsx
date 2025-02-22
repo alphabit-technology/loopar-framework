@@ -6,8 +6,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea"
+} from "@cn/components/ui/form";
+import { Textarea } from "@cn/components/ui/textarea"
 import loopar from "loopar";
 
 let timerId;

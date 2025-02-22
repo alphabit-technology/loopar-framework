@@ -1,4 +1,4 @@
-import {Button} from "@/components/ui/button";
+import {Button} from "@cn/components/ui/button";
 import {useDocument} from "@context/@/document-context";
 import loopar from "loopar";
 

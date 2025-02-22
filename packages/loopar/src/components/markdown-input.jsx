@@ -5,7 +5,7 @@ import {
   FormControl,
   FormDescription,
   FormLabel,
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 import "easymde/dist/easymde.min.css";
 import "./markdown/markdown.css"

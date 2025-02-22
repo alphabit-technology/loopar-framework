@@ -4,9 +4,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@cn/components/ui/card"
 import {Droppable} from "@droppable";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 import loopar from "loopar";
 
 export default function Card(props) {

@@ -1,7 +1,7 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import { Cross1Icon } from "@radix-ui/react-icons";
 import { Item } from "@radix-ui/react-context-menu";
 

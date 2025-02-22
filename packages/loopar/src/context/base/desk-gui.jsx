@@ -2,9 +2,9 @@ import React from "react";
 import {AppBarr} from "@context/base/app-barr";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { MoreVertical } from "lucide-react";
-import {Button} from "@/components/ui/button";
+import {Button} from "@cn/components/ui/button";
 import { useDocument } from "@context/@/document-context";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 
 const InnerSidebar = ({ toggleSidebar, sidebarWidth, ...props }) => {  
   return (

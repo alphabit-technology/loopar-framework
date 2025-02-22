@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback} from "react";
 import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@cn/lib/utils";
+import { Button } from "@cn/components/ui/button";
 
 import {
   Command,
@@ -9,13 +9,13 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command"
+} from "@cn/components/ui/command"
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@cn/components/ui/popover"
 
 export function Select({ search, data, onSelect, options = [], selected={} }) {
   const [open, setOpen] = useState(false);

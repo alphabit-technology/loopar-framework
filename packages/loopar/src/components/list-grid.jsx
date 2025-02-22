@@ -5,7 +5,7 @@ import {Link} from "@link";
 import {
   Avatar,
   AvatarFallback
-} from "@/components/ui/avatar"
+} from "@cn/components/ui/avatar"
 
 export class ListGrid extends BaseTable {
   isWritable = false;

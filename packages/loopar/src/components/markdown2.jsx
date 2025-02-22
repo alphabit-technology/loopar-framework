@@ -91,7 +91,7 @@ import React, { useCallback, useState} from "react";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import MarkdownEditor from "@uiw/react-markdown-editor";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export function Preview({ source }) {

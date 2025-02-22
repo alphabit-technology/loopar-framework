@@ -6,7 +6,7 @@ import * as z from "zod"
 import {
   Form,
   FormControl
-} from "@/components/ui/form"
+} from "@cn/components/ui/form"
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -14,7 +14,7 @@ const formSchema = z.object({
   }),
 })
 
-export function FormWrapper(props:any = {}) {
+export function FormWrapper(props: any = {}) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -22,7 +22,7 @@ export function FormWrapper(props:any = {}) {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {}
+  function onSubmit(values: z.infer<typeof formSchema>) { }
 
   return (
     <Form {...form}>

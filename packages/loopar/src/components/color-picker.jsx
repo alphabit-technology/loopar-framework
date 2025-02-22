@@ -7,7 +7,7 @@ import {
   FormControl,
   FormDescription,
   FormLabel,
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 export default function ColorPicker(props) {
   const { renderInput, data, value } = BaseInput(props);

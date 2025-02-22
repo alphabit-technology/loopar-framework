@@ -1,6 +1,6 @@
 import { Droppable } from "@droppable";
 import { useDesigner } from "@context/@/designer-context";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import {useRowContext} from "./row/RowContext"
 
 export default function Col(props) {

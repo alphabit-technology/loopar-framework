@@ -1,5 +1,5 @@
 import Preassembled from "@preassembled";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 
 export default function MetaBanner(props) {
   const data = props.data || {};

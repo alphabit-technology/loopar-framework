@@ -60,7 +60,7 @@ export default class WorkspaceController extends AuthController {
       template = fs.readFileSync("dist/client/main.html", 'utf-8');
     }else{
       const vite = loopar.server.vite;
-      const { render } = await vite.ssrLoadModule(_p("src/entry-server.jsx"));
+      const { render } = await vite.ssrLoadModule(_p("app/entry-server.jsx"));
       HTML = await render(url, __META__, this.req, this.res);
       template = await vite.transformIndexHtml(url, fs.readFileSync(_p("main.html"), 'utf-8'));
     }

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import PureHTMLBlock from "@pure-html-block";
 import {Animations } from "./meta";

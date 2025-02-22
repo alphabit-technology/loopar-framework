@@ -4,14 +4,13 @@ import {MetaComponent} from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
 import { DesignerContext } from "@context/@/designer-context";
-import { useDocument } from "@context/@/document-context";
 import { AlertTriangleIcon } from "lucide-react";
 
 import elementManage from "@tools/element-manage";
 import loopar from "loopar";
 
 
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@cn/components/ui/checkbox"
 
 import {
   Table,
@@ -22,10 +21,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@cn/components/ui/table"
 
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@cn/components/ui/button";
 
 class FormTableClass extends BaseTable {
   hasFooterOptions = true;

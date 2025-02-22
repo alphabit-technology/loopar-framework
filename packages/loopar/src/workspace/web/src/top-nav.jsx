@@ -1,4 +1,4 @@
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@cn/components/ui/button"
 import { MainNav } from "./main-nav"
 import { ThemeToggle } from "@workspace/theme-toggle"
 import {BaseIcon} from "@base-icons";

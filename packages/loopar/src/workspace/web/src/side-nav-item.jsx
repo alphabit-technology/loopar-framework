@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { useCookies } from "@services/cookie";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 
 import { DotFilledIcon } from "@radix-ui/react-icons";
 

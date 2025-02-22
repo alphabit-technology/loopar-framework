@@ -4,7 +4,7 @@ import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import * as LucideIcons from "lucide-react";
 import { useId, useEffect } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@cn/components/ui/scroll-area";
 
 export function SideNav({ items=[] }) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();

@@ -2,22 +2,22 @@ import BaseInput from "@base-input";
 import dayjs from "dayjs";
 import { format } from 'date-fns';
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@cn/lib/utils"
+import { Button } from "@cn/components/ui/button"
+import { Calendar } from "@cn/components/ui/calendar"
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@cn/components/ui/form"
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@cn/components/ui/popover"
 
 import { CalendarIcon } from "lucide-react";
 

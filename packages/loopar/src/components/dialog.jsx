@@ -1,10 +1,8 @@
 import React, { useRef, useId } from "react";
 import loopar from "loopar";
-import {Button} from "@/components/ui/button";
-import { AlertCircle, InfoIcon, TriangleIcon, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils"
-
-//global.dialogsCount ??= 0;
+import {Button} from "@cn/components/ui/button";
+import { AlertCircle, InfoIcon, HelpCircle } from "lucide-react";
+import { cn } from "@cn/lib/utils"
 
 import {
   Dialog,
@@ -12,13 +10,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "@cn/components/ui/dialog"
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@cn/components/ui/label";
+import { Textarea } from "@cn/components/ui/textarea";
 
 const Icon = ({type, size, ...props}) => {
   const icons = {

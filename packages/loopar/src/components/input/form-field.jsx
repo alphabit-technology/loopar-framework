@@ -4,7 +4,7 @@ import React from "react";
 
 import {
   FormField as BaseFormField,
-} from "@/components/ui/form"
+} from "@cn/components/ui/form"
 
 export const FormField = ({ render, onChange, ...props }) => {
   const { designerMode } = useDesigner();

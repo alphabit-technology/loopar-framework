@@ -1,6 +1,6 @@
 
 import { useDesigner } from "@context/@/designer-context";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 
 export const gridLayouts = [
   [100],               // One column, full width (100%)

@@ -4,7 +4,7 @@ import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
 import Tabs from "@tabs";
 import {MetaComponent} from "@@meta/meta-component";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@cn/components/ui/separator";
 import Tab from "@tab";
 import { getMetaFields } from "@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";

@@ -6,7 +6,7 @@ import { Select } from "./select/base-select";
 import {
   FormDescription,
   FormLabel
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 import { sep } from "pathe";
 
 export default function MetaSelect(props){

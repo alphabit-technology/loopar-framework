@@ -9,7 +9,7 @@ import "./markdown/markdown.css"
 
 import SimpleMDE from "react-simplemde-editor";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export function Preview({ source }) {

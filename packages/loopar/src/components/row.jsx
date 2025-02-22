@@ -4,7 +4,7 @@ import ComponentDefaults from "./base/component-defaults";
 import { loopar } from "loopar";
 import { useEffect, useState, useRef } from "react";
 import Emitter from '@services/emitter/emitter';
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";

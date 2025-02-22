@@ -3,7 +3,7 @@ import loopar from "loopar";
 import { useDesigner } from "@context/@/designer-context";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Droppable } from "@droppable";
-import { Button } from "@/components/ui/button";
+import { Button } from "@cn/components/ui/button";
 
 const BaseCarrusel = (props) => {
   const data = props.data || {};

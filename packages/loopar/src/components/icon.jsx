@@ -1,7 +1,7 @@
 import * as LucideIcons from "lucide-react";
 import ComponentDefaults from "@component-defaults";
 import {loopar} from "loopar";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 
 export default function MetaIcon(props) {
   const newProps = loopar.utils.renderizableProps(props);

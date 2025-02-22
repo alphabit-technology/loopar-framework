@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import {ImageIcon} from "lucide-react";
 import LazyLoad from 'react-lazy-load';
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 
 export function FallbackFile({ src, ...props }) {
   const [loading, setLoading] = useState(true);

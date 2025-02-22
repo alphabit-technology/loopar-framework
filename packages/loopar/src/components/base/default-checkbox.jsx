@@ -1,13 +1,13 @@
 
 import {loopar} from "loopar";
-import { Checkbox} from "@/components/ui/checkbox";
+import { Checkbox} from "@cn/components/ui/checkbox";
 import BaseInput from "@base-input";
 
 import {
   FormControl,
   FormDescription,
   FormLabel,
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 export default function DefaultCheckbox(props) {
   const Comp = props.Comp || Checkbox;

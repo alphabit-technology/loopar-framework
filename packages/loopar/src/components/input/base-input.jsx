@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
 import { dataInterface } from "@global/element-definition";
-import { FormItem, FormMessage } from "@/components/ui/form";
+import { FormItem, FormMessage } from "@cn/components/ui/form";
 import { FormField } from "./form-field";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import elementManage from "@tools/element-manage";
 import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";

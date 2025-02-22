@@ -2,27 +2,27 @@ import BaseInput from "@base-input";
 import dayjs from "dayjs";
 import { format } from 'date-fns';
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@cn/lib/utils"
+import { Button } from "@cn/components/ui/button"
+import { Calendar } from "@cn/components/ui/calendar"
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@cn/components/ui/form"
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@cn/components/ui/popover"
 
 import DateDemo from "@date-demo";
 import { CalendarIcon, TimerIcon } from "lucide-react";
 
-import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 
 
 export default function DateTime(props) {

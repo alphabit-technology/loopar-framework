@@ -1,11 +1,11 @@
 import BaseInput from "@base-input";
-import { Input as FormInput } from "@/components/ui/input";
+import { Input as FormInput } from "@cn/components/ui/input";
 import loopar from "loopar";
 import {
   FormControl,
   FormDescription,
   FormLabel
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 const inputTypeMap = {
   data: "text",

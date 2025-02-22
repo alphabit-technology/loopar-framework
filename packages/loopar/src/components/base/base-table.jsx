@@ -9,11 +9,11 @@ import { FormWrapper } from "@context/form";
 import {
   Avatar,
   AvatarFallback
-} from "@/components/ui/avatar"
+} from "@cn/components/ui/avatar"
 
 import { TrashIcon } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@cn/components/ui/button";
+import { Badge } from "@cn/components/ui/badge";
 import { PencilIcon, Trash2Icon, ChevronDownIcon, AlertTriangleIcon } from 'lucide-react';
 
 import {
@@ -25,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@cn/components/ui/table"
 
 import {
   Card,
@@ -33,9 +33,9 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card"
+} from "@cn/components/ui/card"
 
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@cn/components/ui/checkbox"
 
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@cn/components/ui/dropdown-menu"
 
 export class BaseTable extends Component {
   selectors = {};

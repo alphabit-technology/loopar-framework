@@ -4,12 +4,12 @@ import { Droppable } from "@droppable";
 import { BaseFormContext } from "@context/form-provider";
 import React, { useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
-import {Button} from "@/components/ui/button";
+import {Button} from "@cn/components/ui/button";
 import {Tailwind} from "@publicSRC/tailwind";
 import Tab from "@tab";
 import Tabs from "@tabs";
 import {useCookies} from "@services/cookie";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 

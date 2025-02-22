@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, use } from "react";
 import { useHidden } from "@context/@/hidden-context";
 import { DroppableContext } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import MetaComponent from "@meta-component";
 import { DragGhost } from "./drag-ghost";

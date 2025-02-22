@@ -1,6 +1,6 @@
-import {Button} from "@/components/ui/button";
+import {Button} from "@cn/components/ui/button";
 import { PencilIcon, Trash2Icon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 
 import { useDesigner } from "@context/@/designer-context";
 

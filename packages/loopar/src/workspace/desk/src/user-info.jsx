@@ -4,10 +4,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@cn/components/ui/dropdown-menu"
 
 import { Link } from "@link"
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@cn/components/ui/button"
 import { User2Icon, UserRoundCogIcon, LogOutIcon, Globe2Icon } from "lucide-react"
 
 const MakeButton = ({ Icon, text, link, notControlled, ...props }) => (

@@ -2,7 +2,7 @@ import Icon from "@icon";
 import {Paragraph} from "@paragraph";
 import ComponentDefaults from "@component-defaults";
 import { useEffect } from "react";
-import {cn} from "@/lib/utils";
+import {cn} from "@cn/lib/utils";
 
 export default function TextBlockIcon(props) {
   const {data, set} = ComponentDefaults(props);

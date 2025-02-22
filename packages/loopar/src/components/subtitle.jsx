@@ -1,7 +1,7 @@
 import BaseText from "@base-text";
 import ComponentDefaults from "@component-defaults";
 import { useDesigner } from "@context/@/designer-context";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 
 export default function SubTitle(props) {
   const {designing} = useDesigner();

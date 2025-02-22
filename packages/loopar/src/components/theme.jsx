@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@cn/components/ui/button";
 import {CircleIcon, CheckCircle} from "lucide-react";
 import { themes, showColors } from "@global/themes";
 import { titleize } from "inflection";

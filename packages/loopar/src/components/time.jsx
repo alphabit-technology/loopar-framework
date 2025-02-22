@@ -3,21 +3,21 @@ import dayjs from "dayjs";
 import { format, setHours, setMinutes } from 'date-fns';
 import loopar from "loopar";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@cn/lib/utils"
+import { Button } from "@cn/components/ui/button"
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@cn/components/ui/form"
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@cn/components/ui/popover"
 
 import DateDemo from "@date-demo";
 

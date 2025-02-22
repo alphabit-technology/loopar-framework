@@ -5,7 +5,7 @@ import * as z from "zod";
 
 import {
   Form
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 interface DataInterface {
   id: String,
@@ -82,7 +82,7 @@ export const FormProvider = ({ children, values, docRef }: any) => {
 
 export const useFormContext = () => useContext(BaseFormContext);
 
-export function FormWrapper({ __DOCUMENT__, docRef, children }: { __DOCUMENT__:__DOCUMENT__, docRef: docRef, children: React.ReactNode }) {
+export function FormWrapper({ __DOCUMENT__, docRef, children }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode }) {
   return (
     <FormProvider values={__DOCUMENT__} docRef={docRef}>
       {children}

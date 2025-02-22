@@ -1,11 +1,11 @@
 import { BrushIcon, EyeIcon, XIcon } from "lucide-react";
 import React, {useEffect} from "react";
 import { useDesigner } from "@context/@/designer-context";
-import {Button} from "@/components/ui/button";
+import {Button} from "@cn/components/ui/button";
 import {DesignerForm} from "./designer-form";
 import {ElementEditor} from "./element-editor";
-import {Separator} from "@/components/ui/separator";
-import {ScrollArea} from "@/components/ui/scroll-area";
+import {Separator} from "@cn/components/ui/separator";
+import {ScrollArea} from "@cn/components/ui/scroll-area";
 import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {

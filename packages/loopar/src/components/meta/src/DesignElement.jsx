@@ -4,7 +4,7 @@ import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
 import { useDroppable } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
-import { cn } from "@/lib/utils";
+import { cn } from "@cn/lib/utils";
 export const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const [hover, setHover] = useState(false);
   const {designerModeType, currentDragging, setCurrentDragging, designing} = useDesigner();

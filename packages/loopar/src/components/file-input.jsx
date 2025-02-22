@@ -7,7 +7,7 @@ import _ from "lodash";
 import {
   FormControl,
   FormLabel
-} from "@/components/ui/form";
+} from "@cn/components/ui/form";
 
 const FileInput = (props) => {
   const { value, data, renderInput } = BaseInput(props);
