@@ -1,0 +1,242 @@
+{
+  "DBInitialized": true,
+  "modulesGroup": [
+    {
+      "name": "administration",
+      "description": "Administration",
+      "modules": [
+        {
+          "link": "core",
+          "icon": "Settings",
+          "description": "Core",
+          "routes": [
+            {
+              "link": "Entity",
+              "description": "Entity"
+            },
+            {
+              "link": "Resources",
+              "description": "Resources"
+            },
+            {
+              "link": "Document History",
+              "description": "Document History"
+            },
+            {
+              "link": "Module",
+              "description": "Module"
+            },
+            {
+              "link": "App",
+              "description": "App"
+            }
+          ]
+        },
+        {
+          "link": "auth",
+          "icon": "LucideUserCheck2",
+          "description": "Auth",
+          "routes": [
+            {
+              "link": "User",
+              "description": "User"
+            }
+          ]
+        },
+        {
+          "link": "Integrations",
+          "icon": "ComponentIcon",
+          "description": "Integrations",
+          "routes": [
+            {
+              "link": "update",
+              "description": "GPT"
+            },
+            {
+              "link": "update",
+              "description": "Stripe"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "modules",
+      "description": "Modules",
+      "modules": [
+        {
+          "link": "loopar-web",
+          "icon": "Infinity",
+          "description": "Loopar WebPage",
+          "routes": []
+        }
+      ]
+    },
+    {
+      "name": "developer",
+      "description": "Developer",
+      "modules": [
+        {
+          "link": "developer",
+          "icon": "LucideCode",
+          "description": "Developer",
+          "routes": [
+            {
+              "link": "Menu Action",
+              "description": "Menu Action"
+            },
+            {
+              "link": "Menu",
+              "description": "Menu"
+            },
+            {
+              "link": "Menu Item",
+              "description": "Menu Item"
+            },
+            {
+              "link": "Menu Button",
+              "description": "Menu Button"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "DBServerInitialized": true,
+  "__installed__": true,
+  "webApp": {
+    "__document_status__": "Active",
+    "id": 66,
+    "deleted_at": null,
+    "type": "Web App",
+    "logo": "[{\"name\":\"logo.svg\",\"src\":\"https://loopar.io/assets/images/logo.svg\",\"type\":\"image\",\"extention\":\"svg\",\"previewSrc\":\"https://loopar.io/assets/images/logo.svg\"}]",
+    "logo_width": "2",
+    "has_footer": 0,
+    "has_copyright": 0,
+    "footer": null,
+    "copyright": null,
+    "fixed": 1,
+    "opacity": null,
+    "menu_items": [
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 8,
+        "name": "sor8VRdY55FSwKu",
+        "page": "Loopar Home",
+        "link": "Home",
+        "parent_menu": null,
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 9,
+        "name": "jMdrlR45bUI97Fs",
+        "page": "Loopar Introduction",
+        "link": "Doc",
+        "parent_menu": null,
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 10,
+        "name": "Q82Y9XFKI1aZPC0",
+        "page": "Loopar Introduction",
+        "link": "Introduction",
+        "parent_menu": "Doc",
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 11,
+        "name": "fX3uo08j2ncOqrf",
+        "page": "Getting Started",
+        "link": "Getting Started",
+        "parent_menu": "Doc",
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 12,
+        "name": "ym2588jX1oP3u6N",
+        "page": "Loopar Concepts",
+        "link": "Concepts",
+        "parent_menu": "Doc",
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "__document_status__": "Active",
+        "id": 13,
+        "name": "A6Bg8yMokGsn84p",
+        "page": "Learn",
+        "link": "Learn",
+        "parent_menu": "Doc",
+        "document_parent": null,
+        "document_parent_name": null,
+        "deleted_at": "2025-02-14 20:26:26"
+      }
+    ],
+    "menu_actions": [
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "name": "RCik6wST6jnO1LA",
+        "__document_status__": "Active",
+        "id": 4,
+        "icon": "XLogo",
+        "action": "https://x.com/loopardev"
+      },
+      {
+        "parent_id": "66",
+        "parent_document": "App",
+        "name": "B8M3E7mIdV6p8r5",
+        "__document_status__": "Active",
+        "id": 5,
+        "icon": "Github",
+        "action": "https://github.com/alphabit-technology/loopar-framework.git"
+      }
+    ],
+    "git_repo": null,
+    "repository": null,
+    "github_user": null,
+    "github_pass": "",
+    "name": "loopar-webpage",
+    "description": "Loopar WebPage",
+    "version": "1.1.23",
+    "autor": "alfredrz2012@gmail.com",
+    "info": null,
+    "icon": "Infinity",
+    "spacing": "4",
+    "footer_height": null,
+    "col_padding": "p-9",
+    "col_margin": "m-0",
+    "logo_dark": "[{\"name\":\"logo.svg\",\"src\":\"https://loopar.io/assets/images/logo.svg\",\"type\":\"image\",\"extention\":\"svg\",\"previewSrc\":\"https://loopar.io/assets/images/logo.svg\"}]",
+    "logo_mini": "[{\"name\":\"logo-dark-min.svg\",\"src\":\"https://loopar.io/assets/images/logo-dark-min.svg\",\"type\":\"image\",\"extention\":\"svg\",\"previewSrc\":\"https://loopar.io/assets/images/logo-dark-min.svg\"}]",
+    "logo_mini_dark": "[{\"name\":\"logo-dark-min.svg\",\"src\":\"https://loopar.io/assets/images/logo-dark-min.svg\",\"type\":\"image\",\"extention\":\"svg\",\"previewSrc\":\"https://loopar.io/assets/images/logo-dark-min.svg\"}]",
+    "logo_height": null,
+    "solid": 1,
+    "rounded": null
+  },
+  "initializedModules": true
+}

@@ -1,55 +1,149 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-node_modules
-.pnp
+# -----------------------------------
+# ⚡️ DEPENDENCIES
+# -----------------------------------
+node_modules/
+.pnp/
 .pnp.js
-stats.html
 
-# testing
-coverage
+# -----------------------------------
+# 🏗️ BUILD AND COMPILED FILES
+# -----------------------------------
+dist/
+build/
+out/
+.next/
+.vite/
+.parcel-cache/
+webpack-stats.json
+tsconfig.tsbuildinfo
+.cache/
+.temp/
+tmp/
+temp/
 
-# misc
-.DS_Store
-*.pem
+# -----------------------------------
+# ⚙️ CONFIGURATION AND ENVIRONMENT FILES
+# -----------------------------------
+.env
+.env.*
+!.env.example  # Keep example env file
+.env.dist
+*.local
+*.env.production
 
-# debug
+# -----------------------------------
+# 🧪 TESTING AND COVERAGE
+# -----------------------------------
+coverage/
+jest.config.js
+jest.setup.js
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+
+# -----------------------------------
+# 💻 IDEs AND EDITORS
+# -----------------------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.bak
+*.orig
+
+# -----------------------------------
+# 🐛 LOGS AND DEBUG FILES
+# -----------------------------------
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+node-inspector/
 
-# local env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# -----------------------------------
+# 📝 TEMPORARY AND MISC FILES
+# -----------------------------------
+.DS_Store
+Thumbs.db
+*.pem
+*.key
+*.crt
+*.zip
+*.tar
+*.tgz
+*.gz
+.eslintcache
+.prettiercache
+bower_components/
 
-#config
-config
+# -----------------------------------
+# 📊 REPORT FILES
+# -----------------------------------
+stats.html
+report.*
+coverage-final.json
 
-# turbo
-.turbo
+# -----------------------------------
+# 🐋 DOCKER FILES
+# -----------------------------------
+docker-compose.override.yml
+Dockerfile.*
+.dockerignore
 
-#dist
-dist
+# -----------------------------------
+# 🚀 DEPLOYMENT FILES
+# -----------------------------------
+*.tgz
+*.tar.gz
+build.log
+firebase-debug.log
+functions/node_modules/
 
-.contentlayer
-.env
+# -----------------------------------
+# 🧩 APPS AND CUSTOM PATHS
+/apps/
+/path/
+/public/uploads/
+/public/js/components/
 
-# ides
-.idea
-.env.dist
-.vscode
+# -----------------------------------
+# 🛠️ CI/CD FILES
+# -----------------------------------
+.github/
+.circleci/
+.gitlab-ci.yml
+.now/
+vercel.json
 
-#uploads
-public/uploads
+# -----------------------------------
+# ⚡ DATABASE FILES
+# -----------------------------------
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.sql
+*.mongo
+dump.rdb
 
-#components
-public/js/components
+# -----------------------------------
+# ✨ OTHER FRAMEWORKS SUPPORT
+# -----------------------------------
+.gatsby/
+.remix/
+.storybook/
+.next/
+.nuxt/
+out/
 
-#apps
-/apps
-
-#path
-/path
+# -----------------------------------
+# 🧹 MISCELLANEOUS
+# -----------------------------------
+*.iml
+*.hprof
+*.orig
+*.bak

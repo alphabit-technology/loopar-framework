@@ -1,0 +1,11 @@
+{
+  "port": 3000,
+  "session": {
+    "secret": "secrctekeyf5d665dd56ff59fbd24699e502a528f77eb786e8",
+    "saveUninitialized": false,
+    "cookie": {
+      "maxAge": 86400000
+    },
+    "resave": false
+  }
+}
