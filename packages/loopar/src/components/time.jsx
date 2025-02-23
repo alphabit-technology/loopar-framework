@@ -1,6 +1,5 @@
 import BaseInput from "@base-input";
 import dayjs from "dayjs";
-import { format, setHours, setMinutes } from 'date-fns';
 import loopar from "loopar";
 
 import { cn } from "@cn/lib/utils"
@@ -19,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@cn/components/ui/popover"
 
-import DateDemo from "@date-demo";
+import DateDemo from "@date/date-picker";
 
 import { CalendarIcon } from "lucide-react";
 

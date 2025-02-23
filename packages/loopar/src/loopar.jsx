@@ -1,7 +1,7 @@
-import Router from "@tools/router/router";
+import Router from "@@tools/router/router";
 import * as Helpers from "@global/helper";
 import * as dateUtils from "@global/date-utils";
-import scriptManager from "@tools/script-manager";
+import scriptManager from "@@tools/script-manager";
 import { elementsDict } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
 

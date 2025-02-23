@@ -1,10 +1,7 @@
 import BaseInput from "@base-input";
-import loopar from "loopar";
-//import { format, setDate } from "date-fns";
 import dayjs from "dayjs";
-import { format, setHours, setMinutes, setYear, setMonth, setDate } from 'date-fns';
+import { format } from 'date-fns';
 
-//import { CalendarIcon } from "@radix-ui/react-icons"
 import { cn } from "@cn/lib/utils"
 import { Button } from "@cn/components/ui/button"
 import { Calendar } from "@cn/components/ui/calendar"
@@ -21,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@cn/components/ui/popover"
-//import { toast } from "@cn/components/ui/use-toast"
+
 import DateDemo from "@date-demo";
 import { CalendarIcon, TimerIcon } from "lucide-react";
 

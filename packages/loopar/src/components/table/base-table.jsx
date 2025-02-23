@@ -1,5 +1,5 @@
 import Component from "@component";
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import {Pagination} from "@pagination";
 import loopar from "loopar";
 import MetaComponent from "@meta-component";

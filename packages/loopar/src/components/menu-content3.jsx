@@ -1,4 +1,4 @@
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import MetaComponent from "@meta-component";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";

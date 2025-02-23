@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import React, { useEffect } from "react";
 import BaseInput from "@base-input";
 import { Designer } from "./designer/base-designer";

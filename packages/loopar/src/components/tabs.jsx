@@ -1,5 +1,5 @@
 import ComponentDefaults from "./base/component-defaults";
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import MetaComponent from "@meta-component";

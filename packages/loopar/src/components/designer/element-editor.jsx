@@ -6,7 +6,7 @@ import Tabs from "@tabs";
 import {MetaComponent} from "@@meta/meta-component";
 import { Separator } from "@cn/components/ui/separator";
 import Tab from "@tab";
-import { getMetaFields } from "@tools/meta-fields";
+import { getMetaFields } from "@@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import Emitter from '@services/emitter/emitter';
 import { FormWrapper } from "@context/form-provider";

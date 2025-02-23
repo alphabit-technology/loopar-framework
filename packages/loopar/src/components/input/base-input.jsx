@@ -3,7 +3,7 @@ import { dataInterface } from "@global/element-definition";
 import { FormItem, FormMessage } from "@cn/components/ui/form";
 import { FormField } from "./form-field";
 import { cn } from "@cn/lib/utils";
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
 import _ from "lodash";

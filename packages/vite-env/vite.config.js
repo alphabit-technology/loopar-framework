@@ -12,18 +12,16 @@ const loopar = 'node_modules/loopar';
 const resRoot = (...args) => resolve(framework, ...args);
 const resLoopar = (...args) => resRoot(loopar, ...args);
 
-const Alias = (dir, prefix = '@', groupOnly=false) => {
+const Alias = (dir, dirOnly=false) => {
   return readdirSync(dir).reduce((acc, name) => {
     const fullPath = resolve(dir, name);
     const baseName = name.split(".")[0];
+
     if (lstatSync(fullPath).isDirectory()) {
-      if (groupOnly) {
-        acc[`${prefix}${baseName}`] = fullPath;
-      }else{
-        Object.assign(acc, Alias(fullPath, prefix));
-      }
+      acc[`@@${baseName}`] = fullPath;
+      !dirOnly && Object.assign(acc, Alias(fullPath));
     } else if (baseName.length > 0 && baseName !== 'index') {
-      acc[`${prefix}${baseName}`] = fullPath;
+      acc[`@${baseName}`] = fullPath;
     }
     return acc;
   }, {});
@@ -36,8 +34,7 @@ export default defineConfig(({ command }) => {
       extensions: ['.js', '.jsx', '.ts', '.tsx', 'd.ts'],
       alias: {
         ...(Alias(resLoopar('src/components'))),
-        ...(Alias(resLoopar('src'), '@', true)),
-        ...(Alias(resLoopar('src/components'), '@@', true)),
+        ...(Alias(resLoopar('src'), true)),
         '@cn': resolve('node_modules/cn/src'),
         '@app': resRoot('app/'),
         'loopar': resLoopar('src/loopar.jsx'),

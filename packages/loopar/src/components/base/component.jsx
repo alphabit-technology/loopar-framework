@@ -2,7 +2,7 @@
 import loopar from "loopar";
 import fileManager from "@@file/file-manager";
 import React from "react";
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 
 export default class Component extends React.Component {
   get droppable() {return true};
@@ -150,16 +150,5 @@ export default class Component extends React.Component {
     }
 
     loopar.Designer?.updateElement(data.key, data);
-    /*if (this.props.designerRef) {
-      this.props.designerRef.updateElement(data.key, data);
-    } else {
-      //meta.data = data;
-      this.setState({ data })
-    }
-
-    if (!onChange) return;
-
-    this.onChange && this.onChange();
-    this.props.onChange && this.props.onChange();*/
   }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, MouseEvent } from 'react';
 import { ToggleGroup, ToggleGroupItem } from "@cn/components/ui/toggle-group";
-import loopar from "loopar";
+import { loopar } from "loopar";
 import dayjs from "dayjs";
 
 /*interface MarkPosition {

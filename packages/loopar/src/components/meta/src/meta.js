@@ -1,8 +1,8 @@
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import fileManager from "@@file/file-manager";
 import loopar from "loopar";
 
-export function designElementProps(el){
+export function designElementProps(el) {
   if (!el.data) {
     const names = elementManage.elementName(el.element);
     el.data = {
@@ -21,9 +21,9 @@ export function designElementProps(el){
   return newProps;
 };
 
-export function prepareMeta(metaProps, parent, image){
+export function prepareMeta(metaProps, parent, image) {
   const data = metaProps.data || {};
-  
+
   if (image && (!data || !data.background_image || data.background_image === '[]')) {
     metaProps.src = "/uploads/empty-image.svg"
   }
@@ -49,9 +49,9 @@ export function prepareMeta(metaProps, parent, image){
     }
 
     if (data.background_image && data.background_image !== '[]') {
-      
+
       const src = getSrc();
-      
+
       if (src && src.length > 0) {
         const imageUrl = src[0].src || "/uploads/empty-image.svg";
 
@@ -120,7 +120,7 @@ export const buildMetaProps = ({ metaProps, parent = {}, isDesigner }) => {
 };
 
 
-export function evaluateCondition(condition, values){
+export function evaluateCondition(condition, values) {
   let sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||').replace(/=/g, '==');
 
   const keys = Object.keys(values);

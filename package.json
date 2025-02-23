@@ -14,7 +14,6 @@
     "dev": "cross-env NODE_ENV=development && node node_modules/loopar",
     "start": "cross-env NODE_ENV=production && node node_modules/loopar",
     "start-backend": "node node_modules/loopar",
-    "start-vite": "vite clean && vite",
     "build": "node bin/build-clean.js && npm-run-all build:client build:server",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr app/entry-server.jsx"

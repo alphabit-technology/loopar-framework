@@ -3,7 +3,8 @@ import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { Markdown } from "@components/base/pure-html-block";
+import { Markdown } from "@pure-html-block";
+
 
 const Layout = (({ ...props }) => {
   const { activeParentMenu, webApp } = useWorkspace();

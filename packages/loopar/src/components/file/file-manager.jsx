@@ -1,4 +1,4 @@
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 
 export const getExtention = (file="")=>{
   const match = file.match(/\.([a-z0-9]+)$/i);

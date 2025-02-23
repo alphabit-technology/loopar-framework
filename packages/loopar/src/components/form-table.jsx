@@ -1,23 +1,19 @@
-import {BaseTable} from "@base-table"
+import {BaseTable} from "@@table/base-table"
 import BaseInput from "@base-input"
 import {MetaComponent} from "@meta-component";
 import pkg from "lodash";
 const { cloneDeep } = pkg;
 import { DesignerContext } from "@context/@/designer-context";
 import { AlertTriangleIcon } from "lucide-react";
-
-import elementManage from "@tools/element-manage";
+import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
-
 
 import { Checkbox } from "@cn/components/ui/checkbox"
 
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,

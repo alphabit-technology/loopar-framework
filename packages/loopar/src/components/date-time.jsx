@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@cn/components/ui/popover"
 
-import DateDemo from "@date-demo";
+import DateDemo from "@@date/date-picker";
 import { CalendarIcon, TimerIcon } from "lucide-react";
 
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
