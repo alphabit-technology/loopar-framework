@@ -1,149 +1,141 @@
 # -----------------------------------
-# ⚡️ DEPENDENCIES
+# 🚀 DEPENDENCIES
 # -----------------------------------
 node_modules/
 .pnp/
 .pnp.js
 
 # -----------------------------------
-# 🏗️ BUILD AND COMPILED FILES
+# ⚡ PACKAGE MANAGERS
+# -----------------------------------
+# npm
+package-lock.json
+npm-debug.log*
+
+# yarn
+yarn.lock
+.yarn/
+.yarnrc.yml
+yarn-debug.log*
+yarn-error.log*
+
+# pnpm
+pnpm-lock.yaml
+.pnpm-debug.log*
+.pnpm-store/
+
+# -----------------------------------
+# 🧪 TESTING
+# -----------------------------------
+coverage/
+
+# -----------------------------------
+# 🎨 BUILD OUTPUT
 # -----------------------------------
 dist/
 build/
-out/
-.next/
-.vite/
-.parcel-cache/
-webpack-stats.json
-tsconfig.tsbuildinfo
-.cache/
-.temp/
-tmp/
-temp/
 
 # -----------------------------------
-# ⚙️ CONFIGURATION AND ENVIRONMENT FILES
+# ⚙️ CONFIGURATION FILES (Auto-generated)
+# -----------------------------------
+config/
+tsconfig.tsbuildinfo
+
+# -----------------------------------
+# 🔐 ENVIRONMENT VARIABLES
 # -----------------------------------
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*
-!.env.example  # Keep example env file
-.env.dist
-*.local
-*.env.production
 
 # -----------------------------------
-# 🧪 TESTING AND COVERAGE
+# 🖇️ MISCELLANEOUS
 # -----------------------------------
-coverage/
-jest.config.js
-jest.setup.js
-cypress/videos/
-cypress/screenshots/
-playwright-report/
-test-results/
+.DS_Store
+*.pem
+stats.html
 
 # -----------------------------------
-# 💻 IDEs AND EDITORS
+# 🐞 DEBUG FILES
 # -----------------------------------
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-*.swp
-*.bak
-*.orig
-
-# -----------------------------------
-# 🐛 LOGS AND DEBUG FILES
-# -----------------------------------
-logs/
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-node-inspector/
 
 # -----------------------------------
-# 📝 TEMPORARY AND MISC FILES
+# 🖥️ IDE CONFIGURATIONS
 # -----------------------------------
-.DS_Store
-Thumbs.db
-*.pem
-*.key
-*.crt
-*.zip
-*.tar
-*.tgz
-*.gz
-.eslintcache
-.prettiercache
-bower_components/
+.idea/
+.vscode/
 
 # -----------------------------------
-# 📊 REPORT FILES
+# 🌐 UPLOADS & GENERATED FILES
 # -----------------------------------
-stats.html
-report.*
-coverage-final.json
+public/uploads/
+public/js/components/
 
 # -----------------------------------
-# 🐋 DOCKER FILES
+# 🧩 APPLICATION FILES
 # -----------------------------------
-docker-compose.override.yml
-Dockerfile.*
-.dockerignore
-
-# -----------------------------------
-# 🚀 DEPLOYMENT FILES
-# -----------------------------------
-*.tgz
-*.tar.gz
-build.log
-firebase-debug.log
-functions/node_modules/
-
-# -----------------------------------
-# 🧩 APPS AND CUSTOM PATHS
 /apps/
 /path/
-/public/uploads/
-/public/js/components/
 
 # -----------------------------------
-# 🛠️ CI/CD FILES
+# 🏃 TURBO & CONTENTLAYER
 # -----------------------------------
-.github/
-.circleci/
-.gitlab-ci.yml
-.now/
-vercel.json
+.turbo/
+.contentlayer/
 
 # -----------------------------------
-# ⚡ DATABASE FILES
+# 💡 SUGGESTIONS
+# Consider keeping example env/config files:
+# .env.example
+# config.example.json
+
+# -----------------------------------
+# 🧱 DATABASE FILES
 # -----------------------------------
 *.sqlite
 *.sqlite3
 *.db
 *.db-journal
-*.sql
-*.mongo
-dump.rdb
 
 # -----------------------------------
-# ✨ OTHER FRAMEWORKS SUPPORT
+# 🏗️ LOGS & TEMPORARY FILES
 # -----------------------------------
-.gatsby/
-.remix/
-.storybook/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# -----------------------------------
+# 🧹 ADDITIONAL NODE/REACT SPECIFICS
+# -----------------------------------
 .next/
-.nuxt/
-out/
+.out/
+.cache/
+.eslintcache
 
 # -----------------------------------
-# 🧹 MISCELLANEOUS
+# 🔥 STORYBOOK FILES (If using Storybook)
 # -----------------------------------
-*.iml
-*.hprof
-*.orig
-*.bak
+out/
+.storybook/build/
+
+# -----------------------------------
+# 🌍 VITE CACHE
+# -----------------------------------
+node_modules/.vite
+
+# -----------------------------------
+# 🛠️ OTHER COMMON FILES
+# -----------------------------------
+*.tgz
+*.log
+npm-debug.log*
+.idea/
+.vscode/
