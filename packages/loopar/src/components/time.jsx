@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@cn/components/ui/popover"
 
-import DateDemo from "@date/date-picker";
+import DateDemo from "@@date/date-picker";
 
 import { CalendarIcon } from "lucide-react";
 
