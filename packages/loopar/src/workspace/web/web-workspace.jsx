@@ -63,10 +63,10 @@ const Layout = (({ ...props }) => {
           >
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row w-ful">
               {webApp.has_footer ? (
-                <Markdown className="w-full text-center">{webApp.footer}</Markdown>
+                <Markdown className="w-full text-center" content={webApp.footer}/>
               ) : null}
               {webApp.has_copyright ? (
-                <Markdown className="w-full text-center">{webApp.copyright}</Markdown>
+                <Markdown className="w-full text-center" cotnent={webApp.copyright}/>
               ) : null}
             </div>
           </footer>

@@ -15,7 +15,8 @@ export function MainNav() {
   }[webApp.rounded] || "rounded-md";
 
   const solid = webApp.solid;
-  const Items = menuItems.filter((item) => !item.parent_menu).map((item, i) => {
+  
+  const Items = menuItems.filter(item => !item.parent_menu).map((item, i) => {
     return (
       <Link
         className={`transition-colors px-6 py-1 ${rounded} ${!solid && 'focus:bg-transparent hover:bg-transparent bg-transparent'}`}
@@ -26,7 +27,9 @@ export function MainNav() {
         {item.link}
       </Link>
     )
-  })
+  });
+
+  
 
   const handleSetOpenNav = (e) => {
     setOpenNav(!openNav)

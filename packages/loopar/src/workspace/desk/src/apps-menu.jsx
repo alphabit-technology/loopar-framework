@@ -1,4 +1,4 @@
-import React from "react"
+import React, {useState} from "react"
 
 import {
   DropdownMenu,
@@ -8,9 +8,9 @@ import {
 
 import {Link} from "@link"
 import { buttonVariants } from "@cn/components/ui/button"
-import { ComponentIcon, CircuitBoardIcon, FileJson2Icon, FileArchiveIcon, LayoutGridIcon, Settings2Icon, User2Icon } from "lucide-react"
+import { ComponentIcon, CircuitBoardIcon, FilesIcon, LayoutGridIcon, Settings2Icon, User2Icon, CogIcon } from "lucide-react"
 
-const MakeButton = ({ Icon, text, link }) => (
+const MakeButton = ({ Icon, text, link}) => (
   <Link
     to={link}
     variant="ghost"
@@ -21,8 +21,9 @@ const MakeButton = ({ Icon, text, link }) => (
 )
 
 export function AppsMenu() {
+  const [open, setOpen] = useState(false);
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <div
           className={`${buttonVariants({
@@ -35,11 +36,11 @@ export function AppsMenu() {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <div className="grid grid-cols-2 p-2">
-          <MakeButton Icon={FileJson2Icon} text="Builder" link="/desk/Builder/list" />
+        <div className="grid grid-cols-2 p-2" onClick={() => setOpen(false)}>
+          <MakeButton Icon={CogIcon} text="Builders" link="/desk/Builder/list"/>
           <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/Module/list" />
           <MakeButton Icon={CircuitBoardIcon} text="Apps" link="/desk/App Manager/view"/>
-          <MakeButton Icon={FileArchiveIcon} text="Files" link="/desk/File Manager/list" />
+          <MakeButton Icon={FilesIcon} text="Files" link="/desk/File Manager/list" />
           <MakeButton Icon={Settings2Icon} text="Settings" link="/desk/System Settings/update" />
           <MakeButton Icon={User2Icon} text="Users" link="/desk/user/list" />
         </div>

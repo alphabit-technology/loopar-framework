@@ -2,7 +2,6 @@ import {DeskLogo} from './desk-logo';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { useWorkspace } from "@workspace/workspace-provider"
 
-
 export function MainNav() {
   const { openNav, setOpenNav } = useWorkspace();
   const Icon = openNav ? XIcon : MenuIcon;
