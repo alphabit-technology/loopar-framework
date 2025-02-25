@@ -1,21 +1,21 @@
-import { loopar } from 'loopar';
+import { loopar } from '../loopar.js';
 import { fileManage } from "../file-manage.js";
-import { renderMarkdownSSR } from "markdown";
+import { parseDocStructure } from "./tools.js";
 
 class DocumentManage {
   constructor(props) {
     Object.assign(this, props);
   }
 
-  async getDocument(document, name, data = null, ifNotFound = 'throw') {
+  async getDocument(document, name, data = null, {ifNotFound = 'throw', parse=false}={}) {
     const ENTITY = await this.#GET_ENTITY(document);
     const databaseData = await loopar.db.getDoc(ENTITY, name, ENTITY.__REF__.__FIELDS__);
 
     if (databaseData) {
-      return await this.newDocument(document, {...databaseData, ...(data || {})}, name);
+      return await this.newDocument(document, { ...databaseData, ...(data || {}) }, name, parse);
     } else {
       if (ifNotFound === 'new') {
-        return await this.newDocument(document, data, name);
+        return await this.newDocument(document, data, name, parse);
       }
 
       if (ifNotFound === 'throw') {
@@ -26,10 +26,10 @@ class DocumentManage {
     }
   }
 
-  async newDocument(document, data = {}, name) {
+  async newDocument(document, data = {}, name, parse = false) {
     const ENTITY = await this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
-    const spacing = loopar.__installed__ ? 
+    const spacing = loopar.__installed__ ?
       await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
 
     const instance = await new DOCUMENT({
@@ -38,6 +38,7 @@ class DocumentManage {
       __DOCUMENT__: data,
       __IS_NEW__: !name,
       __SPACING__: spacing,
+      __PARSED__: parse
     });
 
     await instance.__init__();
@@ -60,7 +61,7 @@ class DocumentManage {
 
     /**Testing get fileRef only */
     ENTITY = fileManage.getConfigFile(document, ref.__ROOT__);
-    
+
     if (!ENTITY) return throwError(entityName);
 
     if (ENTITY.doc_structure) {
@@ -69,30 +70,13 @@ class DocumentManage {
       }
 
       ENTITY.doc_structure = JSON.stringify(
-        await this.parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure))
+        await parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure))
       );
     }
-
 
     ENTITY.is_single ??= ref.is_single;
     ENTITY.__REF__ = ref;
     return ENTITY;
-  }
-
-  async parseDocStructure(doc_structure) {
-    return Promise.all(
-      doc_structure.map(async (field) => {
-        if (field.element === MARKDOWN) {
-          field.data.value = await renderMarkdownSSR(field.data.value);
-        }
-
-        if (field.elements) {
-          field.elements = await this.parseDocStructure(field.elements);
-        }
-
-        return field;
-      })
-    );
   }
 
   async #importDocument(ENTITY) {

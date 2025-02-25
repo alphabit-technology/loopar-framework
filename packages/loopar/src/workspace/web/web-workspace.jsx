@@ -5,7 +5,6 @@ import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { Markdown } from "@pure-html-block";
 
-
 const Layout = (({ ...props }) => {
   const { activeParentMenu, webApp } = useWorkspace();
 
@@ -66,7 +65,7 @@ const Layout = (({ ...props }) => {
                 <Markdown className="w-full text-center" content={webApp.footer}/>
               ) : null}
               {webApp.has_copyright ? (
-                <Markdown className="w-full text-center" cotnent={webApp.copyright}/>
+                <Markdown className="w-full text-center" content={webApp.copyright}/>
               ) : null}
             </div>
           </footer>

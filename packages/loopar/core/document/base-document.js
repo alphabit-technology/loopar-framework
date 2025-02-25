@@ -1,7 +1,7 @@
 'use strict'
 
 import CoreDocument from './core-document.js';
-import { loopar } from 'loopar';
+import { loopar } from '../loopar.js';
 
 export default class BaseDocument extends CoreDocument {
   constructor(props) {

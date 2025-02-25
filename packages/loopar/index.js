@@ -1,7 +1,8 @@
+
+import BaseDocument from "./core/document/base-document.js";
 import { server } from "./core/server.js";
 import { loopar } from "./core/loopar.js";
 import { documentManage } from "./core/document/document-manage.js";
-import BaseDocument from "./core/document/base-document.js";
 import { fileManage } from "./core/file-manage.js";
 import BaseController from "./core/controller/base-controller.js";
 import SingleController from "./core/controller/single-controller.js";

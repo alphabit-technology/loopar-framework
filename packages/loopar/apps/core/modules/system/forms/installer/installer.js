@@ -1,5 +1,6 @@
 import path from "pathe";
-import { loopar, fileManage, BaseDocument } from "loopar";
+import { loopar, fileManage } from "loopar";
+import BaseDocument from "../../../../../../core/document/base-document.js";
 
 export default class Installer extends BaseDocument {
   async getDocumentData(document) {

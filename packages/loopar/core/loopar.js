@@ -246,9 +246,8 @@ export class Loopar extends Document {
 
     if (data.__installed__) {
       const activeWebApp = await this.db.getDoc('System Settings');
-      const webApp = await this.db.getDoc('App', activeWebApp.active_web_app);
+      const webApp = await this.db.getParseDoc('App', activeWebApp.active_web_app);
 
-      console.log('Active Web App:', await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }));
       data.webApp = {
         ...(webApp || {}),
         menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : [],

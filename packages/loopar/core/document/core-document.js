@@ -1,6 +1,8 @@
 'use strict'
 import DynamicField from './dynamic-field.js';
-import { loopar, documentManage, fileManage} from 'loopar';
+import { loopar } from '../loopar.js';
+import { fileManage } from '../file-manage.js';
+import { renderMarkdownSSR } from "markdown";
 
 export default class CoreDocument {
   #fields = {};
@@ -463,6 +465,8 @@ export default class CoreDocument {
       }*/
       else if (field.element === PASSWORD) {
         return field.value && field.value.length > 0 ? this.protectedPassword : "";
+      } else if(field.element === MARKDOWN_INPUT){
+        return this.__PARSED__ ? await renderMarkdownSSR(field.value) : field.value;
       } else {
         return field.stringifyValue;
       }

@@ -1,6 +1,6 @@
 'use strict'
 import { dataInterface } from '../global/element-definition.js';
-import { loopar } from 'loopar';
+import { loopar } from '../loopar.js';
 
 export default class DynamicField {
   #value = null;

@@ -1,6 +1,7 @@
 'use strict';
 import { loopar } from "loopar";
 import Connector from "./core/connector.js";
+import { parseDocument } from '../core/document/tools.js';
 
 export default class DataBase extends Connector {
   tablePrefix = 'tbl';
@@ -389,6 +390,10 @@ export default class DataBase extends Connector {
 
       return ifNotFound;
     }
+  }
+
+  async getParseDoc(){
+    return parseDocument(arguments[0], await this.getDoc(...arguments));
   }
 
   async getDoc(document, name, fields = ['*'], { includeDeleted = false } = {}) {
