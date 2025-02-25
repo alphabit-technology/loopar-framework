@@ -33,7 +33,7 @@ export const parseDocument = async (entity, doc) => {
 
   buildFieldMap(structure);
 
-  const promises = Object.entries(doc).map(async ([key, value]) => {
+  const promises = Object.entries(doc || {}).map(async ([key, value]) => {
     const field = fieldMap.get(key);
     if (field?.element === MARKDOWN_INPUT) {
       doc[key] = await renderMarkdownSSR(value);
