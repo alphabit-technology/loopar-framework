@@ -110,6 +110,20 @@ class Server extends Router {
     this.server.listen(port, () => {
       console.log("Server is started in " + port + installMessage);
     });
+
+    process.on("SIGINT", () => {
+      this.server.close(() => {
+        console.log("Express server closed by SIGINT");
+        process.exit(0);
+      });
+    });
+
+    process.on("SIGTERM", () => {
+      this.server.close(() => {
+        console.log("Express server closed by SIGTERM");
+        process.exit(0);
+      });
+    });
   }
 }
 
