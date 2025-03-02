@@ -13,11 +13,7 @@ export const DocumentProvider = ({ children, docRef, name, title, formValues, sp
   const handleSetSidebarOpen = (value) => {
     setSidebarOpen(value);
   }
-
-  useEffect(() => {
-    document.title = title;
-  }, [title]);
-
+  
   return (
     <DocumentContext.Provider value={{
       docRef, name, sidebarOpen,

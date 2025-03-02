@@ -16,6 +16,11 @@ function getComponent(component) {
       resolve(__META_COMPONENTS__[component]);
     } else {
       const moduleImport = components[`src/${cParse}`];
+      if(!moduleImport) {
+        console.warn("Component not found: " + component);
+        resolve(null);
+        return;
+      }
       moduleImport().then((c) => {
         const promises = [];
 

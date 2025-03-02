@@ -1,6 +1,6 @@
 import loopar from "loopar";
 import elementManage from "@@tools/element-manage";
-import React, { useEffect } from "react";
+import React from "react";
 import BaseInput from "@base-input";
 import { Designer } from "./designer/base-designer";
 import Emitter from '@services/emitter/emitter';
@@ -8,15 +8,15 @@ import Emitter from '@services/emitter/emitter';
 export default function MetaDesigner(props) {
   const { renderInput, data, value } = BaseInput(props);
 
-  const makeElements = (elements) => {
+  /*const makeElements = (elements) => {
     value(JSON.stringify(elementManage.fixElements(elements)));
   }
 
   const getElements = () => {
-    return JSON.parse(value() || "[]");
-  }
+    return JSON.parse(props.value || "[]");
+  }*/
 
-  const updateElements = (target, elements, current = null) => {
+  /*const updateElements = (target, elements, current = null) => {
     const currentElements = getElements();
     const targetKey = target.data.key;
     const currentKey = current ? current.data.key : null;
@@ -24,7 +24,7 @@ export default function MetaDesigner(props) {
     const lastParentKey = current ? current.parentKey : null;
     const selfKey = data.key;
 
-    /**Search target in structure and set elements in target*/
+    //Search target in structure and set elements in target
     const setElementsInTarget = (structure) => {
       return structure.map((el) => {
         el.elements = el.data.key === targetKey ? elements
@@ -33,11 +33,11 @@ export default function MetaDesigner(props) {
       });
     };
 
-    /**Search target in structure and set elements in target, if target is self set directly in self*/
+    //Search target in structure and set elements in target, if target is self set directly in self
     let newElements = targetKey === selfKey ? elements
       : setElementsInTarget(currentElements, selfKey);
 
-    /**Search current in structure and delete current in last parent*/
+    //Search current in structure and delete current in last parent
     const deleteCurrentOnLastParent = (structure, parent) => {
       if (lastParentKey === parent) {
         return structure.filter((e) => e.data.key !== currentKey);
@@ -54,9 +54,9 @@ export default function MetaDesigner(props) {
     }
 
     makeElements(newElements);
-  }
+  }*/
 
-  const findElement = (field, value, elements = getElements()) => {
+  /*const findElement = (field, value, elements = getElements()) => {
     if (!value || value === "null" || value.length == 0) return null;
     
     for (let i = 0; i < elements.length; i++) {
@@ -70,14 +70,14 @@ export default function MetaDesigner(props) {
       }
     }
     return null;
-  };
+  };*/
 
 
-  const getElement = (key) => {
+  /*const getElement = (key) => {
     return findElement("key", key);
-  }
+  }*/
 
-  const deleteElement = (element) => {
+  /*const deleteElement = (element) => {
     const removeElement = (elements = getElements()) => {
       return elements.filter((el) => {
         if (el.data.key === element) {
@@ -91,9 +91,9 @@ export default function MetaDesigner(props) {
     };
 
     makeElements(removeElement());
-  }
+  }*/
 
-  const updateElement = (key, data, merge = true) => {
+  /*const updateElement = (key, data, merge = true) => {
     const selfElements = getElements();
 
     if (data.name) {
@@ -117,7 +117,6 @@ export default function MetaDesigner(props) {
           el.elements = updateE(el.elements || []);
         }
 
-        /**Purify Data */
         el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
           if (
             key === "background_color" &&
@@ -131,7 +130,6 @@ export default function MetaDesigner(props) {
           }
           return obj;
         }, {});
-        /**Purify Meta */
 
         return { element: el.element, data: el.data, elements: el.elements };
       });
@@ -139,9 +137,9 @@ export default function MetaDesigner(props) {
 
     makeElements(updateE(selfElements));
     Emitter.emit("currentElementEdit", data.key);
-  }
+  }*/
 
-  const findDuplicateNames = () => {
+  /*const findDuplicateNames = () => {
     const elements = getElements();
     const [names, duplicates] = [new Set(), new Set()];
 
@@ -169,21 +167,22 @@ export default function MetaDesigner(props) {
         ", "
       )}, please check your structure.`,
     };
-  }
+  }*/
 
   return renderInput((field) => {
     return (
       <Designer
         metaComponents={field.value}
         designerRef={{
-          updateElements,
-          getElement,
-          deleteElement,
-          updateElement,
-          setMeta: makeElements,
-          findElement
+          //updateElements,
+          //getElement,
+          //deleteElement,
+          //updateElement,
+          //setMeta: ()=>{},// makeElements,
+          //findElement
         }}
         data={data}
+        onChange={field.onChange}
       />
     )
   });

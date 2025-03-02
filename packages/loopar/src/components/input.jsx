@@ -47,10 +47,10 @@ export default function Input(props) {
       <>
         {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
         <FormControl>
-          <FormInput {..._props}
+          <FormInput 
+            {..._props}
             placeholder={data.placeholder || data.label}
             {...field}
-            //onChange={field.onChange}
             {..._type}
           />
         </FormControl>

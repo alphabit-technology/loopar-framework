@@ -13,6 +13,7 @@ const Layout = (({ ...props }) => {
 
   return (
     <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
+      <meta name="robots" content="noindex, nofollow"/>
       <section
         className="flex-grow flex"
       >

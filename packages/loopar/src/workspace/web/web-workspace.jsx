@@ -5,6 +5,17 @@ import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { Markdown } from "@pure-html-block";
 
+const SEO = () => {
+  return <>
+  <meta property="og:locale" content="en_US"/>
+  <meta property="og:type" content="website"/>
+  <meta charset="utf-8"/>
+  <meta name="generator" content="Loopar"/>
+  <meta name="framework" content="Loopar"/>
+  <meta name="cms" content="Loopar CMS"/>
+  </>
+}
+
 const Layout = (({ ...props }) => {
   const { activeParentMenu, webApp } = useWorkspace();
 
@@ -44,6 +55,7 @@ const Layout = (({ ...props }) => {
 
   return (
     <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
+      <SEO/>
       <TopNav menuActions={webApp.menu_actions} />
       <main className="flex-grow flex">
         <section

@@ -49,7 +49,7 @@ interface docRef {
 
 export const BaseFormContext = createContext({});
 
-export const FormProvider = ({ children, values, docRef }: any) => {
+export const FormProvider = ({ children, values, docRef, formRef }: any) => {
   const FormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
@@ -64,11 +64,12 @@ export const FormProvider = ({ children, values, docRef }: any) => {
   docRef && (docRef.Form = form);
 
   function onSubmit(values: z.infer<typeof FormSchema>) {
-    docRef && (docRef.save());
+    docRef && (docRef.save(values));
   }
 
   docRef && (docRef.formFields = form.formState);
 
+  formRef && (formRef.current = form);
   return (
     <BaseFormContext.Provider value={form}>
       <Form {...form}>
@@ -82,9 +83,9 @@ export const FormProvider = ({ children, values, docRef }: any) => {
 
 export const useFormContext = () => useContext(BaseFormContext);
 
-export function FormWrapper({ __DOCUMENT__, docRef, children }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode }) {
+export function FormWrapper({ __DOCUMENT__, docRef, children, formRef }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode, formRef: Function }) {
   return (
-    <FormProvider values={__DOCUMENT__} docRef={docRef}>
+    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef}>
       {children}
     </FormProvider>
   )

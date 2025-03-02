@@ -19,6 +19,9 @@ export const FormField = ({ render, onChange, ...props }) => {
     onChange && onChange(e);
   }
 
+  if(props.name == "user_name"){
+    console.log([props.name, control, props.value])
+  }
   /**
    * If field is not controller by Form
    */
@@ -36,9 +39,9 @@ export const FormField = ({ render, onChange, ...props }) => {
       })
     ) : (
       <BaseFormField
-          //{...props}
-          name={props.name}
-          value={props.value}
+        //{...props}
+        name={props.name}
+        value={props.value}
         control={control}
         render={render}
       />

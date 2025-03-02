@@ -7,7 +7,6 @@ import {
   FormDescription,
   FormLabel
 } from "@cn/components/ui/form";
-import { sep } from "pathe";
 
 export default function MetaSelect(props){
   const [rows, setRows] = useState(props.rows || []);
@@ -16,16 +15,13 @@ export default function MetaSelect(props){
   const model = useRef(null);
   const lastSearch = useRef(null);
   
-  const { renderInput, value, data, fieldControl } = BaseInput(props);
-  const [initialValue, setInitialValue] = useState(value());
+  const { renderInput, value, data } = BaseInput(props);
 
   useEffect(() => {
     const val = value();
     const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ value: val, label: val }];
     setRows(getPrepareOptions(initialRows));
   }, []);
-
-  //const [valueDescriptive, setValueDescriptive] = useState(data.value_descriptive);
 
   const search = useCallback((target, delay = true) => {
     const q = target?.target?.value || "";
@@ -141,8 +137,6 @@ export default function MetaSelect(props){
     } else if (Array.isArray(opts)) {
       return opts.reduce((acc, item) => {
         acc.push(buildOption(item))
-        //acc.push({ value: `${item}`, label: `${item}` })
-        
         return acc;
       }, []);
     }
@@ -152,7 +146,7 @@ export default function MetaSelect(props){
     return options.map(option => buildOption(option));
   };
 
-  const currentOption = (option, formattedValue) => {
+  const currentOption = (option) => {
     if (option) {
       const rowOption = rows.find(r => r.value === option);
       const valueDescriptive =  rowOption?.label || data.value_descriptive;
@@ -163,28 +157,7 @@ export default function MetaSelect(props){
     }
 
     return null;
-  }
-
-  const [selected, setSelected] = useState(currentOption(props.value || data.value));
-  
-  useEffect(() => {
-    setSelected(currentOption(props.value));
-  }, [props.value]);
-
-  useEffect(() => {
-    setSelected(currentOption(data.value));
-  }, [data.value]);
-
-  // useEffect(() => {
-  //   setInitialValue(value());
-  // }, [value()]);
-
-  useEffect(() => {
-    const val = value();
-    if (val) {
-      setSelected(currentOption(val));
-    }
-  }, [fieldControl.current?.value]);
+  };
 
   return renderInput((field) => (
     <>
@@ -195,7 +168,7 @@ export default function MetaSelect(props){
         search={(delay) => search(delay)}
         data={data}
         onSelect={field.onChange}
-        selected={selected}
+        selected={currentOption(field.value)}
       />
       {(data.description && props.simpleInput != true) && (
         <FormDescription>{data.description}</FormDescription>

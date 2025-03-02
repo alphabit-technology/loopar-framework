@@ -71,6 +71,7 @@ export const elementsDefinition = {
     //{element: "list", icon: "fa fa-list"},
     { element: "stripe", icon: "CreditCard" },
     { element: "stripe_embebed", icon: "CreditCard" },
+    { element: "seo", icon: "Globe", designerOnly: true },
     //{ element: "element_title", icon: "fa fa-heading" },
   ],
   [FORM_ELEMENT]: [

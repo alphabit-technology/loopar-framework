@@ -52,15 +52,14 @@ function mergeGroups(...arrays) {
 }
 
 export function ElementEditor({ element }) {
-  const { designerRef } = useDesigner();
-  const [connectedElement, setConnectedElement] = useState(designerRef.getElement(element));
-  const prevConnectedElement = useRef(connectedElement);
-
+  const { updateElement, getElement } = useDesigner();
+  const connectedElement = getElement(element);
   if (!connectedElement) return null;
 
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   const prevData = useRef({ ...data });
+  const formRef = useRef(null);
 
   const Element = __META_COMPONENTS__[elementName]?.default || {};
 
@@ -73,7 +72,7 @@ export function ElementEditor({ element }) {
 
   const handleSetConnectedElement = (e) => {
     if (!e) return;
-    const el = designerRef.getElement(e);
+    const el = getElement(e);
 
     if (el && el.data.key == connectedElement?.data.key) {
       handleSetData(el.data);
@@ -108,13 +107,6 @@ export function ElementEditor({ element }) {
     return mergeGroups(genericMetaFields, ...selfMetaFields);
   };
 
-  const saveData = () => {
-    if(!_.isEqual(prevData.current, data)){
-      designerRef.updateElement(data.key, data, false);
-      prevData.current = { ...data };
-    }
-  };
-
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
   const dontHaveMetaElements = Element.dontHaveMetaElements || [];
 
@@ -130,7 +122,8 @@ export function ElementEditor({ element }) {
           ...data,
           key: data.key + "_default",
           label: "Default",
-          hidden: 0
+          hidden: 0,
+          required: 0,
         }
       };
     }
@@ -138,11 +131,37 @@ export function ElementEditor({ element }) {
     return { group, elements };
   });
 
+  const __FORM_FIELDS__ = {};
+    metaFieldsData.map(({ group, elements }) => (
+      Object.entries(elements).map(([field, props]) => {
+        if (dontHaveMetaElements.includes(field)) return null;
+        if (!props.element) return props;
+
+        __FORM_FIELDS__[data.key + field] = data[field];
+      })
+    ));
+    
+  const saveData = () => {
+    function cleanObject(obj) {
+      return Object.fromEntries(
+        Object.entries(obj).filter(([_, value]) => value ?? false).map(([key, value]) => [key.replace(data.key, ""), value])
+      );
+    }
+
+    const newData = cleanObject(formRef.current.watch());
+    newData.key = data.key;
+
+    if (!_.isEqual(prevData.current, newData)) {
+      updateElement(newData.key, newData, false);
+      prevData.current = { ...newData };
+    }
+  };
+  
   return (
     <DesignerContext.Provider
       value={{}}
     >
-     
+      <FormWrapper __DOCUMENT__={__FORM_FIELDS__} formRef={formRef}>
         <div className="flex flex-col">
           <h2 className="pt-2 text-xl">
             {loopar.utils.Capitalize(elementName)} Editor
@@ -157,39 +176,31 @@ export function ElementEditor({ element }) {
                 name={group + "_tab"}
                 key={group + "_tab"}
               >
-                 <FormWrapper __DOCUMENT__={data} docRef={{save: saveData}}>
-                  {Object.entries(elements).map(([field, props]) => {
-                    if (dontHaveMetaElements.includes(field)) return null;
-                    if (!props.element) return props;
+                {Object.entries(elements).map(([field, props]) => {
+                  if (dontHaveMetaElements.includes(field)) return null;
+                  if (!props.element) return props;
 
-                    const value = data[field];
-
-                    return (
-                      <MetaComponent
-                        component={props.element}
-                        render={Component => (
-                          <Component
-                            data={{
-                              ...props.data,
-                              name: data.key + field,
-                              value: value,
-                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
-                            }}
-                            value={value}
-                            onChange={(e) => {
-                              data[field] = e.target ? e.target.value : e;
-                              saveData();
-                            }}
-                          />
-                        )}
-                      />
-                    )
-                  })}
-                </FormWrapper>
+                  return (
+                    <MetaComponent
+                      component={props.element}
+                      render={Component => (
+                        <Component
+                          data={{
+                            ...props.data,
+                            name: data.key + field,
+                            label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
+                          }}
+                          onChange={saveData}
+                        />
+                      )}
+                    />
+                  );
+                })}
               </Tab>
             ))}
           </Tabs>
         </div>
+      </FormWrapper>
     </DesignerContext.Provider>
   );
 };

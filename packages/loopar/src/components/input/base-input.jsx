@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect, use } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { dataInterface } from "@global/element-definition";
 import { FormItem, FormMessage } from "@cn/components/ui/form";
 import { FormField } from "./form-field";
@@ -6,48 +6,49 @@ import { cn } from "@cn/lib/utils";
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
+import { useDesigner } from "@context/@/designer-context";
 import _ from "lodash";
 
 import { useDocument } from "@context/@/document-context";
 
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
-  const fieldControl = useRef(null);
+  const fieldRef = useRef(null);
+  const [fieldValue, setFieldValue] = useState(props.value || (props.data && props.data.value) || "");
+
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
   const parentHidden = useHidden();
   const { docRef } = useDocument();
-  
-  const getData = () => {
-    if(props.element) {
-      const data = props.data || {};
+  const { designerMode } = useDesigner();
 
+  const getData = () => {
+    if (props.element) {
+      const data = props.data || {};
       data.id ??= names.id || names.key;
       data.name ??= names.name || data.id;
-
       data.label ??= loopar.utils.Capitalize(data.name.replaceAll("_", " "));
       return data;
-    } else {
-      return props.data || {};
     }
-  }
+    return props.data || {};
+  };
 
   const [data, setData] = useState(getData());
-
   const prevData = useRef(data);
 
   useEffect(() => {
+    if(!designerMode) return;
+
     const newData = getData();
-    if(!_.isEqual(prevData.current, newData)){
+    if (!_.isEqual(prevData.current, newData)) {
       setData(newData);
       prevData.current = newData;
     }
-  }, [props.data, props.data.value]);
+  }, [props.data]);
 
   useEffect(() => {
-    if(docRef){
+    if (docRef) {
       const data = getData();
-      docRef.__REFS__[data.name] = getData();
-
+      docRef.__REFS__[data.name] = data;
       return () => {
         delete docRef.__REFS__[data.name];
       };
@@ -55,41 +56,41 @@ const BaseInput = (props) => {
   }, []);
 
   const handleInputChange = useCallback((event) => {
-    if (event && typeof event === "object") {
-      event.target ??= {};
-      event.target.value = (event.target.files || event.target.value);
-    } else {
-      event = { target: { value: event } };
-    }
+    if(designerMode) return;
 
-    setTimeout(() => {
-      validate();
-      props.onChange && props.onChange(event);
-      props.onChanged && props.onChanged(event);
-    }, 0);
-  }, [props.onChange, props.onChanged]);
+    let newValue;
+    if (event && typeof event === "object") {
+      newValue = event.target.files || event.target.value;
+    } else {
+      newValue = event;
+    }
+    setFieldValue(newValue);
+  }, []);
+
+  useEffect(() => {
+    if(designerMode) return;
+    const event = { target: { value: fieldValue } };
+    validate();
+    
+    props.onChange?.(event);
+    props.onChanged?.(event);
+  }, [fieldValue]);
 
   const validate = () => {
-    if(data.hidden || parentHidden) return { valid: true };
-    const validation = dataInterface({ data }, value()).validate();
+    if(designerMode) return;
+    if (data.hidden || parentHidden) return { valid: true };
+    const validation = dataInterface({ data }, fieldValue).validate();
     setIsInvalid(!validation.valid);
     return validation;
   };
 
   const value = (val) => {
-    if (typeof val === "undefined") return fieldControl.current?.value;
-
-    if (!fieldControl.current) return;
-
-    fieldControl.current.value = val;
-    setTimeout(() => {
-      fieldControl.current.onChange({ target: { value: val } });
-    }, 0);
+    if (typeof val === "undefined") return fieldValue;
+    setFieldValue(val);
   };
 
   const readOnly = props.readOnly || data.readOnly;
-
-  const hasLabel = () => !(props.withoutLabel === true);
+  const hasLabel = () => props.withoutLabel !== true;
 
   const renderInput = (input, className = "") => {
     const invalidClassName = isInvalid ? "border border-red-500 p-2" : "";
@@ -97,29 +98,17 @@ const BaseInput = (props) => {
     return (
       <FormField
         name={data.name || data.key || data.id || ""}
-        dontHaveForm={props.dontHaveForm}
         {...props}
         render={({ field }) => {
-          if (!fieldControl.current) {
-            field.value = props.value || data.value;
-          }
-
-          fieldControl.current = field;
-          const oldChange = field.onChange;
-
-          field.onChange = (e) => {
-            if(props.handleChange){
-              handleInputChange(props.handleChange(e));
-            }else{
-              handleInputChange(e);
-            }
-            
-            oldChange(e);
+          fieldRef.current = field;
+          const combinedOnChange = (e) => {
+            if (field.onChange) field.onChange(e);
+            handleInputChange(e);
           };
 
           return (
             <FormItem className={cn("flex flex-col mb-2 rounded shadow-sm", invalidClassName, className)}>
-              {input(field, data)}
+              {input({ ...field, onChange: combinedOnChange }, data)}
               <FormMessage>
                 {field.message || (isInvalid && field.invalidMessage)}
               </FormMessage>
@@ -130,12 +119,13 @@ const BaseInput = (props) => {
     );
   };
 
-  if(props.render){
+  if (props.render) {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data, handleInputChange, fieldControl };
-}
+  return { renderInput, value, validate, readOnly, hasLabel, data, fieldControl:fieldRef };
+};
+
 
 BaseInput.metaFields = () => {
   return [[

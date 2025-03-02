@@ -13,7 +13,11 @@ import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 
-export const Designer = ({designerRef, metaComponents, data}) => {
+import elementManage from "@@tools/element-manage";
+
+import Emitter from '@services/emitter/emitter';
+
+export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
@@ -48,7 +52,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
 
     if (!editElement || editElement == "null") {
       handleSetMode("designer");
-    } else if (!designerRef.findElement("key", editElement)) {
+    } else if (!findElement("key", editElement)) {
       setEditElement(null);
     }
   }, []);
@@ -66,7 +70,8 @@ export const Designer = ({designerRef, metaComponents, data}) => {
 
   const setMeta = (meta) => {
     if(loopar.utils.isJSON(meta)){
-      designerRef.setMeta(JSON.parse(meta));
+      props.onChange(meta);
+      //designerRef.setMeta(JSON.parse(meta));
     }else{
       console.error(["Invalid JSON object", meta]);
       loopar.throw("Invalid JSON object");
@@ -98,7 +103,7 @@ export const Designer = ({designerRef, metaComponents, data}) => {
       label: (
         <div className="relative bg-card/50 border text-card-foreground">
           <pre className="relative p-4 h-full">
-            <code className="text-success w-full h-full text-pretty font-mono text-md font-bold text-green-600">
+            <code className="w-full h-full text-pretty font-mono text-md font-bold text-green-600">
               <p className="pb-2 border-b-2">
                 Based on the type of API you have contracted with OpenAI,
                 you may need to wait for a specific
@@ -184,12 +189,146 @@ export const Designer = ({designerRef, metaComponents, data}) => {
     }
   }
 
+  const getElements = () => {
+    return JSON.parse(metaComponents || "[]");
+  }
+
+  const findElement = (field, value, elements = getElements()) => {
+    if (!value || value === "null" || value.length == 0) return null;
+    
+    for (let i = 0; i < elements.length; i++) {
+      if (elements[i]?.data?.[field] === value) {
+        return elements[i];
+      } else if (Array.isArray(elements[i]?.elements)) {
+        const found = findElement(field, value, elements[i].elements);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+
+  const updateElements = (target, elements, current = null) => {
+    const currentElements = getElements();
+    const targetKey = target.data.key;
+    const currentKey = current ? current.data.key : null;
+
+    const lastParentKey = current ? current.parentKey : null;
+    const selfKey = data.key;
+
+    //Search target in structure and set elements in target
+    const setElementsInTarget = (structure) => {
+      return structure.map((el) => {
+        el.elements = el.data.key === targetKey ? elements
+          : setElementsInTarget(el.elements || []);
+        return el;
+      });
+    };
+
+    //Search target in structure and set elements in target, if target is self set directly in self
+    let newElements = targetKey === selfKey ? elements
+      : setElementsInTarget(currentElements, selfKey);
+
+    //Search current in structure and delete current in last parent
+    const deleteCurrentOnLastParent = (structure, parent) => {
+      if (lastParentKey === parent) {
+        return structure.filter((e) => e.data.key !== currentKey);
+      }
+
+      return structure.map((el) => {
+        el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
+        return el;
+      });
+    };
+
+    if (current && lastParentKey !== targetKey) {
+      newElements = deleteCurrentOnLastParent(newElements, selfKey);
+    }
+
+    setMeta(JSON.stringify(newElements));
+    //makeElements(newElements);
+  }
+
+  const updateElement = (key, data, merge = true) => {
+    const selfElements = getElements();
+
+    if (data.name) {
+      const exist = findElement("name", data.name, selfElements);
+
+      if (exist && exist.data.key !== key) {
+        loopar.throw(
+          "Duplicate field",
+          `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`
+        );
+        return false;
+      }
+    }
+
+    const updateE = (structure) => {
+      return structure.map((el) => {
+        if (el.data.key === key) {
+          el.data = merge ? Object.assign({}, el.data, data) : data;
+          el.data.key ??= elementManage.getUniqueKey();
+        } else {
+          el.elements = updateE(el.elements || []);
+        }
+
+        /**Purify Data */
+        el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
+          if (
+            key === "background_color" &&
+            JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
+          ) {
+            return obj;
+          }
+
+          if (![null,undefined,"","0","false",false,'{"color":"#000000","alpha":0.5}',].includes(value)) {
+            obj[key] = value;
+          }
+          return obj;
+        }, {});
+        /**Purify Meta */
+
+        return { element: el.element, data: el.data, elements: el.elements };
+      });
+    };
+
+    props.onChange({target: {value: JSON.stringify(updateE(selfElements))}});
+    Emitter.emit("currentElementEdit", data.key);
+  }
+
+   const getElement = (key) => {
+    return findElement("key", key);
+  }
+
+  const deleteElement = (element) => {
+    const removeElement = (elements = getElements()) => {
+      return elements.filter((el) => {
+        if (el.data.key === element) {
+          return false;
+        } else if (el.elements) {
+          el.elements = removeElement(el.elements);
+        }
+
+        return true;
+      });
+    };
+
+    makeElements(removeElement());
+  }
+
   return (
     <DesignerContext.Provider
       value={{
-        designerMode: true,
+        designerMode: !designerMode, //Detect if self context is designer
         designerModeType,
-        designerRef,
+        designerRef: {
+          updateElements
+        },
+        updateElement,
+        getElement,
+        deleteElement,
         designing: designerModeType === "designer" || designerModeType === "editor",
         currentEditElement: editElement,
         handleEditElement,

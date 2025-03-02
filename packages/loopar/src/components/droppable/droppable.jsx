@@ -18,7 +18,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   const [elements, setElements] = useState(props.elements || []);
   const [movement, setMovement] = useState();
   const [position, setPosition] = useState();
-  const { currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, designerRef } = useDesigner();
+  const { currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, updateElements, designerRef } = useDesigner();
 
   const isDroppable = true;
   const droppableEvents = {};
@@ -78,6 +78,9 @@ export function Droppable({ data = {}, children, className, Component = "div", .
     }
 
     if (movement) {
+      window.verticalDirection = movement.y >= window.lastY ? 'down' : 'up';
+      window.lastY = movement.y;
+
       const scrollSpeed = 15;
       const scrollBuffer = 100;
 
@@ -97,7 +100,8 @@ export function Droppable({ data = {}, children, className, Component = "div", .
         setElement(
           <div
             style={{ maxHeight: rect.height, opacity: 0.5 }}
-            className={`${currentDragging?.className}`} dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
+            className={`${currentDragging?.className}`} 
+            dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
           />
           , position
         );
@@ -163,9 +167,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
       e.stopPropagation();
       e.preventDefault();
 
-      if (!currentDragging) return;
-
-      if (currentDragging.ref === dropZoneRef.current) return;
+      if (!currentDragging || currentDragging.ref === dropZoneRef.current) return;
 
       const rect = currentDragging.rect;
       const mouse = currentDragging.mousePosition;

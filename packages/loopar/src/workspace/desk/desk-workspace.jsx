@@ -11,6 +11,7 @@ export default function DeskWorkspace(props){
   return (
     <BaseWorkspace menuData={menuData}>
       <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
+        <meta name="robots" content="noindex, nofollow"/>
         <TopNav openNav={openNav}></TopNav>
         <section className="flex-grow flex">
           <SideNav

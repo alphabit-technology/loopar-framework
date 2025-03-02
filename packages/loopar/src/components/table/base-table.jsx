@@ -548,6 +548,7 @@ export class BaseTable extends Component {
                     withoutLabel: true,
                   },
                   ...c.data,
+                  required: 0,
                 };
 
                 const searchData = this.state.searchData;

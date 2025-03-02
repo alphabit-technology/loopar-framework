@@ -3,6 +3,7 @@ import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import PureHTMLBlock from "@pure-html-block";
+import {SEORender} from "@seo-render";
 import {Animations } from "./meta";
 
 export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
@@ -49,6 +50,12 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
       data={data}
       className={className}
       style={style}
+    />
+  }
+
+  if (meta.element === SEO) {
+    return <SEORender
+      data={data}
     />
   }
 

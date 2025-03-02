@@ -41,12 +41,7 @@ import { Loader } from "@loopar/loader";
 
   window.lastY = 0;
   window.verticalDirection = null;
-  document.addEventListener('mousemove', (e) => {
-    e.stopPropagation();
-    window.verticalDirection = e.clientY > window.lastY ? 'down' : 'up';
-    window.lastY = e.clientY;
-  });
-  
+
   ReactDOM.hydrateRoot(
     document.getElementById("loopar-root"),
     <BrowserRouter>

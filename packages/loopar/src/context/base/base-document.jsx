@@ -51,11 +51,7 @@ export default class BaseDocument extends React.Component {
         spacing={this.state.meta?.__SPACING__}
       >
         <>
-          <meta name="title" content="Loopar Framework"/>
-          <meta property="og:title" content="Loopar Framework"/>
-          <meta name="description" content="Loopar Framework"/>
-          <meta property="og:description" content="Loopar Framework"/>
-          <meta property="og:site_name" content="Loopar Framework"/>       
+          <title>{this.state.meta?.__DOCUMENT_TITLE__}</title>
           {content}
         </>
       </DocumentProvider>
