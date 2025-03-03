@@ -3,6 +3,9 @@ import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader
 import { useDesigner } from "@context/@/designer-context";
 import { DesignElement } from "./src/DesignElement.jsx";
 import { Meta } from "./src/Meta.jsx"
+import { useWorkspace } from "@workspace/workspace-provider";
+
+import { elementsDict as baseElementsDict } from "@global/element-definition";
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey}) {
   return elements.map(meta => {
@@ -27,10 +30,17 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
 export const MetaComponent = ({ component = "div", render, ...props }) => {
   const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
+  const { ENVIRONMENT } = useWorkspace();
 
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === component));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 
+  const def = baseElementsDict[component]?.def || {};
+
+  if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
+    global.__REQUIRE_COMPONENTS__.push(component);
+  }
+  
   useEffect(() => {
     if (!Comp) {
       ComponentsLoader([component], () => {

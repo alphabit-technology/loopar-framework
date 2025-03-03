@@ -36,7 +36,6 @@ export function Editor({ value, onChange }) {
           setMarkdownVal(value);
         }}
         extensions={[
-          //javascript({ jsx: true }),
           EditorView.lineWrapping
         ]}
       />
@@ -49,6 +48,7 @@ export default function MetaMarkdown (props) {
   const {designing} = useDesigner();
 
   const handleChange = (value) => {
+    console.log("value", value);
     data.value !== value && set("value", value);
   }
   
@@ -61,13 +61,13 @@ export default function MetaMarkdown (props) {
   }, []);
 
   const options = useMemo(() => {
-      return {
-        autofocus: false,
-        spellChecker: false,
-        toolbar: [
-          "bold", "italic", "heading", "|", "quote", "code", "table", "horizontal-rule", "|", "link", "image", "side-by-side", "fullscreen", "|", "guide"
-        ]
-      };
+    return {
+      autofocus: false,
+      spellChecker: false,
+      toolbar: [
+        "bold", "italic", "heading", "|", "quote", "code", "table", "horizontal-rule", "|", "link", "image", "side-by-side", "fullscreen", "|", "guide"
+      ]
+    };
   }, []);
   
   return (

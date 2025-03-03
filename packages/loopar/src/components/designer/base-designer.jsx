@@ -324,7 +324,8 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
         designerMode: !designerMode, //Detect if self context is designer
         designerModeType,
         designerRef: {
-          updateElements
+          updateElements,
+          updateElement
         },
         updateElement,
         getElement,

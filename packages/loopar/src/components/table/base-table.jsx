@@ -2,7 +2,7 @@ import Component from "@component";
 import elementManage from "@@tools/element-manage";
 import {Pagination} from "@pagination";
 import loopar from "loopar";
-import MetaComponent from "@meta-component";
+import {MetaComponent} from "@meta-component";
 import { Link } from "@link";
 import { FormWrapper } from "@context/form";
 
@@ -559,9 +559,45 @@ export class BaseTable extends Component {
                 data.size = "sm";
                 
                 return (
+                  <MetaComponent
+                    component={c.element}
+                    render={Component => (
+                      <Component
+                        data={{
+                          ...data,
+                          key: c.data.name,
+                        }}
+                        value={data.value}
+                        dontHaveForm={true}
+                        dontHaveLabel={true}
+                        onChange={(e) => {
+                          const value = (e && e.target) ? e.target.value : e;
+
+                          if (value) {
+                            searchData[c.data.name] = `${value}`;
+                          } else {
+                            delete searchData[c.data.name];
+                          }
+
+                          this.setState({ searchData }, () => {
+                            clearTimeout(this.lastSearch);
+                            this.lastSearch = setTimeout(() => {
+                              this.search();
+                            }, [SELECT, SWITCH, CHECKBOX].includes(c.element) ? 0: 300);
+                          });
+                        }}
+                      />
+                    )}
+                  />
+                )
+                /*return (
                   <div>
                     <MetaComponent
-                      elements={[                   
+                      component={c.element}
+                      data={data}
+                      render={(field, data) => {
+                        return 
+                        elements={[                   
                         {
                           element: c.element,
                           key: c.data.name,
@@ -569,7 +605,8 @@ export class BaseTable extends Component {
                           dontHaveForm: true,
                           dontHaveLabel: true,
                           onChange: (e) => {
-                            const value = e.target ? e.target.value : e;
+                            console.log(e);
+                            const value = e?.target?.value || e//e.target ? e.target.value : e;
 
                             if (value) {
                               searchData[c.data.name] = `${value}`;
@@ -589,7 +626,7 @@ export class BaseTable extends Component {
                       parent={this}
                     />
                   </div>
-                );
+                );*/
               }
             }
           })

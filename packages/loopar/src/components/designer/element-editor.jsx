@@ -150,6 +150,7 @@ export function ElementEditor({ element }) {
 
     const newData = cleanObject(formRef.current.watch());
     newData.key = data.key;
+    newData.value = data.value;
 
     if (!_.isEqual(prevData.current, newData)) {
       updateElement(newData.key, newData, false);

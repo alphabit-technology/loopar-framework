@@ -15,12 +15,17 @@ export default function DefaultCheckbox(props) {
     <BaseInput
       {...props}
       render={(field, data) => {
+        const handleCheckedChange = (checked) => {
+          const binaryValue = loopar.utils.trueToBinary(checked);
+          field.onChange(binaryValue);
+        };
+
         return (
           <div className="gap-2">
             <div className="flex items-center">
               <FormControl className="bg-red-500">
                 <Comp
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={handleCheckedChange}
                   checked={loopar.utils.trueToBinary(field.value)}
                   className="-switch- hover:border-slate-500/70"
                 />
