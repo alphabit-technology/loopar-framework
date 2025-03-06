@@ -4,7 +4,7 @@ import { themes } from "@global/themes";
 import { titleize } from "inflection";
 import BaseInput from "@base-input";
 
-const Selector = ({ color, twcolor, text, onSelect, active }) => {
+const Selector = ({ color, twcolor, text, onSelect, active, ...props }) => {
   const handleClick = (e) => {
     e.preventDefault();
     onSelect({ target: { value: color } });
@@ -15,6 +15,7 @@ const Selector = ({ color, twcolor, text, onSelect, active }) => {
       variant="ghost"
       className={`w-full inline-flex items-center justify-start gap-2 ${active === color ? 'bg-primary/50 text-white' : 'text-primary'}`}
       onClick={handleClick}
+      key={props.key}
     >
       <span className={`${twcolor} w-5 h-5 rounded-full`}>
         {active === color && <CheckCircle className="w-5 h-5 text-white" />}
@@ -34,7 +35,7 @@ export function ThemeSelector({ onSelect, active }) {
             twcolor={theme.twcolor}
             text={titleize(theme.name)}
             onSelect={onSelect}
-            key={theme.color}
+            key={theme.name}
             active={active}
           />
         );

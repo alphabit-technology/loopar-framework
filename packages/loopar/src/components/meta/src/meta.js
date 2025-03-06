@@ -1,6 +1,6 @@
 import elementManage from "@@tools/element-manage";
 import fileManager from "@@file/file-manager";
-import loopar from "loopar";
+import {loopar} from "loopar";
 
 export function designElementProps(el) {
   if (!el.data) {
@@ -38,7 +38,7 @@ export function prepareMeta(metaProps, parent, image) {
   if (data) {
     const backgroundColor = {};
     if (data?.background_color) {
-      const color = loopar.utils.rgba(data.background_color);
+      const color = loopar.utils.objToRGBA(data.background_color);
 
       if (color) {
         Object.assign(backgroundColor, {

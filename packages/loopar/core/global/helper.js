@@ -279,6 +279,23 @@ function getArrayMax(array, col) {
   return max;
 }
 
+function objToRGBA(color) {
+  color = JSONparse(color, color);
+  if (typeof color !== "object" || color === null) color = { r: 0, g: 0, b: 0, a: null };
+
+  let { r, g, b, a } = color;
+
+  if (typeof r !== "number" || r < 0 || r > 255) return null;
+  if (typeof g !== "number" || g < 0 || g > 255) return null;
+  if (typeof b !== "number" || b < 0 || b > 255) return null;
+
+  a = a == null ? 1 : a;
+
+  if (typeof a !== "number" || a < 0 || a > 1) return null;
+
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 export {
   Capitalize,
   UPPERCASE,
@@ -309,4 +326,5 @@ export {
   formatDateTime,
   compare,
   getArrayMax,
+  objToRGBA,
 }

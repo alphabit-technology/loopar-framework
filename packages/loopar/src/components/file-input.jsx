@@ -17,7 +17,7 @@ const FileInput = (props) => {
         return (
           <>
             {data.label && <FormLabel>{data.label}</FormLabel>}
-            <FormControl className="bg-red-500">
+            <FormControl>
               <div
                 className={`w-full h-10 p-3 border shadow-md bg-slate-300/50 dark:bg-slate-700/50 ${hasFiles ? "has-files" : ""}`}
                 style={{ minHeight: 270 }}

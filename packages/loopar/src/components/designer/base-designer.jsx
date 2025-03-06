@@ -16,6 +16,7 @@ import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
 
 import Emitter from '@services/emitter/emitter';
+import { set } from "../../../core/global/cookie-manager";
 
 export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const [activeId] = useState(null);
@@ -57,6 +58,135 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     }
   }, []);
 
+  
+  const getElements = () => {
+    return JSON.parse(metaComponents || "[]");
+  }
+
+  const findElement = (field, value, elements = getElements()) => {
+    if (!value || value === "null" || value.length == 0) return null;
+    
+    for (let i = 0; i < elements.length; i++) {
+      if (elements[i]?.data?.[field] === value) {
+        return elements[i];
+      } else if (Array.isArray(elements[i]?.elements)) {
+        const found = findElement(field, value, elements[i].elements);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+
+  const updateElements = (target, elements, current = null) => {
+    const currentElements = getElements();
+    const targetKey = target.data.key;
+    const currentKey = current ? current.data.key : null;
+
+    const lastParentKey = current ? current.parentKey : null;
+    const selfKey = data.key;
+
+    //Search target in structure and set elements in target
+    const setElementsInTarget = (structure) => {
+      return structure.map((el) => {
+        el.elements = el.data.key === targetKey ? elements
+          : setElementsInTarget(el.elements || []);
+        return el;
+      });
+    };
+
+    //Search target in structure and set elements in target, if target is self set directly in self
+    let newElements = targetKey === selfKey ? elements
+      : setElementsInTarget(currentElements, selfKey);
+
+    //Search current in structure and delete current in last parent
+    const deleteCurrentOnLastParent = (structure, parent) => {
+      if (lastParentKey === parent) {
+        return structure.filter((e) => e.data.key !== currentKey);
+      }
+
+      return structure.map((el) => {
+        el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
+        return el;
+      });
+    };
+
+    if (current && lastParentKey !== targetKey) {
+      newElements = deleteCurrentOnLastParent(newElements, selfKey);
+    }
+
+    setMeta(JSON.stringify(newElements));
+  }
+
+  const updateElement = (key, data, merge = true) => {
+    const selfElements = getElements();
+
+    if (data.name) {
+      const exist = findElement("name", data.name, selfElements);
+
+      if (exist && exist.data.key !== key) {
+        loopar.throw(
+          "Duplicate field",
+          `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`
+        );
+        return false;
+      }
+    }
+
+    const updateE = (structure) => {
+      return structure.map((el) => {
+        if (el.data.key === key) {
+          el.data = merge ? Object.assign({}, el.data, data) : data;
+          el.data.key ??= elementManage.getUniqueKey();
+        } else {
+          el.elements = updateE(el.elements || []);
+        }
+
+        /**Purify Data */
+        el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
+          if (
+            key === "background_color" &&
+            JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
+          ) {
+            return obj;
+          }
+
+          if (![null,undefined,"","0","false",false,'{"color":"#000000","alpha":0.5}',].includes(value)) {
+            obj[key] = value;
+          }
+          return obj;
+        }, {});
+        /**Purify Meta */
+
+        return { element: el.element, data: el.data, elements: el.elements };
+      });
+    };
+
+    props.onChange({target: {value: JSON.stringify(updateE(selfElements))}});
+    Emitter.emit("currentElementEdit", data.key);
+  }
+
+   const getElement = (key) => {
+    return findElement("key", key);
+  }
+
+  const deleteElement = (element) => {
+    const removeElement = (elements = getElements()) => {
+      return elements.filter((el) => {
+        if (el.data.key === element) {
+          return false;
+        } else if (el.elements) {
+          el.elements = removeElement(el.elements);
+        }
+
+        return true;
+      });
+    };
+
+    setMeta(JSON.stringify(removeElement()));
+  }
+
   const handleEditElement = (element) => {
     setEditElement(element);
     handleChangeMode("editor");
@@ -64,7 +194,7 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
 
   const handleDeleteElement = (element) => {
     loopar.confirm("Are you sure you want to delete this element?", () => {
-      designerRef.deleteElement(element.data.key);
+      deleteElement(element.data.key);
     });
   }
 
@@ -189,135 +319,6 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     }
   }
 
-  const getElements = () => {
-    return JSON.parse(metaComponents || "[]");
-  }
-
-  const findElement = (field, value, elements = getElements()) => {
-    if (!value || value === "null" || value.length == 0) return null;
-    
-    for (let i = 0; i < elements.length; i++) {
-      if (elements[i]?.data?.[field] === value) {
-        return elements[i];
-      } else if (Array.isArray(elements[i]?.elements)) {
-        const found = findElement(field, value, elements[i].elements);
-        if (found) {
-          return found;
-        }
-      }
-    }
-    return null;
-  };
-
-  const updateElements = (target, elements, current = null) => {
-    const currentElements = getElements();
-    const targetKey = target.data.key;
-    const currentKey = current ? current.data.key : null;
-
-    const lastParentKey = current ? current.parentKey : null;
-    const selfKey = data.key;
-
-    //Search target in structure and set elements in target
-    const setElementsInTarget = (structure) => {
-      return structure.map((el) => {
-        el.elements = el.data.key === targetKey ? elements
-          : setElementsInTarget(el.elements || []);
-        return el;
-      });
-    };
-
-    //Search target in structure and set elements in target, if target is self set directly in self
-    let newElements = targetKey === selfKey ? elements
-      : setElementsInTarget(currentElements, selfKey);
-
-    //Search current in structure and delete current in last parent
-    const deleteCurrentOnLastParent = (structure, parent) => {
-      if (lastParentKey === parent) {
-        return structure.filter((e) => e.data.key !== currentKey);
-      }
-
-      return structure.map((el) => {
-        el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
-        return el;
-      });
-    };
-
-    if (current && lastParentKey !== targetKey) {
-      newElements = deleteCurrentOnLastParent(newElements, selfKey);
-    }
-
-    setMeta(JSON.stringify(newElements));
-    //makeElements(newElements);
-  }
-
-  const updateElement = (key, data, merge = true) => {
-    const selfElements = getElements();
-
-    if (data.name) {
-      const exist = findElement("name", data.name, selfElements);
-
-      if (exist && exist.data.key !== key) {
-        loopar.throw(
-          "Duplicate field",
-          `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`
-        );
-        return false;
-      }
-    }
-
-    const updateE = (structure) => {
-      return structure.map((el) => {
-        if (el.data.key === key) {
-          el.data = merge ? Object.assign({}, el.data, data) : data;
-          el.data.key ??= elementManage.getUniqueKey();
-        } else {
-          el.elements = updateE(el.elements || []);
-        }
-
-        /**Purify Data */
-        el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
-          if (
-            key === "background_color" &&
-            JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
-          ) {
-            return obj;
-          }
-
-          if (![null,undefined,"","0","false",false,'{"color":"#000000","alpha":0.5}',].includes(value)) {
-            obj[key] = value;
-          }
-          return obj;
-        }, {});
-        /**Purify Meta */
-
-        return { element: el.element, data: el.data, elements: el.elements };
-      });
-    };
-
-    props.onChange({target: {value: JSON.stringify(updateE(selfElements))}});
-    Emitter.emit("currentElementEdit", data.key);
-  }
-
-   const getElement = (key) => {
-    return findElement("key", key);
-  }
-
-  const deleteElement = (element) => {
-    const removeElement = (elements = getElements()) => {
-      return elements.filter((el) => {
-        if (el.data.key === element) {
-          return false;
-        } else if (el.elements) {
-          el.elements = removeElement(el.elements);
-        }
-
-        return true;
-      });
-    };
-
-    makeElements(removeElement());
-  }
-
   return (
     <DesignerContext.Provider
       value={{
@@ -325,11 +326,10 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
         designerModeType,
         designerRef: {
           updateElements,
-          updateElement
+          updateElement,
         },
         updateElement,
         getElement,
-        deleteElement,
         designing: designerModeType === "designer" || designerModeType === "editor",
         currentEditElement: editElement,
         handleEditElement,
