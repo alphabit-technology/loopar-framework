@@ -17,6 +17,7 @@ import * as lucideIcons from 'lucide-react'
 import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
 import { Document } from './loopar/document.js';
+import { tailwinInit } from './loopar/tailwindbase.js';
 
 export class Loopar extends Document {
   #installingApp = false;
@@ -26,7 +27,6 @@ export class Loopar extends Document {
   session = new Session();
   #cookie = new Cookie();
   auth = new Auth(this.cookie, this.getUser.bind(this), this.disabledUser.bind(this));
-  tailwindClasses = {}
   #server = {};
 
   validateGitRepository(appName, repository) {
@@ -90,30 +90,7 @@ export class Loopar extends Document {
     await this.build();
     await this.buildIcons();
 
-    this.tailwindClasses = {};
-    await this.setTailwind();
-  }
-
-  async setTailwind(toElement, classes) {
-    toElement && (this.tailwindClasses[toElement] = classes);
-    let colector = "";
-
-    const filterSpecialChars = (str) => {
-      return str.replace(/[^a-zA-Z0-9:/ -]/g, '');
-    };
-
-    for (const [element, classes] of Object.entries(this.tailwindClasses)) {
-      colector += `<div className="${filterSpecialChars(classes)}"/>`;
-    }
-
-    const fn = `
-  export function Tailwind() {
-    return (
-      <div style={{display:"none"}}>${colector}</div>
-    );
-  }`
-
-    await fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
+    await tailwinInit();
   }
 
   async #loadConfig(data = null) {

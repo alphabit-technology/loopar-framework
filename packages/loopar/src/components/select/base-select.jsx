@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback} from "react";
 import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { cn } from "@cn/lib/utils";
 import { Button } from "@cn/components/ui/button";
+import {invalidClass} from "../input/index.js";
 
 import {
   Command,
@@ -17,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@cn/components/ui/popover"
 
-export function Select({ search, data, onSelect, options = [], selected={} }) {
+export function Select({ search, data, onSelect, options = [], selected={}, field }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
   const containerRef = useRef(null);
@@ -122,7 +123,8 @@ export function Select({ search, data, onSelect, options = [], selected={} }) {
           role="combobox"
           className={cn(
             "w-full justify-between pr-1",// max-w-sm
-            !current.value && "text-muted-foreground"
+            !current.value && "text-muted-foreground",
+            field.isInvalid && invalidClass.border
           )}
           onClick={(e) => {
             e.preventDefault();

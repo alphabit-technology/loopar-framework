@@ -1,11 +1,11 @@
 import BaseInput from "@base-input";
+import {FormLabel} from "./input/index.js";
 import React, { useState, useEffect, useRef, useCallback} from "react";
 import loopar from "loopar";
 import { Select } from "./select/base-select";
 
 import {
-  FormDescription,
-  FormLabel
+  FormDescription
 } from "@cn/components/ui/form";
 
 export default function MetaSelect(props){
@@ -161,7 +161,7 @@ export default function MetaSelect(props){
 
   return renderInput((field) => (
     <>
-      {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
+      <FormLabel {...props} field={field} />
       <Select
         field={field}
         options={rows}

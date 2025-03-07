@@ -1,10 +1,10 @@
 import BaseInput from "@base-input";
+import {FormLabel, invalidClass} from "./input/index.js";
 import { Input as FormInput } from "@cn/components/ui/input";
 import loopar from "loopar";
 import {
   FormControl,
-  FormDescription,
-  FormLabel
+  FormDescription
 } from "@cn/components/ui/form";
 
 const inputTypeMap = {
@@ -45,16 +45,17 @@ export default function Input(props) {
   return renderInput((field) => {
     return (
       <>
-        {!props.dontHaveLabel && <FormLabel>{data.label}</FormLabel>}
+        <FormLabel {...props} field={field} />
         <FormControl>
-          <FormInput 
+          <FormInput
             {..._props}
             placeholder={data.placeholder || data.label}
             {...field}
             {..._type}
+            className={field.isInvalid ? invalidClass.border : ""}
           />
         </FormControl>
-        {data.description && <FormDescription>
+        {(data.description) && <FormDescription>
           {data.description}
         </FormDescription>}
       </>

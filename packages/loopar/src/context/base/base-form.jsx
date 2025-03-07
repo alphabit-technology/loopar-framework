@@ -22,7 +22,7 @@ export default class BaseForm extends BaseDocument {
 
   send({ action, params={}, ...options } = {}) {
     //options = typeof options === 'string' ? { action: options } : options;
-    ///this.validate();
+    this.validate();
     
     /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
       this.lastData = JSON.stringify(this.getFormValues);
@@ -117,10 +117,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   #getFormValues(toSave = false) {
-    //return this.meta.__DOCUMENT__//
     if(!this.Form)  return this.meta.__DOCUMENT__;
-
-    //console.log(["Form", this.Form.watch()]);
     
     const fields = this.__FIELDS__;
     return Object.entries(this.Form.watch()).reduce((obj, [name, value]) => {

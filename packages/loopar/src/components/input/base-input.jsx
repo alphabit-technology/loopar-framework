@@ -93,7 +93,7 @@ const BaseInput = (props) => {
   const hasLabel = () => props.withoutLabel !== true;
 
   const renderInput = (input, className = "") => {
-    const invalidClassName = isInvalid ? "border border-red-500 p-2" : "";
+    //const invalidClassName = isInvalid ? "border border-red-600/40 text-red p-2" : "";
 
     return (
       <FormField
@@ -107,8 +107,8 @@ const BaseInput = (props) => {
           };
 
           return (
-            <FormItem className={cn("flex flex-col mb-2 rounded shadow-sm", invalidClassName, className)}>
-              {input({ ...field, onChange: combinedOnChange }, data)}
+            <FormItem className={cn("flex flex-col mb-2 rounded shadow-sm", className)}>
+              {input({ ...field, onChange: combinedOnChange, isInvalid }, data)}
               <FormMessage>
                 {field.message || (isInvalid && field.invalidMessage)}
               </FormMessage>

@@ -1,0 +1,68 @@
+@theme {
+  --background: 0.0 0.0% 100.0%;
+  --foreground: 216.9 19.1% 26.7%;
+  --card: 210.0 0.0% 98.0%;
+  --card-foreground: 216.9 19.1% 26.7%;
+  --popover: 0.0 0.0% 100.0%;
+  --popover-foreground: 216.9 19.1% 26.7%;
+  --primary: 214.2 33.6% 30.4%;
+  --primary-foreground: 0.0 0.0% 100.0%;
+  --secondary: 244.2 4.8% 95.9%;
+  --secondary-foreground: 216.9 19.1% 26.7%;
+  --muted: 244.2 4.8% 95.9%;
+  --muted-foreground: 25.0 5.3% 44.7%;
+  --accent: 244.2 4.8% 95.9%;
+  --accent-foreground: 216.9 19.1% 26.7%;
+  --destructive: 0.0 84.2% 60.2%;
+  --destructive-foreground: 0.0 0.0% 100.0%;
+  --border: 20.0 5.9% 90.0%;
+  --input: 20.0 5.9% 90.0%;
+  --ring: 214.2 33.6% 30.4%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 0.0 0.0% 0.0%;
+  --foreground: 0.0 0.0% 100.0%;
+  --card: 0.0 0.0% 0.0%;
+  --card-foreground: 0.0 0.0% 100.0%;
+  --popover: 0.0 0.0% 0.0%;
+  --popover-foreground: 0.0 0.0% 100.0%;
+  --primary: 300.0 21.6% 94.8%;
+  --primary-foreground: 0.0 0.0% 0.0%;
+  --secondary: 330.0 6.5% 15.1%;
+  --secondary-foreground: 0.0 0.0% 100.0%;
+  --muted: 330.0 6.5% 15.1%;
+  --muted-foreground: 24.0 5.4% 63.9%;
+  --accent: 330.0 6.5% 15.1%;
+  --accent-foreground: 0.0 0.0% 100.0%;
+  --destructive: 0.0 72.2% 50.6%;
+  --destructive-foreground: 0.0 0.0% 100.0%;
+  --border: 12.0 6.5% 15.1%;
+  --input: 12.0 6.5% 15.1%;
+  --ring: 300.0 21.6% 94.8%;
+}
+
+h1 {
+  @apply text-foreground/95;
+}
+
+h2 {
+  @apply text-foreground/85;
+}
+
+h3 {
+  @apply text-foreground/75;
+}
+
+h4 {
+  @apply text-foreground/65;
+}
+
+h5 {
+  @apply text-foreground/55;
+}
+
+h6 {
+  @apply text-foreground/45;
+}
