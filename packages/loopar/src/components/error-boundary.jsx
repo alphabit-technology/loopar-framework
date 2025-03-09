@@ -15,23 +15,31 @@ const formatComponentStack = (componentStack) => {
 }
 
 function fallbackRender({ error, resetErrorBoundary }) {
-  console.log(["error", error])
+  console.error(error);
+  if(__ENV__ === 'production') {
+    return (
+      <div
+        className='flex justify-center items-center flex-col min-h-screen bg-background'
+      >
+        <h1 className='text-[20vw] m-0 text-red-500'>Error</h1>
+        <span className='text-2xl m-0'>Something went wrong! Please try again later</span>
+        <hr className='w-[50%] mt-10'/>
+        <span className='text-4xl mt-4'>Loopar</span>
+      </div>
+    );
+  }
   return (
-    <div style={{
-      backgroundColor: 'var(--light)',
-      color: 'var(--danger)',
-      padding: '10px',
-      border: '1px solid var(--danger)',
-      borderRadius: '5px',
-      fontFamily: 'monospace',
-      whiteSpace: 'pre-wrap',
-    }}>
-      <h4>You have an error:</h4>
-      <details className="text-red" style={{ whiteSpace: 'pre-wrap' }}>
-        <p>Error</p>
+    <div className='bg-background p-4 rounded-md monospace pre-wrap'>
+      <h4>Browser error detected:</h4>
+      <details style={{ whiteSpace: 'pre-wrap' }}>
+        <p className='text-red-700'>Error</p>
+        <p className='text-red-500'>
         {error.message}
+        </p>
         <br />
+        <p className='text-red-400'>
         {formatComponentStack(error.stack)}
+        </p>
       </details>
     </div>
   );

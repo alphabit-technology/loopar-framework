@@ -5,8 +5,7 @@ import { Link as ReactLink, useLocation } from 'react-router';
 import { cn } from "@cn/lib/utils";
 import { buttonVariants } from "@cn/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";
-
-import { activeBgLink, activeLink } from "@workspace/defaults";
+import { activeLink } from "@workspace/defaults";
 
 export const makeUrl = (href) => {
   if (href.startsWith("http") || href.startsWith("/")) return href;
@@ -119,8 +118,7 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
     buttonVariants({ variant, size }),
     "justify-normal cursor-pointer p-2",
     activeLink(isAsctive, activeClassName),
-    props.className,
-    //"text-left justify-between"  
+    props.className
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);

@@ -75,6 +75,8 @@ export default class WorkspaceController extends AuthController {
       </script>
     `);
 
+    html = html.replace(`<!--__loopar-env__-->`, `<script>window.__ENV__ = ${isProduction ? "'production'" : "'development'"};</script>`);
+
     return {
       status: 200,
       body: html,

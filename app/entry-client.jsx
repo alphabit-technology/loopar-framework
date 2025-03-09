@@ -2,6 +2,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import App from "./App.tsx";
 import { Loader } from "@loopar/loader";
+import { ErrorBoundary } from "@error-boundary";
 
 (async () => {
   const __META_SCRIPT__ = document.getElementById('__loopar-meta-data__');
@@ -43,14 +44,16 @@ import { Loader } from "@loopar/loader";
   window.verticalDirection = null;
 
   ReactDOM.hydrateRoot(
-    document.getElementById("loopar-root"),
+    document.getElementById("__[loopar-root]__"),
     <BrowserRouter>
-      <App
-        __META__={__META__}
-        Workspace={Workspace}
-        Document={Document}
-        ENVIRONMENT="client"
-      />
+      <ErrorBoundary>
+        <App
+          __META__={__META__}
+          Workspace={Workspace}
+          Document={Document}
+          ENVIRONMENT="client"
+        />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 })();

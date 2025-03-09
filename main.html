@@ -15,9 +15,10 @@
       window.global = window;
     </script>
     <!--__loopar-meta-data__-->
+    <!--__loopar-env__-->
   </head>
   <body class="flex flex-col font-sans antialiased theme-stone min-h-screen overflow-x-hidden">
-    <div className="h-full w-full" id="loopar-root"><!--ssr-outlet--></div>
+    <div className="h-full w-full" id="__[loopar-root]__" translate="no"><!--ssr-outlet--></div>
     <script type="module" src="/app/entry-client.jsx"></script>
   </body>
 </html>

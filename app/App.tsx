@@ -2,7 +2,6 @@ import { cn } from "@cn/lib/utils";
 import React from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
-import { ErrorBoundary } from "react-error-boundary";
 import 'vite/modulepreload-polyfill';
 
 interface RootLayoutProps {
@@ -28,7 +27,7 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
       )}
     >
       <div className="relative flex flex-col">
-        <div className="flex-1">
+        <div className="flex-1" translate="yes">
           <WorkspaceProvider
             __META__={__META__}
             ENVIRONMENT={ENVIRONMENT}

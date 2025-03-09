@@ -15,14 +15,16 @@ export default class WebContext extends BaseDocument {
   }
 
   render(content = []) {
-    return super.render([
-      <MetaComponent elements={JSON.parse(this.meta.__ENTITY__.doc_structure)} parent={this}/>,
-      content
-    ]);
+    return super.render(
+      <>
+      <MetaComponent elements={JSON.parse(this.meta.__ENTITY__.doc_structure)} parent={this}/>
+      {content}
+      </>
+    );
   }
 
   componentDidMount() {
     super.componentDidMount();
-    this.initScroll();
+    //this.initScroll();
   }
 }
