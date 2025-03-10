@@ -1,9 +1,10 @@
-export function DragGhost({target, current}) {
-  if (!target || !current) return;
-
+export function DragGhost({target, parent, current}) {
+  if (!target || !current || parent === current.key) return;
+  
   return (
     <div
       className="fixed pointer-events-none"
+      key={current.key + "-ghost"}
       style={{
         width: target.width,
         height: target.height,

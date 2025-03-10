@@ -18,7 +18,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   const [elements, setElements] = useState(props.elements || []);
   const [movement, setMovement] = useState();
   const [position, setPosition] = useState();
-  const { currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, updateElements, designerRef } = useDesigner();
+  const { currentDropZone, setCurrentDropZone, currentDragging, designerMode, designerModeType, designerRef } = useDesigner();
 
   const isDroppable = true;
   const droppableEvents = {};
@@ -37,7 +37,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
 
     const newElements = elements.filter(el => el.data && el.data.key && el.data.key !== current);
 
-    element && newElements.splice(afterAt, 0, element);
+    element && (props.element !== ROW || element.element === COL) && newElements.splice(afterAt, 0, element);
 
     handleSetElements(newElements);
   };
@@ -93,7 +93,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   }, [movement]);
 
   useEffect(() => {
-    if (typeof position != "undefined" && currentDragging) {
+    if (currentDragging) {
       const rect = currentDragging.targetRect;
 
       if (currentDropZone && currentDropZone === dropZoneRef.current && rect) {
@@ -125,8 +125,8 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   /**TODO: Check optimization on render */
 
   useEffect(() => {
-    setDropping(currentDropZone && currentDropZone === dropZoneRef.current);
-  }, [currentDropZone, dropZoneRef]);
+    setDropping(currentDropZone && currentDropZone === dropZoneRef.current && data.key !== currentDragging?.key);
+  }, [currentDropZone, dropZoneRef, currentDragging]);
 
   useEffect(() => {
     if (dropped) {
@@ -209,7 +209,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   return (
     (designerMode && isDroppable && !hidden) ?
       <>
-        {dragGhost && <DragGhost target={targetRect} current={currentDragging} />}
+        {dragGhost && <DragGhost target={targetRect} parent={data.key} current={currentDragging} />}
         <C
           {...(C.toString() == 'Symbol(react.fragment)' ? {} : {
             ...renderizableProps,

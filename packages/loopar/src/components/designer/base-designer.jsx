@@ -16,7 +16,6 @@ import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
 
 import Emitter from '@services/emitter/emitter';
-import { set } from "../../../core/global/cookie-manager";
 
 export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const [activeId] = useState(null);
