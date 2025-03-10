@@ -48,7 +48,6 @@ export default function MetaMarkdown (props) {
   const {designing} = useDesigner();
 
   const handleChange = (value) => {
-    console.log("value", value);
     data.value !== value && set("value", value);
   }
   

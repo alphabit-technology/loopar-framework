@@ -4,7 +4,7 @@ import {useDesigner} from "@context/@/designer-context";
 
 export default function ComponentDefaults(props) {
   const data = props.data || {};
-  const {updateElement, designerRef, designerMode} = useDesigner();
+  const {designerRef, designerMode} = useDesigner();
 
   const getSrc = () => {
     if (data) {
