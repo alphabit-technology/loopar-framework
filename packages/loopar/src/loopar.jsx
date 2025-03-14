@@ -67,7 +67,7 @@ class Loopar extends Router {
     this.emit('handle-open-close-dialog', id, open);
   }
 
-  throw(error, m) {
+  throw(error, m, throwError = true) {
     this.emit('freeze', false);
     const { type, title, content, message } = typeof error === "object" ? error
         : { title: "Error", content: error, message: m };
@@ -77,8 +77,12 @@ class Loopar extends Router {
       title: title,
       content: content || message,
     });
-
-    throw new Error(message);
+    
+    if(throwError){
+      throw new Error(message);
+    }else{
+      console.error("LOOPAR: uncaughtException", message);
+    }
   }
 
   notify(message, type = "success") {

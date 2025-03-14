@@ -1,19 +1,19 @@
-export function DragGhost({target, parent, current}) {
-  if (!target || !current || parent === current.key) return;
+export function DragGhost({position, dragging}) {
+  if (!position || !dragging) return;
   
   return (
     <div
       className="fixed pointer-events-none"
-      key={current.key + "-ghost"}
+      key={dragging.key + "-ghost"}
       style={{
-        width: target.width,
-        height: target.height,
-        top: target.y,
-        left: target.x,
+        width: position.width,
+        height: position.height,
+        top: position.y,
+        left: position.x,
         zIndex: 100,
       }}
     >
-      <div className={current.className} dangerouslySetInnerHTML={{__html: current?.ref?.innerHTML}}/> 
+      <div className={dragging.className} dangerouslySetInnerHTML={{__html: dragging?.ref?.innerHTML}}/> 
     </div>
   )
 }

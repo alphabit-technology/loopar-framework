@@ -2,7 +2,7 @@ import loopar from "loopar";
 import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, Eye } from "lucide-react";
 import { Droppable } from "@droppable";
 import { BaseFormContext } from "@context/form-provider";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import {Tailwind} from "@publicSRC/tailwind";
@@ -12,16 +12,16 @@ import {useCookies} from "@services/cookie";
 import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
-
 import elementManage from "@@tools/element-manage";
-
 import Emitter from '@services/emitter/emitter';
+import { DragGhost } from "../droppable/drag-ghost";
 
 export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const [activeId] = useState(null);
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
-  const [dropping, setDropping] = useState(false);
+  const [draggingPosition, setDraggingPosition] = useState(currentDragging?.targetRect);
+  //const [dropping, setDropping] = useState(false);
   const {designerMode} = useDesigner();
   const { name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   
@@ -125,11 +125,11 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
       const exist = findElement("name", data.name, selfElements);
 
       if (exist && exist.data.key !== key) {
-        loopar.throw(
+        return loopar.throw(
           "Duplicate field",
-          `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`
+          `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`,
+          false
         );
-        return false;
       }
     }
 
@@ -318,6 +318,14 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     }
   }
 
+  /*const getTargetRect = () => {
+    return currentDragging?.targetRect || {};
+  }
+
+  useEffect(() => {
+    console.log(currentDragging?.targetRect);
+  }, [currentDragging?.targetRect]);*/
+
   return (
     <DesignerContext.Provider
       value={{
@@ -342,12 +350,14 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
         setCurrentDragging,
         handleChangeMode,
         handleSetMode,
-        dropping,
-        setDropping
+        setDraggingPosition
+        //dropping,
+        //setDropping
       }}
     >
       <BaseFormContext.Provider value={{}}>
         <div className="">
+          <DragGhost position={draggingPosition} dragging={currentDragging} />
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
               <h2 className="text-3xl">{data.label}</h2>

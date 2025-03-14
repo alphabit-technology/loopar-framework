@@ -222,4 +222,8 @@ export class Core {
 
     return this.utils.decamelize(joinedPath, { separator: '-' });
   }
+
+  getUniqueKey() {
+    return "k"+Math.random().toString(36).substr(2, 9);
+  }
 }

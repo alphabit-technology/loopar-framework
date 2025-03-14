@@ -42,7 +42,6 @@ export default function Row(props) {
   }
 
   useEffect(() => {
-    console.log("layout", layout);
     const newLayout = loopar.utils.JSONparse(data.layout);
     if (newLayout && data.layout != JSON.stringify(layout)) {
       setLayout(newLayout);

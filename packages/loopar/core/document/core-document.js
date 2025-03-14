@@ -3,6 +3,7 @@ import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
 import { renderMarkdownSSR } from "markdown";
+import { parseDocStructure } from './tools.js';
 
 export default class CoreDocument {
   #fields = {};
@@ -446,8 +447,8 @@ export default class CoreDocument {
 
   async values() {
     const value = async (field) => {
-      if (field.name === this.fieldDocStructure) {
-        return field.value ? JSON.stringify(field.value.filter(field => (field.data || []).name !== ID)) : "[]";
+      if (field.element === DESIGNER) {
+        return field.value ? JSON.stringify(await parseDocStructure(field.value, false))/*JSON.stringify(field.value.filter(field => (field.data || []).name !== ID))*/ : "[]";
       } else if (field.element === FORM_TABLE) {
         return await this.getChildValues(field.options);
       }

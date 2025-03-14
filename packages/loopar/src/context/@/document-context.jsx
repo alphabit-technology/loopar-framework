@@ -1,4 +1,4 @@
-import { useContext, createContext, useEffect } from 'react';
+import { useContext, createContext } from 'react';
 import { useCookies } from "@services/cookie";
 
 export const DocumentContext = createContext({

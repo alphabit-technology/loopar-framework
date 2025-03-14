@@ -88,12 +88,16 @@ export function DialogContextProvider() {
     Emitter.on('notify', handleNotify);
     Emitter.on('dialog', handleDialog);
     Emitter.on('handle-open-close-dialog', setDialogOpen);
-
+    
     return () => {
       Emitter.off('notify', handleNotify);
       Emitter.off('dialog', handleDialog);
       Emitter.off('handle-open-close-dialog', setDialogOpen);
-    };
+
+      window.removeEventListener("error", event => {
+        console.error("LOOPAR: uncaughtException", event.message, event.error);
+      });
+    }
   }, []);
 
   return (

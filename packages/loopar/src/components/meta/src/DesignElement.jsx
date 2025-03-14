@@ -14,6 +14,7 @@ export const DesignElement = ({ parent, element, Comp, parentKey}) => {
   const draggableRef = useRef(null);
 
   useEffect(() => {
+    if(!element.data) return
     __REFS__[element.data.key] = draggableRef.current;
   }, [__REFS__, draggableRef.current]);
 

@@ -2,10 +2,14 @@ import { renderMarkdownSSR } from "markdown";
 import {fileManage} from "../file-manage.js";
 import {loopar} from "../loopar.js";
 
-export const parseDocStructure = async (doc_structure) => {
+export const parseDocStructure = async (doc_structure, renderMarkdown=true) => {
   return Promise.all(
     doc_structure.map(async (field) => {
-      if (field.element === MARKDOWN) {
+      field.data = {
+        ...field.data,
+        key: field.data.key || loopar.getUniqueKey(),
+      }
+      if (field.element === MARKDOWN && renderMarkdown) {
         field.data.value = await renderMarkdownSSR(field.data.value);
       }
 
