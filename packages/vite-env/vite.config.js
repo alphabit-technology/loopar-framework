@@ -49,7 +49,7 @@ export default defineConfig(({ command }) => {
         '@uiw': resRoot('node_modules/@uiw/'),
         'lucide-react': resRoot('node_modules/lucide-react'),
         'file-type': resRoot('node_modules/file-type'),
-        'particles.js': resRoot('node_modules/particles.js'),
+        //'particles.js': resRoot('node_modules/particles.js'),
       },
     },
     plugins: [

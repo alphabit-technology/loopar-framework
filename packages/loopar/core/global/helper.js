@@ -296,6 +296,30 @@ function objToRGBA(color) {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
+const ObjectDeepExtend = function (destination, source, visited = new WeakMap()) {
+  if (!destination || typeof destination !== "object") return destination;
+  if (!source || typeof source !== "object") return destination;
+
+  if (visited.has(source)) return visited.get(source);
+
+  visited.set(source, destination);
+
+  Object.keys(source).forEach((key) => {
+    if (
+      source[key] &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key])
+    ) {
+      destination[key] = destination[key] || {};
+      ObjectDeepExtend(destination[key], source[key], visited);
+    } else {
+      destination[key] = source[key];
+    }
+  });
+
+  return destination;
+};
+
 export {
   Capitalize,
   UPPERCASE,
@@ -327,4 +351,5 @@ export {
   compare,
   getArrayMax,
   objToRGBA,
+  ObjectDeepExtend
 }

@@ -59,7 +59,8 @@ export function Droppable({ data = {}, children, className, Component = "div", .
       if (verticalDirection === UP) {
         if (movement.y < rect.y + rect.height / 2) return i;
       } else {
-        if (movement.y < rect.y + rect.height) return i + 1;
+        if(i === brothers.length - 1) return brothers.length;
+        if (movement.y < rect.y + (rect.height*3)) return i + 1;
       }
     }
 
@@ -95,15 +96,18 @@ export function Droppable({ data = {}, children, className, Component = "div", .
       const rect = currentDragging.targetRect;
 
       if (currentDropZone && currentDropZone === dropZoneRef.current && rect) {
-        setElement(
-          <div
-            style={{ maxHeight: rect.height, opacity: 0.5 }}
-            className={`${currentDragging?.className}`} 
-            dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
-          />
-          , position
-        );
-        return;
+        const timeout = setTimeout(() => {
+          setElement(
+            <div
+              style={{ maxHeight: rect.height, opacity: 0.5, pointerEvents: 'none' }}
+              className={`${currentDragging?.className}`} 
+              dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
+            />,
+            position
+          );
+        }, 10);
+
+        return () => clearTimeout(timeout);
       }
     }
   }, [position, currentDragging, currentDropZone]);
@@ -123,7 +127,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
   /**TODO: Check optimization on render */
 
   useEffect(() => {
-    setDropping(currentDropZone && currentDropZone === dropZoneRef.current && data.key !== currentDragging?.key);
+    setDropping(currentDropZone && currentDropZone === dropZoneRef.current && (currentDragging && data.key !== currentDragging?.key));
   }, [currentDropZone, dropZoneRef, currentDragging]);
 
   useEffect(() => {
@@ -146,7 +150,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
     }
   }, [dropped, elements, props.elements]);
 
-  if (designerMode && isDroppable && designerModeType !== "preview") {
+  if (designerMode && isDroppable && designerModeType !== "preview" && data.key !== currentDragging?.key) {
     droppableEvents.droppable = "true";
     droppableEvents.onDragEnter = (e) => {
       e.preventDefault();
@@ -212,7 +216,6 @@ export function Droppable({ data = {}, children, className, Component = "div", .
     renderizableProps.className
   );
 
-
   return (
     (designerMode && isDroppable && !hidden) ?
       <>
@@ -235,7 +238,7 @@ export function Droppable({ data = {}, children, className, Component = "div", .
       </>
       :
       <C {...(C.toString() == 'Symbol(react.fragment)' ? {} : { ...renderizableProps, className: className })}>
-        {children || <MetaComponent elements={elements} parentKey={data.key} />}
+        {children} <MetaComponent elements={elements} parentKey={data.key} />
       </C>
   );
 }

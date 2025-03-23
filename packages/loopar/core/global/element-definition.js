@@ -73,6 +73,8 @@ export const elementsDefinition = {
     { element: "stripe_embebed", icon: "CreditCard" },
     { element: "seo", icon: "Globe", designerOnly: true },
     //{ element: "element_title", icon: "fa fa-heading" },
+    { element: 'particles', icon: 'DotsHorizontal' },
+    { element: 'particles_settings', icon: 'DotsHorizontal' },
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },
