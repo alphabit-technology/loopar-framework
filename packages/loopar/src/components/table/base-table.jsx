@@ -77,7 +77,7 @@ export class BaseTable extends Component {
 
   get rowsInputs() {
     return this.rows;
-  }
+  } 
 
   /**
    * #return {Array} of {Object} with all columns of the table

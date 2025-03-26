@@ -164,6 +164,10 @@ class Loopar extends Router {
     return mixColors(colors);
   }
 
+  refresh() {
+    this.emit('refresh');
+  }
+
   freeze(freeze = true) {
     Emitter.emit('freeze', freeze);
   }

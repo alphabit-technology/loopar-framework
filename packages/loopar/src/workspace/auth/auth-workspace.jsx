@@ -13,7 +13,7 @@ const Layout = (({ ...props }) => {
         className="flex-grow flex"
       >
         <div
-          className={`p-5 sm:p-10 w-full lg:w-[524px] ease-induration-100 overflow-auto duration-100 ease-in relative z-10 h-screen`}
+          className={`p-5 sm:p-10 w-full lg:w-[524px] ease-induration-100 overflow-auto duration-100 ease-in relative z-10 h-screen bg-background/70`}
         >
           <div className="flex flex-col w-full h-full">
             <div className="mb-4 w-full grid  place-items-center">
@@ -32,7 +32,7 @@ const Layout = (({ ...props }) => {
         </div>
         <div className="w-full flex-col hidden lg:flex">
           <Particles 
-            fullScreen={false} 
+            fullScreen={true} 
             className="absolute w-full h-dvh bg-cover bg-center bg-no-repeat bg-fixed overflow-auto duration-100 ease-in bg-purple-900/5 z-0"
             data={{
               "particles_settings": JSON.stringify({
@@ -53,7 +53,7 @@ const Layout = (({ ...props }) => {
           >
             <div className="relative p-10 sm:p-20 ">
               <h2 className="text-4xl text-slate-800 dark:text-slate-100 font-bold">Building the Automated Future</h2>
-              <Link variant="ghost" className="text-lg" _target="_blank" to="https://github.com/alphabit-technology/loopar-framework">
+              <Link variant="ghost" className="text-lg" _target="_blank" to="https://loopar.build/Doc">
                 <ArrowRightIcon className="mr-2"/>
                 Visit the Documentation
               </Link>
@@ -66,12 +66,12 @@ const Layout = (({ ...props }) => {
 });
 
 export default function AuthWorkspace(props) {
-  const { getDocuments } = useWorkspace();
+  const { __DOCUMENTS__ } = useWorkspace();
 
   return (
     <BaseWorkspace>
       <Layout {...props}>
-        {getDocuments()}
+        {__DOCUMENTS__}
       </Layout>
     </BaseWorkspace>
   )

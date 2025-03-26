@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
+import React, { createContext, useContext, useEffect, useState, useCallback, use } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
@@ -42,6 +42,7 @@ export function WorkspaceProvider({
   const [loaded, setLoaded] = useState(false);
   const [activePage, setActivePage] = useState(props.activePage || "");
   const [activeModule, setActiveModule] = useState(null);
+  const [refreshFlag, setRefreshFlag] = useState(false);
 
   const getMergeDocument = () => {
     const toMergeDocuments = Object.values({ ...Documents });
@@ -87,6 +88,11 @@ export function WorkspaceProvider({
   }
 
   const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
+  const [__DOCUMENTS__, set__DOCUMENTS__] = useState(getDocuments());
+
+  useEffect(() => {
+    set__DOCUMENTS__(getDocuments());
+  }, [Documents, refreshFlag]);
 
   const handleSetOpenNav = useCallback(openNav => {
       setOpenNav(openNav);
@@ -165,21 +171,35 @@ export function WorkspaceProvider({
     });
   }
 
-  const fetch = (url) => {
+  const refresh = () => {
+    fetchDocument(pathname).then(() => {
+      console.log("Refreshed");
+      setRefreshFlag(prev => !prev);
+    });
+  }
+
+  const fetchDocument = (url) => {
     const route = window.location;
-    if(route.hash.includes("#"))  return;
+    if (route.hash.includes("#")) return;
     
-    loopar.send({
-      action: route.pathname,
-      params: route.search,
-      success: r => {
-        setDocument(r)
-      }
+    return new Promise((resolve, reject) => {
+      loopar.send({
+        action: route.pathname,
+        params: route.search,
+        success: r => {
+          setDocument(r);
+          resolve();
+        },
+        error: e => {
+          console.error("Err on fecth document", e);
+          reject();
+        }
+      });
     });
   }
 
   useEffect(() => {
-    loaded ? fetch(pathname) : setLoaded(true);
+    loaded ? fetchDocument(pathname) : setLoaded(true);
     __WORKSPACE_NAME__ == "web" && setOpenNav(false);
   }, [pathname]);
 
@@ -206,7 +226,7 @@ export function WorkspaceProvider({
 
     setActiveModule(module)
 
-  }, [Documents, pathname]);
+  }, [Documents, pathname, refreshFlag]);
 
   const getTheme = () => {
     const theme = loopar.cookie.get(storageKey);
@@ -237,7 +257,9 @@ export function WorkspaceProvider({
     getDocuments: getDocuments,
     activePage: activePage,
     setDocument: setDocument,
-    activeModule
+    activeModule,
+    refresh,
+    __DOCUMENTS__
   }
 
   return (

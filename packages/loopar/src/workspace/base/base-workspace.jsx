@@ -117,6 +117,18 @@ export function DialogContextProvider() {
 export default function BaseWorkspace(props) {
   const workspace = useWorkspace();
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      workspace.refresh();
+    };
+
+    Emitter.on('refresh', handleRefresh);
+
+    return () => {
+      Emitter.off('refresh', handleRefresh);
+    }
+  }, []);
+
   const activePage = workspace.activePage || props.activePage || "";
   return (
     <>

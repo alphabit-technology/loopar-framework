@@ -88,7 +88,7 @@ const Layout = (({ ...props }) => {
 });
 
 export default function WebWorkspace(props) {
-  const { getDocuments, __META__ } = useWorkspace();
+  const { __DOCUMENTS__, __META__ } = useWorkspace();
 
   const getWebApp = () => {
     const workspace = __META__.__WORKSPACE__ || {};
@@ -100,7 +100,7 @@ export default function WebWorkspace(props) {
   return (
     <BaseWorkspace activePage={activePage} webApp={getWebApp()}>
       <Layout {...props}>
-        {getDocuments()}
+        {__DOCUMENTS__}
       </Layout>
     </BaseWorkspace>
   )

@@ -22,10 +22,13 @@ export default function FileUploader(props) {
     loopar.method("File Manager", "upload", {}, {
       body: formData,
       success: (r) => {
-        console.log(["Upload", r]);
         props.onUpload && props.onUpload();
       }
     });
+  }
+
+  const handleSetFiles = (files) => {
+    setFiles(files);
   }
 
   const FileInputFn = () => (
@@ -40,7 +43,7 @@ export default function FileUploader(props) {
         }}
         withoutLabel={true}
         origins={origins}
-        onChange={setFiles}
+        onChange={handleSetFiles}
       />
     </FormWrapper>
   )

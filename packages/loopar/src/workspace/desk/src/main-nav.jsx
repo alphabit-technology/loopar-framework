@@ -12,7 +12,7 @@ export function MainNav() {
         onClick={()=>{
           setOpenNav(!openNav)
         }}
-        className="text-gray-700"
+        className="text-primary"
       >
         <Icon className="h-11 w-11 fill-current" />
       </button>

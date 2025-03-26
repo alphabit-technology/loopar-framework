@@ -161,7 +161,7 @@ export default class BaseDocument extends CoreDocument {
     return { 'LIKE': [this.getFieldSelectNames(), `%${q}%`] };
   }
 
-  getTitleFields() {
+  titleFields() {
     return this.__ENTITY__?.title_fields || 'name';
   }
 
@@ -174,7 +174,8 @@ export default class BaseDocument extends CoreDocument {
   }
 
   getFieldSelectLabels() {
-    return Array.from(new Set([...this.getTitleFields().split(',').filter(field => field !== '')]));
+    const fields = this.titleFields();
+    return Array.from(new Set([...fields.split(',').filter(field => field !== '')]));
   }
 
   async getListToSelectElement(q = null) {

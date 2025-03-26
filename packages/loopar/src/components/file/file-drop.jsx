@@ -122,8 +122,9 @@ export const FileDrop = (props) => {
         file.forEach((f) => setFile(f));
         return;
       }
+
       validateFile(file, accept);
-      setFiles(mergeFiles(files, [file]));
+      setFiles(prevFiles => mergeFiles([...prevFiles], [file]));
     }
   }
 
@@ -185,6 +186,11 @@ export const FileDrop = (props) => {
                           title: "Web file",
                           label: "Enter the URL of the file",
                           placeholder: "https://",
+                          validate: (url) => {
+                            if (!url) loopar.throw("URL is required");
+                            if (!url.match(/^https?:\/\/.+/)) loopar.throw("Invalid URL");
+                            return true;
+                          },
                           ok: (url) => {
                             const file = {
                               name: url.split("/").pop(),

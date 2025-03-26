@@ -80,9 +80,9 @@ export default class CoreDocument {
   async getConnectedDocuments() {
     const refs = Object.values(loopar.getRefs());
     const relatedEntities = [];
+
     for (const ref of refs) {
       const ent = await fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
-
       const fields = loopar.utils.fieldList(ent.doc_structure);
 
       fields.filter(field => (field.element === SELECT || field.element === FORM_TABLE) && field.data.options).map(field => {
@@ -100,6 +100,8 @@ export default class CoreDocument {
 
     const rels = []
     for (const r of relatedEntities) {
+      if(r.entity === "Document History") continue;
+
       const docs = await loopar.db.getAll(r.entity, ["name"], {
         "=": {
           [r.field]: this.name

@@ -1,12 +1,10 @@
-import React, { useContext } from "react";
+import React from "react";
 
 export const DeskLogo = (props) => {
-  const { isSideNav, togleSidebarNav, openNav } = props;
-
   const imageProps = {
-    src: `/assets/images/logo.svg`,
+    src: `/assets/images/loopar.svg`,
     alt: "Loopar Logo",
-    className: 'hidden h-8 md:block',
+    className: 'hidden h-8 md:block text-white',
     href: "/core/Desk/view",
   }
   return (

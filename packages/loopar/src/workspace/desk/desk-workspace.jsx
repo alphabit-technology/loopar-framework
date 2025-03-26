@@ -5,7 +5,7 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import React from "react";
 
 export default function DeskWorkspace(props){
-  const {openNav, getDocuments} = useWorkspace();
+  const {openNav, __DOCUMENTS__} = useWorkspace();
   const menuData = props.menu_data || [];
 
   return (
@@ -20,7 +20,7 @@ export default function DeskWorkspace(props){
           <div 
             className={`flex-grow ease-induration-100 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"}`}
           >
-            {getDocuments()}
+            {__DOCUMENTS__}
           </div>
         </section>
       </div>
