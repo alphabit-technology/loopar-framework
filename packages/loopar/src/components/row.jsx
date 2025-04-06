@@ -16,7 +16,7 @@ const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
-  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, []));
+  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
   const [cols, setCols] = useState(props.elements || []);
   const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();

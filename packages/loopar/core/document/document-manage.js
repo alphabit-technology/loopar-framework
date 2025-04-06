@@ -35,7 +35,7 @@ class DocumentManage {
     const instance = await new DOCUMENT({
       __ENTITY__: ENTITY,
       __DOCUMENT_NAME__: name,
-      __DOCUMENT__: data,
+      __DOCUMENT__: data || {},
       __IS_NEW__: !name,
       __SPACING__: spacing,
       __PARSED__: parse

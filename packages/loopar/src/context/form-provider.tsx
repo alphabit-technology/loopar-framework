@@ -49,12 +49,33 @@ interface docRef {
 
 export const BaseFormContext = createContext({});
 
-export const FormProvider = ({ children, values, docRef, formRef }: any) => {
-  const FormSchema = z.object({
-    name: z.string().min(2, {
-      message: "Name must be at least 2 characters.",
-    }),
-  })
+const buildFormFields = (STRUCTURE: Array<Element>) => {
+  return (STRUCTURE || []).reduce((acc: any, el: Element) => {
+    const { data } = el;
+    const { name, required } = data;
+
+    if (fieldIsWritable(el)) {
+      acc[name] = z.optional();
+      //acc[name] = z.string().optional();
+
+      if (required) {
+        acc[name] = z.string().nonempty();
+      }
+    }
+
+    if (el.elements) {
+      acc = {
+        ...acc,
+        ...buildFormFields(el.elements)
+      }
+    }
+
+    return acc;
+  }, {});
+}
+
+export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE }: any) => {
+  const FormSchema = z.object(buildFormFields(STRUCTURE))
 
   const form = useForm({
     values,
@@ -83,9 +104,11 @@ export const FormProvider = ({ children, values, docRef, formRef }: any) => {
 
 export const useFormContext = () => useContext(BaseFormContext);
 
-export function FormWrapper({ __DOCUMENT__, docRef, children, formRef }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode, formRef: Function }) {
+export function FormWrapper(
+  { __DOCUMENT__, docRef, children, formRef, STRUCTURE }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode, formRef: Function, STRUCTURE: Array<Element> }
+) {
   return (
-    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef}>
+    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef} STRUCTURE={STRUCTURE}>
       {children}
     </FormProvider>
   )

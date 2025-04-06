@@ -19,8 +19,8 @@ const Layout = (({ ...props }) => {
             <div className="mb-4 w-full grid  place-items-center">
               <div className="mb-3">
                 <img
-                  src="/assets/images/logo.svg"
-                  alt="My Happy SVG"
+                  src="/assets/public/images/loopar.svg"
+                  alt="loopar"
                   style={{ height: 28, width: 140 }}
                 />
               </div>

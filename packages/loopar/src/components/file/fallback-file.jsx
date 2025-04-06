@@ -29,7 +29,7 @@ export function FallbackFile({ src, ...props }) {
             className={cn(`w-full p-3 h-full object-cover transition-all ease-in duration-300 hover:scale-105 aspect-square`, iconColor)}
           />
         }
-        <div className="overflow-hidden w-full h-full p-0 m-0">
+        <div className={`overflow-hidden w-full ${isValidImage ? "h-full" :''} p-0 m-0`}>
           <img 
             alt={props.alt || "Image"} 
             loading="lazy"

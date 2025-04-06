@@ -35,6 +35,11 @@ export default class CoreController extends AuthController {
 
   async notFound({code = 404, title = "Not Found", description = "The page you are looking for does not exist"} = {}) {
     const document = await loopar.newDocument("Error");
+    if(typeof arguments[0] === 'string') {
+      code = "404";
+      title = !arguments[1] ? "Not Found" : arguments[0];
+      description = arguments[1] || arguments[0];
+    }
 
     document.__DOCUMENT__ = {
       code: code || 404,
@@ -52,6 +57,44 @@ export default class CoreController extends AuthController {
       code: code,
       title: title,
       description: description,
+    };
+
+    return await this.render(document);
+  }
+
+  async servePrivateFile(file) {
+    await this.beforeAction();
+
+    const document = await loopar.newDocument("File Manager", {
+      name: file
+    });
+
+    const privateFile = await document.getPrivateFile();
+    if (!privateFile) {
+      return await this.notFound({
+        code: 404,
+        title: "Source not found",
+        description: `The soruce ${file} not found.`,
+      });
+    }
+    if (privateFile.error) {
+      return await this.notFound({
+        code: 403,
+        title: "Access Denied",
+        description: privateFile.error,
+      });
+    }
+    if (privateFile.path) {
+      const filePath = loopar.makePath(loopar.pathRoot, privateFile.path);
+      if (filePath) {
+        const fileName = privateFile.name || file;
+        const fileType = privateFile.type || "application/octet-stream";
+        const fileSize = privateFile.size || 0;
+      }
+    }
+         
+    document.__DOCUMENT__ = {
+      file: file
     };
 
     return await this.render(document);

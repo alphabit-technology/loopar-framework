@@ -200,7 +200,6 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const setMeta = (meta) => {
     if(loopar.utils.isJSON(meta)){
       props.onChange(meta);
-      //designerRef.setMeta(JSON.parse(meta));
     }else{
       console.error(["Invalid JSON object", meta]);
       loopar.throw("Invalid JSON object");

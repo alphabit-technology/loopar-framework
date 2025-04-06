@@ -2,27 +2,25 @@
 'use strict';
 
 import ViewContext from '@context/view-context';
-import React, { useState } from 'react';
+import React from 'react';
 
 const ImageWithPlaceholder = ({ data }) => {
   const message = data.message || data.description || 'An error occurred';
-  const height = 800;
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
     <div
-      className="h-full inset-0 flex flex-col justify-center items-center bg-opacity-50 text-slate-600 dark:text-slate-400"
+      className="h-full inset-0 flex flex-1 flex-col justify-center items-center bg-opacity-50"
     >
-        <h1 
-          className="text-9xl font-extrabold text-slate-800 dark:text-slate-600/50 text-opacity-50 bg-slate-300/50 dark:bg-card p-6 rounded-full tracking-widest shadow-2xl shadow-red-500/50"
+        <div 
+          className="text-6xl sm:text-9xl md:text-[11rem] lg:text-[14rem] font-extrabold text-primary bg-foreground/5 p-12 rounded tracking-widest shadow-2xl shadow-red-500/50 "
           style={{
             WebkitTextStroke: '3px rgb(212,212,216,0.6)',
             userSelect: 'none'
           }}
         >
-          {data.code}
-        </h1>
-        <h1 className="text-3xl font-bold p-2 pt-20 rounded">{data.title}</h1>
+          <div className='hover:transform transition-all duration-300 ease-in-out hover:scale-110'>{data.code}</div>
+        </div>
+        <h1 className="text-4xl font-bold p-2 pt-20 rounded">{data.title}</h1>
         <span className="text-xl font-bold bg-opacity-50 rounded items-center text-center">
           {message}
         </span>

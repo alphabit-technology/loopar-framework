@@ -104,10 +104,6 @@ export default class Router {
       loopar.cookie.cookies = req.cookies;
       loopar.session.req = req;
 
-      if (req.files && req.files.length > 0) {
-        req.body.reqUploadFiles = req.files;
-      }
-
       next();
     }
 
@@ -170,6 +166,7 @@ export default class Router {
     }
 
     const buildParamsMiddleware = async (req, res, next) => {
+      if(req.tryToServePrivateFile) return next();
       req.__WORKSPACE__ ??= {};
       const url = req._parsedUrl;
       const pathname = ["web", "auth"].includes(req.__WORKSPACE_NAME__) ? url.pathname : url.pathname.split("/").slice(1).join("/");
@@ -222,10 +219,10 @@ export default class Router {
         'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', // Images
         'mp4', 'webm', 'ogg', 'mp3', 'wav', 'flac', 'aac', // Multimedia
         'woff', 'woff2', 'ttf', 'eot', 'otf', // Fonts
-        'js', 'mjs', 'jsx', 'css', 'html', 'htm', // Web files
+        'js', 'mjs', 'jsx', 'css', 'html', 'htm', 'xhtml', // Web files
         'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', // Documents
         'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'gzip', 'br', // Compressed files
-        'json', 'xml', 'txt' // Data files
+        'json', 'xml', 'txt', 'yaml' // Data files
       ];
 
       const isAsset = () => {
@@ -251,6 +248,10 @@ export default class Router {
     const notFoundSourceMiddleware = (req, res, next) => {
       if (!req.isAssetUrl) return next();
 
+      /**In this point system detect that file es not a public source, else the system will be try to server private file */
+      req.tryToServePrivateFile = true;
+
+      return next();
       const errString = this.errTemplate({
         code: 404,
         title: "Source not found",
@@ -268,6 +269,22 @@ export default class Router {
   async makeController(req, res) {
     const params = req.__params__;
     
+    if(req.tryToServePrivateFile) {
+      /*if (req.method === 'POST') {
+        return this.renderAjax(res, { code: 404, message: `Document ${params.document} not found` });
+      }*/
+
+      //  console.log(["Try to server private file", params]);
+
+      const errControlled = new BaseController({ req, res });
+      errControlled.dictUrl = req._parsedUrl;
+      const e = await errControlled.servePrivateFile("logo-test.png");
+      req.__WORKSPACE__.__DOCUMENT__ = e;
+      return this.render(res, await this.App.render(req.__WORKSPACE__, true));
+
+      //return this.App.servePrivateFile(req, res);
+    }
+
     if (!params.document && !params.action && req.__WORKSPACE_NAME__ === 'desk') {
       params.document = "Desk";
       params.action = "view";
@@ -310,7 +327,10 @@ export default class Router {
       const C = await fileManage.importClass(loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`));
 
       const Controller = new C({
-        ...params, ...query, data: body, request: req
+        ...params, 
+        ...query, 
+        data: { ...body, ...(req.files && req.files.length > 0 ? { __REQ_FILES__: req.files} : {}) },
+        __REQ_FILES__: req.files,
       });
 
       const action = params.action && params.action.length > 0 ? params.action : Controller.defaultAction;

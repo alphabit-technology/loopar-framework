@@ -33,9 +33,9 @@ export default class FormContext extends BaseForm {
     if (content) return content;
     const meta = this.meta;
     const STRUCTURE = this.__STRUCTURE__;
-
+    
     return super.render(
-      <FormWrapper __DOCUMENT__={meta.__DOCUMENT__} docRef={this}>
+      <FormWrapper __DOCUMENT__={meta.__DOCUMENT__} STRUCTURE={STRUCTURE} docRef={this}>
         <DeskGUI docRef={this}>
           {[
             ...STRUCTURE.map((el: Element) => {

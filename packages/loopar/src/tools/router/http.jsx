@@ -35,12 +35,6 @@ export default class HTTP {
       mode: 'same-origin', // no-cors, *cors, same-origin
       cache: 'default', // *default, no-cache, reload, force-cache, only-if-cached
       credentials: 'include', // include, *same-origin, omit
-      /*headers: {
-         //'Content-Type': 'application/json',
-         //'x-xsrf-token':  "someCsrfToken",
-         //'Content-Type': 'application/x-www-form-urlencoded',
-         'Content-Type': 'multipart/form-data',
-      },*/
       redirect: 'follow', // manual, *follow, error
       referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
       body: this.__body__, // body data type must match "Content-Type" header),
@@ -64,7 +58,7 @@ export default class HTTP {
     const self = this;
     const freeze = options.freeze !== false;
 
-    const withFreeze = async (promise, delay = 100) => {
+    const withFreeze = async (promise, delay = 200) => {
       if (!freeze) return promise;
 
       let freezeTimeout;
@@ -121,8 +115,6 @@ export default class HTTP {
       method: 'GET',
       action: url,
       params: params,
-      //success: resolve,
-      //error: reject,
       ...options,
     });
   }
@@ -133,8 +125,6 @@ export default class HTTP {
       action: url,
       params: params,
       body: options.body,
-      //success: resolve,
-      //error: reject,
       ...options,
     });
   }

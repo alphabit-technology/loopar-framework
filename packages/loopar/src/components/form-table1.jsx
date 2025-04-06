@@ -11,7 +11,7 @@ import { FormWrapper } from "@context/form-provider";
 import _ from "lodash";
 
 import { Checkbox } from "@cn/components/ui/checkbox"
-import {useRef, useState, useEffect, use, useMemo, useCallback} from "react";
+import {useRef, useState, useEffect, use, useMemo} from "react";
 
 import {
   Table,
@@ -25,87 +25,62 @@ import {
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@cn/components/ui/button";
 
-function FormTableInput({ column, name, inputName, onChange, ...props }) {
+function FormTableInput({column, name, inputName, data, onChange}) {
   const formRef = useRef(null);
-  const prevData = useRef(null);
-  const debounceTimer = useRef(null);
-  const data = useMemo(() => props.data, [props.data]);
 
-  const getFormValue = useCallback(() => {
-    const newData = formRef.current.watch();
-    return Object.values(newData)[0];
-  }, []);
-
-  const saveData = useCallback(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    debounceTimer.current = setTimeout(() => {
-      const newData = getFormValue();
-
-      if (prevData.current !== newData) {
-        onChange(inputName, newData);
-        prevData.current = newData;
-      }
-    }, 300);
-  }, [inputName, onChange]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, []);
+  const saveData = () => {
+    const newData =formRef.current.watch();
+    onChange(inputName, Object.values(newData)[0]);
+  };
 
   return (
     <FormWrapper __DOCUMENT__={data} formRef={formRef}>
       <MetaComponent
         component={column.element}
-        key={`${name}_input`}
-        render={(Comp) => (
+        render={Comp => (
           <Comp
-            //key={`${name}_input`}
+            key={name + "_input"}
             dontHaveLabel={true}
             simpleInput={true}
             data={cloneDeep({
-              ...column.data,
+              ...cloneDeep(column.data),
               name,
               label: column.data.label,
             })}
-            value={getFormValue()}
+            value={data[inputName]}
             onChange={saveData}
           />
         )}
       />
     </FormWrapper>
-  );
+  )
 }
 
-function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...props}) {
-  const row = useMemo(() => {
-    return props.row;
-  }, [props.row]);
-
+function FormTableRow ({rowId, columns, row, currentSelect, onSelect, onChange}) {
   const [rowData, setRowData] = useState(row);
   const prevData = useRef({ ...rowData });
 
-  const updateRowData = useCallback((name, value) => {
-    const newRowData = { ...rowData, [name]: value };
+  const updateRowData = (name, e) => {
+    const newRowData = { ...rowData, [name]: e };
+
     if (!_.isEqual(prevData.current, newRowData)) {
-      prevData.current = newRowData;
+      prevData.current = { ...newRowData };
       setRowData(newRowData);
       onChange(rowId, newRowData);
+      prevData.current = { ...newRowData };
     }
-  }, [rowData, onChange, rowId]);
+  }
+
+  /*useEffect(() => {
+    onChange(rowId, rowData);
+  }, [rowData]);*/
 
   return (
     <TableRow
       hover
       role="checkbox"
       tabIndex={-1}
-      key={"row___" + row.name}
+      key={"row" + row.name}
       draggable
       onDragStart={(e) => {
         e.stopPropagation();
@@ -133,7 +108,6 @@ function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...pr
               key={cellName + "_cell"}
             >
               <FormTableInput
-                key={cellName + "_input"}
                 column={column}
                 inputName={column.data.name}
                 data={{[cellName]: row[column.data.name]}}
@@ -164,28 +138,31 @@ function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...pr
 }
 
 function FormTableBase({columns, rows, onChange}) {
-  const initialRowsMap = useMemo(() => {
-    return rows.reduce((acc, row) => {
-      acc[row.name] = row;
+  const mapRows = () => {
+    return rows.reduce((acc, row, index) => {
+      acc[index] = row;
       return acc;
     }, {});
-  }, [rows]);
+  }
 
-  const prevRows = useRef({ ...initialRowsMap });
+  const [rowsMap, setRows] = useState(mapRows());
+  const prevRows = useRef({ ...rowsMap });
 
-  const updateRows = useCallback((index, newRow) => {
-    const newRows = { ...initialRowsMap, [index]: newRow };
+  const updateRows = (index, newRow) => {
+    const newRows = { ...rowsMap, [index]: newRow };
+
     if (!_.isEqual(prevRows.current, newRows)) {
-      prevRows.current = newRows;
+      prevRows.current = { ...newRows };
+      setRows(newRows);
       onChange(Object.values(newRows));
     }
-  }, [rows]);
+  }
 
-  return Object.entries(initialRowsMap).map(([key, row]) => {
+  return Object.entries(rowsMap).map(([key, row]) => {
     return (
       <FormTableRow
-        rowId={row.name}
-        key={row.name + "__row"}
+        rowId={key}
+        key={key + "_row"}
         row={row}
         columns={columns}
         //currentSelect={this.selectedRows}
@@ -221,10 +198,6 @@ class FormTableClass extends BaseTable {
   }
 
   addRow() {
-    if(this.props.addRow) {
-      return this.props.addRow();
-    }
-
     const rows = this.rows;
     const maxId = loopar.utils.getArrayMax(rows, "id") || 0;
 
@@ -240,8 +213,6 @@ class FormTableClass extends BaseTable {
   }
 
   getTableRender(columns, rows) {
-    rows = this.props.rows || []
-
     columns = columns.filter(
       (c) => !this.hiddenColumns.includes(c.data.name)
     );
@@ -336,40 +307,27 @@ class FormTableClass extends BaseTable {
 
 export default function FormTable (props) {
   const { renderInput } = BaseInput(props);
-  const prevRows = useRef({});
-
-  const meta = useMemo(() => {
-    return props.__META__;
-  }, [props.__META__]);
+  const prevMeta = useRef({});
 
   return renderInput(field => {
-    const rows = useMemo(() => {
-      return field.value
-    }, [field.value]);
-
+    const meta = field.value;
     const handleChange = (e) => {
-      if(!_.isEqual(prevRows.current, e)) {
-        field.onChange({target: { value: e }});
-        prevRows.current = prevRows;
+      const newMeta = cloneDeep(meta);
+      newMeta.rows = e;
+
+      if(!_.isEqual(prevMeta.current, newMeta)) {
+        prevMeta.current = newMeta;
+        field.onChange({target: { value: newMeta }});
       }
-    }
-
-    const addRow = () => {
-      const newRows =  [...rows]
-      const maxId = loopar.utils.getArrayMax(newRows, "id") || 0;
-
-      newRows.push({ id: maxId + 1, name: elementManage.uuid() });
-      handleChange(newRows);
     }
 
     return (
       <DesignerContext.Provider value={{}}>
         <FormTableClass
+          key={field.name + "_table"}
           field={field}
           meta={meta}
-          rows={rows}
           onChange={handleChange}
-          addRow={addRow}
         />
       </DesignerContext.Provider>
     )

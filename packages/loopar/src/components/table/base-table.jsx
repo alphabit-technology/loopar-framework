@@ -318,13 +318,13 @@ export class BaseTable extends Component {
       const data = column.data;
 
       return (
-        <TableCell
+        <th
           className='align-middle'
           key={`${row.name}_${data.name}_td`}
           {...cellProps}
         >
           {typeof data.value == "function" ? data.value(row) : row[data.name]}
-        </TableCell>
+        </th>
       );
     })
   }
@@ -334,17 +334,17 @@ export class BaseTable extends Component {
       this.rowsRef[row.name] = {};
 
       return (
-        <TableRow hover role="checkbox" tabIndex={-1} key={"row" + row.name}>
-          <TableCell padding="checkbox" className="w-10">
+        <tr hover role="checkbox" tabIndex={-1} key={"row" + row.name}>
+          <td padding="checkbox" className="w-10">
             <Checkbox
               onCheckedChange={(event) => {
                 this.selectRow(row, event);
               }}
               checked={this.selectedRows.includes(row.name)}
             />
-          </TableCell>
+          </td>
           {this.getRenderColumns(columns, row)}
-        </TableRow>
+        </tr>
       );
     })
   }
@@ -398,12 +398,12 @@ export class BaseTable extends Component {
       rowsCount > 0 && selectedRows === rowsCount;
 
     return (
-      <Table stickyHeader aria-label="sticky table">
-        <TableHeader className="bg-slate-300/50 dark:bg-slate-800/50">
-          <TableRow>
-            <TableHead padding="checkbox" className="w-10 p-2" colSpan={2}>
+      <table stickyHeader aria-label="sticky table">
+        <thead className="bg-slate-300/50 dark:bg-slate-800/50">
+          <tr>
+            <th padding="checkbox" className="w-10 p-2" colSpan={2}>
               {this.popPopRowActions(selectorAllStatus, rowsCount, selectedRows)}
-            </TableHead>
+            </th>
             {columns.map((c) => {
               if(c.data.name === "name") {
                 return null
@@ -413,28 +413,28 @@ export class BaseTable extends Component {
               const cellProps = c.cellProps ?? {};
 
               return (
-                <TableCell {...cellProps}>
+                <tr {...cellProps}>
                   {typeof data.label == "function" ? data.label() : data.label ? loopar.utils.UPPERCASE(data.label) : "..."}
-                </TableCell>
+                </tr>
               );
             })}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+          </tr>
+        </thead>
+        <tbody>
           {rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length+2}>
+            <tr>
+              <td colSpan={columns.length+2}>
                 <div className="flex flex-col bg-background w-full p-3 place-items-center">
                   <AlertTriangleIcon className="w-10 h-10"/>
                   <div className="text-lg">No rows to show</div>
                 </div>
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
             this.getRenderRows(columns, rows)
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     );
   }
 
@@ -549,6 +549,7 @@ export class BaseTable extends Component {
                   },
                   ...c.data,
                   required: 0,
+                  disabled: false,
                 };
 
                 const searchData = this.state.searchData;

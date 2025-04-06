@@ -33,4 +33,9 @@ export class Document extends Console {
     const doc = await this.newDocument(document, data);
     return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
   }
+
+  async getListToForm(document, { data = {}, fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null, rowsOnly = false } = {}, ifNotFound = null) {
+    const doc = await this.newDocument(document, data);
+    return await doc.getListToForm({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
+  }
 }

@@ -8,7 +8,6 @@ import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
 import { useDesigner } from "@context/@/designer-context";
 import _ from "lodash";
-
 import { useDocument } from "@context/@/document-context";
 
 const BaseInput = (props) => {
@@ -93,8 +92,6 @@ const BaseInput = (props) => {
   const hasLabel = () => props.withoutLabel !== true;
 
   const renderInput = (input, className = "") => {
-    //const invalidClassName = isInvalid ? "border border-red-600/40 text-red p-2" : "";
-
     return (
       <FormField
         name={data.name || data.key || data.id || ""}
@@ -102,6 +99,7 @@ const BaseInput = (props) => {
         render={({ field }) => {
           fieldRef.current = field;
           const combinedOnChange = (e) => {
+            if(data.disabled) return;
             if (field.onChange) field.onChange(e);
             handleInputChange(e);
           };

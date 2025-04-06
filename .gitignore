@@ -75,12 +75,17 @@ yarn-error.log*
 # -----------------------------------
 # 🌐 UPLOADS & GENERATED FILES
 # -----------------------------------
-public/uploads/
-public/js/components/
+uploads
+
+# -----------------------------------
+# 🌐 SPACES
+# -----------------------------------
+spaces
 
 # -----------------------------------
 # 🧩 APPLICATION FILES
 # -----------------------------------
+/app/auto
 /apps/
 /path/
 .temp

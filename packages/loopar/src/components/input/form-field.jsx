@@ -8,7 +8,7 @@ import {
 
 export const FormField = ({ render, onChange, ...props }) => {
   const { designerMode } = useDesigner();
-  const control = useFormContext().control;
+  const {control, register} = useFormContext();
 
   /**If fields is not controller by Form */
   const dontHaveForm = props.dontHaveForm;
@@ -36,7 +36,7 @@ export const FormField = ({ render, onChange, ...props }) => {
       })
     ) : (
       <BaseFormField
-        //{...props}
+        {...register(props.name)}
         name={props.name}
         value={props.value}
         control={control}

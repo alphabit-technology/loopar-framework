@@ -2,6 +2,7 @@ import {loopar} from 'loopar';
 import BaseDocument from "@context/base/base-document";
 import { dataInterface } from '@global/element-definition';
 import { useWorkspace } from "@workspace/workspace-provider"; 
+import _ from "lodash";
 
 export default class BaseForm extends BaseDocument {
   tagName = "form";
@@ -10,18 +11,12 @@ export default class BaseForm extends BaseDocument {
   lastData = null;
   __FORM_REFS__ = {};
   #Form = null;
-  //static contextType = useWorkspace;
 
   save() {
     this.send({ action: this.props.meta.action });
   }
 
-  // hydrate() {
-  //   loopar.rootApp.updateDocument(this.props.key, this.getFormValues(), false);
-  // }
-
   send({ action, params={}, ...options } = {}) {
-    //options = typeof options === 'string' ? { action: options } : options;
     this.validate();
     
     /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
@@ -30,8 +25,6 @@ export default class BaseForm extends BaseDocument {
       return;
     }*/
     
-
-    //return new Promise((resolve, reject) => {
     loopar.send({
       action: action,
       params: {...this.params, ...params},
@@ -60,8 +53,10 @@ export default class BaseForm extends BaseDocument {
   }
 
   get params() {
+    const searchParams = new URLSearchParams(window.location.search);
     return {
       name: this.props.meta.__DOCUMENT_NAME__,
+      ...(Object.fromEntries(searchParams.entries()) || {}),
     }
   }
 
@@ -116,6 +111,90 @@ export default class BaseForm extends BaseDocument {
     return this.#getFormValues(toSave);
   }
 
+  buildDesignerToSave(structure) {
+    const __files = [];
+
+    const fixFieldData = (field) => {
+      const updatedData = field.data;
+
+      for (const [key, value] of Object.entries(field.data || {})) {
+        if (key === "background_image" && value) {
+          const files = value;
+          const filesToSave = [];
+
+          if(files && Array.isArray(files) && files.length > 0) {
+            for (const file of files) {
+              if (typeof file === "string") continue;
+
+              if(file.src){
+                const typeMatches = file.src.match(/^data:(.*);base64,/);
+                const mimeType  = typeMatches ? typeMatches[1] : null;
+
+                if (mimeType ) {
+                  const base64Data = file.src.split(';base64,')[1];
+                  const binaryString = atob(base64Data);
+                  const len = binaryString.length;
+                  const bytes = new Uint8Array(len);
+
+                  for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  
+                  const newFile = new File([bytes], file.name, { type: mimeType  });
+                  __files.push(newFile);
+
+                  filesToSave.push({
+                    name: file.name,
+                    size: newFile.size,
+                    type: mimeType
+                  });
+                }else{
+                  filesToSave.push(file);
+                }
+              }else{
+                filesToSave.push(file);
+              }
+            }
+
+            updatedData[key] = filesToSave;
+          }
+        }
+
+        if([undefined, "undefined", null, "null", 0, "0", "[]"].includes(value)) {
+          delete updatedData[key];
+        }
+
+        if(["background_color", "color_overlay"].includes(key) && value) {
+          const defaultColors = [{color: "", alpha: 0.5}, {r:0, g:0, b:0, a:0}];
+          
+          defaultColors.forEach((defaultColor) => {
+            if(_.isEqual(loopar.utils.JSONparse(value, defaultColor), defaultColor)) {
+              delete updatedData[key];
+            }
+          });
+        }
+      }
+
+      return updatedData;
+    };
+
+    const fixElements = (elements = []) => {
+      return elements.map(field => {
+        const newField = { ...field, data: fixFieldData(field) };
+
+        if (newField.elements && newField.elements.length > 0) {
+          newField.elements = fixElements(newField.elements);
+        } else {
+          delete newField.elements;
+        }
+
+        return newField;
+      });
+    }
+
+    return {files: __files, designer: fixElements(structure)};
+  }
+
   #getFormValues(toSave = false) {
     if(!this.Form)  return this.meta.__DOCUMENT__;
     
@@ -125,29 +204,46 @@ export default class BaseForm extends BaseDocument {
 
       if (!field) return obj;
 
-      if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
-        const files = Array.isArray(value) ? value : [];
-        const metaFiles = [];
+      if(toSave) {
+        obj["__FILES__"] = [];
+        if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
+          const files = Array.isArray(value) ? value : [];
+          const metaFiles = [];
+         
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
 
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          
-          if (file.rawFile && file.rawFile instanceof File) {
-            metaFiles.push({
-              name: file.rawFile.name,
-              size: file.rawFile.size,
-              type: file.rawFile.type,
-            });
-            obj[name + "[" + i + "]"] = files[i].rawFile;
+            if (file.rawFile && file.rawFile instanceof File) {
+              metaFiles.push({
+                name: file.rawFile.name,
+                size: file.rawFile.size,
+                type: file.rawFile.type,
+              });
+              obj["__FILES__"].push(file.rawFile);
+            }else{
+              metaFiles.push({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              });
+            }
           }
+        
+          obj[name] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
+          return obj
         }
-      
-        obj[name] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
-        return obj
+
+        if(field.def.element === DESIGNER && toSave) {
+          const {files, designer} = this.buildDesignerToSave(JSON.parse(value));
+          obj[name] = JSON.stringify(designer);
+          obj["__FILES__"] = [...(obj["__FILES__"] || []), ...(files || [])];
+
+          return obj;
+        }
       }
 
       if([FORM_TABLE].includes(field.def.element) && toSave) {
-        obj[name] = JSON.stringify(value.rows || []);
+        obj[name] = JSON.stringify(value || []);
         return obj;
       }
 
@@ -165,11 +261,15 @@ export default class BaseForm extends BaseDocument {
     const [data, formData] = [this.getFormValues(toSave), new FormData()];
 
     for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        const value = (typeof data[key] === 'object' && !(data[key] instanceof File)) ? JSON.stringify(data[key]) : data[key];
-        formData.append(key, value);
+      if(key === '__FILES__'){
+        data[key].forEach((rawFile) => {
+          if (rawFile instanceof File) {
+            formData.append("files[]", rawFile);
+          }
+        });
+      }else{
+        formData.append(key, data[key]);
       }
-      //data.hasOwnProperty(key) && formData.append(key, data[key]);
     }
 
     return formData;
@@ -188,7 +288,36 @@ export default class BaseForm extends BaseDocument {
   }
 
   setValue(name, value) {
-    /*const field = this.getField(name);
-    field && field.val(value);*/
+    this.Form.setValue(name, value, {
+      shouldDirty: true,
+      shouldValidate: true
+    });
+  }
+
+  componentDidMount() {
+    super.componentDidMount();
+    this.buildSettersAndGetters();
+  }
+
+  buildSettersAndGetters() {
+    this.__WRITABLE_FIELDS__.forEach(field => {
+      const fieldName = field.data.name;
+
+      Object.defineProperty(this, fieldName, {
+        get: () => {
+          return this.getValue(fieldName);
+        },
+        set: (value) => {
+          if (this.Form) {
+            this.Form.setValue(fieldName, value, {
+              shouldDirty: true,
+              shouldValidate: true
+            });
+          }
+        },
+        enumerable: true,
+        configurable: true
+      });
+    });
   }
 }

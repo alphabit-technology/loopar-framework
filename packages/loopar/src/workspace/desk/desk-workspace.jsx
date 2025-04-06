@@ -13,13 +13,15 @@ export default function DeskWorkspace(props){
       <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
         <meta name="robots" content="noindex, nofollow"/>
         <TopNav openNav={openNav}></TopNav>
-        <section className="flex-grow flex">
+        <section className="flex flex-col flex-1">
           <SideNav
             items={menuData}
           />
-          <div 
-            className={`flex-grow ease-induration-100 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"}`}
-          >
+         <div
+          className={`flex flex-col flex-1 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${
+            openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"
+          }`}
+        >
             {__DOCUMENTS__}
           </div>
         </section>

@@ -221,6 +221,7 @@ export default class CoreDocument {
         await document.save();
       }
     }
+    
     async function updateChildRecords(childValuesReq, parentType, parentId) {
       for (const [key, value] of Object.entries(childValuesReq)) {
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
@@ -260,8 +261,8 @@ export default class CoreDocument {
       //}
 
       await this.updateHistory();
+      const files = this.__DOCUMENT__.__REQ_FILES__ || [];
 
-      const files = this.__DOCUMENT__.reqUploadFiles || [];
       for (const file of files) {
         const fileManager = await loopar.newDocument("File Manager");
         fileManager.reqUploadFile = file;
@@ -399,21 +400,27 @@ export default class CoreDocument {
       const updateValue = async (structure) => {
         return Promise.all(structure.map(async (el) => {
           const data = el.data;
-          if (Object.keys(__DOCUMENT__).includes(data?.name)) {
-            data.value = __DOCUMENT__[data.name];
+          const val = __DOCUMENT__[data.name];
       
-            if (el.element === SELECT) {
-              const options = (data.options || "").split("\n");
-      
-              if (options.length > 1) {
-                const [value, label] = (options.find(opt => (opt || "").split(":")[0] === data.value) || "").split(":");
-                el.data.value_descriptive = label || value;
-              } else {
-                // const db = loopar.db;
-                // if (await db.hastEntity(data.options) && await db.count(data.options, data.value) > 0) {
-                //   const doc = await loopar.getDocument(data.options, data.value);
-                //   el.data.value_descriptive = await doc.getValueDescriptive();
-                // }
+          if (el.element === SELECT) {
+            const options = (data.options || "").split("\n");
+    
+            if (options.length > 1) {
+              const [value, label] = (options.find(opt => (opt || "").split(":")[0] === val) || "").split(":");
+              el.data.value_descriptive = label || value;
+            } else {
+              // const db = loopar.db;
+              // if (await db.hastEntity(data.options) && await db.count(data.options, data.value) > 0) {
+              //   const doc = await loopar.getDocument(data.options, data.value);
+              //   el.data.value_descriptive = await doc.getValueDescriptive();
+              // }
+            }
+          }
+          if(el.element === FORM_TABLE) {
+            const ref = loopar.getRef(data.options);
+            el.__META__ = {
+              __ENTITY__: {
+                doc_structure: await loopar.db.getValue(ref.__ENTITY__, "doc_structure", ref.__NAME__),
               }
             }
           }
@@ -429,7 +436,7 @@ export default class CoreDocument {
         ));
       };
 
-      updateDocStructure();
+      await updateDocStructure();
       // entity.doc_structure = JSON.stringify(updateValue(
       //   JSON.parse(entity.doc_structure)
       // ))
@@ -437,9 +444,13 @@ export default class CoreDocument {
 
     const __ENTITY__ = entity;
     delete __ENTITY__.__REF__;
-
+    
     return {
-      __ENTITY__: __ENTITY__,
+      __ENTITY__: {
+        name: __ENTITY__.name,
+        module: __ENTITY__.module,
+        doc_structure: __ENTITY__.doc_structure,
+      },
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,
       __DOCUMENT__: await this.values(),
       //__DOCUMENT__: this.__DOCUMENT__,
@@ -504,10 +515,9 @@ export default class CoreDocument {
   }
 
   async getChildValues(field) {
-    return await loopar.getList(field, {
+    return await loopar.getListToForm(field, {
       filters: {
         "=": {
-          //parent_document: this.__ENTITY__.id,
           parent_id: await this.__ID__()
         }
       }
@@ -517,7 +527,6 @@ export default class CoreDocument {
   async getChildRawValues(field) {
     return await loopar.db.getAll(field, ["*"], {
       "=": {
-        //parent_document: this.__ENTITY__.name,
         parent_id: await this.__ID__()
       }
     })

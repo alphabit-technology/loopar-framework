@@ -2,7 +2,7 @@ import {ImageIcon} from "lucide-react";
 import { FaFileZipper } from "react-icons/fa6";
 import { RiFileExcel2Fill } from "react-icons/ri";
 import { BsFillFileEarmarkPdfFill } from "react-icons/bs";
-import { FaFile, FaFileAudio, FaFolder } from "react-icons/fa";
+import { FaFile, FaFileAudio, FaFolder, FaFilePowerpoint } from "react-icons/fa";
 import { IoVideocamSharp } from "react-icons/io5";
 import { RiFileWord2Fill } from "react-icons/ri";
 import fileManager, {getExtention} from "./file-manager";
@@ -32,6 +32,10 @@ export const fileIcons = {
   word: {
     icon: RiFileWord2Fill,
     color: "text-blue-500",
+  },
+  powerpoint: {
+    icon: FaFilePowerpoint,
+    color: "text-orange-500",
   },
   excel: {
     icon: RiFileExcel2Fill,

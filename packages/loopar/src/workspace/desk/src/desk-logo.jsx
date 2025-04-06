@@ -2,7 +2,7 @@ import React from "react";
 
 export const DeskLogo = (props) => {
   const imageProps = {
-    src: `/assets/images/loopar.svg`,
+    src: `/assets/public/images/loopar.svg`,
     alt: "Loopar Logo",
     className: 'hidden h-8 md:block text-white',
     href: "/core/Desk/view",
@@ -13,7 +13,7 @@ export const DeskLogo = (props) => {
         className='inline-flex items-center'
       >
         <img {...imageProps}/>
-        <img {...imageProps} src="/assets/images/logo-dark-min.svg" className="h-8 w-20 md:hidden" style={{minWidth:40, maxWidth:40}}/>
+        <img {...imageProps} src="/assets/public/images/logo-dark-min.svg" className="h-8 w-20 md:hidden" style={{minWidth:40, maxWidth:40}}/>
       </div>
     </div>
   );

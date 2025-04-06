@@ -38,7 +38,6 @@ export default function IconInput(props) {
           description: <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://lucide.dev/icons/" target="_blank">Lucide React</a></label>,
         }}
         value={field.value}
-        onChange={field.onChange}
         formattedValue={<div className="flex align-middle"><BaseIcon icon={field.value} className="w-7 h-7"/><div className="pl-2 my-1">{field.value}</div></div>}
         dontHaveLabel={props.dontHaveLabel}
         simpleInput={props.simpleInput}

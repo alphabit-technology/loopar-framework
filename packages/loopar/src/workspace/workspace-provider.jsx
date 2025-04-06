@@ -44,44 +44,12 @@ export function WorkspaceProvider({
   const [activeModule, setActiveModule] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(false);
 
-  const getMergeDocument = () => {
-    const toMergeDocuments = Object.values({ ...Documents });
-
-    const updateValue = (structure, Document) => {
-      return structure.map((el) => {
-        if (Object.keys(Document).includes(el.data?.name)) {
-          const value = Document[el.data.name];
-
-          el.data.value = value;
-        }
-
-        el.elements = updateValue(el.elements || [], Document);
-        return el;
-      });
-    };
-
-    toMergeDocuments.forEach((Document) => {
-      if (Document.__DOCUMENT__?.__ENTITY__) {
-        Document.__DOCUMENT__.__ENTITY__.STRUCTURE ??= JSON.parse(Document.__DOCUMENT__.__ENTITY__.doc_structure);
-        if(Array.isArray(Document.__DOCUMENT__.__ENTITY__.STRUCTURE)) {} else{
-          console.log([Document.__DOCUMENT__, "Document.__DOCUMENT__.__ENTITY__.STRUCTURE", Document.__DOCUMENT__.__ENTITY__.STRUCTURE]);
-        }
-        Document.__DOCUMENT__.__ENTITY__.STRUCTURE = updateValue(
-          Document.__DOCUMENT__.__ENTITY__.STRUCTURE,
-          Document.__DOCUMENT__.__DOCUMENT__
-        );
-      }
-    });
-
-    return toMergeDocuments || [];
-  }
-
   const getDocuments = () => {
     return (
       <>
-        {getMergeDocument().map((Document) => {
+        {Object.values({ ...Documents }).map((Document) => {
           const { Module, __DOCUMENT__, active } = Document;
-          return active && Module ? <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} /> : null;
+          return active && Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
         })}
       </>
     );
@@ -173,7 +141,6 @@ export function WorkspaceProvider({
 
   const refresh = () => {
     fetchDocument(pathname).then(() => {
-      console.log("Refreshed");
       setRefreshFlag(prev => !prev);
     });
   }

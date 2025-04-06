@@ -146,12 +146,12 @@ class FileManager {
     if (file.src && (file.src.includes("data:") || file.src.includes("http"))) {
       return encodeURI(file.src);
     }
-    return encodeURI("/uploads/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
+    return encodeURI("/assets/public/images/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
   }
 
   getImage(data = {}, field, avatar = null) {
     const img = this.getMappedFiles((data || {})[field])[0];
-    return img ? img.previewSrc : avatar ? `/assets/images/avatars/${avatar}` : null;
+    return img ? img.previewSrc : avatar ? `/assets/public/images/avatars/${avatar}` : null;
   }
 }
 
@@ -161,5 +161,5 @@ export default fileManager;
 
 export const getImage = (data = {}, field, avatar = null) => {
   const img = fileManager.getMappedFiles((data || {})[field])[0];
-  return img ? img.previewSrc : avatar ? `/assets/images/avatars/${avatar}` : null;
+  return img ? img.previewSrc : avatar ? `/assets/public/images/avatars/${avatar}` : null;
 }

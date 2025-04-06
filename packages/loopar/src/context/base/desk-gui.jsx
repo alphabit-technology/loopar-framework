@@ -56,36 +56,34 @@ export default function DeskGUI(props) {
       >
         <MoreVertical/>
       </Button>}
-      <div className = "flex flex-row">
-        <div 
-          className={`space-y-4 ${sidebarOpen ? documentWidth : `w-full`}`}
-        >
-          {docRef.__hasHeader__ && 
-            <AppBarr 
-              docRef={docRef} 
-              meta={docRef.meta} 
-              toggleSidebar={toggleSidebar}
-              viewTypeToggle={props.viewTypeToggle}
-              viewType={props.viewType}
-              sidebarOpen={sidebarOpen}
-              hasBreadcrumb={docRef.__hasBreadcrumb__}
-            />
-          }
-          {props.children}
-        </div>
-        {
-          docRef.__hasSidebar__ && sidebarOpen && 
-          <InnerSidebar
-            sidebarWidth={sidebarWidth}
+      <div 
+        className={`flex flex-col flex-1 space-y-4 ${sidebarOpen ? documentWidth : `w-full`}`}
+      >
+        {docRef.__hasHeader__ && 
+          <AppBarr 
+            docRef={docRef} 
+            meta={docRef.meta} 
             toggleSidebar={toggleSidebar}
-          >
-            <div>
-              {docRef.getSidebarHeader && docRef.getSidebarHeader()}
-            </div>
-            {docRef.getSidebar && docRef.getSidebar()}
-          </InnerSidebar>
+            viewTypeToggle={props.viewTypeToggle}
+            viewType={props.viewType}
+            sidebarOpen={sidebarOpen}
+            hasBreadcrumb={docRef.__hasBreadcrumb__}
+          />
         }
+        {props.children}
       </div>
+      {
+        docRef.__hasSidebar__ && sidebarOpen && 
+        <InnerSidebar
+          sidebarWidth={sidebarWidth}
+          toggleSidebar={toggleSidebar}
+        >
+          <div>
+            {docRef.getSidebarHeader && docRef.getSidebarHeader()}
+          </div>
+          {docRef.getSidebar && docRef.getSidebar()}
+        </InnerSidebar>
+      }
     </>
   )
 }

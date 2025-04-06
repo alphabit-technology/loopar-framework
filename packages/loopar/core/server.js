@@ -21,12 +21,15 @@ class Server extends Router {
   server = new express();
   url = null;
   isProduction = process.env.NODE_ENV == 'production';
+  uploadPath = "uploads";
+  //staticFilesPath = "public/uploads/public";
+  //staticAssetsPath = "public/assets";
 
   constructor() { super() }
 
   async initialize() {
     await loopar.initialize();
-
+    
     if (!this.isProduction) {
       this.vite = await createViteServer({
         server: { middlewareMode: true },
@@ -53,8 +56,9 @@ class Server extends Router {
       );
     }
 
-    this.server.use(useragent.express());
     await this.#exposePublicDirectories();
+    this.server.use(useragent.express());
+    
     this.#initializeSession();
     this.route();
     this.#start();
@@ -71,19 +75,14 @@ class Server extends Router {
   }
 
   async #exposePublicDirectories() {
-    const publicDirs = ['public'];
-
     if (process.env.NODE_ENV == 'production') {
-      publicDirs.push('dist/client');
-    } else {
-      publicDirs.push('public');
+      this.server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
     }
 
-    publicDirs.push('node_modules/particles.js');
-
-    publicDirs.forEach(dir => {
-      this.server.use(this.express.static(path.join(loopar.pathRoot, dir)));
-    });
+    this.server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, "public")));
+    this.server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
+    /* because need to define directory like images */
+    this.server.use("/assets/public/images", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
 
     await this.exposeClientAppFiles();
   }
@@ -93,10 +92,11 @@ class Server extends Router {
       const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
 
       for (const app of installedsApps) {
-        const appPath = loopar.makePath(loopar.pathRoot, "apps", app.name, "public");
+        const appPath = loopar.makePath(loopar.pathRoot, "apps", app.name, this.uploadPath, "public");
 
         console.log("Exposing public directory for: " + app.name)
-        this.server.use(this.express.static(appPath));
+        this.server.use("/assets/public", serveStatic(appPath));
+        this.server.use("/assets/public/images", serveStatic(appPath));
       }
     }
   }

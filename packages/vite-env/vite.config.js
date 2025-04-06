@@ -41,15 +41,14 @@ export default defineConfig(({ command }) => {
         '@loopar': resLoopar('src/'),
         '@global': resLoopar('core/global'),
         '@workspace': resLoopar('src/workspace'),
-        '@assets': resRoot('public/assets'),
+        //'@assets': resRoot('static/assets'),
         '@publicSRC': resRoot('public/src'),
         '@context': resLoopar('src/context'),
         '@services': resLoopar('services'),
         '/app': resRoot('app'),
         '@uiw': resRoot('node_modules/@uiw/'),
         'lucide-react': resRoot('node_modules/lucide-react'),
-        'file-type': resRoot('node_modules/file-type'),
-        //'particles.js': resRoot('node_modules/particles.js'),
+        'file-type': resRoot('node_modules/file-type')
       },
     },
     plugins: [
@@ -92,7 +91,11 @@ export default defineConfig(({ command }) => {
       allowedHosts: true,
       hmr: true,
       watch: { usePolling: true },
-      fs: { allow: ['.'] },
+      fs: {
+        // Allow serving files from one level up to the project root
+        allow: ['..'],
+      },
+      //fs: { allow: ['.'] }
     },
   };
 });

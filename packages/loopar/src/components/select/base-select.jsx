@@ -115,6 +115,24 @@ export function Select({ search, data, onSelect, options = [], selected={}, fiel
     }
   }
 
+  if(data.disabled) {
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        className={cn(
+          "w-full justify-between pr-1",// max-w-sm
+          !current.value && "text-muted-foreground",
+          field.isInvalid && invalidClass.border
+        )}
+        disabled={true}
+      >
+        {RenderOption()}
+        <CaretSortIcon className="ml-1 h-5 w-5 shrink-0 opacity-50" />
+      </Button>
+    )
+  }
+
   return (
     <Popover open={open} onOpenChange={openHandler} className="pb-4">
       <PopoverTrigger asChild>

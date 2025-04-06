@@ -49,7 +49,6 @@ export function prepareMeta(metaProps, parent, image) {
     }
 
     if (data.background_image && data.background_image !== '[]') {
-
       const src = getSrc();
 
       if (src && src.length > 0) {

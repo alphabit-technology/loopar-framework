@@ -110,7 +110,6 @@ export const elementsDefinition = {
 
 export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
   value.forEach(element => {
-    //const props = { props: (element.props || []).concat(commonProps) };
     acc[element.element] = { def: { ...element, ...{ group: key, isWritable: key === FORM_ELEMENT } } };
   });
 

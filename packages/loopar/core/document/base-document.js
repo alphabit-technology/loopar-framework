@@ -157,6 +157,53 @@ export default class BaseDocument extends CoreDocument {
     });
   }
 
+  async getListToForm({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
+    if (this.__ENTITY__.is_single) {
+      return loopar.throw({
+        code: 404,
+        message: "This document is single, you can't get list"
+      });
+    }
+
+    const pagination = {
+      page: loopar.session.get(this.__ENTITY__.name + "_page") || 1,
+      pageSize: 10,
+      totalPages: 4,
+      totalRecords: 1,
+      sortBy: "id",
+      sortOrder: "asc",
+      __ENTITY__: this.__ENTITY__.name
+    };
+
+    const listFields = fields || this.getFieldListNames();
+
+    if (this.__ENTITY__.name === 'Entity') {
+      listFields.push('is_single');
+    }
+
+    const condition = { ...this.buildCondition(q), ...filters };
+
+    pagination.totalRecords = await this.records(condition);
+
+    pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
+    //const selfPagination = JSON.parse(JSON.stringify(pagination));
+    loopar.db.pagination = pagination;
+    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
+
+    if (rows.length === 0 && pagination.page > 1) {
+      await loopar.session.set(this.__ENTITY__.name + "_page", 1);
+      return await this.getList({ fields, filters, q, rowsOnly });
+    }
+
+    return rows;
+
+    /*return {
+      rows: rows,
+      //pagination: selfPagination,
+      //q,
+    };*/
+  }
+
   buildConditionToSelect(q = null) {
     return { 'LIKE': [this.getFieldSelectNames(), `%${q}%`] };
   }

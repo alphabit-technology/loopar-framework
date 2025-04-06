@@ -40,7 +40,6 @@ export default class BaseDocument extends React.Component {
     return typeof this.props.hasBreadcrumb !== "undefined" ? this.props.hasBreadcrumb : this.hasBreadcrumb;
   }
   
-  
   render(content) {
     return (
       <DocumentProvider
@@ -142,6 +141,14 @@ export default class BaseDocument extends React.Component {
   componentDidMount() {
     this.initScroll();
     this.initActions();
+  }
+
+  setterAndGetter(name, value) {
+    if (typeof value === "undefined") {
+      return this[name];
+    }
+
+    this[name] = value;
   }
 
   // componentDidUpdate(prevProps) {

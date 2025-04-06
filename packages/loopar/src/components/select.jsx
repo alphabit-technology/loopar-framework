@@ -24,6 +24,8 @@ export default function MetaSelect(props){
   }, []);
 
   const search = useCallback((target, delay = true) => {
+    if(data.disabled) return;
+
     const q = target?.target?.value || "";
     return new Promise((resolve, reject) => {
       if (isLocal()) {
@@ -60,6 +62,8 @@ export default function MetaSelect(props){
   }
 
   const getServerData = (q) => {
+    if(data.disabled) return;
+    
     return new Promise((resolve) => {
       loopar.send({
         action: `/desk/${getModel()}/search`,
