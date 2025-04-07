@@ -35,7 +35,7 @@ async function setTailwindTemp(toElement, classes) {
     );
   }`
 
-  await fileManage.makeFile('public/src', 'tailwind', fn, 'jsx', true);
+  await fileManage.makeFile('app/auto', 'tailwind', fn, 'jsx', true);
 }
 
 export async function generatedBaseCss() {
