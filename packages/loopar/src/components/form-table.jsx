@@ -1,17 +1,18 @@
 import {BaseTable} from "@@table/base-table"
 import BaseInput from "@base-input"
 import {MetaComponent} from "@meta-component";
-import pkg from "lodash";
-const { cloneDeep } = pkg;
 import { DesignerContext } from "@context/@/designer-context";
-import { AlertTriangleIcon, Footprints } from "lucide-react";
+import { AlertTriangleIcon } from "lucide-react";
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { FormWrapper } from "@context/form-provider";
 import _ from "lodash";
 
+import { useFieldArray } from 'react-hook-form';
+import { useFormContext } from "@context/form-provider";
+
 import { Checkbox } from "@cn/components/ui/checkbox"
-import {useRef, useState, useEffect, use, useMemo, useCallback} from "react";
+import {useRef, useMemo, useCallback} from "react";
 
 import {
   Table,
@@ -25,93 +26,16 @@ import {
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@cn/components/ui/button";
 
-function FormTableInput({ column, name, inputName, onChange, ...props }) {
-  const formRef = useRef(null);
-  const prevData = useRef(null);
-  const debounceTimer = useRef(null);
-  const data = useMemo(() => props.data, [props.data]);
+function FormTableBase({columns, onChange, ...props}) {
+  const {control, register} = useFormContext();
 
-  const getFormValue = useCallback(() => {
-    const newData = formRef.current.watch();
-    return Object.values(newData)[0];
-  }, []);
+  const { fields } = useFieldArray({
+    control,
+    name: 'rows'
+  });
 
-  const saveData = useCallback(() => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    debounceTimer.current = setTimeout(() => {
-      const newData = getFormValue();
-
-      if (prevData.current !== newData) {
-        onChange(inputName, newData);
-        prevData.current = newData;
-      }
-    }, 300);
-  }, [inputName, onChange]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, []);
-
-  return (
-    <FormWrapper __DOCUMENT__={data} formRef={formRef}>
-      <MetaComponent
-        component={column.element}
-        key={`${name}_input`}
-        render={(Comp) => (
-          <Comp
-            //key={`${name}_input`}
-            dontHaveLabel={true}
-            simpleInput={true}
-            data={cloneDeep({
-              ...column.data,
-              name,
-              label: column.data.label,
-            })}
-            value={getFormValue()}
-            onChange={saveData}
-          />
-        )}
-      />
-    </FormWrapper>
-  );
-}
-
-function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...props}) {
-  const row = useMemo(() => {
-    return props.row;
-  }, [props.row]);
-
-  const [rowData, setRowData] = useState(row);
-  const prevData = useRef({ ...rowData });
-
-  const updateRowData = useCallback((name, value) => {
-    const newRowData = { ...rowData, [name]: value };
-    if (!_.isEqual(prevData.current, newRowData)) {
-      prevData.current = newRowData;
-      setRowData(newRowData);
-      onChange(rowId, newRowData);
-    }
-  }, [rowData, onChange, rowId]);
-
-  return (
-    <TableRow
-      hover
-      role="checkbox"
-      tabIndex={-1}
-      key={"row___" + row.name}
-      draggable
-      onDragStart={(e) => {
-        e.stopPropagation();
-        //console.log("drag start");
-      }}
-    >
+  return fields.map((field, index) => (
+    <TableRow>
       <TableCell padding="checkbox" className="w-10">
         <Checkbox
           onCheckedChange={(event) => {
@@ -125,20 +49,28 @@ function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...pr
         const cellProps = column.cellProps ?? {};
 
         if (fieldIsWritable(column)) {
-          const cellName = row.name + "_" + column.data.name;
+          const cellName = `rows.${index}.${column.data.name}`;
           
           return (
             <TableCell
               {...cellProps}
-              key={cellName + "_cell"}
             >
-              <FormTableInput
-                key={cellName + "_input"}
-                column={column}
-                inputName={column.data.name}
-                data={{[cellName]: row[column.data.name]}}
-                name={cellName}
-                onChange={updateRowData}
+              <MetaComponent
+                component={column.element}
+                render={(Comp) => (
+                  <Comp
+                    dontHaveLabel={true}
+                    simpleInput={true}
+                    data={({
+                      ...column.data,
+                      name: cellName,
+                      label: column.data.label,
+                    })}
+                    {...register(`rows.${index}.${column.data.name}`)}
+                    value={field[column.data.name]}
+                    onChange={onChange}
+                  />
+                )}
               />
             </TableCell>
           );
@@ -146,12 +78,12 @@ function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...pr
           return (
             <TableCell
               {...cellProps}
-              key={column.name}
+              className="w-10"
             >
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => this.deleteRow(row)}
+                onClick={() => props.deleteRow(index)}
               >
                 <Trash2Icon size={16} />
               </Button>
@@ -160,42 +92,7 @@ function FormTableRow ({rowId, columns, currentSelect, onSelect, onChange, ...pr
         }
       })}
     </TableRow>
-  )
-}
-
-function FormTableBase({columns, rows, onChange}) {
-  const initialRowsMap = useMemo(() => {
-    return rows.reduce((acc, row) => {
-      acc[row.name] = row;
-      return acc;
-    }, {});
-  }, [rows]);
-
-  const prevRows = useRef({ ...initialRowsMap });
-
-  const updateRows = useCallback((index, newRow) => {
-    const newRows = { ...initialRowsMap, [index]: newRow };
-    if (!_.isEqual(prevRows.current, newRows)) {
-      prevRows.current = newRows;
-      onChange(Object.values(newRows));
-    }
-  }, [rows]);
-
-  return Object.entries(initialRowsMap).map(([key, row]) => {
-    return (
-      <FormTableRow
-        rowId={row.name}
-        key={row.name + "__row"}
-        row={row}
-        columns={columns}
-        //currentSelect={this.selectedRows}
-        onSelect={(row, event) => {
-          //this.selectRow(row, event);
-        }}
-        onChange={updateRows}
-      />
-    );
-  })
+  ));
 }
 
 class FormTableClass extends BaseTable {
@@ -233,12 +130,6 @@ class FormTableClass extends BaseTable {
     this.setState({ meta: this.meta });
   }
 
-  getRenderRows(columns, rows) {
-    return (
-      <FormTableBase columns={columns} rows={rows} onChange={this.props.onChange}/>
-    )
-  }
-
   getTableRender(columns, rows) {
     rows = this.props.rows || []
 
@@ -268,7 +159,10 @@ class FormTableClass extends BaseTable {
               const cellProps = c.cellProps ?? {};
 
               return (
-                <TableCell {...cellProps}>
+                <TableCell 
+                  {...cellProps}
+                  key={data.name + "_header"}
+                >
                   {typeof data.label == "function" ? data.label() : data.label ? loopar.utils.UPPERCASE(data.label) : "..."}
                 </TableCell>
               );
@@ -291,7 +185,12 @@ class FormTableClass extends BaseTable {
               </TableCell>
             </TableRow>
           ) : (
-            this.getRenderRows(columns, rows)
+            <FormTableBase 
+              columns={columns} 
+              rows={rows} 
+              onChange={this.props.onChange}
+              deleteRow={this.props.deleteRow}
+            />
           )}
         </TableBody>
       </Table>
@@ -334,42 +233,76 @@ class FormTableClass extends BaseTable {
   }
 }
 
-export default function FormTable (props) {
-  const { renderInput } = BaseInput(props);
-  const prevRows = useRef({});
+function FormTable(props) {
+  const { meta, field, onChange } = props;
+  const debounceTimer = useRef(null);
+  const formRef = useRef(null);
 
+  const rows = useMemo(() => {
+    return field.value || [];
+  }, [field.value]);
+
+  const addRow = () => {
+    const newRows =  [...rows]
+    const maxId = loopar.utils.getArrayMax(newRows, "id") || 0;
+
+    newRows.push({ id: maxId + 1, name: elementManage.uuid() });
+    onChange(newRows);
+  }
+
+  const deleteRow = (index) => {
+    const newRows =  [...rows]
+    newRows.splice(index, 1);
+    onChange(newRows);
+  }
+
+  const getFormValue = useCallback(() => {
+    const newData = formRef.current.watch();
+    return Object.values(newData?.rows);
+  }, []);
+  
+  const saveData = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    
+    debounceTimer.current = setTimeout(() => {
+      onChange(getFormValue());
+    }, 300);
+  }, []);
+  
+  return (
+    <FormWrapper __DOCUMENT__={{rows: rows}} formRef={formRef}>
+      <FormTableClass
+        meta={meta}
+        rows={rows}
+        onChange={saveData}
+        addRow={addRow}
+        deleteRow={deleteRow}
+      />
+    </FormWrapper>
+  );
+}
+
+export default function FormTableInput (props) {
+  const { renderInput } = BaseInput(props);
+  
   const meta = useMemo(() => {
     return props.__META__;
   }, [props.__META__]);
 
   return renderInput(field => {
-    const rows = useMemo(() => {
-      return field.value
-    }, [field.value]);
-
     const handleChange = (e) => {
-      if(!_.isEqual(prevRows.current, e)) {
-        field.onChange({target: { value: e }});
-        prevRows.current = prevRows;
-      }
-    }
-
-    const addRow = () => {
-      const newRows =  [...rows]
-      const maxId = loopar.utils.getArrayMax(newRows, "id") || 0;
-
-      newRows.push({ id: maxId + 1, name: elementManage.uuid() });
-      handleChange(newRows);
+      !_.isEqual(field.value, e) && field.onChange({target: { value: e }});
     }
 
     return (
       <DesignerContext.Provider value={{}}>
-        <FormTableClass
+        <FormTable
+          key={field.name}
           field={field}
           meta={meta}
-          rows={rows}
           onChange={handleChange}
-          addRow={addRow}
         />
       </DesignerContext.Provider>
     )

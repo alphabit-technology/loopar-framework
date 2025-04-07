@@ -14,11 +14,12 @@ export default function MetaSelect(props){
   const titleFields = useRef(["label"]);
   const model = useRef(null);
   const lastSearch = useRef(null);
+  const fieldRef = useRef(null);
   
-  const { renderInput, value, data } = BaseInput(props);
+  const { renderInput, data } = BaseInput(props);
 
   useEffect(() => {
-    const val = value();
+    const val = fieldRef.current?.value || "";
     const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ value: val, label: val }];
     setRows(getPrepareOptions(initialRows));
   }, []);
@@ -116,8 +117,8 @@ export default function MetaSelect(props){
         formattedValue: option.formattedValue,
       }
       : {
-        value: option || value(),
-        label:  option || value(),
+        value: option || fieldRef.current.value,
+        label:  option || fieldRef.current.value,
       }) : { null: null };
   };
 
@@ -163,22 +164,25 @@ export default function MetaSelect(props){
     return null;
   };
 
-  return renderInput((field) => (
-    <>
-      <FormLabel {...props} field={field} />
-      <Select
-        field={field}
-        options={rows}
-        search={(delay) => search(delay)}
-        data={data}
-        onSelect={field.onChange}
-        selected={currentOption(field.value)}
-      />
-      {(data.description && props.simpleInput != true) && (
-        <FormDescription>{data.description}</FormDescription>
-      )}
-    </>
-  ));
+  return renderInput((field) => {
+    fieldRef.current = field;
+    return (
+      <>
+        <FormLabel {...props} field={field} />
+        <Select
+          field={field}
+          options={rows}
+          search={(delay) => search(delay)}
+          data={data}
+          onSelect={field.onChange}
+          selected={currentOption(field.value)}
+        />
+        {(data.description && props.simpleInput != true) && (
+          <FormDescription>{data.description}</FormDescription>
+        )}
+      </>
+    )
+  });
 };
 
 MetaSelect.metaFields = () => {

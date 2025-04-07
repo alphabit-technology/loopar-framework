@@ -13,7 +13,7 @@ import { useDocument } from "@context/@/document-context";
 const BaseInput = (props) => {
   const [isInvalid, setIsInvalid] = useState(false);
   const fieldRef = useRef(null);
-  const [fieldValue, setFieldValue] = useState(props.value || (props.data && props.data.value) || "");
+  const [fieldValue, setFieldValue] = useState(fieldRef.current?.value);
 
   const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
   const parentHidden = useHidden();
@@ -78,14 +78,9 @@ const BaseInput = (props) => {
   const validate = () => {
     if(designerMode) return;
     if (data.hidden || parentHidden) return { valid: true };
-    const validation = dataInterface({ data }, fieldValue).validate();
+    const validation = dataInterface({ data }, fieldRef.current.value).validate();
     setIsInvalid(!validation.valid);
     return validation;
-  };
-
-  const value = (val) => {
-    if (typeof val === "undefined") return fieldValue;
-    setFieldValue(val);
   };
 
   const readOnly = props.readOnly || data.readOnly;
@@ -105,7 +100,7 @@ const BaseInput = (props) => {
           };
 
           return (
-            <FormItem className={cn("flex flex-col mb-2 rounded shadow-sm", className)}>
+            <FormItem className={cn("flex flex-col rounded shadow-sm", className)}>
               {input({ ...field, onChange: combinedOnChange, isInvalid }, data)}
               <FormMessage>
                 {field.message || (isInvalid && field.invalidMessage)}
@@ -121,7 +116,7 @@ const BaseInput = (props) => {
     return renderInput(props.render);
   }
 
-  return { renderInput, value, validate, readOnly, hasLabel, data, fieldControl:fieldRef };
+  return { renderInput, validate, readOnly, hasLabel, data };
 };
 
 

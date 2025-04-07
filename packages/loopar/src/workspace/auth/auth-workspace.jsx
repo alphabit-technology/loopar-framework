@@ -26,13 +26,15 @@ const Layout = (({ ...props }) => {
               </div>
             </div>
             <div className="flex-grow rounded-lg">
-              {props.children}
+              <div className="flex flex-col w-full h-full bg-background/70 rounded-lg shadow-md gap-4">
+                {props.children}
+              </div>
             </div>
           </div>
         </div>
         <div className="w-full flex-col hidden lg:flex">
           <Particles 
-            fullScreen={true} 
+            fullScreen={false} 
             className="absolute w-full h-dvh bg-cover bg-center bg-no-repeat bg-fixed overflow-auto duration-100 ease-in bg-purple-900/5 z-0"
             data={{
               "particles_settings": JSON.stringify({

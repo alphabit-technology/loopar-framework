@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {
-    "vite": "v6.3.0-beta.1",
+    "vite": "v6.2.5",
     "vite-plugin-express": "^1.0.3",
     "vite-plugin-preload": "^0.4.2",
     "vite-plugin-compression": "0.5.1",

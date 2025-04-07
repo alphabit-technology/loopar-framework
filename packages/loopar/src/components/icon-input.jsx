@@ -20,7 +20,7 @@ const BaseIcon = ({ icon, className }) => {
 }
 
 export default function IconInput(props) {
-  const { renderInput, data={ label: "Icon", name: "icon", value: ""}, value } = BaseInput(props);
+  const { renderInput, data={ label: "Icon", name: "icon", value: ""} } = BaseInput(props);
   
   const options = BaseIcons.map((icon) => {
     return {

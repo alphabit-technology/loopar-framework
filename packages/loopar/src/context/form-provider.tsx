@@ -93,10 +93,8 @@ export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE }: a
   formRef && (formRef.current = form);
   return (
     <BaseFormContext.Provider value={form}>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          {children}
-        </form>
+      <Form {...form} onSubmit={form.handleSubmit(onSubmit)}>
+        {children}
       </Form>
     </BaseFormContext.Provider>
   );
