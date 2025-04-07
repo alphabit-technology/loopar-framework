@@ -5,7 +5,7 @@ import { BaseFormContext } from "@context/form-provider";
 import React, { use, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
-import {Tailwind} from "@publicSRC/tailwind";
+import {Tailwind} from "@app/auto/tailwind";
 import Tab from "@tab";
 import Tabs from "@tabs";
 import {useCookies} from "@services/cookie";
