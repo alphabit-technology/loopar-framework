@@ -103,6 +103,7 @@ export class Loopar extends Document {
 
   async makeDefaultFolders() {
     await fileManage.makeFolder("apps");
+    await fileManage.makeFolder("app", "auto");
     await fileManage.makeFolder('uploads', "public", "thumbnails");
     await fileManage.makeFolder('uploads', "private", "thumbnails");
   }
