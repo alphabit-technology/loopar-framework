@@ -45,7 +45,7 @@ export function WorkspaceProvider({
       .filter(document => document.active)
       .map(document => {
         const { Module, __DOCUMENT__ } = document;
-        return Module && <Module meta={__DOCUMENT__.__DOCUMENT__} key={__DOCUMENT__.key} />;
+        return Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
       });
   }, [Documents]);
 
@@ -53,17 +53,12 @@ export function WorkspaceProvider({
   const __DOCUMENTS__ = useMemo(() => memoizedDocuments, [Documents, refreshFlag]);
 
   const handleSetOpenNav = useCallback(openNav => {
-      setOpenNav(openNav);
-    },
-    [openNav]
-  );
+    setOpenNav(openNav);
+  }, [openNav]);
 
-  const handleToogleSidebarNav = useCallback(
-    () => {
-      handleSetOpenNav(!openNav);
-    },
-    [setOpenNav]
-  );
+  const handleToogleSidebarNav = useCallback(() => {
+    handleSetOpenNav(!openNav);
+  }, [setOpenNav]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -98,11 +93,12 @@ export function WorkspaceProvider({
   const loadDocument = (__META__, Module) => {
     try {
       const copyDocuments = { ...Documents };
+      const __DOCUMENT__ = __META__.__DOCUMENT__;
 
-      copyDocuments[__META__.key] = {
-        key: __META__.key,
+      copyDocuments[__DOCUMENT__.key] = {
+        key: __DOCUMENT__.key,
         Module: Module.default,
-        __DOCUMENT__: __META__,
+        __DOCUMENT__: __DOCUMENT__,
         active: true,
       };
 
@@ -116,6 +112,7 @@ export function WorkspaceProvider({
     __META__.client_importer.client = "error-view";
     AppSourceLoader(__META__.client_importer).then((Module) => {
       __META__.__DOCUMENT__ = {
+        key: "error404",
         code: 404,
         title: "Source not found",
         description: e.message
@@ -177,7 +174,7 @@ export function WorkspaceProvider({
   }, [pathname]);
 
   const getActiveDocument = useCallback(() => {
-    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__?.__DOCUMENT__;
+    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__;
   }, [Documents]);
 
   const getActiveParentMenu = useCallback(() => {
@@ -186,14 +183,16 @@ export function WorkspaceProvider({
   }, [Documents, pathname, refreshFlag]);
 
   useEffect(() => {
-    const __DOCUMENT__ = getActiveDocument();
+    const {__DOCUMENT__} = getActiveDocument();
     if (!__DOCUMENT__) return;
+    
+    const {__ENTITY__, __MODULE__} = __DOCUMENT__;
 
-    const activeParentMenu = __DOCUMENT__.activeParentMenu || __DOCUMENT__.__ENTITY__?.name;
-    const module = (activeParentMenu !== "Module" ? __DOCUMENT__.__DOCUMENT__?.module || __DOCUMENT__.__MODULE__  || __DOCUMENT__.__ENTITY__?.module : null) || null;
+    const activeParentMenu = __DOCUMENT__.activeParentMenu || __ENTITY__?.name;
+    const module = (activeParentMenu !== "Module" ? __DOCUMENT__?.module || __MODULE__  || __ENTITY__?.module : null) || null;
 
     if (activeParentMenu) {
-      const activeDocumentName = __DOCUMENT__?.__ENTITY__?.name;
+      const activeDocumentName = __ENTITY__?.name;
       activeDocumentName && activeDocumentName != activePage && setActivePage(activeDocumentName);
     }
 

@@ -19,6 +19,7 @@ interface RootLayoutProps {
 
 const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
   const __WORKSPACE__ = __META__.__WORKSPACE__;
+  const __DOCUMENT__ = __META__.__DOCUMENT__;
 
   return (
     <main
@@ -32,10 +33,10 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
             __META__={__META__}
             ENVIRONMENT={ENVIRONMENT}
             Documents={{
-              [__META__.key]: {
-                key: __META__.key,
+              [__DOCUMENT__.key]: {
+                key: __DOCUMENT__.key,
                 Module: Document,
-                __DOCUMENT__: __META__,
+                __DOCUMENT__: __DOCUMENT__,
                 active: true,
               }
             }}
