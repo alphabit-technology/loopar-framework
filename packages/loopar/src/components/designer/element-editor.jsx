@@ -177,26 +177,28 @@ export function ElementEditor({ element }) {
                 name={group + "_tab"}
                 key={group + "_tab"}
               >
-                {Object.entries(elements).map(([field, props]) => {
-                  if (dontHaveMetaElements.includes(field)) return null;
-                  if (!props.element) return props;
+                <div className="flex flex-col gap-2">
+                  {Object.entries(elements).map(([field, props]) => {
+                    if (dontHaveMetaElements.includes(field)) return null;
+                    if (!props.element) return props;
 
-                  return (
-                    <MetaComponent
-                      component={props.element}
-                      render={Component => (
-                        <Component
-                          data={{
-                            ...props.data,
-                            name: data.key + field,
-                            label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
-                          }}
-                          onChange={saveData}
-                        />
-                      )}
-                    />
-                  );
-                })}
+                    return (
+                      <MetaComponent
+                        component={props.element}
+                        render={Component => (
+                          <Component
+                            data={{
+                              ...props.data,
+                              name: data.key + field,
+                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
+                            }}
+                            onChange={saveData}
+                          />
+                        )}
+                      />
+                    );
+                  })}
+                </div>
               </Tab>
             ))}
           </Tabs>

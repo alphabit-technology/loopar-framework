@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, use } from "react"
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
@@ -13,7 +13,6 @@ const initialState = {
   setTheme: () => null,
   openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
-  getDocuments: () => null,
   Documents: {},
   setDocuments: () => null,
   activePage: "",
@@ -31,11 +30,8 @@ export function WorkspaceProvider({
   ...props
 }) {
   const pathname = usePathname();
-
   const [theme, setTheme] = useCookies(storageKey);
-
   const __META__ = props.__META__ || {}
-  //const __DOCUMENT__ = __META__.__DOCUMENT__ || {}
   const __WORKSPACE_NAME__ = __META__.__WORKSPACE__?.name || "desk"
 
   const [Documents, setDocuments] = useState(props.Documents || {});
@@ -44,23 +40,17 @@ export function WorkspaceProvider({
   const [activeModule, setActiveModule] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(false);
 
-  const getDocuments = () => {
-    return (
-      <>
-        {Object.values({ ...Documents }).map((Document) => {
-          const { Module, __DOCUMENT__, active } = Document;
-          return active && Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
-        })}
-      </>
-    );
-  }
+  const memoizedDocuments = useMemo(() => {
+    return Object.values(Documents)
+      .filter(document => document.active)
+      .map(document => {
+        const { Module, __DOCUMENT__ } = document;
+        return Module && <Module meta={__DOCUMENT__.__DOCUMENT__} key={__DOCUMENT__.key} />;
+      });
+  }, [Documents]);
 
   const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
-  const [__DOCUMENTS__, set__DOCUMENTS__] = useState(getDocuments());
-
-  useEffect(() => {
-    set__DOCUMENTS__(getDocuments());
-  }, [Documents, refreshFlag]);
+  const __DOCUMENTS__ = useMemo(() => memoizedDocuments, [Documents, refreshFlag]);
 
   const handleSetOpenNav = useCallback(openNav => {
       setOpenNav(openNav);
@@ -105,37 +95,53 @@ export function WorkspaceProvider({
     setDocuments(Documents);
   }
 
-  const setDocument = (__META__) => {
-    const copyDocuments = { ...Documents };
+  const loadDocument = (__META__, Module) => {
+    try {
+      const copyDocuments = { ...Documents };
 
-    Object.values(copyDocuments).forEach((Document) => {
-      Document.active = false;
-    });
-
-    const setDocument1 = (Module) => {
       copyDocuments[__META__.key] = {
+        key: __META__.key,
         Module: Module.default,
         __DOCUMENT__: __META__,
         active: true,
       };
 
       handleSetDocuments(copyDocuments);
+    } catch (err) {
+      goToErrorView(err);
     }
+  }
+
+  const goToErrorView = (e) => {
+    __META__.client_importer.client = "error-view";
+    AppSourceLoader(__META__.client_importer).then((Module) => {
+      __META__.__DOCUMENT__ = {
+        code: 404,
+        title: "Source not found",
+        description: e.message
+      };
+
+      loadDocument(__META__, Module);
+    });
+  }
+
+  const setDocument = (r) => {
+    const __META__ = {
+      key: r.key,
+      __DOCUMENT__: r,
+      client_importer: r.client_importer,
+      __WORKSPACE__: r.__WORKSPACE__,
+    }
+    const copyDocuments = { ...Documents };
+
+    Object.values(copyDocuments).forEach((Document) => {
+      Document.active = false;
+    });
 
     AppSourceLoader(__META__.client_importer).then((Module) => {
-      setDocument1(Module);
+      return loadDocument(__META__, Module);
     }).catch(e => {
-      __META__.client_importer.client = "app/error-view";
-
-      AppSourceLoader(__META__.client_importer).then((Module) => {
-        __META__.__DOCUMENT__ = {
-          code: 404,
-          title: "Source not found",
-          description: e.message
-        };
-
-        setDocument1(Module);
-      });
+      return goToErrorView(e);
     });
   }
 
@@ -170,14 +176,14 @@ export function WorkspaceProvider({
     __WORKSPACE_NAME__ == "web" && setOpenNav(false);
   }, [pathname]);
 
-  const getActiveDocument = () => {
-    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__;
-  }
+  const getActiveDocument = useCallback(() => {
+    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__?.__DOCUMENT__;
+  }, [Documents]);
 
-  const getActiveParentMenu = () => {
+  const getActiveParentMenu = useCallback(() => {
     const __DOCUMENT__ = getActiveDocument();
     return __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
-  }
+  }, [Documents, pathname, refreshFlag]);
 
   useEffect(() => {
     const __DOCUMENT__ = getActiveDocument();
@@ -221,9 +227,7 @@ export function WorkspaceProvider({
     activeParentMenu: getActiveParentMenu(),
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
-    getDocuments: getDocuments,
     activePage: activePage,
-    setDocument: setDocument,
     activeModule,
     refresh,
     __DOCUMENTS__

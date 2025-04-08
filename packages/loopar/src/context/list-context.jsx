@@ -3,8 +3,9 @@ import DeskGUI from "@context/base/desk-gui";
 import { ListGrid } from "@list-grid";
 import {useCookies} from "@services/cookie";
 
-function ListContextFn({isModal, content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid, ...props}){
-  const [viewType, setViewType] = useCookies(meta.__ENTITY__.name + "_viewType") || meta.__ENTITY__.default_list_view || "List";
+function ListContextFn({content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid}){
+  const {__ENTITY__} = meta;
+  const [viewType, setViewType] = useCookies(__ENTITY__.name + "_viewType") || __ENTITY__.default_list_view || "List";
 
   const getViewType = () => {
     return onlyGrid === true ? "Grid" : viewType;

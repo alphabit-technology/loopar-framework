@@ -24,13 +24,25 @@ const appSources = Object.entries(import.meta.glob([
 export async function AppSourceLoader(source) {
   if (!source) return null;
 
-  try {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const moduleImport = appSources[source.client] || appSources[source.context];
+      return resolve(moduleImport ? await moduleImport() : null)
+
+    } catch (error) {
+      reject(error);
+      /*console.error(`Error importing module: ${source.client}`, error.stack);
+      throw new Error(`Error importing module: ${source.client}`);*/
+    }
+  })
+
+  /*try {
     const moduleImport = appSources[source.client] || appSources[source.context];
     return moduleImport ? await moduleImport() : null;
   } catch (error) {
     console.error(`Error importing module: ${source.client}`, error.stack);
     throw new Error(`Error importing module: ${source.client}`);
-  }
+  }*/
 }
 
 export const Loader = (__META__, ENVIRONMENT) => {

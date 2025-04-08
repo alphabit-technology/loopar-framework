@@ -33,8 +33,9 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
             ENVIRONMENT={ENVIRONMENT}
             Documents={{
               [__META__.key]: {
+                key: __META__.key,
                 Module: Document,
-                __DOCUMENT__: __META__.__DOCUMENT__,
+                __DOCUMENT__: __META__,
                 active: true,
               }
             }}
