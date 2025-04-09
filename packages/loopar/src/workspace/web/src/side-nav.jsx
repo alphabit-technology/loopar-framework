@@ -1,6 +1,6 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
-import React from "react";
+import React, {useMemo} from "react";
 import { cn } from "@cn/lib/utils";
 import { Cross1Icon } from "@radix-ui/react-icons";
 import { Item } from "@radix-ui/react-context-menu";
@@ -19,8 +19,8 @@ const getActive = (item, activePage) => {
 
 const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
   const { webApp, activePage } = useWorkspace();
-  const menuItems = webApp.menu_items;
-
+  const menuItems = useMemo(() => webApp.menu_items, [webApp.menu_items]);
+  
   const getParentLink = (parentLink) => {
     const parent = menuItems.find(item => item.link == parentLink);
 

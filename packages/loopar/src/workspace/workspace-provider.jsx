@@ -174,11 +174,11 @@ export function WorkspaceProvider({
   }, [pathname]);
 
   const getActiveDocument = useCallback(() => {
-    return Object.values(Documents).find((Document) => Document.active)?.__DOCUMENT__;
+    return Object.values(Documents).find((Document) => Document.active);
   }, [Documents]);
 
   const getActiveParentMenu = useCallback(() => {
-    const __DOCUMENT__ = getActiveDocument();
+    const {__DOCUMENT__} = getActiveDocument();
     return __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
   }, [Documents, pathname, refreshFlag]);
 
