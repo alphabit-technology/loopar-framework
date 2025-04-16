@@ -1,17 +1,8 @@
-import React, { useCallback, useMemo } from "react";
+import React from "react";
 import { useTable } from "./TableContext";
 import { Pagination } from "@pagination";
 import loopar from "loopar";
 import { Link } from "@link";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from "@cn/components/ui/table";
 
 import {
   Card,
@@ -24,87 +15,13 @@ import {
 import { Avatar, AvatarFallback } from "@cn/components/ui/avatar";
 import { Button } from "@cn/components/ui/button";
 import { Badge } from "@cn/components/ui/badge";
+import {SimpleTable} from "./SimpleTable";
+import { EmptyTable } from "./EmptyTable";
 
 import {
   PencilIcon,
   Trash2Icon,
-  AlertTriangleIcon,
 } from "lucide-react";
-
-function SimpleTable(props) {
-  const {
-    baseColumns,
-  } = useTable();
-
-  const rows = props.rows || useTable().rows || [];
-
-  const mappedColumns = useCallback(() => {
-    return props.columns || baseColumns();
-  }, [baseColumns, props.columns]);
-
-  const availableColumns = useMemo(() => {
-    return mappedColumns()
-  }, [mappedColumns]);
-
-  const renderRows = (columns, rowsData = []) =>
-    rowsData.map((row, index) => (
-      <TableRow hover role="checkbox" tabIndex={-1} key={`row_${row.name}`}>
-        {
-          columns.map((col) => {
-            const cellProps = col.cellProps || {};
-            const { data } = col;
-            return (
-              <TableCell
-                key={`${data.name}_${index}`}
-                className="align-middle"
-                {...cellProps}
-              >
-                {col.render ? col.render(row, index) : row[data.name]}
-              </TableCell>
-            );
-          })
-        }
-      </TableRow>
-    ));
-
-  const rowsCount = rows.length;
-
-  return (
-    <Table stickyHeader aria-label="sticky table" className="w-full overflow-hidden">
-      <TableHeader className="bg-slate-300/50 dark:bg-slate-800/50">
-        <TableRow>
-          {availableColumns.filter(c => c.data.label).map((c) => {
-            const { data, headProps = {} } = c;
-            return (
-              <TableCell key={data.name} {...headProps}>
-                {typeof data.label === "function" ? data.label() : loopar.utils.UPPERCASE(data.label || "")}
-              </TableCell>
-            );
-          })}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rowsCount === 0 ? (
-          <TableRow>
-            <TableCell colSpan={availableColumns.length + 2}>
-              <div className="flex flex-col bg-background w-full p-3 items-center">
-                <AlertTriangleIcon className="w-10 h-10" />
-                <div className="text-lg">No rows to show</div>
-              </div>
-            </TableCell>
-          </TableRow>
-        ) : (
-          renderRows(availableColumns, rows)
-        )}
-      </TableBody>
-      <TableFooter>
-        <TableRow>
-          {props.footer}
-        </TableRow>
-        </TableFooter>
-    </Table>
-  );
-}
 
 function BaseTable(props) {
   const {
@@ -143,13 +60,12 @@ function BaseTable(props) {
       return "";
     };
 
-    if (rows.length === 0)
+    if (rows.length === 0){
       return (
-        <div className="flex flex-col bg-background w-full p-3 items-center">
-          <AlertTriangleIcon className="w-10 h-10" />
-          <div className="text-lg">No items to show</div>
-        </div>
-      );
+        <EmptyTable>No items to Show</EmptyTable>
+      )
+    }
+
     return (
       <div className="flex flex-wrap gap-3 border p-2">
         {rows.map((row) => {

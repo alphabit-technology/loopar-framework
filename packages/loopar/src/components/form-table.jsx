@@ -160,7 +160,7 @@ const FormTable = (props) => {
   );
 };
 
-function FormTableMildware(props) {
+function FormTableMiddleware(props) {
   const { onChange } = props;
   const {rows} = useTable();
 
@@ -205,7 +205,7 @@ export default function FormTableInput (props) {
 
     return (
       <TableProvider initialMeta={meta} docRef={props.docRef} rows={rows}>
-        <FormTableMildware field={field} onChange={handleChange}/>
+        <FormTableMiddleware field={field} onChange={handleChange}/>
       </TableProvider>
     );
   })

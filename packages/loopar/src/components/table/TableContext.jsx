@@ -95,11 +95,6 @@ export const TableProvider = ({
   const rowsCount = useMemo(() => rows.length, [rows]);
   const selectedCount = useMemo(() => selectedRows.length, [selectedRows]);
 
-  /*const selectorAllStatus =
-      rowsCount > 0 && selectedCount > 0 && selectedCount < rowsCount
-        ? "indeterminate"
-        : rowsCount > 0 && selectedCount === rowsCount;*/
-
   const selectorAllStatus = useMemo(() => {
     if (rowsCount > 0 && selectedCount > 0 && selectedCount < rowsCount) {
       return "indeterminate";
@@ -107,8 +102,7 @@ export const TableProvider = ({
       return true;
     }
     return false;
-  }
-  , [rowsCount, selectedCount]);
+  }, [rowsCount, selectedCount]);
 
   const deleteRow = (row) => {
     if (!row) return;
@@ -127,16 +121,6 @@ export const TableProvider = ({
     setSelectedRows([]);
     onDeleteRow && onDeleteRow();
   };
-
-  const getDocumentTitle = (row) => {
-    const titleFields = meta.__ENTITY__.title_fields?.split(",");
-
-    if(titleFields){
-      return titleFields.map((field) => row[field]).join(" ");
-    }
-
-    return row.name;
-  }
 
   const selectorCol = {
     data: {

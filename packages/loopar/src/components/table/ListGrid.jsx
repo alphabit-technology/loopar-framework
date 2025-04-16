@@ -14,7 +14,7 @@ import { Button } from "@cn/components/ui/button";
 import { Badge } from "@cn/components/ui/badge";
 import { TableSearch } from "./TableSearch";
 
-function ListGridMildware(props) {
+function ListGridMiddleware(props) {
   const { docRef } = props;
   const {baseColumns, meta, setRows, selectorCol} = useTable();
 
@@ -154,7 +154,7 @@ export function ListGrid(props) {
 
   return (
     <TableProvider initialMeta={meta} docRef={props.docRef} rows={rows}>
-      <ListGridMildware
+      <ListGridMiddleware
         {...props}
       />
     </TableProvider>
