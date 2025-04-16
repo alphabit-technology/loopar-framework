@@ -10,7 +10,6 @@ export function MainNav() {
   const menuItems = useMemo(() => webApp.menu_items, [webApp.menu_items]);
   const solid = useMemo(() => webApp.solid, [webApp.solid]);
 
-
   const rounded = useMemo(() => {
     return {
       sm: "rounded-sm",
@@ -33,7 +32,7 @@ export function MainNav() {
         </Link>
       )
     });
-  }, [menuItems]);
+  }, [menuItems, activeParentMenu]);
 
   const handleSetOpenNav = (e) => {
     setOpenNav(!openNav)

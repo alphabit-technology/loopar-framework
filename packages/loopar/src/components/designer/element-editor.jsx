@@ -132,14 +132,14 @@ export function ElementEditor({ element }) {
   });
 
   const __FORM_FIELDS__ = {};
-    metaFieldsData.map(({ group, elements }) => (
-      Object.entries(elements).map(([field, props]) => {
-        if (dontHaveMetaElements.includes(field)) return null;
-        if (!props.element) return props;
+  metaFieldsData.map(({ group, elements }) => (
+    Object.entries(elements).map(([field, props]) => {
+      if (dontHaveMetaElements.includes(field)) return null;
+      if (!props.element) return props;
 
-        __FORM_FIELDS__[data.key + field] = data[field];
-      })
-    ));
+      __FORM_FIELDS__[data.key + field] = data[field];
+    })
+  ));
     
   const saveData = () => {
     function cleanObject(obj) {

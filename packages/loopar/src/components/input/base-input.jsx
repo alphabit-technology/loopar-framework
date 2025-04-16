@@ -75,13 +75,20 @@ const BaseInput = (props) => {
     props.onChanged?.(event);
   }, [fieldValue]);
 
-  const validate = () => {
+  /*const validate = () => {
     if(designerMode) return;
     if (data.hidden || parentHidden) return { valid: true };
     const validation = dataInterface({ data }, fieldRef.current.value).validate();
     setIsInvalid(!validation.valid);
     return validation;
-  };
+  };*/
+
+  const validate = useCallback(() => {
+    if (data.hidden || parentHidden) return { valid: true };
+    const validation = dataInterface({ data }, fieldRef.current.value).validate();
+    setIsInvalid(!validation.valid);
+    return validation;
+  }, [fieldValue, data, parentHidden]);
 
   const readOnly = props.readOnly || data.readOnly;
   const hasLabel = () => props.withoutLabel !== true;

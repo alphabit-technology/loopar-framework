@@ -17,7 +17,12 @@ export default class BaseController extends CoreController {
       await loopar.session.set(this.document + '_page', this.data.page || 1);
     }
 
-    const data = { ...loopar.session.get(this.document + '_q') || {} };
+    const data = Object.entries({ ...loopar.session.get(this.document + '_q') || {} }).reduce((acc, [key, value]) => {
+      if (value && (value.toString()).length > 0 && value !== 0) {
+        acc[key] = `${value}`;
+      }
+      return acc;
+    }, {});
 
     const list = await loopar.getList(this.document, { data, q: (data && Object.keys(data).length > 0) ? data : null });
     return await this.render(list);

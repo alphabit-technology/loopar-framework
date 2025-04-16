@@ -1,9 +1,9 @@
 import BaseDocument from "@context/base/base-document";
 import DeskGUI from "@context/base/desk-gui";
-import { ListGrid } from "@list-grid";
+import { ListGrid } from "@@table/ListGrid";
 import {useCookies} from "@services/cookie";
 
-function ListContextFn({content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid}){
+function ListContextMildware({content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid}){
   const {__ENTITY__} = meta;
   const [viewType, setViewType] = useCookies(__ENTITY__.name + "_viewType") || __ENTITY__.default_list_view || "List";
 
@@ -43,7 +43,7 @@ export default class ListContext extends BaseDocument {
 
   render(content) {
     return super.render(
-      <ListContextFn
+      <ListContextMildware
         content={content}
         meta={this.props.meta} 
         hasSearchForm={this.hasSearchForm}

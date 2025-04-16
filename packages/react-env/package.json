@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-router": "7.3.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-router": "7.5.0",
     "react-aria": "^3.38.0",
     "react-hook-form": "^7.55.0",
     "react-icons": "^5.5.0",

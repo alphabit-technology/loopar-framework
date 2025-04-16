@@ -13,8 +13,6 @@ export default class SystemController extends BaseController {
     const model = await loopar.newDocument("Connector", this.data);
 
     if (this.hasData()) {
-      //Object.assign(model, this.data);
-
       if (await model.connect()) {
         return this.redirect('/desk');
       }
@@ -63,13 +61,6 @@ export default class SystemController extends BaseController {
     } else {
       const model = await loopar.newDocument("Installer", this.data)
       const response = await model.__data__();
-
-      // response.__DOCUMENT__ = {
-      //   company: "AlphaBit Technology Test123",
-      //   email: "alfredrz2012@gmail.com",
-      //   admin_password: "admin",
-      //   confirm_password: "admin",
-      // }
 
       return await this.render(response);
     }

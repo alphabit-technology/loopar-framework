@@ -1,212 +1,147 @@
-import {BaseTable} from "@@table/base-table"
+import loopar from "loopar";
 import BaseInput from "@base-input"
 import {MetaComponent} from "@meta-component";
-import { DesignerContext } from "@context/@/designer-context";
-import { AlertTriangleIcon } from "lucide-react";
-import elementManage from "@@tools/element-manage";
-import loopar from "loopar";
-import { FormWrapper } from "@context/form-provider";
 import _ from "lodash";
 
 import { useFieldArray } from 'react-hook-form';
 import { useFormContext } from "@context/form-provider";
-
-import { Checkbox } from "@cn/components/ui/checkbox"
 import {useRef, useMemo, useCallback} from "react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@cn/components/ui/table"
+import { FormWrapper } from "@context/form-provider";
+import { TableProvider, useTable } from "./table/TableContext"
 
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@cn/components/ui/button";
+import BaseTable from "./table/BaseTable";
 
-function FormTableBase({columns, onChange, ...props}) {
+const FormTable = (props) => {
+  const { addRow, selectedRows, bulkRemove, baseColumns, selectorCol} = useTable();
+
+  const viewType = "List";
+  const hasPagination = false;
+  const className = "feed";
+  const hasHeaderOptions = true;
   const {control, register} = useFormContext();
 
-  const { fields } = useFieldArray({
+  const { fields, remove } = useFieldArray({
     control,
     name: 'rows'
   });
 
-  return fields.map((field, index) => (
-    <TableRow>
-      <TableCell padding="checkbox" className="w-10">
-        <Checkbox
-          onCheckedChange={(event) => {
-            //onSelect(row, event);
-            //this.selectRow(row, event);
-          }}
-          //checked={this.selectedRows.includes(row.name)}
-        />
-      </TableCell>
-      {columns.map((column) => {
-        const cellProps = column.cellProps ?? {};
+  const handleRemove = useCallback((index) => {
+    remove(index);
+  }, [remove]);
 
-        if (fieldIsWritable(column)) {
-          const cellName = `rows.${index}.${column.data.name}`;
-          
-          return (
-            <TableCell
-              {...cellProps}
-            >
-              <MetaComponent
-                component={column.element}
-                render={(Comp) => (
-                  <Comp
-                    dontHaveLabel={true}
-                    simpleInput={true}
-                    data={({
-                      ...column.data,
-                      name: cellName,
-                      label: column.data.label,
-                    })}
-                    {...register(`rows.${index}.${column.data.name}`)}
-                    value={field[column.data.name]}
-                    onChange={onChange}
-                  />
-                )}
-              />
-            </TableCell>
-          );
-        }else if (column.data.name === "actions") {
-          return (
-            <TableCell
-              {...cellProps}
-              className="w-10"
-            >
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => props.deleteRow(index)}
-              >
-                <Trash2Icon size={16} />
-              </Button>
-            </TableCell>
-          );
+  const mappedColumns = useCallback(() => {
+    const baseCols = baseColumns()
+      .filter(col => fieldIsWritable(col) && loopar.utils.trueValue(col.data.in_list_view))
+      .map((col, index) => {
+        if(col.data.name === "name") {
+          //because first column is selector and spands 2 columns
+          col.data.label = null
         }
-      })}
-    </TableRow>
-  ));
-}
-
-class FormTableClass extends BaseTable {
-  hasFooterOptions = true;
-  hasPagination = false;
-  className = "feed";
-  hasHeaderOptions = true;
-  viewType = "List";
-  __REFS__ = {};
-
-  get mappedColumns() {
-    return super.mappedColumns.map((col) => {
-      if (col.data.name === "actions") {
-        col.cellProps.className += " pt-0";
-      }
+        col.render = (field, index) => {
+          const cellName = `rows.${index}.${col.data.name}`;
+          return (
+            <MetaComponent
+              key={cellName}
+              component={col.element}
+              render={(Comp) => (
+                <Comp
+                  dontHaveLabel={true}
+                  simpleInput={true}
+                  data={{ ...col.data, name: cellName, label: col.data.label }}
+                  {...register(`rows.${index}.${col.data.name}`)}
+                />
+              )}
+            />
+          );
+        };
       return col;
     });
-  }
 
-  onDeleteRow() {
-    const meta = this.meta;
-    this.props.onChange({target: {value: meta}});
-  }
+    return [
+      selectorCol,
+      ...baseCols,
+      {
+        data: {
+          name: "actions",
+          label: "...",
+        },
+        headProps: {
+          className: "w-10 p-2 text-center",
+        },
+        render: (row) => {
+          return (
+            <Button
+              variant="outline"
+              onClick={(e) => {
+                e.preventDefault();
+                deleteRow(row);
+              }}
+            >
+              <Trash2Icon className="text-red-500" />
+            </Button>
+          );
+        },
+      }
+    ]
+  }, [baseColumns, register, handleRemove]);
 
-  addRow() {
-    if(this.props.addRow) {
-      return this.props.addRow();
-    }
-
-    const rows = this.rows;
-    const maxId = loopar.utils.getArrayMax(rows, "id") || 0;
-
-    rows.push({ id: maxId + 1, name: elementManage.uuid() });
-    this.state.meta.rows = rows;
-    this.setState({ meta: this.meta });
-  }
-
-  getTableRender(columns, rows) {
-    rows = this.props.rows || []
-
-    columns = columns.filter(
-      (c) => !this.hiddenColumns.includes(c.data.name)
-    );
-
-    const rowsCount = rows.length;
-    const selectedRows = this.selectedRows.length;
-
-    const selectorAllStatus = (rowsCount > 0 && selectedRows > 0 && selectedRows < rowsCount) ? "indeterminate" :
-      rowsCount > 0 && selectedRows === rowsCount;
-
-    return (
-      <Table stickyHeader aria-label="sticky table">
-        <TableHeader className="bg-slate-300/50 dark:bg-slate-800/50">
-          <TableRow>
-            <TableHead padding="checkbox" className="w-10 p-2" colSpan={2}>
-              {this.popPopRowActions(selectorAllStatus, rowsCount, selectedRows)}
-            </TableHead>
-            {columns.map((c) => {
-              if(c.data.name === "name") {
-                return null
-              }
-
-              const data = c.data;
-              const cellProps = c.cellProps ?? {};
-
-              return (
-                <TableCell 
-                  {...cellProps}
-                  key={data.name + "_header"}
-                >
-                  {typeof data.label == "function" ? data.label() : data.label ? loopar.utils.UPPERCASE(data.label) : "..."}
-                </TableCell>
-              );
-            })}
-          </TableRow>
-        </TableHeader>
-        <TableBody
-          droppable
-          onDragEnter={(e) => {
-            e.preventDefault();
-          }}
-        >
-          {rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length+2}>
-                <div className="flex flex-col bg-background w-full p-3 place-items-center">
-                  <AlertTriangleIcon className="w-10 h-10"/>
-                  <div className="text-lg">No rows to show</div>
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : (
-            <FormTableBase 
-              columns={columns} 
-              rows={rows} 
-              onChange={this.props.onChange}
-              deleteRow={this.props.deleteRow}
-            />
-          )}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  getFooter(){
-    const selectedRowsCount = this.selectedRows.length;
-    
+  const renderFooter = useCallback(() => {
+    const selectedRowsCount = selectedRows.length;
     return (
       <div className="flex flex-row gap-2">
         {selectedRowsCount > 0 && (
           <Button
             type="button"
             variant="destructive"
-            onClick={() => this.bulkRemove()}
+            onClick={bulkRemove}
+          >
+            <Trash2Icon className="mr-1" size={16} />
+            Remove
+          </Button>
+        )}
+        <Button type="button" variant="primary" onClick={addRow}>
+          <PlusIcon className="mr-1" size={16} />
+          Add row
+        </Button>
+      </div>
+    );
+  }, [selectedRows, bulkRemove, addRow]);
+
+  const customMappedColumns = useMemo(() => {
+    const baseCols = mappedColumns() || [];
+    return baseCols.map((col, index) => {
+      if (col.data.name === "actions") {
+        col.render = (field, index) => (
+          <Button type="button" variant="destructive" onClick={() => handleRemove(index)}>
+            <Trash2Icon size={16} />
+          </Button>
+        );
+      }
+      return col;
+    });
+  }
+  , [baseColumns, handleRemove]);
+
+  return (
+    <div className={className}>
+      <BaseTable
+        {...props}
+        rows={fields}
+        viewType={viewType}
+        hasPagination={hasPagination}
+        hasHeaderOptions={hasHeaderOptions}
+        columns={customMappedColumns}
+        renderFooter={renderFooter}
+      />
+      <div className="flex flex-row gap-2">
+        {selectedRows.length > 0 && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => bulkRemove()}
           >
             <Trash2Icon className="mr-1" size={16} />
             Remove
@@ -215,70 +150,36 @@ class FormTableClass extends BaseTable {
         <Button
           type="button"
           variant="primary"
-          onClick={() => this.addRow()}
+          onClick={addRow}
         >
           <PlusIcon className="mr-1" size={16} />
           Add row
         </Button>
       </div>
-    );
-  }
+    </div>
+  );
+};
 
-  validate() {
-    return Object.entries(this.__REFS__).reduce((acc, [key, field]) => {
-      return acc.concat(
-        field?.validate()
-      );
-    }, []);
-  }
-}
+function FormTableMildware(props) {
+  const { onChange } = props;
+  const {rows} = useTable();
 
-function FormTable(props) {
-  const { meta, field, onChange } = props;
   const debounceTimer = useRef(null);
-  const formRef = useRef(null);
-
-  const rows = useMemo(() => {
-    return field.value || [];
-  }, [field.value]);
-
-  const addRow = () => {
-    const newRows =  [...rows]
-    const maxId = loopar.utils.getArrayMax(newRows, "id") || 0;
-
-    newRows.push({ id: maxId + 1, name: elementManage.uuid() });
-    onChange(newRows);
-  }
-
-  const deleteRow = (index) => {
-    const newRows =  [...rows]
-    newRows.splice(index, 1);
-    onChange(newRows);
-  }
-
-  const getFormValue = useCallback(() => {
-    const newData = formRef.current.watch();
-    return Object.values(newData?.rows);
-  }, []);
-  
-  const saveData = useCallback(() => {
+  const saveData = useCallback((data) => {
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
     
     debounceTimer.current = setTimeout(() => {
-      onChange(getFormValue());
+      onChange(data.rows);
     }, 300);
   }, []);
   
   return (
-    <FormWrapper __DOCUMENT__={{rows: rows}} formRef={formRef}>
-      <FormTableClass
-        meta={meta}
+    <FormWrapper __DOCUMENT__={{rows: rows}} onChange={saveData}>
+      <FormTable
         rows={rows}
         onChange={saveData}
-        addRow={addRow}
-        deleteRow={deleteRow}
       />
     </FormWrapper>
   );
@@ -286,27 +187,28 @@ function FormTable(props) {
 
 export default function FormTableInput (props) {
   const { renderInput } = BaseInput(props);
+  const valueRef = useRef(null);
   
   const meta = useMemo(() => {
     return props.__META__;
   }, [props.__META__]);
 
   return renderInput(field => {
+    valueRef.current = field.value;
     const handleChange = (e) => {
-      !_.isEqual(field.value, e) && field.onChange({target: { value: e }});
+      !_.isEqual(valueRef.current, e) && field.onChange({target: { value: e }});
     }
 
+    const rows = useMemo(() => {
+      return field.value || [];
+    }, [field.value]);
+
     return (
-      <DesignerContext.Provider value={{}}>
-        <FormTable
-          key={field.name}
-          field={field}
-          meta={meta}
-          onChange={handleChange}
-        />
-      </DesignerContext.Provider>
-    )
-  });
+      <TableProvider initialMeta={meta} docRef={props.docRef} rows={rows}>
+        <FormTableMildware field={field} onChange={handleChange}/>
+      </TableProvider>
+    );
+  })
 }
  
 FormTable.metaFields = ()=>{

@@ -21,13 +21,11 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
   const [currentDropZone, setCurrentDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [draggingPosition, setDraggingPosition] = useState(currentDragging?.targetRect);
-  //const [dropping, setDropping] = useState(false);
   const {designerMode} = useDesigner();
   const { name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   
   const [editElement, setEditElement] = useCookies(name + "editElement");
   const [designerModeType = "designer", setDesignerModeType] = useCookies(name + "designer-mode-type");
-  //const [elements, setElements] = useState(JSON.parse(metaComponents || "[]"))
   const elements = JSON.parse(metaComponents || "[]");
 
   const handleChangeMode = (opt=null) => {
@@ -37,10 +35,6 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
 
     handleSetMode(newMode);
   }
-
-  useEffect(() => {
-    //setElements(JSON.parse(metaComponents || "[]"))
-  }, [metaComponents])
 
   const handleSetMode = (newMode) => {
     setDesignerModeType(newMode);
@@ -263,23 +257,6 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     });
   }
 
-  // useEffect(() => {
-  //   if (designerMode) return;
-
-  //   const handleMouseMove = (event) => {
-  //     event.preventDefault();
-  //     event.stopPropagation();
-  //     currentDropZone && setCurrentDropZone(null);
-  //     currentDragging && setCurrentDragging(null);
-  //   };
-
-  //   document.addEventListener('mouseup', handleMouseMove);
-
-  //   return () => {
-  //     document.removeEventListener('mouseup', handleMouseMove);
-  //   };
-  // }, [currentDropZone]);
-
   useEffect(() => {
     if (designerMode) return;
     
@@ -350,8 +327,6 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
         handleChangeMode,
         handleSetMode,
         setDraggingPosition
-        //dropping,
-        //setDropping
       }}
     >
       <BaseFormContext.Provider value={{}}>

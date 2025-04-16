@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import React, { createContext, useContext } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import React, { createContext, useEffect, useContext, useMemo } from "react";
 import * as z from "zod";
 
 import {
@@ -74,13 +74,21 @@ const buildFormFields = (STRUCTURE: Array<Element>) => {
   }, {});
 }
 
-export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE }: any) => {
-  const FormSchema = z.object(buildFormFields(STRUCTURE))
+export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE, onChange }: any) => {
+  const FormSchema = useMemo(() => {
+    return z.object(buildFormFields(STRUCTURE));
+  }, [STRUCTURE]);
 
   const form = useForm({
     values,
     resolver: zodResolver(FormSchema),
   });
+
+  const watchedValues = useWatch({ control: form.control });
+
+  useEffect(() => {
+    onChange && onChange(watchedValues);
+  }, [watchedValues]);
 
   docRef && (docRef.Form = form);
 
@@ -92,7 +100,7 @@ export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE }: a
 
   formRef && (formRef.current = form);
   return (
-    <BaseFormContext.Provider value={form}>
+    <BaseFormContext.Provider value={{...form, values: watchedValues}}>
       <Form {...form} onSubmit={form.handleSubmit(onSubmit)}>
         {children}
       </Form>
@@ -102,11 +110,23 @@ export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE }: a
 
 export const useFormContext = () => useContext(BaseFormContext);
 
-export function FormWrapper(
-  { __DOCUMENT__, docRef, children, formRef, STRUCTURE }: { __DOCUMENT__: __DOCUMENT__, docRef: docRef, children: React.ReactNode, formRef: Function, STRUCTURE: Array<Element> }
-) {
+export function FormWrapper({
+  __DOCUMENT__, 
+  docRef, 
+  children, 
+  formRef, 
+  STRUCTURE,
+  onChange
+} : { 
+  __DOCUMENT__: __DOCUMENT__, 
+  docRef: docRef, 
+  children: React.ReactNode, 
+  formRef: Function, 
+  STRUCTURE: Array<Element> ,
+  onChange: Function
+}) {
   return (
-    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef} STRUCTURE={STRUCTURE}>
+    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef} STRUCTURE={STRUCTURE} onChange={onChange}>
       {children}
     </FormProvider>
   )
