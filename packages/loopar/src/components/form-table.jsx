@@ -5,7 +5,7 @@ import _ from "lodash";
 
 import { useFieldArray } from 'react-hook-form';
 import { useFormContext } from "@context/form-provider";
-import {useRef, useMemo, useCallback} from "react";
+import {useRef, useMemo, useCallback, useEffect} from "react";
 
 import { FormWrapper } from "@context/form-provider";
 import { TableProvider, useTable } from "./table/TableContext"
@@ -15,7 +15,7 @@ import { Button } from "@cn/components/ui/button";
 import BaseTable from "./table/BaseTable";
 
 const FormTable = (props) => {
-  const { addRow, selectedRows, bulkRemove, baseColumns, selectorCol} = useTable();
+  const { selectedRows, bulkRemove, baseColumns, selectorCol} = useTable();
 
   const viewType = "List";
   const hasPagination = false;
@@ -23,15 +23,19 @@ const FormTable = (props) => {
   const hasHeaderOptions = true;
   const {control, register} = useFormContext();
 
-  const { fields, remove } = useFieldArray({
+  const { fields, move, remove, append } = useFieldArray({
     control,
     name: 'rows'
   });
 
+  const handleAppend = useCallback(() => {
+    append({id: fields.length + 1, name: Date.now()});
+  }, [append]);
+
   const handleRemove = useCallback((index) => {
     remove(index);
   }, [remove]);
-
+  
   const mappedColumns = useCallback(() => {
     const baseCols = baseColumns()
       .filter(col => fieldIsWritable(col) && loopar.utils.trueValue(col.data.in_list_view))
@@ -61,7 +65,31 @@ const FormTable = (props) => {
     });
 
     return [
-      selectorCol,
+      selectorCol(3),
+      {
+        data: { name: "index" },
+        draggable: true,
+        onDragStart: (e, rowIndex, rowRefs) => {
+          e.stopPropagation();
+          const rowEl = rowRefs.current[rowIndex];
+          if (rowEl) {
+            const rect = rowEl.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+            e.dataTransfer.setDragImage(rowEl, offsetX, offsetY);
+          }
+        },
+        cellProps: {
+          className: "w-15 p-2 text-center",
+        },
+        render: (row, idx) => (
+          <div 
+            className="flex justify-center border-2 rounded-md p-2 drop-shadow-md"
+          >
+            <span>{idx + 1}</span>
+          </div>
+        ),
+      },
       ...baseCols,
       {
         data: {
@@ -88,28 +116,6 @@ const FormTable = (props) => {
     ]
   }, [baseColumns, register, handleRemove]);
 
-  const renderFooter = useCallback(() => {
-    const selectedRowsCount = selectedRows.length;
-    return (
-      <div className="flex flex-row gap-2">
-        {selectedRowsCount > 0 && (
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={bulkRemove}
-          >
-            <Trash2Icon className="mr-1" size={16} />
-            Remove
-          </Button>
-        )}
-        <Button type="button" variant="primary" onClick={addRow}>
-          <PlusIcon className="mr-1" size={16} />
-          Add row
-        </Button>
-      </div>
-    );
-  }, [selectedRows, bulkRemove, addRow]);
-
   const customMappedColumns = useMemo(() => {
     const baseCols = mappedColumns() || [];
     return baseCols.map((col, index) => {
@@ -134,7 +140,8 @@ const FormTable = (props) => {
         hasPagination={hasPagination}
         hasHeaderOptions={hasHeaderOptions}
         columns={customMappedColumns}
-        renderFooter={renderFooter}
+        sortable={true}
+        move={move}
       />
       <div className="flex flex-row gap-2">
         {selectedRows.length > 0 && (
@@ -150,7 +157,7 @@ const FormTable = (props) => {
         <Button
           type="button"
           variant="primary"
-          onClick={addRow}
+          onClick={handleAppend}
         >
           <PlusIcon className="mr-1" size={16} />
           Add row
@@ -179,7 +186,7 @@ function FormTableMiddleware(props) {
     <FormWrapper __DOCUMENT__={{rows: rows}} onChange={saveData}>
       <FormTable
         rows={rows}
-        onChange={saveData}
+        //onChange={saveData}
       />
     </FormWrapper>
   );
@@ -187,14 +194,18 @@ function FormTableMiddleware(props) {
 
 export default function FormTableInput (props) {
   const { renderInput } = BaseInput(props);
-  const valueRef = useRef(null);
   
   const meta = useMemo(() => {
     return props.__META__;
   }, [props.__META__]);
 
   return renderInput(field => {
-    valueRef.current = field.value;
+    const valueRef = useRef(field.value);
+
+    useEffect(() => {
+      valueRef.current = field.value;
+    }, [field.value]);
+
     const handleChange = (e) => {
       !_.isEqual(valueRef.current, e) && field.onChange({target: { value: e }});
     }

@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  useId
 } from "react";
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
@@ -34,6 +35,7 @@ export const TableProvider = ({
   );
 
   const [rows, setRows] = useState(props.rows || []);
+  const tableId = useId();
 
   useEffect(() => {
     setRows(props.rows || []);
@@ -48,7 +50,6 @@ export const TableProvider = ({
     
     const parseElements = (elements = []) => elements
       .map(el => [{ ...el }, ...parseElements(el.elements || [])]).flat()
-      //.filter(el => !loopar.utils.trueValue(el.data.hidden) && loopar.utils.trueValue(el.data.in_list_view))
 
     const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
     return parseElements(STRUCTURE);
@@ -122,29 +123,31 @@ export const TableProvider = ({
     onDeleteRow && onDeleteRow();
   };
 
-  const selectorCol = {
-    data: {
-      name: "selector",
-      label: () => (
-        <DropdownListGridActions/>
+  const selectorCol = (colSpan) => {
+    return {
+      data: {
+        name: "selector",
+        label: () => (
+          <DropdownListGridActions/>
+        ),
+      },
+      headProps: {
+        className: "w-10 p-2",
+        colSpan: colSpan || 2
+      },
+      cellProps: {
+        className: "align-middle text-truncate w-10 p-4"
+      },
+      render: (row) => (
+        <Checkbox
+          onCheckedChange={(event) => {
+            selectRow(row, event);
+          }}
+          checked={selectedRows.includes(row.name)}
+        />
       ),
-    },
-    headProps: {
-      className: "w-10 p-2",
-      colSpan: 2
-    },
-    cellProps: {
-      className: "align-middle text-truncate w-10 p-4"
-    },
-    render: (row) => (
-      <Checkbox
-        onCheckedChange={(event) => {
-          selectRow(row, event);
-        }}
-        checked={selectedRows.includes(row.name)}
-      />
-    ),
-  }
+    }
+  };
 
   const tableContextValue = {
     meta,
@@ -161,6 +164,7 @@ export const TableProvider = ({
     selectedCount,
     selectorAllStatus,
     selectorCol,
+    tableId,
     baseColumns: () => [
       ...baseColumns(),
       {

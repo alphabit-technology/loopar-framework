@@ -211,7 +211,7 @@ export default class CoreDocument {
 
     async function updateRows(Ent, rows, parentType, parentId) {
       const nextId = await loopar.db.nextId(Ent);
-      for (const [index, row] of rows.sort((a, b) => a.id - b.id).entries()) {
+      for (const [index, row] of rows/*.sort((a, b) => a.id - b.id)*/.entries()) {
         row.id = nextId + index;
         row.name = loopar.utils.randomString(15);
         row.parent_document = parentType;

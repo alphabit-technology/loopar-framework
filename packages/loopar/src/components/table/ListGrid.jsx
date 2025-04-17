@@ -56,13 +56,13 @@ function ListGridMiddleware(props) {
     if(docRef.customColumns){
       const customCols = docRef.customColumns(baseCols);
       return [
-        selectorCol,
+        selectorCol(),
         ...customCols
       ];
     }
 
     return [
-      selectorCol,
+      selectorCol(),
       {
         data: {
           name: "mame",

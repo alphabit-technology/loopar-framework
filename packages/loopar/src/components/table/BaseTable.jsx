@@ -47,6 +47,9 @@ function BaseTable(props) {
       <SimpleTable
         rows={rows}
         columns={props.columns}
+        sortable={props.sortable}
+        move={props.move}
+        footer={props.footer}
       />
     )
   };
