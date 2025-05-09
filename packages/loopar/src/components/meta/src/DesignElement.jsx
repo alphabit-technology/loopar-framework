@@ -1,16 +1,30 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo, use } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
 import { useDroppable } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
+import { useDragAndDrop } from "@@droppable/DragAndDropContext";
 import { cn } from "@cn/lib/utils";
 
-export const DesignElement = ({ parent, element, Comp, parentKey }) => {
+export const DesignElement = ({ element, Comp, parentKey }) => {
   const [hover, setHover] = useState(false);
-  const { designerModeType, currentDragging, setCurrentDragging, designing } = useDesigner();
+  const debouncedHover = useRef(null);
+
+  const { 
+    designerModeType,
+    designing
+  } = useDesigner();
+
+  const { 
+    currentDragging, 
+    setCurrentDragging, 
+    setDropZone,
+    setInitializedDragging,
+    dragging,
+  } = useDragAndDrop();
+
   const parentHidden = useHidden();
-  const draggingElement = useRef(null);
   const { __REFS__ } = useDroppable();
   const draggableRef = useRef(null);
   const { key: elementKey, ...elementProps } = element;
@@ -18,6 +32,7 @@ export const DesignElement = ({ parent, element, Comp, parentKey }) => {
   useEffect(() => {
     if (!elementProps.data) return;
     const key = elementProps.data.key;
+
     if (key) {
       __REFS__[key] = draggableRef.current;
       return () => {
@@ -30,92 +45,103 @@ export const DesignElement = ({ parent, element, Comp, parentKey }) => {
     return (
       <Comp
         {...elementProps}
-        key={elementKey || null}
-        ref={(self) => {
-          if (self) {
-            self.parentComponent = parent;
-            draggingElement.current = self;
-          }
-        }}
       />
     );
   }
 
-  const className = cn(
-    designing ? "bg-card rounded p-2 mb-4 border border-gray-400 dark:border-gray-600" : "",
-    elementProps.className
-  );
+  const handleMouseOver = useCallback(isHover => {
+    if(designerModeType === "preview" || currentDragging) return;
+    if (debouncedHover.current) {
+      clearTimeout(debouncedHover.current);
+    }
+    debouncedHover.current = setTimeout(() => {
+      setHover(isHover);
+    }, 30);
+  }, [currentDragging, designerModeType]);
 
-  const handleMouseOver = useCallback(
-    (isHover) => {
-      if (!currentDragging) setHover(isHover);
-    },
-    [currentDragging]
-  );
+  const disabled = useMemo(() => {
+    return elementProps.data && (elementProps.data.hidden || elementProps.data.disabled);
+  }, [elementProps.data]);
 
-  const disabled = elementProps.data && (elementProps.data.hidden || elementProps.data.disabled);
-  const Wrapper = disabled && !parentHidden ? "div" : React.Fragment;
-  const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
+  const selfDragging = useMemo(() => {
+    return designing && currentDragging && currentDragging.key === elementProps.data.key;
+  }, [designing, currentDragging, elementProps.data.key]);
 
-  const handleDragStart = useCallback(
-    (e) => {
-      e.stopPropagation();
+  const className = useMemo(() => {
+    return cn(
+      designing ? "bg-card rounded p-2 mb-4 cursor-grab" : "",
+      elementProps.className,
+      designing && (selfDragging ? "border-2 border-red-300/60" : "border border-gray-400 dark:border-gray-600"),
+    );
+  }, [designing, elementProps.className, currentDragging, elementProps.data.key]);
 
-      const img = new Image();
-      img.src =
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/axl7kYAAAAASUVORK5CYII=";
-      e.dataTransfer.setDragImage(img, 0, 0);
-      e.dataTransfer.effectAllowed = "move";
+  const dragStart = (e) => {
+    const el = {
+      data: { ...elementProps.data },
+      element: elementProps.element,
+      elements: elementProps.elements,
+    };
 
-      const el = {
-        data: { ...elementProps.data },
-        element: elementProps.element,
-        elements: elementProps.elements,
-      };
+    const rect = draggableRef.current.getBoundingClientRect();
 
-      e.target.style.opacity = 1;
+    setDropZone(parentKey);
+    setCurrentDragging({
+      key: el.data.key,
+      parentKey,
+      el,
+      ref: draggableRef.current,
+      initialPosition: {
+        x: e.clientX,
+        y: e.clientY,
+      },
+      offset: {
+        x: e.clientX - rect.x,
+        y: e.clientY - rect.y,
+      },
+      size: {
+        width: rect.width,
+        height: rect.height,
+      },
+      className,
+    });
+  };
 
-      setCurrentDragging({
-        el,
-        key: el.data.key,
-        parentKey,
-        ref: e.target,
-        rect: e.target.getBoundingClientRect(),
-        mousePosition: { x: e.clientX, y: e.clientY },
-        className,
-      });
-    },
-    [elementProps, parentKey, setCurrentDragging, className]
-  );
-
-  const handleDragEnd = useCallback((e) => {
-    e.preventDefault();
+  const handleDragStart = useCallback((e) => {
     e.stopPropagation();
-    e.dataTransfer.clearData();
-  }, []);
+    if(designerModeType === "preview") return;
+
+    setInitializedDragging(true);
+    dragStart(e);
+  }, [designerModeType, setCurrentDragging]);
+
+  const style = useMemo(() => {
+    if (designing && currentDragging && currentDragging.key === elementProps.data.key) {
+      return {
+        cursor: currentDragging && designerModeType ? "grabbing" : "grab",
+      };
+    }
+    return {};
+  }, [currentDragging, designing, elementProps.data.key]);
 
   return (
     <HiddenContext.Provider value={disabled}>
       <div
         className={cn("relative w-full h-auto", className)}
-        draggable={!elementProps.fieldDesigner}
         ref={draggableRef}
-        onMouseOver={(e) => {
-          e.preventDefault();
+        onPointerOver={(e) => {
           e.stopPropagation();
           handleMouseOver(true);
         }}
-        onMouseOut={() => handleMouseOver(false)}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
+        onPointerOut={() => handleMouseOver(false)}
+        onPointerDown={handleDragStart}
+        style={style}
       >
         {designerModeType !== "preview" && (
-          <ElementTitle element={elementProps} active={hover && !currentDragging} style={{ top: 0 }} />
+          <ElementTitle element={elementProps} active={hover && !dragging} style={{ top: 0 }} />
         )}
-        <Wrapper {...fragmentProps}>
-          <Comp {...elementProps} key={elementKey} ref={draggingElement} />
-        </Wrapper>
-      </div>
+        {disabled ? <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 ronded" /> : null}
+        <Comp {...elementProps} key={elementKey}/>
+      </div> 
     </HiddenContext.Provider>
   );
 };

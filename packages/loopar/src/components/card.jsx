@@ -41,7 +41,7 @@ Card.dontHaveMetaElements = ["text"];
 function CardHover(props){
   return (
     <CardComponent 
-      className={cn(props.className, "hover:bg-card/50 transition-all hover:shadow-lg")}
+      className={cn(props.className, "transition-all hover:shadow-lg")}
     >
       {props.children}
     </CardComponent>

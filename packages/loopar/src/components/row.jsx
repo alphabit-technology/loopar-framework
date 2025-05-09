@@ -2,7 +2,7 @@ import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
 import ComponentDefaults from "./base/component-defaults";
 import { loopar } from "loopar";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Emitter from '@services/emitter/emitter';
 import { cn } from "@cn/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
@@ -16,17 +16,16 @@ const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8
 
 export default function Row(props) {
   const { data, setElements, set } = ComponentDefaults(props);
-  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, [50, 50]));
+  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, []));
   const [cols, setCols] = useState(props.elements || []);
   const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();
+
   const prevElementsRef = useRef(props.elements);
   const {designing} = useDesigner();
 
-  const conciliateCols = () => {
-    const addCols = [
-      ...cols
-    ]
+  const conciliateCols = useCallback(() => {
+    const addCols = [...cols]
     if (cols.length < layout.length) {
       const diff = layout.length - cols.length;
 
@@ -40,6 +39,7 @@ export default function Row(props) {
       setElements(addCols, setCols(addCols));
     }
   }
+  , [layout, cols, setElements]);
 
   useEffect(() => {
     const newLayout = loopar.utils.JSONparse(data.layout);
@@ -54,7 +54,7 @@ export default function Row(props) {
   }, [layout])
 
   useEffect(() => {
-    if (loopar.utils.JSONparse(data.layout, []).length == 0) {
+    if (layout.length == 0) {
       set("layout", JSON.stringify([50, 50]));
     }
   }, [])
@@ -70,8 +70,16 @@ export default function Row(props) {
     }
   }, [props.elements]);
 
-  const _spacing = parseInt(data.spacing || spacing.spacing || webApp.spacing || 1);
-  const gap = (_spacing / 2) + 1 ;
+  const _spacing = useMemo(() => {
+    const sp =  parseInt(data.spacing || spacing.spacing || webApp.spacing || 1);
+    return Number.isNaN(sp) ? 1 : sp;
+  }, [data.spacing, spacing.spacing, webApp.spacing]);
+
+  const gap = useMemo(() => {
+    const colPadding = (data.col_padding || spacing.col_padding || webApp.col_padding) || "p-0";
+    const _gap = parseInt(colPadding.replace("p-", ""));
+    return Number.isNaN(_gap) ? 0 : _gap;
+  }, [data.col_padding, spacing.col_padding, webApp.col_padding]);
 
   return (
     <RowContextProvider

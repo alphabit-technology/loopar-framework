@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { useTable } from "./TableContext";
 import loopar from "loopar";
 
@@ -10,79 +10,56 @@ import {
   TableRow,
   TableFooter,
 } from "@cn/components/ui/table";
+
 import { EmptyTable } from "./EmptyTable";
 
 export function SimpleTable(props) {
-  const {
-    baseColumns,
-    tableId
-  } = useTable();
-
-  const rowRefs = useRef({});
-
+  const {baseColumns, tableId} = useTable();
   const rows = props.rows || useTable().rows || [];
 
-  const mappedColumns = useCallback(() => {
-    return props.columns || baseColumns();
+  const mappedColumns = useMemo(() => {
+    return props.columns || baseColumns;
   }, [baseColumns, props.columns]);
 
   const availableColumns = useMemo(() => {
-    return mappedColumns()
+    return mappedColumns
   }, [mappedColumns]);
 
-  const renderRows = (columns, rowsData = []) =>
-    rowsData.map((row, index) => (
-      <TableRow
-        ref={el => {
-          if (el) rowRefs.current[index] = el;
-        }}
-        hover
-        {...(props.sortable ? {
-          onDragOver: e => e.preventDefault(),
-          onDrop: e => {
-            const raw = e.dataTransfer.getData('application/json');
-            if (!raw) return;
+  const renderRows = () =>
+    rows.map((row, index) => {
+      if(props.rowTemplate){
+        const RowTemplate = props.rowTemplate
+        return (
+          <RowTemplate
+            key={`${tableId}-${index}`}
+            row={row}
+            index={index}
+            columns={availableColumns}
+          />
+        )
+      } 
+      return (
+        <TableRow key={`${tableId}-${index}`} className="p-0 m-0">
+          {
+            availableColumns.map((col) => {
+              const cellProps = col.cellProps || {};
+              const { data } = col;
 
-            const { from, sourceTable } = JSON.parse(raw);
-            if (sourceTable !== tableId) return;
-
-            props.move && props.move(from, index);
+              return (
+                <TableCell
+                  key={`${data.name}_${index}`}
+                  className="align-middle"
+                  {...cellProps}
+                >
+                  {col.render ? col.render(row, index) : row[data.name]}
+                </TableCell>
+              );
+            })
           }
-        } : {})}
-        tabIndex={-1} 
-        key={`row_${row.name}`}
-      >
-        {
-          columns.map((col) => {
-            const cellProps = col.cellProps || {};
-            const { data } = col;
-
-            const draggableProps = col.draggable ? {
-              draggable: true,
-              onDragStart: (e) => {
-                e.dataTransfer.setData(
-                  'application/json',
-                  JSON.stringify({ from: index, sourceTable: tableId })
-                );
-                col.onDragStart && col.onDragStart(e, index, rowRefs)
-              },
-            } : {};
-
-            return (
-              <TableCell
-                key={`${data.name}_${index}`}
-                className="align-middle"
-                {...cellProps}
-                {...draggableProps}
-              >
-                {col.render ? col.render(row, index) : row[data.name]}
-              </TableCell>
-            );
-          })
-        }
-      </TableRow>
-    ));
-
+        </TableRow>
+      )
+    });
+  
   const rowsCount = rows.length;
 
   return (
@@ -96,17 +73,14 @@ export function SimpleTable(props) {
           {availableColumns.filter(c => c.data?.label).map((c) => {
             const { data, headProps = {} } = c;
             return (
-              <TableCell key={data.name} {...headProps}>
+              <TableCell {...headProps}>
                 {typeof data.label === "function" ? data.label() : loopar.utils.UPPERCASE(data.label || "")}
               </TableCell>
             );
           })}
         </TableRow>
       </TableHeader>
-      <TableBody 
-        onDragOver={(e) => e.preventDefault()}
-        onDragLeave={(e) => e.preventDefault()}
-      >
+      <TableBody>
         {rowsCount === 0 ? (
           <TableRow>
             <TableCell colSpan={availableColumns.length + 2}>
@@ -121,7 +95,7 @@ export function SimpleTable(props) {
         <TableRow>
           {props.footer}
         </TableRow>
-        </TableFooter>
+      </TableFooter>
     </Table>
   );
 }

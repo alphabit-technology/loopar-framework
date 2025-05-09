@@ -16,7 +16,7 @@ export const Meta = ({ meta, parent, parentKey, className }) => {
 
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
-  const isDesigner = designer.designerMode;
+  const isDesigner = designer.designerMode// && designer.designerModeType != "preview";
   const metaProps = buildMetaProps({ metaProps: meta, parent, isDesigner });
   
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
@@ -91,7 +91,7 @@ export const Meta = ({ meta, parent, parentKey, className }) => {
     } else if (!data.hidden && display) {
       const disabled = data.disabled;
       const Wrapper = disabled ? "div" : React.Fragment;
-      const fragmentProps = disabled ? { className: "pointer-events-none opacity-40" } : {};
+      const fragmentProps = disabled ? { className: " opacity-40" } : {};
 
       return (
         <Wrapper {...fragmentProps}>

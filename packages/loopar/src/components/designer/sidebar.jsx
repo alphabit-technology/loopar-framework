@@ -1,4 +1,4 @@
-import { BrushIcon, EyeIcon, XIcon } from "lucide-react";
+import { BrushIcon, EyeIcon, XIcon, SaveIcon } from "lucide-react";
 import React, {useEffect} from "react";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
@@ -9,12 +9,12 @@ import {ScrollArea} from "@cn/components/ui/scroll-area";
 import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {
-  const { handleSetSidebarOpen, sidebarOpen } = useDocument();
+  const { handleSetSidebarOpen, sidebarOpen, docRef } = useDocument();
   const { currentEditElement, handleChangeMode, designerModeType } = useDesigner();
   
   return (
     <div 
-      className="w-sidebar-width mt-header-height pb-header-height"
+      className="w-sidebar-width mt-header-height pb-header-height bg-background dark:bg-background-dark border-l border-border dark:border-border-dark"
       style={{position: "fixed", top: 0, right: 0, zIndex: 30, width: 300, height: "100vh"}}
     >
       <div className="flex flex-col p-1 w-full h-full">
@@ -29,6 +29,17 @@ export const Sidebar = () => {
           >
             {designerModeType == "designer" ? <EyeIcon className="mr-2" /> : <BrushIcon className="mr-2" />}
             <span>{designerModeType == "designer" && sidebarOpen ? "Preview" : "Design"}</span>
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              docRef.save();
+            }}
+          >
+            <SaveIcon className="mr-2" />
+            <span>Save</span>
           </Button>
           <Button
             variant="secondary"

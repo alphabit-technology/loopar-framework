@@ -80,27 +80,31 @@ export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE, onC
   }, [STRUCTURE]);
 
   const form = useForm({
-    values,
+    defaultValues: values,
     resolver: zodResolver(FormSchema),
+    //mode: "onChange"
   });
 
   const watchedValues = useWatch({ control: form.control });
 
   useEffect(() => {
-    onChange && onChange(watchedValues);
-  }, [watchedValues]);
+    onChange?.(watchedValues);
+  }, [watchedValues, onChange]);
 
   docRef && (docRef.Form = form);
+  docRef && (docRef.formFields = form.formState);
+  formRef && (formRef.current = form);
 
   function onSubmit(values: z.infer<typeof FormSchema>) {
     docRef && (docRef.save(values));
   }
 
-  docRef && (docRef.formFields = form.formState);
-
-  formRef && (formRef.current = form);
   return (
-    <BaseFormContext.Provider value={{...form, values: watchedValues}}>
+    <BaseFormContext.Provider value={{
+      ...form, 
+      values: watchedValues,
+      docRef,
+    }}>
       <Form {...form} onSubmit={form.handleSubmit(onSubmit)}>
         {children}
       </Form>
@@ -126,7 +130,13 @@ export function FormWrapper({
   onChange: Function
 }) {
   return (
-    <FormProvider values={__DOCUMENT__} docRef={docRef} formRef={formRef} STRUCTURE={STRUCTURE} onChange={onChange}>
+    <FormProvider 
+      values={__DOCUMENT__} 
+      docRef={docRef} 
+      formRef={formRef} 
+      STRUCTURE={STRUCTURE} 
+      onChange={onChange}
+    >
       {children}
     </FormProvider>
   )

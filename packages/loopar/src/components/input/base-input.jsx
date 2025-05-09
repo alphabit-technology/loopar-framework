@@ -11,104 +11,155 @@ import _ from "lodash";
 import { useDocument } from "@context/@/document-context";
 
 const BaseInput = (props) => {
-  const [isInvalid, setIsInvalid] = useState(false);
-  const fieldRef = useRef(null);
-  const [fieldValue, setFieldValue] = useState(fieldRef.current?.value);
-
-  const names = useMemo(() => elementManage.elementName(props.element), [props.element]);
+  const { element, data: propData, onChange, onChanged, readOnly: propReadOnly, withoutLabel, render: propRender } = props;
+  
+  const names = useMemo(() => element ? elementManage.elementName(element) : {}, [element]);
   const parentHidden = useHidden();
   const { docRef } = useDocument();
   const { designerMode } = useDesigner();
-
-  const getData = () => {
-    if (props.element) {
-      const data = props.data || {};
+  
+  const getInitialData = useCallback(() => {
+    if (element) {
+      const data = propData || {};
       data.id ??= names.id || names.key;
       data.name ??= names.name || data.id;
-      data.label ??= loopar.utils.Capitalize(data.name.replaceAll("_", " "));
+      data.label ??= loopar.utils.Capitalize(data.name?.replaceAll("_", " ") || "");
       return data;
     }
-    return props.data || {};
-  };
+    return propData || {};
+  }, [element, propData, names]);
 
-  const [data, setData] = useState(getData());
+  const [data, setData] = useState(getInitialData);
+  const [isInvalid, setIsInvalid] = useState(false);
+  const [fieldValue, setFieldValue] = useState(undefined);
+  
+  const fieldRef = useRef(null);
   const prevData = useRef(data);
 
   useEffect(() => {
-    if(!designerMode) return;
+    if (!designerMode) return;
 
-    const newData = getData();
+    const newData = getInitialData();
     if (!_.isEqual(prevData.current, newData)) {
       setData(newData);
       prevData.current = newData;
     }
-  }, [props.data]);
+  }, [propData, designerMode, getInitialData]);
 
   useEffect(() => {
-    if (docRef) {
-      const data = getData();
-      docRef.__REFS__[data.name] = data;
+    if (!docRef) return;
+    
+    const fieldName = data.name;
+    if (fieldName) {
+      docRef.__REFS__[fieldName] = data;
       return () => {
-        delete docRef.__REFS__[data.name];
+        delete docRef.__REFS__[fieldName];
       };
     }
-  }, []);
+  }, [docRef, data]);
 
   const handleInputChange = useCallback((event) => {
-    if(designerMode) return;
+    if (designerMode) return;
 
-    let newValue;
-    if (event && typeof event === "object") {
-      newValue = event.target.files || event.target.value;
-    } else {
-      newValue = event;
-    }
-    setFieldValue(newValue);
-  }, []);
+    const extractValue = () => {
+      if (event && typeof event === "object") {
+        return event.target.files || event.target.value;
+      }
+      return event;
+    };
 
-  useEffect(() => {
-    if(designerMode) return;
-    const event = { target: { value: fieldValue } };
-    validate();
-    
-    props.onChange?.(event);
-    props.onChanged?.(event);
-  }, [fieldValue]);
-
-  /*const validate = () => {
-    if(designerMode) return;
-    if (data.hidden || parentHidden) return { valid: true };
-    const validation = dataInterface({ data }, fieldRef.current.value).validate();
-    setIsInvalid(!validation.valid);
-    return validation;
-  };*/
+    requestAnimationFrame(() => {
+      const newValue = extractValue();
+      setFieldValue(prev => {
+        if (_.isEqual(prev, newValue)) return prev;
+        return newValue;
+      });
+    });
+  }, [designerMode]);
 
   const validate = useCallback(() => {
     if (data.hidden || parentHidden) return { valid: true };
-    const validation = dataInterface({ data }, fieldRef.current.value).validate();
-    setIsInvalid(!validation.valid);
-    return validation;
-  }, [fieldValue, data, parentHidden]);
+    
+    if (!fieldRef.current) return { valid: true };
+    
+    try {
+      const validation = dataInterface({ data }, fieldRef.current.value).validate();
+      
+      setIsInvalid(prev => {
+        if (prev === !validation.valid) return prev;
+        return !validation.valid;
+      });
+      
+      return validation;
+    } catch (error) {
+      console.error("Validation error:", error);
+      return { valid: true };
+    }
+  }, [data, parentHidden]);
 
-  const readOnly = props.readOnly || data.readOnly;
-  const hasLabel = () => props.withoutLabel !== true;
+  useEffect(() => {
+    if (designerMode || fieldValue === undefined) return;
+    
+    const timeoutId = setTimeout(() => {
+      const event = { target: { value: fieldValue } };
+      
+      if (!data.hidden && !parentHidden) {
+        validate();
+      }
+      
+      queueMicrotask(() => {
+        onChange?.(event);
+        onChanged?.(event);
+      });
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [fieldValue, onChange, onChanged, designerMode, validate, data.hidden, parentHidden]);
 
-  const renderInput = (input, className = "") => {
+  const readOnly = propReadOnly || data.readOnly;
+  const hasLabel = () => withoutLabel !== true;
+
+  const renderInput = useCallback((input, className = "") => {
+    const fieldName = data.name || data.key || data.id || "";
+    const isDisabled = !!data.disabled;
+    
+    const fieldProps = {
+      name: fieldName,
+      disabled: props.disabled,
+      control: props.control,
+      defaultValue: props.defaultValue,
+      rules: props.rules
+    };
+    
     return (
       <FormField
-        name={data.name || data.key || data.id || ""}
-        {...props}
+        {...fieldProps}
         render={({ field }) => {
-          fieldRef.current = field;
-          const combinedOnChange = (e) => {
-            if(data.disabled) return;
-            if (field.onChange) field.onChange(e);
-            handleInputChange(e);
-          };
+          if (fieldRef.current !== field) {
+            fieldRef.current = field;
+          }
+          
+          const combinedOnChange = useMemo(() => {
+            return (e) => {
+              if (isDisabled) return;
+              const event = e;
+              
+              if (field.onChange) {
+                field.onChange(event);
+              }
+              
+              handleInputChange(event);
+            };
+          }, [field.onChange, isDisabled, handleInputChange]);
 
           return (
             <FormItem className={cn("flex flex-col rounded shadow-sm", className)}>
-              {input({ ...field, onChange: combinedOnChange, isInvalid }, data)}
+              {input({ 
+                ...field, 
+                onChange: combinedOnChange, 
+                isInvalid,
+                ref: fieldRef 
+              }, data)}
               <FormMessage>
                 {field.message || (isInvalid && field.invalidMessage)}
               </FormMessage>
@@ -117,15 +168,14 @@ const BaseInput = (props) => {
         }}
       />
     );
-  };
+  }, [props.control, props.disabled, props.defaultValue, props.rules, data, handleInputChange, isInvalid]);
 
-  if (props.render) {
-    return renderInput(props.render);
+  if (propRender) {
+    return renderInput(propRender);
   }
 
   return { renderInput, validate, readOnly, hasLabel, data };
 };
-
 
 BaseInput.metaFields = () => {
   return [[
@@ -146,10 +196,10 @@ BaseInput.metaFields = () => {
       },
     },
   ]];
-}
+};
 
 BaseInput.donHaveMetaFields = () => {
   return ["text"];
-}
+};
 
 export default BaseInput;

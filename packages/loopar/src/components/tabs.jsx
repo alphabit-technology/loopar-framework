@@ -3,11 +3,19 @@ import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import MetaComponent from "@meta-component";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {useCookies} from "@services/cookie";
+import { Droppable } from "@droppable";
+import { Trash2Icon } from "lucide-react";
+import {Button} from "@cn/components/ui/button";
 
-const TabContent = ({element, parent}) => {
+const TabContent = ({element, parent, onDrop}) => {
   if(element.type === "dynamic.component"){
+    return (
+      <Droppable 
+        {...element}
+      />
+    )
     return (
       <MetaComponent
         elements={[
@@ -15,10 +23,10 @@ const TabContent = ({element, parent}) => {
             element: "tab",
             //...element,
             data: element.data,
-            elements: element.elements,
+            elements: element.elements
           },
         ]}
-        parent={parent}
+        //parentKey={parent}
       />
     )
   }
@@ -26,8 +34,10 @@ const TabContent = ({element, parent}) => {
   return <>{element.content}</>
 }
 
-function TabFn({id, elementsDict, asChild = false, setElements, parent}){
-  const {designerMode} = useDesigner();
+function TabFn(props/*{id, elementsDict, asChild = false, canCustomize, setElements, parent}*/){
+  const {id, elementsDict, asChild = false, canCustomize, setElements, parent} = props;
+  
+  const {designerMode, isDesigner, handleEditElement, handleDeleteElement} = useDesigner();
   const getIdentifier = (id) => `${id}${designerMode ? '-designer' : ''}`;
   const getKey = (data = {}) => getIdentifier(data.key || data.name);
   
@@ -76,9 +86,19 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
     !checkIfTabExists(currentTab) && selectFirstTab();
   }, []);
 
+  /*useEffect(() => {
+    if(currentTab && designerMode) {
+      handleEditElement(data.key);
+    }
+  }, [currentTab, designerMode, data.key]);*/
+
+  const isCustomizable = useMemo(() => {
+    return (typeof canCustomize == "undefined" ? true : canCustomize) && designerMode;
+  }, [canCustomize, designerMode]);
+
   return (
     <BaseTabs 
-      //defaultValue={currentTab}
+      defaultValue={currentTab}
       value={currentTab}
       className="w-full"
     >
@@ -88,12 +108,28 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
             <TabsTrigger
               value={getKey(data)}
               onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setCurrentTab(getKey(data));
+                if(designerMode) {
+                  handleEditElement(data.key);
+                }
               }}
-            >{data.label}</TabsTrigger>
+            >
+              {data.label}
+              {isCustomizable ? (
+                <Button variant="ghost" size="sm" className="ml-4 color-red" onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDeleteElement(data.key);
+                }}>
+                  <Trash2Icon size={20} className="text-red-500"/>
+                </Button>
+              ) : ""}
+            </TabsTrigger>
           ))
         }
-        {(designerMode && !asChild)? (
+        {isCustomizable ? (
           <TabsTrigger
             onClick={(e) => {
               e.preventDefault();
@@ -107,12 +143,12 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
         ) : null}
       </TabsList>
       {
-        elementsDict.map((element) => {
+        elementsDict.map((element, index) => {
           return (
             <TabsContent
               value={getKey(element.data)}
             >
-              <TabContent element={element} parent={parent}/>
+              <TabContent element={element} parent={parent + index}/>
             </TabsContent>
           )
         })
@@ -124,7 +160,7 @@ function TabFn({id, elementsDict, asChild = false, setElements, parent}){
 export default function MetaTabs(props){
   const {data, setElements} = ComponentDefaults(props);
   
-  const elementsDict=()=>{
+  const elementsDict=useMemo(()=>{
     const elements = props.children || props.elements || [];
 
     return elements.map((element) => {
@@ -150,7 +186,9 @@ export default function MetaTabs(props){
         };
       }
     });
-  }
+  }, [props.children, props.elements, props.data]);
+
+  const parentKey = data.key || data.id || data.name;
 
   return (
     <div className="p-2 my-3 border border-separate" id={data.id}>
@@ -158,11 +196,13 @@ export default function MetaTabs(props){
       <TabFn
         id={data.id || data.name}
         data={data}
-        elementsDict={elementsDict()}
+        elementsDict={elementsDict}
         asChild={props.asChild}
         setElements={(elements, callback) => {
           setElements(elements, callback);
         }}
+        canCustomize={props.canCustomize}
+        parent={parentKey}
       />
     </div>
   )

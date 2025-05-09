@@ -1,8 +1,7 @@
 import loopar from "loopar";
-import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, Eye } from "lucide-react";
-import { Droppable } from "@droppable";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
 import { BaseFormContext } from "@context/form-provider";
-import React, { use, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import {Tailwind} from "@app/auto/tailwind";
@@ -14,19 +13,21 @@ import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
 import Emitter from '@services/emitter/emitter';
-import { DragGhost } from "../droppable/drag-ghost";
+import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx"
 
-export const Designer = ({designerRef, metaComponents, data, ...props}) => {
+export const Designer = ({data, metaComponents, designerRef, ...props}) => {
   const [activeId] = useState(null);
-  const [currentDropZone, setCurrentDropZone] = useState(null);
-  const [currentDragging, setCurrentDragging] = useState(null);
-  const [draggingPosition, setDraggingPosition] = useState(currentDragging?.targetRect);
   const {designerMode} = useDesigner();
   const { name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   
   const [editElement, setEditElement] = useCookies(name + "editElement");
   const [designerModeType = "designer", setDesignerModeType] = useCookies(name + "designer-mode-type");
-  const elements = JSON.parse(metaComponents || "[]");
+
+  const elements = useMemo(() => {
+    return JSON.parse(metaComponents || "[]");
+  }, [metaComponents]);
+  //const elements = JSON.parse(metaComponents || "[]");
+  const selfKey = data.key;
 
   const handleChangeMode = (opt=null) => {
     const newMode = opt !== null ? opt : (
@@ -51,14 +52,14 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     }
   }, []);
 
-  
-  const getElements = () => {
-    return JSON.parse(metaComponents || "[]");
-  }
+  const getElements = useMemo(() => {
+    return () => {
+      return JSON.parse(metaComponents || "[]");
+    }
+  }, [metaComponents]);
 
-  const findElement = (field, value, elements = getElements()) => {
+  const findElement = useCallback((field, value, elements = getElements()) => {
     if (!value || value === "null" || value.length == 0) return null;
-    
     for (let i = 0; i < elements.length; i++) {
       if (elements[i]?.data?.[field] === value) {
         return elements[i];
@@ -70,15 +71,14 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
       }
     }
     return null;
-  };
+  }, [getElements]);
 
+  
   const updateElements = (target, elements, current = null) => {
     const currentElements = getElements();
     const targetKey = target.data.key;
     const currentKey = current ? current.data.key : null;
-
     const lastParentKey = current ? current.parentKey : null;
-    const selfKey = data.key;
 
     //Search target in structure and set elements in target
     const setElementsInTarget = (structure) => {
@@ -96,10 +96,10 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     //Search current in structure and delete current in last parent
     const deleteCurrentOnLastParent = (structure, parent) => {
       if (lastParentKey === parent) {
-        return structure.filter((e) => e.data.key !== currentKey);
+        return structure.filter(e => e.data.key !== currentKey);
       }
 
-      return structure.map((el) => {
+      return structure.map(el => {
         el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
         return el;
       });
@@ -112,7 +112,7 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     setMeta(JSON.stringify(newElements));
   }
 
-  const updateElement = (key, data, merge = true) => {
+  const updateElement = (key, data, merge = true, reflect=true) => {
     const selfElements = getElements();
 
     if (data.name) {
@@ -157,7 +157,7 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     };
 
     props.onChange({target: {value: JSON.stringify(updateE(selfElements))}});
-    Emitter.emit("currentElementEdit", data.key);
+    //reflect && Emitter.emit("currentElementEdit", data.key);
   }
 
    const getElement = (key) => {
@@ -187,7 +187,7 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
 
   const handleDeleteElement = (element) => {
     loopar.confirm("Are you sure you want to delete this element?", () => {
-      deleteElement(element.data.key);
+      deleteElement(element);
     });
   }
 
@@ -257,25 +257,7 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     });
   }
 
-  useEffect(() => {
-    if (designerMode) return;
-    
-    const handleMouseMove = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      currentDropZone && setCurrentDropZone(null);
-      currentDragging && setCurrentDragging(null);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseMove);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseMove);
-    };
-  }, [currentDropZone]);
-
+  
   const getDesignerButton = () => {
     if (designerModeType == "preview") {
       return <><BrushIcon className="mr-2" /> Design</>
@@ -294,18 +276,16 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
     }
   }
 
-  /*const getTargetRect = () => {
-    return currentDragging?.targetRect || {};
-  }
+  //const getIsDesigner = () => {return typeof isDesigner != "undefined" ? !isDesigner : true};
 
-  useEffect(() => {
-    console.log(currentDragging?.targetRect);
-  }, [currentDragging?.targetRect]);*/
+  const isDesigner = useMemo(() => {
+    return typeof designerMode != "undefined" ? !designerMode : true;
+  }, [designerMode]);
 
   return (
     <DesignerContext.Provider
       value={{
-        designerMode: !designerMode, //Detect if self context is designer
+        designerMode: isDesigner,
         designerModeType,
         designerRef: {
           updateElements,
@@ -313,25 +293,17 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
         },
         updateElement,
         getElement,
-        designing: designerModeType === "designer" || designerModeType === "editor",
+        designing: (designerModeType === "designer" || designerModeType === "editor"),
         currentEditElement: editElement,
         handleEditElement,
         handleDeleteElement,
         activeId,
-        onDraggin: false,
-        setOnDragging: () => {},
-        currentDropZone,
-        setCurrentDropZone,
-        currentDragging,
-        setCurrentDragging,
         handleChangeMode,
         handleSetMode,
-        setDraggingPosition
       }}
     >
       <BaseFormContext.Provider value={{}}>
         <div className="">
-          <DragGhost position={draggingPosition} dragging={currentDragging} />
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
               <h2 className="text-3xl">{data.label}</h2>
@@ -361,33 +333,37 @@ export const Designer = ({designerRef, metaComponents, data, ...props}) => {
             </div>
           </div>
           <Tabs
-            data={{ name: data.name + (designerMode ? "_designer" : "_element")}}
-            key={data.name + (designerMode ? "_designer" : "_element")}
-            asChild
+            data={{ name: selfKey}}
+            key={selfKey}
+            asChild={true}
+            canCustomize={false}
           >
             <Tab
               label={<div className="flex"><BrushIcon className="h-6 w-6 pr-2" /> Designer</div>}
-              name={data.name + "designer_tab"}
-              key={data.name + "designer_tab"}
+              name={`${selfKey}-designer_tab`}
+              key={`${selfKey}-designer_tab`}
             >
               <div
                 className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
                 <Tailwind/>
-                {(!designerMode && sidebarOpen) && <Sidebar/>}
-                {!designerMode ?
-                  <Droppable
-                    className={designerModeType !== "preview" ? "min-h-20 rounded p-4" : "p-1"}
-                    elements={elements}
+                {isDesigner ? (
+                  <DragAndDropProvider 
+                    metaComponents={elements} 
                     data={data}
-                  /> : <div className="p-6 text-center bg-card/50">Designer Area</div>
-                }
+                    onDrop={setMeta}
+                  >
+                    {sidebarOpen && <Sidebar/>}
+                  </DragAndDropProvider>
+                ) : (
+                  <div className="p-6 text-center bg-card/50">Designer Area....</div>
+                )}
               </div>
             </Tab>
             <Tab
               label={<div className="flex"><BracesIcon className="h-6 w-6 pr-2" /> META</div>}
-              name={data.name + "model_tab"}
-              key={data.name + "model_tab"}
+              name={`${selfKey}-meta_tab`}
+              key={`${selfKey}-meta_tab`}
             >
               <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded border p-2 font-mono text-sm font-bold text-green-600">
                 {JSON.stringify(elements, null, 2)}

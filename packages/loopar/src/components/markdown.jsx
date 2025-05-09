@@ -73,7 +73,9 @@ export default function MetaMarkdown (props) {
     <div
       className="contents w-full prose dark:prose-invert"
     >
-      <div id={props.id}>
+      <div id={props.id} className="mt-4" onPointerDown={(e) => {
+        e.stopPropagation();
+      }}>
         <SimpleMDE
           options={options}
           value={data.value}  

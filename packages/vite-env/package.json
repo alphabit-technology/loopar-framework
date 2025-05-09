@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {
-    "vite": "v6.3.0",
+    "vite": "v6.3.5",
     "vite-plugin-express": "^1.0.3",
     "vite-plugin-preload": "^0.4.2",
     "vite-plugin-compression": "0.5.1",
-    "@vitejs/plugin-react-swc": "3.8.1"
+    "@vitejs/plugin-react-swc": "3.9.0"
   }
 }

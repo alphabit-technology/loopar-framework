@@ -9,14 +9,14 @@ export function ElementTitle({element, active, ...props}) {
 
   const handleEditElement = (e) => {
     e.preventDefault();
-    //e.stopPropagation();
+    e.stopPropagation();
     designer.handleEditElement(element.data.key);
   }
 
   const handleDeleteElement = (e) => {
     e.preventDefault();
     //e.stopPropagation();
-    designer.handleDeleteElement(element)
+    designer.handleDeleteElement(element.data.key);
   }
 
   return (

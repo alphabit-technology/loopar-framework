@@ -5,6 +5,8 @@ import { MoreVertical } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
 import { useDocument } from "@context/@/document-context";
 import {cn} from "@cn/lib/utils";
+import { SaveIcon} from "lucide-react";
+
 
 const InnerSidebar = ({ toggleSidebar, sidebarWidth, ...props }) => {  
   return (
@@ -49,7 +51,7 @@ export default function DeskGUI(props) {
   return (
     <> 
       {docRef.__hasSidebar__ && !sidebarOpen && <Button 
-        className="fixed right-0 p-1"
+        className="fixed right-0 p-1 z-10 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"
         variant="ghost"
         style={{top: headerHeight + "rem"}}
         onClick={toggleSidebar}
@@ -61,7 +63,6 @@ export default function DeskGUI(props) {
       >
         {docRef.__hasHeader__ && 
           <AppBarr 
-            docRef={docRef} 
             meta={docRef.meta} 
             toggleSidebar={toggleSidebar}
             viewTypeToggle={props.viewTypeToggle}
@@ -80,6 +81,17 @@ export default function DeskGUI(props) {
         >
           <div>
             {docRef.getSidebarHeader && docRef.getSidebarHeader()}
+            <Button
+              variant="secondary"
+              tabIndex="0"
+              onClick={(e) => {
+                e.preventDefault();
+                docRef.save();
+              }}
+            >
+              <SaveIcon className="pr-1" />
+              Save
+            </Button>
           </div>
           {docRef.getSidebar && docRef.getSidebar()}
         </InnerSidebar>

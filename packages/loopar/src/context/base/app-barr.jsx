@@ -3,9 +3,11 @@ import loopar from "loopar";
 import { Button } from "@cn/components/ui/button";
 import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, GridIcon} from "lucide-react";
 import {Link} from "@link";
+import {useDocument} from "@context/@/document-context";
 
-export function AppBarr({docRef, meta, sidebarOpen, viewTypeToggle, viewType, ...props}) {
+export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
+  const {docRef} = useDocument();
   const { __ENTITY__, __DOCUMENT__ } = meta;
 
   const title = ((meta.title || context === 'module') ? meta.module_group :

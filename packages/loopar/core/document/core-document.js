@@ -455,6 +455,7 @@ export default class CoreDocument {
       __DOCUMENT__: await this.values(),
       //__DOCUMENT__: this.__DOCUMENT__,
       __IS_NEW__: this.__IS_NEW__,
+      __SPACING__: {test: 1},
     }
   }
 
@@ -465,6 +466,7 @@ export default class CoreDocument {
       } else if (field.element === FORM_TABLE) {
         return await this.getChildValues(field.options);
       }
+      
       /*else if (field.element === SELECT) {
         if (field.options && typeof field.options === 'string') {
           const options = (field.options || "").split("\n");
@@ -479,7 +481,8 @@ export default class CoreDocument {
       }*/
       else if (field.element === PASSWORD) {
         return field.value && field.value.length > 0 ? this.protectedPassword : "";
-      } else if(field.element === MARKDOWN_INPUT){
+      } else if(field.element === MARKDOWN){
+        return field.value//
         return this.__PARSED__ ? await renderMarkdownSSR(field.value) : field.value;
       } else {
         return field.stringifyValue;

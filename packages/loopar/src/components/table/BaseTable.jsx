@@ -32,6 +32,7 @@ function BaseTable(props) {
     search,
     setMeta,
     docRef,
+    tableId
   } = useTable();
 
   const rows = props.rows || useTable().rows || [];
@@ -47,9 +48,8 @@ function BaseTable(props) {
       <SimpleTable
         rows={rows}
         columns={props.columns}
-        sortable={props.sortable}
-        move={props.move}
         footer={props.footer}
+        rowTemplate={props.rowTemplate}
       />
     )
   };

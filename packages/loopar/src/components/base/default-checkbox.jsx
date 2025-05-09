@@ -16,9 +16,13 @@ export default function DefaultCheckbox(props) {
       {...props}
       render={(field, data) => {
         const handleCheckedChange = (checked) => {
-          const binaryValue = loopar.utils.trueToBinary(checked);
-          field.onChange(binaryValue);
+         /*if(field.name.includes("hidden"))
+        console.log(["DefaultCheckbox.checked",checked]);*/
+          field.onChange(loopar.utils.trueToBinary(checked));
         };
+
+        /*if(field.name .includes("hidden"))
+        console.log(["DefaultCheckbox", field.value, loopar.utils.trueToBinary(field.value)]);*/
 
         return (
           <div className="gap-2">

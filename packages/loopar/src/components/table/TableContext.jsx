@@ -5,8 +5,10 @@ import React, {
   useCallback,
   useContext,
   useMemo,
-  useId
+  useId,
+  useRef
 } from "react";
+
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { DropdownListGridActions } from "./DropdownListGridActions";
@@ -36,6 +38,7 @@ export const TableProvider = ({
 
   const [rows, setRows] = useState(props.rows || []);
   const tableId = useId();
+  const rowRefs = useRef({});
 
   useEffect(() => {
     setRows(props.rows || []);
@@ -45,12 +48,22 @@ export const TableProvider = ({
     setMeta(initialMeta || {});
   }, [initialMeta]);
 
-  const baseColumns = useCallback(() => {
+  /*const baseColumns = useCallback(() => {
     if (!meta) return [];
     
     const parseElements = (elements = []) => elements
       .map(el => [{ ...el }, ...parseElements(el.elements || [])]).flat()
 
+    const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
+    return parseElements(STRUCTURE);
+  }, [meta]);*/
+
+  const baseColumns = useMemo(() => {
+    if (!meta) return [];
+    const parseElements = (elements = []) =>
+      elements
+        .map((el) => [{ ...el }, ...parseElements(el.elements || [])])
+        .flat();
     const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
     return parseElements(STRUCTURE);
   }, [meta]);
@@ -165,8 +178,9 @@ export const TableProvider = ({
     selectorAllStatus,
     selectorCol,
     tableId,
+    rowRefs,
     baseColumns: () => [
-      ...baseColumns(),
+      ...baseColumns,
       {
         className: "align-middle text-right",
         rowsProps: {

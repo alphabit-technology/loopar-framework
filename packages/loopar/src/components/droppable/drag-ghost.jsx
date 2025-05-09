@@ -1,19 +1,29 @@
-export function DragGhost({position, dragging}) {
-  if (!position || !dragging) return;
-  
+import { useDragAndDrop } from "./DragAndDropContext";
+import React, { memo } from 'react';
+
+export const DragGhost = memo(function DragGhost() {
+  const { draggingEvent, movement, currentDragging, dragging } = useDragAndDrop();
+
+  if (!draggingEvent || !dragging || !movement || !currentDragging) return null;
+
+  const { size, offset } = currentDragging;
+
   return (
     <div
-      className="fixed pointer-events-none"
-      key={dragging.key + "-ghost"}
+      className="pointer-events-none absolute"
       style={{
-        width: position.width,
-        height: position.height,
-        top: position.y,
-        left: position.x,
-        zIndex: 100,
+        top: draggingEvent.y,
+        left: draggingEvent.x,
+        ...size,
+        transform: `translate(-${offset.x}px, -${offset.y}px)`,
+        transition: "none",
+        zIndex: 9999,
       }}
     >
-      <div className={dragging.className} dangerouslySetInnerHTML={{__html: dragging?.ref?.innerHTML}}/> 
+      <div 
+        className={currentDragging.className} 
+        dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
+      /> 
     </div>
-  )
-}
+  );
+});

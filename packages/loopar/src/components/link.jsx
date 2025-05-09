@@ -6,6 +6,7 @@ import { cn } from "@cn/lib/utils";
 import { buttonVariants } from "@cn/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { activeLink } from "@workspace/defaults";
+import { useDesigner } from "@context/@/designer-context";
 
 export const makeUrl = (href) => {
   if (href.startsWith("http") || href.startsWith("/")) return href;
@@ -38,9 +39,9 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
   const isAbsolute = url.includes("http");
   const [active, setActive] = useState(null);
   
-  const {setOpenNav, currentPage, workspace, activeParentMenu, activePage } = useWorkspace();
+  const {setOpenNav, currentPage, workspace } = useWorkspace();
+  const {designing} = useDesigner();
 
-  //console.log({activePage, currentPage});
   const handleSetCalled = (called) => {
     setCalled(called);
   };
@@ -131,6 +132,7 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
         className={className}
         href={to}
         target={props._target}
+        {...(designing ? { draggable: false } : {})}
       >
         {children}
       </a>

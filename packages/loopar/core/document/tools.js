@@ -14,7 +14,7 @@ export const parseDocStructure = async (doc_structure, renderMarkdown=true) => {
       }
 
       if (field.elements) {
-        field.elements = await parseDocStructure(field.elements);
+        field.elements = await parseDocStructure(field.elements, renderMarkdown);
       }
 
       return field;

@@ -59,15 +59,14 @@ export function ElementEditor({ element }) {
   const [elementName, setElementName] = useState(connectedElement?.element || "");
   const [data, setData] = useState(connectedElement?.data || {});
   const prevData = useRef({ ...data });
-  const formRef = useRef(null);
 
   const Element = __META_COMPONENTS__[elementName]?.default || {};
 
   const handleSetData = (data) => {
-    if (!_.isEqual(prevData.current, data)) {
-      setData(data);
+    /*if (!_.isEqual(prevData.current, data)) {
+      //setData(data);
       prevData.current = { ...data };
-    }
+    }*/
   }
 
   const handleSetConnectedElement = (e) => {
@@ -141,19 +140,19 @@ export function ElementEditor({ element }) {
     })
   ));
     
-  const saveData = () => {
+  const saveData = (_data) => {
     function cleanObject(obj) {
       return Object.fromEntries(
-        Object.entries(obj).filter(([_, value]) => value ?? false).map(([key, value]) => [key.replace(data.key, ""), value])
+        Object.entries(obj)/*.filter(([_, value]) => value ?? false)*/.map(([key, value]) => [key.replace(data.key, ""), value])
       );
     }
 
-    const newData = cleanObject(formRef.current.watch());
+    const newData = cleanObject(_data);
     newData.key = data.key;
     newData.value = data.value;
 
     if (!_.isEqual(prevData.current, newData)) {
-      updateElement(newData.key, newData, false);
+      updateElement(newData.key, newData, false, false);
       prevData.current = { ...newData };
     }
   };
@@ -162,7 +161,7 @@ export function ElementEditor({ element }) {
     <DesignerContext.Provider
       value={{}}
     >
-      <FormWrapper __DOCUMENT__={__FORM_FIELDS__} formRef={formRef}>
+      <FormWrapper __DOCUMENT__={__FORM_FIELDS__} onChange={saveData}>
         <div className="flex flex-col">
           <h2 className="pt-2 text-xl">
             {loopar.utils.Capitalize(elementName)} Editor
@@ -192,7 +191,7 @@ export function ElementEditor({ element }) {
                               name: data.key + field,
                               label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
                             }}
-                            onChange={saveData}
+                            //onChange={saveData}
                           />
                         )}
                       />
