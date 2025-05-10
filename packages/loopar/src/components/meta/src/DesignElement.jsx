@@ -63,15 +63,16 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
     return elementProps.data && (elementProps.data.hidden || elementProps.data.disabled);
   }, [elementProps.data]);
 
-  const selfDragging = useMemo(() => {
+  /**const selfDragging = useMemo(() => {
     return designing && currentDragging && currentDragging.key === elementProps.data.key;
-  }, [designing, currentDragging, elementProps.data.key]);
+  }, [designing, currentDragging, elementProps.data.key]);*/
 
   const className = useMemo(() => {
     return cn(
       designing ? "bg-card rounded p-2 mb-4 cursor-grab" : "",
       elementProps.className,
-      designing && (selfDragging ? "border-2 border-red-300/60" : "border border-gray-400 dark:border-gray-600"),
+      designing && "border border-gray-400 dark:border-gray-600",
+      disabled && "p-2"
     );
   }, [designing, elementProps.className, currentDragging, elementProps.data.key]);
 
@@ -139,7 +140,7 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
         {designerModeType !== "preview" && (
           <ElementTitle element={elementProps} active={hover && !dragging} style={{ top: 0 }} />
         )}
-        {disabled ? <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 ronded" /> : null}
+        {disabled ? <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 rounded" /> : null}
         <Comp {...elementProps} key={elementKey}/>
       </div> 
     </HiddenContext.Provider>

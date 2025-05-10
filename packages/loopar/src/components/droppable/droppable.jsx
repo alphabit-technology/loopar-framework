@@ -174,12 +174,8 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   }, [currentDragging, data.key, props.element, movement]);
 
   if (currentDragging) {
-    droppableEvents.onPointerEnter = e => {
-      handleSetDropZone();
-    }
-    droppableEvents.onPointerOver = e => {
-      handleSetDropZone();
-    }
+    droppableEvents.onPointerEnter = handleSetDropZone;
+    droppableEvents.onPointerOver = handleSetDropZone;
     droppableEvents.onPointerUp = handleDrop
   }
 

@@ -127,19 +127,35 @@ export const DragAndDropProvider = ({data, metaComponents, ...props }) => {
         });
       }
     }
-    
-    document.addEventListener('pointermove', handleDragOver);
-    document.addEventListener('pointerup', handleDrop);
+
+    window.addEventListener('pointermove', handleDragOver, { passive: false });
+    window.addEventListener('pointerup', handleDrop, { passive: false });
 
     return () => {
-      document.removeEventListener('pointermove', handleDragOver);
-      document.removeEventListener('pointerup', handleDrop);
+      window.removeEventListener('pointermove', handleDragOver);
+      window.removeEventListener('pointerup', handleDrop);
     }
   }, [dropZone, currentDragging, movement]);
 
   useEffect(() => {
-   document.body.style.userSelect = currentDragging ? "none" : "auto";
+    document.body.style.userSelect = currentDragging ? 'none' : 'auto';
+
+    const protectTouchEvent = (e) => {
+      if (!currentDragging) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    if (currentDragging) {
+      window.addEventListener('touchstart', protectTouchEvent, { passive: false });
+    }
+
+    return () => {
+      document.body.style.userSelect = 'auto';
+      window.removeEventListener('touchstart', protectTouchEvent);
+    };
   }, [currentDragging]);
+
 
   return (
     <DragAndDropContext.Provider
@@ -159,7 +175,7 @@ export const DragAndDropProvider = ({data, metaComponents, ...props }) => {
         setDrop,
         setInitializedDragging,
         updateContainer,
-        baseElements: elements,
+        baseElements: elements
       }}
     >
       <div

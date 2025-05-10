@@ -1,7 +1,7 @@
 import loopar from "loopar";
 import BaseInput from "@base-input"
 import {MetaComponent} from "@meta-component";
-import _ from "lodash";
+import _  from "lodash";
 
 import { useFieldArray } from 'react-hook-form';
 import { useFormContext } from "@context/form-provider";
@@ -40,6 +40,7 @@ const SortableRow = memo(function SortableRow({ index, row, columns }) {
   const { id } = row;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
+  console.log("SortableRow",listeners);
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
