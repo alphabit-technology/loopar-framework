@@ -40,7 +40,6 @@ const SortableRow = memo(function SortableRow({ index, row, columns }) {
   const { id } = row;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
-  console.log("SortableRow",listeners);
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,

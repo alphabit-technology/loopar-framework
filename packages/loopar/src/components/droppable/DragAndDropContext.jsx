@@ -147,12 +147,12 @@ export const DragAndDropProvider = ({data, metaComponents, ...props }) => {
     };
 
     if (currentDragging) {
-      window.addEventListener('touchstart', protectTouchEvent, { passive: false });
+      document.body.addEventListener('touchstart', protectTouchEvent, { passive: false });
     }
 
     return () => {
       document.body.style.userSelect = 'auto';
-      window.removeEventListener('touchstart', protectTouchEvent);
+      document.body.removeEventListener('touchstart', protectTouchEvent);
     };
   }, [currentDragging]);
 
