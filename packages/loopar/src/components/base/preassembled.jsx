@@ -1,11 +1,12 @@
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./ComponentDefaults";
 import {Droppable} from "@droppable";
 import {useDesigner} from "@context/@/designer-context";
 import { useEffect, useId } from "react";
 
 export default function Preassembled(props) {
-  const { designerMode } = useDesigner();
   const { setElements } = ComponentDefaults(props);
+  const { designerMode } = useDesigner();
+  
   const data = props.data || {};
   const id = useId();
 

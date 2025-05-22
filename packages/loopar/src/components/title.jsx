@@ -1,5 +1,5 @@
 import BaseText from "@base-text";
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@cn/lib/utils";
 

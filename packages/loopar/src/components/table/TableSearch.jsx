@@ -1,4 +1,4 @@
-import {MetaComponent} from "@meta-component";
+import { MetaComponent } from "@meta-component";
 import { FormWrapper } from "@context/form-provider";
 import { useTable } from "./TableContext"
 import { useMemo, useRef, useCallback } from "react";

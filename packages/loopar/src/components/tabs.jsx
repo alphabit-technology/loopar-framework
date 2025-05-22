@@ -1,9 +1,8 @@
-import ComponentDefaults from "./base/component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults";
 import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
-import MetaComponent from "@meta-component";
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {useCookies} from "@services/cookie";
 import { Droppable } from "@droppable";
 import { Trash2Icon } from "lucide-react";
@@ -14,19 +13,7 @@ const TabContent = ({element, parent, onDrop}) => {
     return (
       <Droppable 
         {...element}
-      />
-    )
-    return (
-      <MetaComponent
-        elements={[
-          {
-            element: "tab",
-            //...element,
-            data: element.data,
-            elements: element.elements
-          },
-        ]}
-        //parentKey={parent}
+        key={null}
       />
     )
   }

@@ -453,9 +453,8 @@ export default class CoreDocument {
       },
       __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,
       __DOCUMENT__: await this.values(),
-      //__DOCUMENT__: this.__DOCUMENT__,
       __IS_NEW__: this.__IS_NEW__,
-      __SPACING__: {test: 1},
+      __SPACING__: this.__SPACING__
     }
   }
 

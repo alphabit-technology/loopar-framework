@@ -1,6 +1,6 @@
 import BaseInput from "@base-input";
 import {FormLabel} from "./input/index.js";
-import React, { useState, useEffect, useRef, useCallback} from "react";
+import { useState, useEffect, useRef, useCallback} from "react";
 import loopar from "loopar";
 import { Select } from "./select/base-select";
 

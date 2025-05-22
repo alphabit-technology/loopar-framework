@@ -1,10 +1,20 @@
+import {createContext, useContext} from 'react';
+import {useDesigner} from '@context/@/designer-context';
 
-import fileManager from "@@file/file-manager";
-import {useDesigner} from "@context/@/designer-context";
+const ComponentDefault = createContext({
+  data: {},
+  setData: () => {},
+  setElements: () => {},
+  set: () => {},
+  getSrc: () => [],
+  getTextSize: () => {},
+  getSize: () => {},
+  getTextAlign: () => {},
+});
 
 export default function ComponentDefaults(props) {
   const data = props.data || {};
-  const {designerRef, designerMode} = useDesigner();
+  const {updateElement, updateElements, designerMode} = useDesigner();
 
   const getSrc = () => {
     if (data) {
@@ -54,13 +64,18 @@ export default function ComponentDefaults(props) {
 
   const set = (key, value) => {
     if (!designerMode) return;
+    const newData = {...data};
     if (typeof key == "object") {
-      Object.assign(data, key);
+      Object.keys(key).forEach((k) => {
+        newData[k] = key[k];
+      });
     } else {
-      data[key] = value;
+      newData[key] = value;
     }
 
-    designerRef.updateElement(data.key, data);
+    setTimeout(() => {
+      updateElement(data.key, JSON.parse(JSON.stringify(newData)))
+    }, 0);
   }
 
   const elementsDict = () => {
@@ -82,18 +97,33 @@ export default function ComponentDefaults(props) {
       });
     }
 
-    designerRef?.updateElements(props, removeDuplicates(newElements), null, callback);
+    updateElements(props, removeDuplicates(newElements), null, callback);
   }
 
-  return {
-    getSrc,
-    getTextSize,
-    getTextAlign,
-    set,
-    setElements,
-    getSize,
-    data
+  return (
+    <ComponentDefault.Provider
+      value={{
+        data,
+        setElements,
+        set,
+        getSrc,
+        getTextSize,
+        getSize,
+        getTextAlign,
+        elementsDict
+      }}
+    >
+      {props.children}
+    </ComponentDefault.Provider>
+  )
+}
+
+export function useComponentContext() {
+  const context = useContext(ComponentDefault);
+  if (context === undefined) {
+    throw new Error('useComponentDefaults must be used within a ComponentDefault');
   }
+  return context;
 }
 
 export const tagDontHaveChild = (tag) => {

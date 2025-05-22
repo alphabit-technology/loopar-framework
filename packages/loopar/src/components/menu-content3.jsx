@@ -3,7 +3,7 @@ import MetaComponent from "@meta-component";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import {useEffect} from "react";
-import ComponentDefaults from "./base/component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults";
 import { Link } from "@link"
 import { useState } from "react";
 

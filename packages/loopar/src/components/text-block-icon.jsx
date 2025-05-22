@@ -1,19 +1,17 @@
 import Icon from "@icon";
 import {Paragraph} from "@paragraph";
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults.jsx";
 import { useEffect } from "react";
 import {cn} from "@cn/lib/utils";
 
 export default function TextBlockIcon(props) {
   const {data, set} = ComponentDefaults(props);
-
   const orientation = data.orientation || "Horizontal";
 
   useEffect(() => {
     !data.title && set("title", "Text Block");
     !data.text && set("text", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet metus nec odio lacinia tincidunt. Fusce auctor, magna eget tincidunt fermentum, nunc nisl tincidunt justo, nec tincidunt justo justo nec justo. Nullam nec justo nec justo.");
   }, [data]);
-
 
   const iconSize = {
     sm: "w-6 h-6",

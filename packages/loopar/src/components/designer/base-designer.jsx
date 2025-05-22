@@ -1,7 +1,7 @@
 import loopar from "loopar";
 import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
 import { BaseFormContext } from "@context/form-provider";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import {Tailwind} from "@app/auto/tailwind";
@@ -12,21 +12,38 @@ import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
-import Emitter from '@services/emitter/emitter';
 import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx"
 
-export const Designer = ({data, metaComponents, designerRef, ...props}) => {
+const DesignerButton = () => {
+  const { designerMode, designerModeType } = useDesigner();
+  const { sidebarOpen } = useDocument();
+
+  if (!designerMode || designerModeType == "preview") {
+    return <><BrushIcon className="mr-2" /> Design</>
+  }
+
+  if (designerModeType == "editor") {
+    if (sidebarOpen) {
+      return <><BrushIcon className="mr-2" /> Design</>
+    } else {
+      return <><EyeIcon className="mr-2" /> Preview</>
+    }
+  }
+
+  if (designerModeType == "designer") {
+    return <><EyeIcon className="mr-2" /> Preview</>
+  }
+}
+
+export const BaseDesigner = (props) => {
+  const {data, metaComponents} = props;
   const [activeId] = useState(null);
   const {designerMode} = useDesigner();
-  const { name, sidebarOpen, handleSetSidebarOpen} = useDocument();
+  const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   
-  const [editElement, setEditElement] = useCookies(name + "editElement");
+  const [updatingElementName, setUpdatingElementName] = useCookies(name + "updatingElementName");
   const [designerModeType = "designer", setDesignerModeType] = useCookies(name + "designer-mode-type");
-
-  const elements = useMemo(() => {
-    return JSON.parse(metaComponents || "[]");
-  }, [metaComponents]);
-  //const elements = JSON.parse(metaComponents || "[]");
+  
   const selfKey = data.key;
 
   const handleChangeMode = (opt=null) => {
@@ -41,41 +58,42 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
     setDesignerModeType(newMode);
     handleSetSidebarOpen(true);
   }
-
+  
   useEffect(() => {
     if (designerMode) return;
 
-    if (!editElement || editElement == "null") {
+    if (!updatingElementName || updatingElementName == "null") {
       handleSetMode("designer");
-    } else if (!findElement("key", editElement)) {
-      setEditElement(null);
+    }else if (!findElement("key", updatingElementName)) {
+      setUpdatingElementName(null);
     }
   }, []);
 
-  const getElements = useMemo(() => {
-    return () => {
-      return JSON.parse(metaComponents || "[]");
-    }
-  }, [metaComponents]);
+  const findElement = useCallback((field, value, els = metaComponents) => {
+    if (!value || value == "null" || value.length == 0 || !els) return null;
 
-  const findElement = useCallback((field, value, elements = getElements()) => {
-    if (!value || value === "null" || value.length == 0) return null;
-    for (let i = 0; i < elements.length; i++) {
-      if (elements[i]?.data?.[field] === value) {
-        return elements[i];
-      } else if (Array.isArray(elements[i]?.elements)) {
-        const found = findElement(field, value, elements[i].elements);
+    for (let i = 0; i < els.length; i++) {
+      if (els[i]?.data?.[field] == value) {
+        return els[i];
+      } else if (Array.isArray(els[i]?.elements)) {
+        const found = findElement(field, value, els[i].elements || []);
         if (found) {
           return found;
         }
       }
     }
+    
     return null;
-  }, [getElements]);
+  }, [metaComponents]);
 
-  
+  const [updatingElement, setUpdatingElement] = useState(findElement("key", updatingElementName));
+
+  useEffect(() => {
+    setUpdatingElement(findElement("key", updatingElementName, metaComponents));
+  }, [updatingElementName]);
+
   const updateElements = (target, elements, current = null) => {
-    const currentElements = getElements();
+    const currentElements = metaComponents;
     const targetKey = target.data.key;
     const currentKey = current ? current.data.key : null;
     const lastParentKey = current ? current.parentKey : null;
@@ -113,7 +131,7 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
   }
 
   const updateElement = (key, data, merge = true, reflect=true) => {
-    const selfElements = getElements();
+    const selfElements = [...metaComponents];
 
     if (data.name) {
       const exist = findElement("name", data.name, selfElements);
@@ -156,16 +174,19 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
       });
     };
 
-    props.onChange({target: {value: JSON.stringify(updateE(selfElements))}});
-    //reflect && Emitter.emit("currentElementEdit", data.key);
-  }
+    setMeta(JSON.stringify(updateE(selfElements)));
 
-   const getElement = (key) => {
-    return findElement("key", key);
+    if (reflect && key === updatingElementName) {
+      setUpdatingElement({
+        ...updatingElement,
+        data: data,
+        __version__: (updatingElement.__version__ || 0) + 1,
+      });
+    }
   }
 
   const deleteElement = (element) => {
-    const removeElement = (elements = getElements()) => {
+    const removeElement = (elements = metaComponents) => {
       return elements.filter((el) => {
         if (el.data.key === element) {
           return false;
@@ -181,7 +202,7 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
   }
 
   const handleEditElement = (element) => {
-    setEditElement(element);
+    setUpdatingElementName(element);
     handleChangeMode("editor");
   }
 
@@ -257,8 +278,7 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
     });
   }
 
-  
-  const getDesignerButton = () => {
+  /*const getDesignerButton = () => {
     if (designerModeType == "preview") {
       return <><BrushIcon className="mr-2" /> Design</>
     }
@@ -274,13 +294,9 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
     if (designerModeType == "designer") {
       return <><EyeIcon className="mr-2" /> Preview</>
     }
-  }
+  }*/
 
-  //const getIsDesigner = () => {return typeof isDesigner != "undefined" ? !isDesigner : true};
-
-  const isDesigner = useMemo(() => {
-    return typeof designerMode != "undefined" ? !designerMode : true;
-  }, [designerMode]);
+  const isDesigner = typeof designerMode != "undefined" ? !designerMode : true;
 
   return (
     <DesignerContext.Provider
@@ -291,10 +307,10 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
           updateElements,
           updateElement,
         },
+        updateElements,
         updateElement,
-        getElement,
         designing: (designerModeType === "designer" || designerModeType === "editor"),
-        currentEditElement: editElement,
+        updatingElement,
         handleEditElement,
         handleDeleteElement,
         activeId,
@@ -317,7 +333,7 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
                   !designerMode && handleChangeMode();
                 }}
               >
-                {getDesignerButton()}
+                <DesignerButton/>
               </Button>
               <Button variant="secondary" onClick={handleSetMeta}>
                 <BracesIcon className="mr-2" />
@@ -347,17 +363,13 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
                 className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
                 <Tailwind/>
-                {isDesigner ? (
-                  <DragAndDropProvider 
-                    metaComponents={elements} 
-                    data={data}
-                    onDrop={setMeta}
-                  >
-                    {sidebarOpen && <Sidebar/>}
-                  </DragAndDropProvider>
-                ) : (
-                  <div className="p-6 text-center bg-card/50">Designer Area....</div>
-                )}
+                <DragAndDropProvider 
+                  metaComponents={metaComponents} 
+                  data={data}
+                  onDrop={setMeta}
+                >
+                  {sidebarOpen && <Sidebar/>}
+                </DragAndDropProvider>
               </div>
             </Tab>
             <Tab
@@ -366,12 +378,52 @@ export const Designer = ({data, metaComponents, designerRef, ...props}) => {
               key={`${selfKey}-meta_tab`}
             >
               <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded border p-2 font-mono text-sm font-bold text-green-600">
-                {JSON.stringify(elements, null, 2)}
+                {JSON.stringify(metaComponents, null, 2)}
               </div>
             </Tab>
           </Tabs>
         </div>
       </BaseFormContext.Provider>
     </DesignerContext.Provider>
+  )
+}
+
+export const Designer = (props) => {
+  const {designerMode} = useDesigner();
+  if (!designerMode) {
+    return <BaseDesigner {...props} />
+  }
+
+  const {data} = props;
+  
+  return (
+    <div className="">
+      <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
+        <div>
+          <h2 className="text-3xl">{data.label}</h2>
+        </div>
+        <div className="space-x-1 pointer-events-none">
+          <Button variant="secondary">
+            <BrushIcon className="mr-2" />
+            Design
+          </Button>
+          <Button variant="secondary">
+            <BracesIcon className="mr-2" />
+            META
+          </Button>
+          <Button
+            variant="secondary"
+          >
+            <SparkleIcon className="mr-2" />
+            Design IA
+          </Button>
+        </div>
+      </div>
+      <div className="w-full p-2">
+        <div className="flex items-center bg-slate-700/50 justify-center h-[60px]">
+          <h1 className="text-center">Design area</h1>
+        </div>
+      </div>
+    </div>
   )
 }

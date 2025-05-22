@@ -1,5 +1,4 @@
 import { Modal } from "@dialog";
-import React from "react";
 import { Entity } from "@loopar/loader";
 
 export function Browser(props) {

@@ -1,5 +1,5 @@
 import * as LucideIcons from "lucide-react";
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults";
 import {loopar} from "loopar";
 import {cn} from "@cn/lib/utils";
 
@@ -11,7 +11,7 @@ export default function MetaIcon(props) {
   const rounded = data?.rounded ? "rounded-full" : "rounded-md";
   const size = getSize();
   
-  const className = cn(" p-2", size, newProps.className, rounded);
+  const className = cn(" p-0", size, newProps.className, rounded);
 
   return (
     <div {...newProps} className={className} >
@@ -21,7 +21,7 @@ export default function MetaIcon(props) {
 }
 
 MetaIcon.metaFields =()=>{
-  return {
+  return [{
     group: "form",
     elements: {
       icon: {
@@ -31,5 +31,5 @@ MetaIcon.metaFields =()=>{
         element: SWITCH,
       },
     }
-  };
+  }];
 }

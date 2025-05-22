@@ -1,5 +1,5 @@
 import { useDragAndDrop } from "./DragAndDropContext";
-import React, { memo } from 'react';
+import { memo } from 'react';
 
 export const DragGhost = memo(function DragGhost() {
   const { draggingEvent, movement, currentDragging, dragging } = useDragAndDrop();

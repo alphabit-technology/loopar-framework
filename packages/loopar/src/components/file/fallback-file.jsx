@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {ImageIcon} from "lucide-react";
 import LazyLoad from 'react-lazy-load';
 import {cn} from "@cn/lib/utils";

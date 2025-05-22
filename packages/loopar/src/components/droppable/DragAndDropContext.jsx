@@ -20,7 +20,8 @@ export const DragAndDropContext = createContext({
   setInitializedDragging: () => { }
 });
 
-export const DragAndDropProvider = ({data, metaComponents, ...props }) => {
+export const DragAndDropProvider = (props) => {
+  const { metaComponents, data } = props;
   const [activeId] = useState(null);
   const [dropZone, setDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
@@ -128,33 +129,56 @@ export const DragAndDropProvider = ({data, metaComponents, ...props }) => {
       }
     }
 
+    const protectTouchEvent = (e) => {
+      if (!draggingEvent) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    window.addEventListener('touchstart', protectTouchEvent, { passive: false });
     window.addEventListener('pointermove', handleDragOver, { passive: false });
     window.addEventListener('pointerup', handleDrop, { passive: false });
 
     return () => {
+      window.removeEventListener('touchstart', protectTouchEvent);
       window.removeEventListener('pointermove', handleDragOver);
       window.removeEventListener('pointerup', handleDrop);
     }
-  }, [dropZone, currentDragging, movement]);
+  }, [currentDragging]);
 
   useEffect(() => {
     document.body.style.userSelect = currentDragging ? 'none' : 'auto';
 
-    const protectTouchEvent = (e) => {
+    /*const protectTouchEvent = (e) => {
       if (!currentDragging) return;
       e.preventDefault();
       e.stopPropagation();
     };
 
     if (currentDragging) {
-      document.body.addEventListener('touchstart', protectTouchEvent, { passive: false });
-    }
+      containerRef.current.addEventListener('touchstart', protectTouchEvent, { passive: false });
+    }*/
 
     return () => {
       document.body.style.userSelect = 'auto';
-      document.body.removeEventListener('touchstart', protectTouchEvent);
+      //window.removeEventListener('touchover', touchmoveHandler);
+      //containerRef.current.removeEventListener('touchstart', protectTouchEvent);
     };
   }, [currentDragging]);
+
+  /*useEffect(() => {
+    const protectTouchEvent = (e) => {
+      if (!draggingEvent) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    containerRef.current.addEventListener('touchstart', protectTouchEvent, { passive: false });
+
+    return () => {
+      containerRef.current.removeEventListener('touchstart', protectTouchEvent);
+    }
+  }, [containerRef]);*/
 
 
   return (

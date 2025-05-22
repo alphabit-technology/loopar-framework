@@ -1,4 +1,3 @@
-import React from 'react';
 import BaseInput from "@base-input";
 import fileManager from "@@file/file-manager";
 import { FileDrop } from "@@file/file-drop";

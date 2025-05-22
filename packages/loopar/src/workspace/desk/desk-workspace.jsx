@@ -2,7 +2,6 @@ import BaseWorkspace from "@workspace/base/base-workspace";
 import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
-import React from "react";
 
 export default function DeskWorkspace(props){
   const {openNav, __DOCUMENTS__} = useWorkspace();
@@ -18,11 +17,13 @@ export default function DeskWorkspace(props){
             items={menuData}
           />
          <div
-          className={`flex flex-col flex-1 w-full overflow-auto p-4 duration-100 lg:ml-4 ease-in ${
+          className={`flex flex-col flex-1 w-full overflow-auto duration-100 ease-in ${
             openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"
           }`}
         >
+          <div className="p-4">
             {__DOCUMENTS__}
+          </div>
           </div>
         </section>
       </div>

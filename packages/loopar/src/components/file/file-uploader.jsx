@@ -1,7 +1,7 @@
 import { Modal } from "@dialog";
 import loopar from "loopar";
 import FileInput from "@file-input";
-import { FormWrapper } from "@context/form";
+import { FormWrapper } from "@context/form-provider";
 import { Button } from "@cn/components/ui/button";
 import { UploadIcon } from "lucide-react";
 import { useState } from "react";
@@ -34,7 +34,6 @@ export default function FileUploader(props) {
   const FileInputFn = () => (
     <FormWrapper>
       <FileInput
-        dontHaveForm={true}
         data={{
           name: "file_upload_input",
           label: "Upload",

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect} from 'react';
+import { useState, useRef, useEffect} from 'react';
 import { FileBrowser } from "./file-browser";
 import FilePreview from "./file-preview";
 import FileContainer from "./file-container";

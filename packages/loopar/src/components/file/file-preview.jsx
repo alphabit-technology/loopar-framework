@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import {useState} from "react";
 import fileManager, {getExtention} from "./file-manager";
 import {cn} from "@cn/lib/utils";
 import { fileIcons } from "./defaults";

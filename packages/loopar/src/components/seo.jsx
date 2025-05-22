@@ -1,4 +1,3 @@
-import React from "react";
 import { useDesigner } from "@context/@/designer-context";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 

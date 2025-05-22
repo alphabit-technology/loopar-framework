@@ -1,4 +1,3 @@
-import React from "react";
 import { useTable } from "./TableContext";
 import { Pagination } from "@pagination";
 import loopar from "loopar";

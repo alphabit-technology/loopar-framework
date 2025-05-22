@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./ComponentDefaults";
 
 export default function BaseTextBlock(props) {
   const {set} = ComponentDefaults(props);

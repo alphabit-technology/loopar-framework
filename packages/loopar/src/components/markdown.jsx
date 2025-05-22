@@ -1,6 +1,6 @@
-import ComponentDefaults from "@component-defaults";
+import { ComponentDefaults } from "./base/ComponentDefaults";
 import { useDesigner } from "@context/@/designer-context";
-import React, { useCallback, useState, useMemo} from "react";
+import { useCallback, useState, useMemo} from "react";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import MarkdownEditor from "@uiw/react-markdown-editor";
 import { EditorView } from '@codemirror/view'

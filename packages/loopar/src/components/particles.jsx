@@ -1,5 +1,5 @@
 import { Droppable } from "@droppable";
-import React, {useMemo} from "react";
+import {useMemo} from "react";
 import {ParticlesMaster} from "./particles/particles.jsx";
 import { structure, singleStructure } from "./particles/particles-structure.js";
 import {utils} from "@global";

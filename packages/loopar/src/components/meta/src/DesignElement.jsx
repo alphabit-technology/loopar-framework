@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo, use } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, use } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";

@@ -1,4 +1,3 @@
-import React from 'react';
 import { ErrorBoundary as Boundary} from "react-error-boundary";
 
 const formatComponentStack = (componentStack) => {

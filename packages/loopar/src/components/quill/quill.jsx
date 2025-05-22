@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import Editor from './editor';
 import 'quill/dist/quill.snow.css';
 import './quill.css';

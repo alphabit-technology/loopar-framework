@@ -1,5 +1,4 @@
 import { BrushIcon, EyeIcon, XIcon, SaveIcon } from "lucide-react";
-import React, {useEffect} from "react";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import {DesignerForm} from "./designer-form";
@@ -10,7 +9,7 @@ import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {
   const { handleSetSidebarOpen, sidebarOpen, docRef } = useDocument();
-  const { currentEditElement, handleChangeMode, designerModeType } = useDesigner();
+  const { handleChangeMode, designerModeType } = useDesigner();
   
   return (
     <div 
@@ -58,11 +57,8 @@ export const Sidebar = () => {
           style={{height: "calc(100% - 50px)", overflowY: "auto"}}
         >
           {
-            (currentEditElement && currentEditElement != "null" && designerModeType == "editor") ? (
-              <ElementEditor 
-                key={currentEditElement + "_editor"} 
-                element={currentEditElement} 
-              />
+            (designerModeType == "editor") ? (
+              <ElementEditor/>
             ) : <DesignerForm/>
           }
         </ScrollArea>
