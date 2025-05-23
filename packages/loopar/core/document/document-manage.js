@@ -29,7 +29,7 @@ class DocumentManage {
   async newDocument(document, data = {}, name, parse = false) {
     const ENTITY = await this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
-    const spacing = loopar.__installed__ ?
+    const spacing = loopar.__installed__ && ENTITY.__REF__.is_child != 1 ?
       await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
 
     const instance = await new DOCUMENT({
@@ -37,7 +37,7 @@ class DocumentManage {
       __DOCUMENT_NAME__: name,
       __DOCUMENT__: data || {},
       __IS_NEW__: !name,
-      __SPACING__: spacing,
+      __SPACING__: spacing || {spacing: 2, col_padding: 2, col_margin: 0},
       __PARSED__: parse
     });
 

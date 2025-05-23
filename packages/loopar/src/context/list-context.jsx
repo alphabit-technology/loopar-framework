@@ -2,8 +2,10 @@ import BaseDocument from "@context/base/base-document";
 import DeskGUI from "@context/base/desk-gui";
 import { ListGrid } from "@@table/ListGrid";
 import {useCookies} from "@services/cookie";
+import {GridView} from "@@table/GridView";
+import { TableProvider } from "@@table/TableContext";
 
-function ListContextMildware({content, meta, docRef, hasSearchForm = true, renderGrid, onlyGrid}){
+function ListContextMildware({content, meta, docRef, hasSearchForm = true, onlyGrid}){
   const {__ENTITY__} = meta;
   const [viewType, setViewType] = useCookies(__ENTITY__.name + "_viewType") || __ENTITY__.default_list_view || "List";
 
@@ -22,15 +24,21 @@ function ListContextMildware({content, meta, docRef, hasSearchForm = true, rende
       viewType={getViewType()}
     >
       {content}
-      {(!content || renderGrid) && (
-        <ListGrid
-          hasSearchForm={hasSearchForm}
-          meta={meta}
-          viewType={getViewType()}
-          viewTypeToggle={viewTypeToggle}
-          docRef={docRef}
-        />
-      )}
+      {!content ? (
+        <TableProvider initialMeta={meta} docRef={docRef} rows={meta.rows}>
+          {viewType === 'List' ? (
+            <ListGrid
+              hasSearchForm={hasSearchForm}
+              docRef={docRef}
+            />
+          ) : (
+            <GridView
+              hasSearchForm={hasSearchForm}
+              docRef={docRef}
+            />
+          )}
+        </TableProvider>
+      ) : null}
     </DeskGUI>
   )
 }
@@ -40,6 +48,9 @@ export default class ListContext extends BaseDocument {
   hasSidebar = true;
   context = 'index';
   renderStructure = false;
+  hasSearchForm = true;
+  hasSelectAll = true;
+  hasSelectRow = true;
 
   render(content) {
     return super.render(

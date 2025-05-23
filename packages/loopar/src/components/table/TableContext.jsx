@@ -2,7 +2,6 @@ import {
   createContext,
   useState,
   useEffect,
-  useCallback,
   useContext,
   useMemo,
   useId,
@@ -30,11 +29,14 @@ export const TableProvider = ({
 }) => {
   const [meta, setMeta] = useState(initialMeta || {});
   const [selectedRows, setSelectedRows] = useState([]);
-  const [searchData, setSearchData] = useState(
-    initialMeta && initialMeta.q && typeof initialMeta.q === "object"
-      ? initialMeta.q
-      : {}
-  );
+  const [pagination, setPagination] = useState(initialMeta.pagination || {});
+  const lastSearch = useRef(null);
+  
+  const setPage = (page) => {
+    pagination.page = page;
+    setPagination(pagination);
+    search(lastSearch.current, true);
+  };
 
   const [rows, setRows] = useState(props.rows || []);
   const tableId = useId();
@@ -47,16 +49,6 @@ export const TableProvider = ({
   useEffect(() => {
     setMeta(initialMeta || {});
   }, [initialMeta]);
-
-  /*const baseColumns = useCallback(() => {
-    if (!meta) return [];
-    
-    const parseElements = (elements = []) => elements
-      .map(el => [{ ...el }, ...parseElements(el.elements || [])]).flat()
-
-    const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
-    return parseElements(STRUCTURE);
-  }, [meta]);*/
 
   const baseColumns = useMemo(() => {
     if (!meta) return [];
@@ -89,22 +81,27 @@ export const TableProvider = ({
     setSelectedRows(checked ? allNames : []);
   };
 
-  const search = useCallback(async () => {
-    await loopar.method(
+  const search = (searchData, force=false) => {
+    if (JSON.stringify(searchData) === JSON.stringify(lastSearch.current) && !force) return;
+    lastSearch.current = searchData;
+
+    loopar.method(
       meta.__ENTITY__.name,
       docRef.action || meta.action,
       {},
       {
         body: {
           q: searchData,
-          page: (meta.pagination && meta.pagination.page) || 1,
+          page: (pagination && pagination.page) || 1,
         },
         success: (res) => {
+          setMeta(res);
+          setPagination(res.pagination || {});
           setRows(res.rows || []);
         },
       }
     );
-  }, [docRef.action, meta.__ENTITY__, meta.action, meta.pagination, searchData]);
+  };
 
   const rowsCount = useMemo(() => rows.length, [rows]);
   const selectedCount = useMemo(() => selectedRows.length, [selectedRows]);
@@ -118,8 +115,23 @@ export const TableProvider = ({
     return false;
   }, [rowsCount, selectedCount]);
 
-  const deleteRow = (row) => {
+  const deleteOnServer = async (row) => {
+    loopar.dialog({
+      type: "confirm",
+      title: "Confirm",
+      message: `Are you sure you want to delete ${row.name}?`,
+      ok: async () => {
+        await loopar.method(meta.__ENTITY__.name, "delete", {
+          name: row.name,
+        });
+      },
+    });
+  }
+
+  const deleteRow = (row, onServer=false) => {
     if (!row) return;
+    if (onServer) return deleteOnServer(row);
+
     const rowName = row.name;
     const rowIndex = selectedRows.indexOf(rowName);
     if (rowIndex > -1) {
@@ -170,8 +182,6 @@ export const TableProvider = ({
     addRow,
     selectedRows,
     setSelectedRows,
-    searchData,
-    setSearchData,
     docRef,
     rowsCount,
     selectedCount,
@@ -179,6 +189,8 @@ export const TableProvider = ({
     selectorCol,
     tableId,
     rowRefs,
+    pagination,
+    setPage,
     baseColumns: () => [
       ...baseColumns,
       {

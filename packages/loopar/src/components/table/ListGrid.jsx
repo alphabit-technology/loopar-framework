@@ -1,6 +1,6 @@
 import loopar from "loopar";
 import {Link} from "@link";
-import { TableProvider, useTable } from "./TableContext"
+import { useTable } from "./TableContext"
 import BaseTable from "./BaseTable"
 import {useCallback, useMemo} from "react";
 import {Trash2Icon} from "lucide-react";
@@ -14,9 +14,9 @@ import { Button } from "@cn/components/ui/button";
 import { Badge } from "@cn/components/ui/badge";
 import { TableSearch } from "./TableSearch";
 
-function ListGridMiddleware(props) {
+export function ListGrid(props) {
   const { docRef } = props;
-  const {baseColumns, meta, setRows, selectorCol} = useTable();
+  const {baseColumns, meta, selectorCol, deleteRow, search} = useTable();
 
   const getDocumentTitle = (row) => {
     const titleFields = meta.__ENTITY__.title_fields?.split(",");
@@ -109,7 +109,7 @@ function ListGridMiddleware(props) {
               variant="outline"
               onClick={(e) => {
                 e.preventDefault();
-                docRef.deleteRow(row);
+                deleteRow(row, true);
               }}
             >
               <Trash2Icon className="text-red-500" />
@@ -120,23 +120,6 @@ function ListGridMiddleware(props) {
     ];
   }, [mappedColumns]);
 
-  const search = (values) => {
-    loopar.method(
-      meta.__ENTITY__.name,
-      docRef.action || meta.action,
-      {},
-      {
-        body: {
-          q: values,
-          page: 1// this.pagination.page || 1,
-        },
-        success: (res) => {
-          setRows(res.rows);
-        }
-      }
-    );
-  }
-  
   return (
     <>
       <TableSearch onChange={search}/>
@@ -145,18 +128,5 @@ function ListGridMiddleware(props) {
         columns={customMappedColumns} 
       />
     </>
-  )
-}
-
-export function ListGrid(props) {
-  const meta = props.meta || props.docRef;
-  const {rows} = meta;
-
-  return (
-    <TableProvider initialMeta={meta} docRef={props.docRef} rows={rows}>
-      <ListGridMiddleware
-        {...props}
-      />
-    </TableProvider>
   )
 }

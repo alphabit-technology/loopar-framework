@@ -1,12 +1,11 @@
-import React from "react";
 import {AppBarr} from "@context/base/app-barr";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Save } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
 import { useDocument } from "@context/@/document-context";
 import {cn} from "@cn/lib/utils";
 import { SaveIcon} from "lucide-react";
-
+import { SaveButton } from "./app-barr";
 
 const InnerSidebar = ({ toggleSidebar, sidebarWidth, ...props }) => {  
   return (
@@ -41,7 +40,6 @@ export default function DeskGUI(props) {
   const docRef = props.docRef;
   const { sidebarOpen, handleSetSidebarOpen, sidebarWidth, documentWidth} = useDocument();
   const {headerHeight} = useWorkspace();
-
 
   const toggleSidebar = (e) => {
     e && e.preventDefault();
@@ -81,17 +79,7 @@ export default function DeskGUI(props) {
         >
           <div>
             {docRef.getSidebarHeader && docRef.getSidebarHeader()}
-            <Button
-              variant="secondary"
-              tabIndex="0"
-              onClick={(e) => {
-                e.preventDefault();
-                docRef.save();
-              }}
-            >
-              <SaveIcon className="pr-1" />
-              Save
-            </Button>
+            <SaveButton/>
           </div>
           {docRef.getSidebar && docRef.getSidebar()}
         </InnerSidebar>

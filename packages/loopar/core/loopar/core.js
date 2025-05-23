@@ -84,6 +84,7 @@ export class Core {
       if (doc.__document_status__ == "Deleted") return acc;
       
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
+      const isChild = doc.is_child ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
       const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
 
@@ -108,6 +109,7 @@ export class Core {
         __ROOT__: doc.entityRoot,
         is_single: isSingle,
         is_builder: isBuilder,
+        is_child: isChild,
         __MODULE__: doc.__MODULE__,
         __TYPE__: doc.type,
         __FIELDS__: getEntityFields(fields)

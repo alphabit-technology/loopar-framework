@@ -5,6 +5,55 @@ import { PlusIcon, SaveIcon, ArrowBigRight, MenuIcon, GridIcon} from "lucide-rea
 import {Link} from "@link";
 import {useDocument} from "@context/@/document-context";
 
+export const SaveButton = () => {
+  const {docRef} = useDocument();
+
+  if (!docRef || !docRef.canUpdate || !docRef.save) return null;
+  return (
+    <Button
+      variant="secondary"
+      tabIndex="0"
+      onClick={(e) => {
+        e.preventDefault();
+        docRef.save();
+      }}
+    >
+      <SaveIcon className="pr-1" />
+      Save
+    </Button>
+  )
+}
+
+const FormPrimaryActions = ({meta}) => {
+  const {docRef} = useDocument();
+  const { __ENTITY__, __DOCUMENT__ } = meta;
+
+  const gotoAction = (row, entity) => {
+    if(["Entity", "Builder"].includes(entity.name)) return row.is_single ? "update" : "list";
+    if(["Page Builder", "View Builder"].includes(entity.name)) return "view";
+  }
+
+  const goTo = gotoAction(__DOCUMENT__, __ENTITY__);
+
+  if (!docRef || !docRef.canUpdate) return null;
+  return (
+    <>
+      <SaveButton />
+      {!meta.__IS_NEW__ && goTo && (
+        <Link
+          variant="secondary"
+          to={`/desk/${__DOCUMENT__.name}/${goTo}`}
+        >
+          <>
+            <ArrowBigRight className="pr-1" />
+            Go to {loopar.utils.Capitalize(__DOCUMENT__.name)}
+          </>
+        </Link>
+      )}
+    </>
+  );
+}
+
 export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props}) {
   const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
   const {docRef} = useDocument();
@@ -12,42 +61,6 @@ export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props})
 
   const title = ((meta.title || context === 'module') ? meta.module_group :
       (['list', 'view'].includes(context) || meta.action === 'create' || __ENTITY__.is_single) ? __ENTITY__.name : __DOCUMENT__.name) || __ENTITY__.name;
-
-      const gotoAction = (row, entity) => {
-    if(["Entity", "Builder"].includes(entity.name)) return row.is_single ? "update" : "list";
-    if(["Page Builder", "View Builder"].includes(entity.name)) return "view";
-  }
-
-  const goTo = gotoAction(__DOCUMENT__, __ENTITY__);
-
-  const formPrimaryActions = () => {
-    return docRef.canUpdate ? (
-      <>
-        <Button
-          variant="secondary"
-          tabIndex="0"
-          onClick={(e) => {
-            e.preventDefault();
-            docRef.save();
-          }}
-        >
-          <SaveIcon className="pr-1" />
-          Save
-        </Button>
-        {!meta.__IS_NEW__ && goTo && (
-          <Link
-            variant="secondary"
-            to={`/desk/${__DOCUMENT__.name}/${goTo}`}
-          >
-            <>
-              <ArrowBigRight className="pr-1" />
-              Go to {loopar.utils.Capitalize(__DOCUMENT__.name)}
-            </>
-          </Link>
-        )}
-      </>
-    ) : [];
-  }
 
   const listPrimaryActions = () => {
     return (
@@ -95,7 +108,7 @@ export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props})
         </div>
         <div className="flex flex-row space-x-1 overflow-auto" style={{height: "fit-content"}}>
           {Object.values(customActions)}
-          {formPrimaryActions()}
+          <FormPrimaryActions meta={meta}/>
           {listPrimaryActions()}
         </div>
       </div>

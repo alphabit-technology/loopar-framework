@@ -421,7 +421,7 @@ export const Designer = (props) => {
       </div>
       <div className="w-full p-2">
         <div className="flex items-center bg-slate-700/50 justify-center h-[60px]">
-          <h1 className="text-center">Design area</h1>
+          <h1 className="text-center text-2xl font-bold">Design area</h1>
         </div>
       </div>
     </div>

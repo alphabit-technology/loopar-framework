@@ -1,8 +1,11 @@
 import { Button } from "@cn/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useId } from "react";
+import { useTable } from "./TableContext"
 
-export function Pagination({ setPage, pagination }) {
+export function Pagination() {
+  const { pagination, setPage } = useTable();
+
   const getPages = () => {
     const { page, totalPages } = pagination;
     const maxPagesToShow = 5;
