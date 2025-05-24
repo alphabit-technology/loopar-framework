@@ -124,12 +124,6 @@ export function ElementEditor() {
   
   const formRef = useRef(null);
 
-  useEffect(() => {
-    if(data.name == "row11_el498777574602"){
-      console.log(["updateElement", __FORM_FIELDS__]);
-    }
-  }, [data]);
-
   return (
     <DesignerContext.Provider
       value={{}}

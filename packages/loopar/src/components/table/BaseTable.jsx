@@ -3,10 +3,10 @@ import { Pagination } from "./pagination.jsx";
 
 import {SimpleTable} from "./SimpleTable";
 function BaseTable(props) {
-  const rows = props.rows || useTable().rows || [];
+  const {rows} = useTable();
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <div className="border">
         <SimpleTable
           rows={rows}
@@ -15,11 +15,11 @@ function BaseTable(props) {
           rowTemplate={props.rowTemplate}
         />
       </div>
-      <div className="mt-3">
-        <Pagination />
+      <div className="">
+        {props.hasPagination && <Pagination />}
         {props.footer}
       </div>
-    </>
+    </div>
   );
 }
 

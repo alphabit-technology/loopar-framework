@@ -31,7 +31,7 @@ export function SimpleTable(props) {
         const RowTemplate = props.rowTemplate
         return (
           <RowTemplate
-            key={`${tableId}-${index}`}
+            //key={`${tableId}-${row.name}-${index}`}
             row={row}
             index={index}
             columns={availableColumns}
@@ -39,7 +39,7 @@ export function SimpleTable(props) {
         )
       } 
       return (
-        <TableRow key={`${tableId}-${index}`} className="p-0 m-0">
+        <TableRow key={`${tableId}-${row.name}-${index}`} className="p-0 m-0">
           {
             availableColumns.map((col) => {
               const cellProps = col.cellProps || {};

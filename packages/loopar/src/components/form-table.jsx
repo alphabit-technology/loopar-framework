@@ -5,7 +5,7 @@ import _  from "lodash";
 
 import { useFieldArray } from 'react-hook-form';
 import { useFormContext } from "@context/form-provider";
-import {useRef, useMemo, useCallback, useEffect, memo} from "react";
+import {useRef, useMemo, useCallback, useEffect, memo, useState } from "react";
 
 import { FormWrapper } from "@context/form-provider";
 import { TableProvider, useTable } from "./table/TableContext"
@@ -46,7 +46,12 @@ const SortableRow = memo(function SortableRow({ index, row, columns }) {
   };
 
   return (
-    <TableRow ref={setNodeRef} style={style} className="p-0 m-0">
+    <TableRow 
+      ref={setNodeRef} 
+      style={style} 
+      className="p-0 m-0"
+      key={row.id}
+    >
       {
         columns.map((col) => {
           const cellProps = col.cellProps || {};
@@ -92,22 +97,33 @@ const MemoizedTableInput = memo(function MemoizedTableInput({ component, cellNam
 });
 
 const FormTable = (props) => {
-  const { selectedRows, bulkRemove, baseColumns, selectorCol } = useTable();
-  const { control, register } = useFormContext();
+  const { selectedRows, bulkRemove, baseColumns, selectorCol, rows } = useTable();
+  const { register, move, remove, append } = props;
 
-  const { fields, move, remove, append } = useFieldArray({
-    control,
-    name: 'rows'
-  });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { delay: 100, tolerance: 5 } })
+  );
+
+  const onDragEnd = useCallback((event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = rows.findIndex(f => f.id === active.id);
+      const newIndex = rows.findIndex(f => f.id === over.id);
+      move(oldIndex, newIndex);
+    }
+  }, [rows, move]);
 
   const handleAppend = useCallback(() => {
     append({ id: Date.now(), name: Date.now() });
-  }, [append]);
+  }, [append, rows]);
 
   const handleRemove = useCallback((index) => {
     remove(index);
-  }, [remove]);
-  
+  }, [remove, rows]);
+
   const mappedColumns = useMemo(() => {
     const baseCols = baseColumns()
       .filter(col => fieldIsWritable(col) && loopar.utils.trueValue(col.data.in_list_view))
@@ -180,36 +196,20 @@ const FormTable = (props) => {
     ];
   }, [baseColumns, selectorCol, register, handleRemove]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 5 } }),
-    useSensor(MouseSensor, { activationConstraint: { delay: 100, tolerance: 5 } })
-  );
-
-  const onDragEnd = useCallback((event) => {
-    const { active, over } = event;
-
-    if (active.id !== over.id) {
-      const oldIndex = fields.findIndex(f => f.id === active.id);
-      const newIndex = fields.findIndex(f => f.id === over.id);
-      move(oldIndex, newIndex);
-    }
-  }, [fields, move]);
-
   return (
-    <div className="feed">
+    <div className="feed py-2">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={onDragEnd}
       >
         <SortableContext
-          items={fields.map(f => f.id)}
+          items={rows.map(f => f.id)}
           strategy={verticalListSortingStrategy}
         >
           <BaseTable
-            {...props}
-            rows={fields}
+            //{...props}
+            //rows={fields}
             viewType={"List"}
             hasPagination={false}
             hasHeaderOptions={true}
@@ -239,26 +239,58 @@ const FormTable = (props) => {
         </Button>
       </div>
     </div>
+  )
+}
+
+const FormTableControl = ({meta, docRef}) => {
+  const { control, register } = useFormContext();
+  const { fields, move, remove, append } = useFieldArray({
+    control,
+    name: 'rows'
+  });
+
+  return (
+    <TableProvider
+      initialMeta={meta}
+      docRef={docRef}
+      rows={fields}
+    >
+      <FormTable
+        register={register} 
+        move={move} 
+        remove={remove} 
+        append={append}
+      />
+    </TableProvider>
   );
 };
 
-const FormTableMiddleware = memo(function FormTableMiddleware({ rows, onChange }) {
+const FormTableMiddleware = memo(function FormTableMiddleware(props) {
+  const { rows, onChange, meta, docRef } = props;
+  const [changes, setChanges] = useState(false);
   const debounceTimer = useRef(null);
   const prevRows = useRef(rows);
 
   const saveData = useCallback((newRows) => {
+    if (!newRows) return;
+    newRows.rows = newRows.rows.filter(row => row.id);
+
     if (!_.isEqual(newRows.rows, prevRows.current)) {
       prevRows.current = newRows.rows;
       clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => onChange(newRows.rows), 300);
     }
-  }, [onChange]);
+  }, [onChange, rows, prevRows]);
 
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
+  useEffect(() => {
+    setChanges(changes+1)
+  }, [prevRows.current.length]);
+
   return (
-    <FormWrapper __DOCUMENT__={{ rows }} onChange={saveData}>
-      <FormTable rows={rows} />
+    <FormWrapper __DOCUMENT__={{ rows }} onChange={saveData} key={`form-wrapper-${changes}`}>
+      <FormTableControl meta={meta} docRef={docRef}/>
     </FormWrapper>
   );
 });
@@ -269,22 +301,22 @@ export default function FormTableInput(props) {
   const docRef = props.docRef;
 
   return (
-    <TableProvider initialMeta={meta} docRef={docRef}>
-      {renderInput(field => {
-        const rows = field.value || [];
+    renderInput(field => {
+      const rows = field.value || [];
 
-        const handleChange = useCallback((newRows) => {
-          field.onChange({ target: { value: newRows } });
-        }, [field]);
+      const handleChange = useCallback((newRows) => {
+        field.onChange({ target: { value: newRows } });
+      }, [field]);
 
-        return (
-          <FormTableMiddleware
-            rows={rows}
-            onChange={handleChange}
-          />
-        );
-      })}
-    </TableProvider>
+      return (
+        <FormTableMiddleware
+          rows={rows}
+          onChange={handleChange}
+          meta={meta}
+          docRef={docRef}
+        />
+      );
+    })
   );
 }
  

@@ -29,7 +29,7 @@ export const TableProvider = ({
 }) => {
   const [meta, setMeta] = useState(initialMeta || {});
   const [selectedRows, setSelectedRows] = useState([]);
-  const [pagination, setPagination] = useState(initialMeta.pagination || {});
+  const [pagination, setPagination] = useState(initialMeta?.pagination || {});
   const lastSearch = useRef(null);
   
   const setPage = (page) => {
