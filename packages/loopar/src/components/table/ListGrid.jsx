@@ -4,6 +4,7 @@ import { useTable } from "./TableContext"
 import BaseTable from "./BaseTable"
 import {useCallback, useMemo} from "react";
 import {Trash2Icon} from "lucide-react";
+import {BaseIcon} from "@icon-input";
 
 import {
   Avatar,
@@ -87,7 +88,20 @@ export function ListGrid(props) {
           );
         }
       },
-      ...baseCols,
+      ...baseCols.map((col) => {
+        if(col.element === ICON_INPUT){
+          return {
+            ...col,
+            render: (row) => {
+              return (
+                <BaseIcon className="w-7 h-7" icon={row[col.data.name]} />
+              )
+            }
+          }
+        }
+
+        return col
+      }),
       {
         data: {
           name: "actions",
