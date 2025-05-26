@@ -199,27 +199,26 @@ export default class BaseForm extends BaseDocument {
     if(!this.Form)  return this.meta.__DOCUMENT__;
     
     const fields = this.__FIELDS__;
+    let __FILES__ = [];
+
     return Object.entries(this.Form.watch()).reduce((obj, [name, value]) => {
       const field = fields.find(f => f.data?.name === name);
 
       if (!field) return obj;
-
       if(toSave) {
-        obj["__FILES__"] = [];
         if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
           const files = Array.isArray(value) ? value : [];
           const metaFiles = [];
          
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
-
             if (file.rawFile && file.rawFile instanceof File) {
               metaFiles.push({
                 name: file.rawFile.name,
                 size: file.rawFile.size,
                 type: file.rawFile.type,
               });
-              obj["__FILES__"].push(file.rawFile);
+              __FILES__.push(file.rawFile);
             }else{
               metaFiles.push({
                 name: file.name,
@@ -236,7 +235,7 @@ export default class BaseForm extends BaseDocument {
         if(field.def.element === DESIGNER && toSave) {
           const {files, designer} = this.buildDesignerToSave(JSON.parse(value));
           obj[name] = JSON.stringify(designer);
-          obj["__FILES__"] = [...(obj["__FILES__"] || []), ...(files || [])];
+          __FILES__ = [...(__FILES__ || []), ...(files || [])];
 
           return obj;
         }
@@ -252,6 +251,7 @@ export default class BaseForm extends BaseDocument {
         return obj;
       }
 
+      obj.__FILES__ = __FILES__;
       obj[name] = value;
       return obj;
     }, {});

@@ -14,7 +14,7 @@ import {
 import { Checkbox } from "@cn/components/ui/checkbox";
 import { ChevronDownIcon } from "lucide-react";
 
-export function DropdownListGridActions() {
+export function DropdownListGridActions(props) {
   const {bulkRemove, selectAllVisibleRows, selectedCount, rowsCount, selectorAllStatus} = useTable();
 
   return (
@@ -58,7 +58,9 @@ export function DropdownListGridActions() {
         <DropdownMenuGroup>
           <DropdownMenuItem
             disabled={selectedCount <= 0}
-            onClick={bulkRemove}
+            onClick={() => {
+              bulkRemove(props.deleteOnServer);
+            }}
           >
             Bulk Remove
           </DropdownMenuItem>

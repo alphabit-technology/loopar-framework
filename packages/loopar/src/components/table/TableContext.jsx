@@ -12,6 +12,7 @@ import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { DropdownListGridActions } from "./DropdownListGridActions";
 import { Checkbox } from "@cn/components/ui/checkbox";
+import Emitter from '@services/emitter/emitter';
 
 const TableContext = createContext();
 
@@ -66,7 +67,18 @@ export const TableProvider = ({
         ? Array.from(new Set([...prevSelected, row.name]))
         : prevSelected.filter((r) => r !== row.name)
     );
+
+    Emitter.emit("onSelect", {
+      row,
+      checked
+    });
   };
+
+  const toggleRowSelect = (row) => {
+    const rowName = row.name;
+    const rowIndex = selectedRows.indexOf(rowName);
+    selectRow(row, rowIndex === -1);
+  }
 
   const addRow = () => {
     const newRows =  [...rows]
@@ -141,19 +153,40 @@ export const TableProvider = ({
     onDeleteRow && onDeleteRow();
   };
 
-  const bulkRemove = () => {
-    if (!selectedRows.length) return;
+  const bulkRemove = (onServer=false) => {
+    if (!selectedRows.length) {
+      return loopar.dialog({
+        type: "alert",
+        title: "Warning",
+        message: "Please select at least one row to delete.",
+      });
+    }
+
+    if(onServer) return bulkRemoveOnServer();
     setRows((prev) => prev.filter((r) => !selectedRows.includes(r.name)));
     setSelectedRows([]);
     onDeleteRow && onDeleteRow();
   };
 
-  const selectorCol = (colSpan) => {
+  const bulkRemoveOnServer = () =>{
+    loopar.dialog({
+      type: "confirm",
+      title: "Confirm",
+      message: `Are you sure you want to delete [${selectedRows.join(", ")}] ${meta.__ENTITY__?.name || "documents"}?`,
+      ok: async () => {
+        await loopar.method(meta.__ENTITY__.name, "bulkDelete", {
+          names: JSON.stringify(selectedRows),
+        });
+      },
+    });
+  }
+
+  const selectorCol = ({ colSpan, deleteOnServer }={}) => {
     return {
       data: {
         name: "selector",
         label: () => (
-          <DropdownListGridActions/>
+          <DropdownListGridActions deleteOnServer={deleteOnServer}/>
         ),
       },
       headProps: {
@@ -180,6 +213,7 @@ export const TableProvider = ({
     setRows,
     setMeta,
     addRow,
+    toggleRowSelect,
     selectedRows,
     setSelectedRows,
     docRef,

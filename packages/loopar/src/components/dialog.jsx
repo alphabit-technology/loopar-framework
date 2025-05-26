@@ -16,6 +16,23 @@ import {
 import { Label } from "@cn/components/ui/label";
 import { Textarea } from "@cn/components/ui/textarea";
 
+const DialogContext = React.createContext();
+const DialogContextProvider = ({children}) => {
+  return (
+    <DialogContext.Provider value={{
+      inDialog: true
+    }}>
+      {children}
+    </DialogContext.Provider>
+  )
+}
+
+export const useDialogContext = () => {
+  return React.useContext(DialogContext) || {
+    inDialog: false
+  }
+}
+
 const Icon = ({type, size, ...props}) => {
   const icons = {
     alert: [AlertCircle, "text-red-500"],
@@ -111,50 +128,52 @@ const MetaDialog = (props) => {
   }
 
   return (
-    <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
-      <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]} flex flex-col`}>
-        <DialogHeader>
-          <DialogTitle className="flex space-x-2">
-            <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
-            <h2 className="text-2xl">{props.title}</h2>
-          </DialogTitle>
-        </DialogHeader>
-        <DialogDescription className={`overflow-auto max-h-[80vh] ${props.size == 'full' && 'h-[100vh]'}`}>
-          <>
-          {
-            contentType === "text" ? (
-                <div
-                  className="h-full"
-                dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
-              />
-            ) : (
-              <div className="h-full">{content}</div>
-            )
-          }
-          <div className="fixed bottom-5 right-5 z-0 opacity-5" style={{zIndex:"-1"}}><Icon type={props.type} size={130}/></div>
-          </>
-        </DialogDescription>
-        {props.hasFooter !== false && (
-          <DialogFooter>
-            {(getButtons() || []).map((b) => (
-              <Button
-                key={b.name}
-                variant={b.variant || "primary"}
-                onClick={(e) => {
-                  e.preventDefault();
+    <DialogContextProvider>
+      <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
+        <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]} flex flex-col`}>
+          <DialogHeader>
+            <DialogTitle className="flex space-x-2">
+              <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
+              <h2 className="text-2xl">{props.title}</h2>
+            </DialogTitle>
+          </DialogHeader>
+          <DialogDescription className={`overflow-auto max-h-[80vh] ${props.size == 'full' && 'h-[100vh]'}`}>
+            <>
+            {
+              contentType === "text" ? (
+                  <div
+                    className="h-full"
+                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
+                />
+              ) : (
+                <div className="h-full">{content}</div>
+              )
+            }
+            <div className="fixed bottom-5 right-5 z-0 opacity-5" style={{zIndex:"-1"}}><Icon type={props.type} size={130}/></div>
+            </>
+          </DialogDescription>
+          {props.hasFooter !== false && (
+            <DialogFooter>
+              {(getButtons() || []).map((b) => (
+                <Button
+                  key={b.name}
+                  variant={b.variant || "primary"}
+                  onClick={(e) => {
+                    e.preventDefault();
 
-                  b.dismiss && setDialogOpen(false);
-                  b.onClick();
-                }}
-                ref={b.name === "ok" ? okButton : null}
-              >
-                {b.content || b.text || b.label}
-              </Button>
-            ))}
-          </DialogFooter>
-        )}
-      </DialogContent>
-    </Dialog>
+                    b.dismiss && setDialogOpen(false);
+                    b.onClick();
+                  }}
+                  ref={b.name === "ok" ? okButton : null}
+                >
+                  {b.content || b.text || b.label}
+                </Button>
+              ))}
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+    </DialogContextProvider>
   );
 };
 

@@ -1,8 +1,9 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import fileManager, {getExtention} from "./file-manager";
 import {cn} from "@cn/lib/utils";
 import { fileIcons } from "./defaults";
 import { FallbackFile } from "./fallback-file";
+import Emitter from '@services/emitter/emitter';
 
 export default function FilePreview(props) {
   const [selected, setSelected] = useState(props.selected);
@@ -17,9 +18,18 @@ export default function FilePreview(props) {
   const Icon = icon.icon;
   const color = icon.color;
 
-  const handleSetlect = () => {
-    props.onSelect && props.onSelect(data);
+  useEffect(() => {
+    setSelected(props.selected);
+  }, [props.selected]);
+
+  const handleSelect = () => {
+    props.onSelect && props.onSelect(data, !selected);
     setSelected(!selected);
+
+    Emitter.emit('onSelect', {
+      file: data,
+      selected: !selected,
+    });
   }
 
   return (
@@ -28,7 +38,7 @@ export default function FilePreview(props) {
         "w-[130px] h-[180px] flex-col items-center border p-2 shadow-sm hover:shadow-md transition-all cursor-pointer relative",
         selected && "border-primary",
       )}
-      onClick={handleSetlect}
+      onClick={handleSelect}
       key={data.name}
     >
       <FallbackFile

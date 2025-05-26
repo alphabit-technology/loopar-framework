@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import BaseDialog, {Prompt} from "@dialog";
 import { toast } from "sonner";
 import { Toaster } from "@sonner";
@@ -135,14 +135,12 @@ export default function BaseWorkspace(props) {
       <DialogContextProvider key={activePage}/>
       <Loading/>
       <WorkspaceProviderContext.Provider
-        value={
-          {
-            ...workspace,
-            webApp: props.webApp || {},
-            refresh: () => props.refresh || (() => { }),
-            activePage: activePage,
-          }
-        }
+        value={{
+          ...workspace,
+          webApp: props.webApp || {},
+          refresh: () => props.refresh || (() => { }),
+          activePage: activePage,
+        }}
       >
         {props.children}
       </WorkspaceProviderContext.Provider>

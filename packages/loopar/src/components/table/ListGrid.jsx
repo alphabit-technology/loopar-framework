@@ -57,13 +57,13 @@ export function ListGrid(props) {
     if(docRef.customColumns){
       const customCols = docRef.customColumns(baseCols);
       return [
-        selectorCol(),
+        selectorCol({deleteOnServer: true}),
         ...customCols
       ];
     }
 
     return [
-      selectorCol(),
+      selectorCol({deleteOnServer: true}),
       {
         data: {
           name: "mame",
@@ -139,7 +139,8 @@ export function ListGrid(props) {
       <TableSearch onChange={search}/>
       <BaseTable
         {...props}
-        columns={customMappedColumns} 
+        hasPagination={props.hasPagination !== false}
+        columns={customMappedColumns}
       />
     </>
   )

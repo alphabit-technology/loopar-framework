@@ -21,12 +21,11 @@ function ListContextMildware({content, meta, docRef, hasSearchForm = true, onlyG
    <DeskGUI
       docRef={docRef}
       viewTypeToggle={viewTypeToggle}
-      viewType={getViewType()}
     >
       {content}
-      {!content ? (
+      {(
         <TableProvider initialMeta={meta} docRef={docRef} rows={meta.rows}>
-          {viewType === 'List' ? (
+          {getViewType() === 'List' ? (
             <ListGrid
               hasSearchForm={hasSearchForm}
               docRef={docRef}
@@ -38,7 +37,7 @@ function ListContextMildware({content, meta, docRef, hasSearchForm = true, onlyG
             />
           )}
         </TableProvider>
-      ) : null}
+      )}
     </DeskGUI>
   )
 }

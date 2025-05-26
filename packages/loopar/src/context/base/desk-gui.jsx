@@ -4,7 +4,6 @@ import { MoreVertical, Save } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
 import { useDocument } from "@context/@/document-context";
 import {cn} from "@cn/lib/utils";
-import { SaveIcon} from "lucide-react";
 import { SaveButton } from "./app-barr";
 
 const InnerSidebar = ({ toggleSidebar, sidebarWidth, ...props }) => {  

@@ -24,7 +24,6 @@ export default function Card(props) {
       <Droppable
         Component={CardContent}
         {...props}
-        className="p-4"
       />
       {props.footer && (
         <CardFooter className="flex justify-between">

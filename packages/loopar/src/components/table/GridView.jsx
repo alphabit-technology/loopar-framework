@@ -29,7 +29,8 @@ export function GridView(props) {
     selectedRows,
     selectRow,
     search,
-    docRef
+    docRef,
+    deleteRow,
   } = useTable();
 
   const {hasSearchForm, hasSelectAll} = docRef;
@@ -47,7 +48,7 @@ export function GridView(props) {
   return (
     <>
       <div className="flex gap-2">
-        {hasSelectAll && <DropdownListGridActions />}
+        {hasSelectAll && <DropdownListGridActions deleteOnServer={true}/>}
         {hasSearchForm && <TableSearch onChange={search} />}
       </div>
       <div className="border">
@@ -99,7 +100,7 @@ export function GridView(props) {
                       variant="outline"
                       onClick={(e) => {
                         e.preventDefault();
-                        //deleteRow(row);
+                        deleteRow(row, true);
                       }}
                     >
                       <Trash2Icon className="mr-2" />

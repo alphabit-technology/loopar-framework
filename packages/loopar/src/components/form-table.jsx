@@ -153,7 +153,10 @@ const FormTable = (props) => {
       });
 
     return [
-      selectorCol(3),
+      selectorCol({
+        colSpan: 2,
+        deleteOnServer: false // Assuming we don't want to delete on server in this context
+      }),
       {
         data: { name: "index" },
         draggable: true,
@@ -223,7 +226,10 @@ const FormTable = (props) => {
           <Button
             type="button"
             variant="destructive"
-            onClick={bulkRemove}
+            onClick={e => {
+              e.preventDefault();
+              bulkRemove(false);
+            }}
           >
             <Trash2Icon className="mr-1" size={16} />
             Remove

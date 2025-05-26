@@ -92,7 +92,7 @@ export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props})
     );
   }
 
-  const customActions = docRef.customActions || {};
+  const customActions = docRef?.customActions || {};
 
   return (
     <>
