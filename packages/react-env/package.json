@@ -13,8 +13,9 @@
     "react-stately": "^3.37.0",
     "react-svg": "^16.3.0",
     "@tinymce/tinymce-react": "6.1.0",
-    "react-day-picker": "9.6.7",
+    "react-day-picker": "8.7.1",
     "lucide-react": "^0.507.0",
+    "react-datepicker": "8.4.0",
     "react-error-boundary": "6.0.0"
   },
   "devDependencies": {

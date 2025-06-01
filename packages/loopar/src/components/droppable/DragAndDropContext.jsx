@@ -28,6 +28,7 @@ export const DragAndDropProvider = (props) => {
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
   const [movement, setMovement] = useState(null);
   const [drop, setDrop] = useState(false);
+  const [dragEnd, setDragEnd] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
@@ -44,6 +45,7 @@ export const DragAndDropProvider = (props) => {
     handleSetElements(metaComponents);
   }, [metaComponents]);
 
+  const timerUpdate = useRef(null);
   const updateContainer = (key, updatedElements) => {
     if(!key) return;
 
@@ -69,8 +71,15 @@ export const DragAndDropProvider = (props) => {
       handleSetElements(updateE(selfElements));
     }
 
-    props.onDrop && props.onDrop(JSON.stringify(elementsRef.current));
+    clearTimeout(timerUpdate.current);
+    timerUpdate.current = setTimeout(() => {
+      props.onDrop && props.onDrop(JSON.stringify(elementsRef.current))
+    }, 150);
   }
+
+  useEffect(() => {
+    initializedDragging && clearTimeout(timerUpdate.current);
+  }, [initializedDragging]);
 
   useEffect(() => {
     if (draggingEvent && movement) {
@@ -89,12 +98,14 @@ export const DragAndDropProvider = (props) => {
     setInitializedDragging(false);
 
     if(movement){
-      setDrop(currentDragging)
+      setDrop(currentDragging);
+      setDragEnd(true);
     }else{
-      setDragging(false);
       setCurrentDragging(null);
       setDropZone(null);
     }
+
+    setDragging(false);
   }
 
   useEffect(() => {
@@ -109,7 +120,7 @@ export const DragAndDropProvider = (props) => {
       const rect = containerRef.current.getBoundingClientRect();
 
       const enoughMovement = (pixels = 30) => {
-        return Math.abs(e.clientY - (movement?.y || 0)) > pixels;
+        return Math.abs((e.clientY - (movement?.y || 0)) > pixels || (e.clientX - (movement?.x || 0)) > pixels);
       }
 
       setDraggingEvent({
@@ -144,42 +155,15 @@ export const DragAndDropProvider = (props) => {
       window.removeEventListener('pointermove', handleDragOver);
       window.removeEventListener('pointerup', handleDrop);
     }
-  }, [currentDragging]);
+  }, [currentDragging, dropZone]);
 
   useEffect(() => {
     document.body.style.userSelect = currentDragging ? 'none' : 'auto';
 
-    /*const protectTouchEvent = (e) => {
-      if (!currentDragging) return;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    if (currentDragging) {
-      containerRef.current.addEventListener('touchstart', protectTouchEvent, { passive: false });
-    }*/
-
     return () => {
       document.body.style.userSelect = 'auto';
-      //window.removeEventListener('touchover', touchmoveHandler);
-      //containerRef.current.removeEventListener('touchstart', protectTouchEvent);
     };
   }, [currentDragging]);
-
-  /*useEffect(() => {
-    const protectTouchEvent = (e) => {
-      if (!draggingEvent) return;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    containerRef.current.addEventListener('touchstart', protectTouchEvent, { passive: false });
-
-    return () => {
-      containerRef.current.removeEventListener('touchstart', protectTouchEvent);
-    }
-  }, [containerRef]);*/
-
 
   return (
     <DragAndDropContext.Provider
@@ -206,9 +190,7 @@ export const DragAndDropProvider = (props) => {
         ref={containerRef}
         className="relative overflow-hidden"
       >
-        {containerRef.current && createPortal(
-        <DragGhost/>
-        , containerRef.current)}
+        {containerRef.current && createPortal(<DragGhost/>, containerRef.current)}
         <Droppable
           className="min-h-20 rounded p-4"
           elements={elements}

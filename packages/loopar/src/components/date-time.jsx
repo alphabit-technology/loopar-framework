@@ -21,15 +21,12 @@ import {
 
 import DateDemo from "@@date/date-picker";
 import { CalendarIcon, TimerIcon } from "lucide-react";
-
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 
-
 export default function DateTime(props) {
-  const { renderInput, data, value } = BaseInput(props);
+  const { renderInput, data } = BaseInput(props);
 
   return renderInput(field => {
-    //const initialDate = dayjs(field.value).toDate();
     const initialHour = dayjs(field.value).format("HH:mm");
 
     const setTimeHandler = (val) => {
@@ -38,7 +35,7 @@ export default function DateTime(props) {
       date.setHours(hours);
       date.setMinutes(minutes);
 
-      value(date);
+      field.onChange({target: { value: date }});
     };
 
     const setDateHandler = (val) => {
@@ -50,7 +47,7 @@ export default function DateTime(props) {
       date.setMonth(month - 1);
       date.setDate(day);
 
-      value(date);
+      field.onChange({target: { value: date }});
     }
 
     return (
@@ -90,10 +87,13 @@ export default function DateTime(props) {
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  className="w-full"
                 />
               </TabsContent>
               <TabsContent value="time">
+                <div className="flex flex-col flex-wrap items-start gap-2 @md:flex-row w-full">
                 <DateDemo value={initialHour} handleChange={setTimeHandler} />
+                </div>
               </TabsContent>
             </BaseTabs>
           </PopoverContent>

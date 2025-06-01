@@ -98,9 +98,9 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   ]);
 
   useEffect(() => {
-    if(!movement) return;
+    if(!dragging || !draggingEvent || !movement) return
     if(!dropZone || dropZone !== data.key || position == null) return;
-    if (!currentDragging || currentDragging.key === data?.key) return;
+    if (!currentDragging || currentDragging.key == data?.key) return;
 
     const rect = draggingEvent;
 
@@ -111,14 +111,14 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       setElement(
         <div
           key={currentDragging.key}
-          style={{ maxHeight: height}}
-          className={`${currentDragging.className} pointer-events-none opacity-60 transition-all duration-200 ease-in border-2 border-dashed border-primary/70`} 
+          style={{ maxHeight: height }}
+          className={`${currentDragging.className} pointer-events-none opacity-60 transition-all duration-200 ease-in border-2 border-dashed border-primary/70`}
           dangerouslySetInnerHTML={{ __html: currentDragging.ref?.innerHTML }}
         />,
         position
       );
     }
-  }, [position, dropZone, currentDragging, movement]);
+  }, [position, dropZone, data, currentDragging]);
 
   useEffect(() => {
     if(!dragging) return;
@@ -141,8 +141,8 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   useEffect(() => {
     if (drop) {
+      setDropZone(null);
       if (dropZone === data.key) {
-        setDropZone(null);
         setElement(drop.el, position, drop.key);
         updateContainer(data.key, prevElements.current);
       }else if(currentDragging && currentDragging?.parentKey === data.key){

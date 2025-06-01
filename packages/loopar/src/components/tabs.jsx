@@ -62,7 +62,7 @@ function TabFn(props/*{id, elementsDict, asChild = false, canCustomize, setEleme
   }
 
   useEffect(() => {
-    if((!checkIfTabExists(currentTab))){7
+    if((!checkIfTabExists(currentTab))){
       selectFirstTab();
     }else{
       elementsDict.length === 0 && !asChild && designerMode && addTab();

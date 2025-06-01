@@ -97,15 +97,6 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
     setAmPm(value);
   }
 
-  useEffect(() => {
-    setHour(selectedHour);
-  }, [AmPm, selectedHour]);
-
-  useEffect(() => {
-    setTimeHandler(`${selectedHour}:${selectedMinute}`);
-  }, [selectedHour, selectedMinute]);
-
-
   const setHour = (hour = selectedHour) => {
     let newHour = hour;
 
@@ -117,6 +108,14 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
 
     setSelectedHour(newHour);
   };
+
+  useEffect(() => {
+    setHour(selectedHour);
+  }, [AmPm, selectedHour]);
+
+  useEffect(() => {
+    setTimeHandler(`${selectedHour}:${selectedMinute}`);
+  }, [selectedHour, selectedMinute]);
 
 
   /*const handleHourSelection = (hourIndex) => {
@@ -153,7 +152,7 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   };
 
   return (
-    <div className="flex flex-col items-center p-2">
+    <div className="flex flex-col items-center p-2 w-full">
       <div className="flex w-full items-center justify-end">
         <ToggleGroup type="single" defaultValue={AmPm} value={AmPm}>
           <ToggleGroupItem onClick={() => amPmHandler("AM")} value="AM">Am</ToggleGroupItem>

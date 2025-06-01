@@ -154,7 +154,7 @@ const FormTable = (props) => {
 
     return [
       selectorCol({
-        colSpan: 2,
+        colSpan: 3,
         deleteOnServer: false // Assuming we don't want to delete on server in this context
       }),
       {
