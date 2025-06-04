@@ -2,7 +2,7 @@ import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo, use } from "react";
 import { cn } from "@cn/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 import { useWorkspace } from "@workspace/workspace-provider";
@@ -72,6 +72,14 @@ export default function Row(props) {
     return Number.isNaN(sp) ? 1 : sp;
   }, [data.spacing, spacing.spacing, webApp.spacing]);
 
+  const layoutAdjust = useMemo(() => {
+    return layout.map(l => (l / (layout.reduce((acc, val) => acc + val, 0) / 100)));
+  }, [layout]);
+
+  const gapSolver = useMemo(() => {
+    return (_spacing * ((layout.length - 1) / layout.length)) || 0;
+  }, [_spacing, layout.length]);
+
   return (
     <RowContextProvider
       colPadding={data.col_padding || spacing.col_padding || webApp.col_padding}
@@ -86,12 +94,11 @@ export default function Row(props) {
             '@container',
             `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
             'grid-container dynamic box-border',
-            data.key
           )}
           style={{
-            "--column-layout": `calc(${layout.join("% - var(--grid-gap)) calc(")}% - var(--grid-gap))`,
-            "--grid-gap": `${_spacing/layout.length}rem`,
-            gap: `${_spacing/layout.length}rem`
+            "--gap-solver": `${gapSolver}rem`,
+            "--column-layout": `calc(${layoutAdjust.join("% - var(--gap-solver)) calc(")}% - var(--gap-solver))`,
+            gap: `${_spacing}rem`
           }}
         />
         
