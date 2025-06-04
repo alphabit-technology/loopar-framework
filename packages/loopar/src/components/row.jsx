@@ -1,6 +1,5 @@
 import {Droppable} from "@droppable";
 import { LayoutSelector, gridLayouts} from "./row/LayoutSelector";
-//import {useComponentContext} from "@@meta/ComponentContext";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -95,12 +94,14 @@ export default function Row(props) {
             gap: `${_spacing/layout.length}rem`
           }}
         />
-        <LayoutSelector setLayout={handleSetLayout} current={layout}/>
+        
       </div>
+      <LayoutSelector setLayout={handleSetLayout} current={layout}/>
     </RowContextProvider>
   );
 }
  
+
 Row.droppable = true;
 Row.metaFields = () => {
   return [{

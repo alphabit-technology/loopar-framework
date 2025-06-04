@@ -26,31 +26,34 @@ export const gridLayouts = [
 ];
 
 const buttonsCount = gridLayouts.length;
-const bottonSize = 100 / gridLayouts.length;
+const buttonSize = 100 / gridLayouts.length;
 
 export function LayoutSelector({ setLayout, current }) {
   const { designerMode, designing } = useDesigner();
   if (!designerMode || !designing) return;
 
   return (
-    <div className="bg-gren-500 flex flex-row h-5">
+    <div 
+      className="flex flex-row h-5"
+    >
       {gridLayouts.map((layout, layoutIndex) => {
         return (
-          <div
+          <button
+            key={JSON.stringify(layout)}
             className={cn(
               "p-0 h-full flex flex-row",
               layoutIndex < buttonsCount - 1 ? "mr - 1" : "",
               JSON.stringify(layout) == JSON.stringify(current) && "border-border",
             )}
             style={{
-              width: bottonSize + "%",
+              width: buttonSize + "%",
               margin: 1,
               border: JSON.stringify(layout) == JSON.stringify(current) ?"1px solid" : 0
             }}
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              setLayout(layout);
+              setLayout(layout)
             }}
           >
             {layout.map((size, index) => {
@@ -64,7 +67,7 @@ export function LayoutSelector({ setLayout, current }) {
                 ></div>
               );
             })}
-          </div>
+          </button>
         )
       })}
     </div>

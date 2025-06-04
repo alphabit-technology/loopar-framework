@@ -147,6 +147,8 @@ export const BaseDesigner = (props) => {
 
     const updateE = (structure) => {
       return structure.map((el) => {
+        if (!el.data) return el;
+        
         if (el.data.key === key) {
           el.data = merge ? Object.assign({}, el.data, data) : data;
           el.data.key ??= elementManage.getUniqueKey();

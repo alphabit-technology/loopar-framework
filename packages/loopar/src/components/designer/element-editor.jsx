@@ -142,9 +142,9 @@ export function ElementEditor() {
         formRef={formRef}
       >
         <div className="flex flex-col">
-          <h2 className="text-2xl p-3 pb-0">
-           {loopar.utils.Capitalize(data?.label || elementName)}
-          </h2>
+          <div className="p-3 pb-0">
+           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span> <span className="text-muted-foreground text-sm">{data.key}</span>
+          </div>
           <Tabs
             data={{ name: "element_editor_tabs" }}
             //key={data.key + "_tabs"}

@@ -142,7 +142,7 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
         )}
         {disabled ? <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 rounded" /> : null}
         <Comp {...elementProps} key={elementKey}/>
-      </div> 
+      </div>
     </HiddenContext.Provider>
   );
 };
