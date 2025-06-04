@@ -21,7 +21,7 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
     setCurrentDragging, 
     setDropZone,
     setInitializedDragging,
-    dragging,
+    dragging
   } = useDragAndDrop();
 
   const parentHidden = useHidden();

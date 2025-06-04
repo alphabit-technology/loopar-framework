@@ -10,8 +10,8 @@ export function DesignerForm() {
     <>
       {Object.keys(elementsDefinition).map((element) => {
         return (
-          <div className="pt-5">
-            <h2 className="text-2xl pt-3">{loopar.utils.Capitalize(element)} Elements</h2>
+          <div className="pb-5">
+            <h2 className="text-2xl p-3">{loopar.utils.Capitalize(element)} Elements</h2>
             <div className="grid grid-cols-3 gap-1" key={`${id}-${element}`}>
               {elementsDefinition[element].filter(el => el.show_in_design !== false).map((element) => {
                 return <DesignElement element={element} icon={Icons[element.icon]}/>;

@@ -13,6 +13,11 @@ const FileInput = (props) => {
       render={(field, data) => {
         const files = fileManager.getMappedFiles(field.value);
         const hasFiles = files.length > 0;
+
+        const handleChange = (newFiles) => {
+          field.onChange(newFiles)
+        };
+
         return (
           <>
             {data.label && <FormLabel>{data.label}</FormLabel>}
@@ -26,7 +31,7 @@ const FileInput = (props) => {
                     data={data}
                     files={files}
                     origins={props.origins}
-                    onChange={field.onChange}
+                    onChange={handleChange}
                   />
                 </div>
               </div>

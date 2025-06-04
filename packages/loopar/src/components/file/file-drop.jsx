@@ -98,8 +98,8 @@ export const FileDrop = (props) => {
   }, [files]);
 
   useEffect(() => {
-    props.onChange && props.onChange({target: {value: previews}});
-  }, [previews]);
+    loaded && props.onChange && props.onChange({target: {value: previews}});
+  }, [previews, loaded]);
 
   const mergeFiles = (files = [], newFiles) => {
     if (data.multiple) {

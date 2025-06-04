@@ -47,8 +47,7 @@ export function ElementTitle({element, active, ...props}) {
       <Button
         variant="primary"
         size="xs"
-        className="h-5 rounded-none rounded-tr px-1 text-secondary"
-        onClick={(e) => {e.stopPropagation(); e.preventDefault();}}
+        className="h-5 rounded-none pointer-events-none rounded-tr px-1 text-secondary"
       >
         {(element.elementTitle || element.element).toString().split(".")[0].toUpperCase()}
       </Button>

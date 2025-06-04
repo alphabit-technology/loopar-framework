@@ -23,12 +23,15 @@ export function DesignElement(props){
     }
   }
 
+  const className = "w-full bg-card/70 rounded border border-secondary/20 hover:border-secondary/50 transition-colors";
+
   const dragStart = (e) => {
     const el = elementToCreate();
     const rect = draggableRef.current.getBoundingClientRect();
     setInitializedDragging(true);
 
     setCurrentDragging({
+      isNew: true,
       key: el.data.key,
       el,
       ref: draggableRef.current,
@@ -43,20 +46,25 @@ export function DesignElement(props){
       size: {
         width: rect.width,
         height: rect.height,
-      }
+      },
+      className,
     });
   };
 
   return (
-    <a
-      className="flex w-full flex-col items-center rounded border p-2 shadow cursor-pointer transition-colors hover:bg-muted/50"
+    <div 
+      className={className}
       ref={draggableRef}
       onPointerDown={dragStart}
     >
-      <Icon className="h-8 w-8" />
-      <small className="text-muted-foreground truncate text-center w-full user-select-none">
-        {loopar.utils.humanize(element.element)}
-      </small>
-    </a>
+      <a
+        className="flex w-full flex-col items-center rounded border p-2 shadow cursor-pointer transition-colors hover:bg-muted/50"
+      >
+        <Icon className="h-8 w-8" />
+        <small className="text-muted-foreground truncate text-center w-full user-select-none">
+          {loopar.utils.humanize(element.element)}
+        </small>
+      </a>
+    </div>
   )
 }

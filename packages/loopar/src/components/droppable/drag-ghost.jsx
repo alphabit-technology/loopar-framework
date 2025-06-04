@@ -8,9 +8,11 @@ export const DragGhost = memo(function DragGhost() {
 
   const { size, offset } = currentDragging;
 
+  const isNew = currentDragging.isNew;
+
   return (
     <div
-      className="pointer-events-none absolute"
+      className={`pointer-events-none ${isNew ? 'fixed' : 'absolute'}`}
       style={{
         top: draggingEvent.y,
         left: draggingEvent.x,

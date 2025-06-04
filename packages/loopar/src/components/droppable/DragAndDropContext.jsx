@@ -2,6 +2,7 @@ import { useContext, createContext, useState, useEffect, useRef } from 'react';
 import { DragGhost } from "./drag-ghost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
+import _ from 'lodash';
 
 export const DragAndDropContext = createContext({
   currentDropZone: null,
@@ -28,24 +29,24 @@ export const DragAndDropProvider = (props) => {
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
   const [movement, setMovement] = useState(null);
   const [drop, setDrop] = useState(false);
-  const [dragEnd, setDragEnd] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
-  const elementsRef = useRef(elements);
 
+  const elementsRef = useRef(elements);
   const containerRef = useRef(null);
 
   const handleSetElements = (elements) => {
-    setElements(elements);
+    if(_.isEqual(elementsRef.current, elements)) return;
+
     elementsRef.current = elements;
+    setElements(elements);
   }
 
   useEffect(() => {
     handleSetElements(metaComponents);
   }, [metaComponents]);
 
-  const timerUpdate = useRef(null);
   const updateContainer = (key, updatedElements) => {
     if(!key) return;
 
@@ -64,26 +65,20 @@ export const DragAndDropProvider = (props) => {
           } else {
             el.elements = updateE(el.elements || []);
           }
-          return { element: el.element, data: el.data, elements: el.elements };
+          return el;
         });
       };
 
       handleSetElements(updateE(selfElements));
     }
 
-    clearTimeout(timerUpdate.current);
-    timerUpdate.current = setTimeout(() => {
-      props.onDrop && props.onDrop(JSON.stringify(elementsRef.current))
-    }, 150);
+    props.onDrop && props.onDrop(JSON.stringify(elementsRef.current));
+    
   }
 
   useEffect(() => {
-    initializedDragging && clearTimeout(timerUpdate.current);
-  }, [initializedDragging]);
-
-  useEffect(() => {
     if (draggingEvent && movement) {
-      const scrollSpeed = 15;
+      const scrollSpeed = 25;
       const scrollBuffer = 100;
 
       if (movement.y <= scrollBuffer) {
@@ -99,7 +94,6 @@ export const DragAndDropProvider = (props) => {
 
     if(movement){
       setDrop(currentDragging);
-      setDragEnd(true);
     }else{
       setCurrentDragging(null);
       setDropZone(null);
@@ -120,12 +114,14 @@ export const DragAndDropProvider = (props) => {
       const rect = containerRef.current.getBoundingClientRect();
 
       const enoughMovement = (pixels = 30) => {
-        return Math.abs((e.clientY - (movement?.y || 0)) > pixels || (e.clientX - (movement?.x || 0)) > pixels);
+        return Math.abs(e.clientY - (movement?.y || 0)) > pixels || Math.abs(e.clientX - (movement?.x || 0)) > pixels;
       }
 
+      const isNew = currentDragging.isNew;
+
       setDraggingEvent({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: e.clientX - (!isNew ? rect.left : 0),
+        y: e.clientY - (!isNew ? rect.top : 0)
       });
 
       global.verticalDirection = e.clientY >= window.lastY ? 'down' : 'up';
@@ -155,7 +151,7 @@ export const DragAndDropProvider = (props) => {
       window.removeEventListener('pointermove', handleDragOver);
       window.removeEventListener('pointerup', handleDrop);
     }
-  }, [currentDragging, dropZone]);
+  }, [currentDragging, dropZone, initializedDragging, dragging]);
 
   useEffect(() => {
     document.body.style.userSelect = currentDragging ? 'none' : 'auto';

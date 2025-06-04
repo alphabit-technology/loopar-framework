@@ -10,7 +10,8 @@ const UP = 'up';
 import _ from "lodash";
 import memoize from 'lodash.memoize';
 
-function DroppableContainer({ data = {}, children, className, Component = "div", ...props }) {
+function DroppableContainer({ children, className, Component = "div", ...props }) {
+  const {data= {}} = props;
   const __REFS__ = {}
   const [elements, setElements] = useState(props.elements || []);
   const [position, setPosition] = useState(null);
@@ -122,22 +123,24 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   useEffect(() => {
     if(!dragging) return;
-
+    
     if(dropZone && dropZone == data.key && currentDragging) {
       if (currentDragging.key === data.key) return;
 
       const i = getIndex(currentDragging.key);
+     
       position !== i && setPosition(i);
     }
   }, [movement, dropZone, currentDragging]);
 
+
   const filterDragged = useCallback(() => elements.filter(el =>
     el.data?.key !== currentDragging?.key
-  ), [elements, currentDragging]);
+  ), [elements, currentDragging, dropZone]);
 
   const clearDragged = useCallback(() => elements.filter(el =>
     el.$$typeof !== Symbol.for('react.transitional.element')
-  ), [elements]);
+  ), [elements, dropZone]);
 
   useEffect(() => {
     if (drop) {

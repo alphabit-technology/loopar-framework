@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useRef, useMemo } from 'react';
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
@@ -106,19 +106,26 @@ export function ElementEditor() {
   }, [metaFieldsData, dontHaveMetaElements, data]);
     
   const saveData = (_data) => {
+    
     function cleanObject(obj) {
       return Object.fromEntries(
-        Object.entries(obj)/*.filter(([_, value]) => value ?? false)*/.map(([key, value]) => [key.replace(data.key, ""), value])
+        Object.entries(obj).filter(([_, value]) => value ?? false)
       );
     }
 
-    const newData = cleanObject(_data);
+    function cleanKey(obj) {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [key.replace(data.key, ""), value])
+      );
+    }
+    
+    const newData = cleanKey(_data);
     newData.key = data.key;
     newData.value = data.value;
 
-    if (!_.isEqual(prevData.current, newData)) {
-      updateElement(newData.key, newData, false, false);
+    if (!_.isEqual( prevData.current, cleanObject(newData))) {
       prevData.current = { ...newData };
+      updateElement(newData.key, newData, false, false);
     }
   };
   
@@ -135,8 +142,8 @@ export function ElementEditor() {
         formRef={formRef}
       >
         <div className="flex flex-col">
-          <h2 className="pt-2 text-xl">
-            {loopar.utils.Capitalize(elementName)} Editor
+          <h2 className="text-2xl p-3 pb-0">
+           {loopar.utils.Capitalize(data?.label || elementName)}
           </h2>
           <Tabs
             data={{ name: "element_editor_tabs" }}
