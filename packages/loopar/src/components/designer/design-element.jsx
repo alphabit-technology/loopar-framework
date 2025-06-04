@@ -47,7 +47,7 @@ export function DesignElement(props){
         width: rect.width,
         height: rect.height,
       },
-      className,
+      className: className + " mb-4",
     });
   };
 
