@@ -23,6 +23,7 @@ export function designElementProps(el) {
 
 export function prepareMeta(metaProps, parent, image) {
   const data = metaProps.data || {};
+  metaProps.elements = metaProps.elements || [];
 
   if (image && (!data || !data.background_image || data.background_image === '[]')) {
     metaProps.src = "/uploads/empty-image.svg"

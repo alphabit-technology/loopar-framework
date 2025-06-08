@@ -14,6 +14,8 @@ import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
 import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx"
 
+import MarkdownPreview from '@uiw/react-markdown-preview';
+
 const DesignerButton = () => {
   const { designerMode, designerModeType } = useDesigner();
   const { sidebarOpen } = useDocument();
@@ -130,7 +132,7 @@ export const BaseDesigner = (props) => {
     setMeta(JSON.stringify(newElements));
   }
 
-  const updateElement = (key, data, merge = true, reflect=true) => {
+  const updateElement = (key, data, merge = true, fromEditor=false) => {
     const selfElements = [...metaComponents];
 
     if (data.name) {
@@ -157,7 +159,7 @@ export const BaseDesigner = (props) => {
         }
 
         /**Purify Data */
-        el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
+        /*el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
           if (
             key === "background_color" &&
             JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
@@ -169,20 +171,21 @@ export const BaseDesigner = (props) => {
             obj[key] = value;
           }
           return obj;
-        }, {});
+        }, {});*/
         /**Purify Meta */
 
-        return { element: el.element, data: el.data, elements: el.elements };
+        return {...el};
       });
     };
 
     setMeta(JSON.stringify(updateE(selfElements)));
 
-    if (reflect && key === updatingElementName) {
+    
+    if (key === updatingElementName && !fromEditor) {
       setUpdatingElement({
         ...updatingElement,
-        data: data,
-        __version__: (updatingElement.__version__ || 0) + 1,
+        data: {...data},
+        __version__: (updatingElement.__version__ || 0) + 1
       });
     }
   }
@@ -379,8 +382,12 @@ export const BaseDesigner = (props) => {
               name={`${selfKey}-meta_tab`}
               key={`${selfKey}-meta_tab`}
             >
-              <div className="text-success-500 max-h-[720px] overflow-x-auto whitespace-pre-wrap rounded border p-2 font-mono text-sm font-bold text-green-600">
-                {JSON.stringify(metaComponents, null, 2)}
+              <div className="max-h-[720px] overflow-x-auto">
+                <div
+                  className="contents w-full prose dark:prose-invert"
+                >
+                    <MarkdownPreview source={`\`\`\`jsx\n${JSON.stringify(metaComponents, null, 2)}\n\`\`\``} />
+                </div>
               </div>
             </Tab>
           </Tabs>

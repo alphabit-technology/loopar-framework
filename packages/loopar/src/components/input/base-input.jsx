@@ -35,6 +35,8 @@ const BaseInput = (props) => {
   
   const fieldRef = useRef(null);
   const prevData = useRef(data);
+  const prevFieldValue = useRef(fieldValue);
+  const isUpdatingRef = useRef(false);
 
   useEffect(() => {
     if (!designerMode) return;
@@ -58,24 +60,31 @@ const BaseInput = (props) => {
     }
   }, [docRef, data]);
 
+  const extractValue = useCallback((event) => {
+    if (event && typeof event === "object") {
+      return event.target.files || event.target.value;
+    }
+    return event;
+  }, []);
+
   const handleInputChange = useCallback((event) => {
-    if (designerMode) return;
+    if (designerMode || isUpdatingRef.current) return;
 
-    const extractValue = () => {
-      if (event && typeof event === "object") {
-        return event.target.files || event.target.value;
-      }
-      return event;
-    };
+    // Prevents multiple updates during the same event loop
+    // But only if onChange is not provided, to allow external control
+    !onChange && (isUpdatingRef.current = true);
 
+    const newValue = extractValue(event);
+    
+    if (!_.isEqual(prevFieldValue.current, newValue)) {
+      setFieldValue(newValue);
+      prevFieldValue.current = newValue;
+    }
+    
     requestAnimationFrame(() => {
-      const newValue = extractValue();
-      setFieldValue(prev => {
-        if (_.isEqual(prev, newValue)) return prev;
-        return newValue;
-      });
+      isUpdatingRef.current = false;
     });
-  }, [designerMode]);
+  }, [designerMode, extractValue]);
 
   const validate = useCallback(() => {
     if (data.hidden || parentHidden) return { valid: true };
@@ -86,8 +95,8 @@ const BaseInput = (props) => {
       const validation = dataInterface({ data }, fieldRef.current.value).validate();
       
       setIsInvalid(prev => {
-        if (prev === !validation.valid) return prev;
-        return !validation.valid;
+        const newInvalid = !validation.valid;
+        return prev === newInvalid ? prev : newInvalid;
       });
       
       return validation;
@@ -97,24 +106,26 @@ const BaseInput = (props) => {
     }
   }, [data, parentHidden]);
 
+  const debouncedOnChange = useMemo(() => {
+    return _.debounce((event) => {
+      onChange?.(event);
+      onChanged?.(event);
+    }, 10);
+  }, [onChange, onChanged]);
+
   useEffect(() => {
-    if (designerMode || fieldValue === undefined) return;
+    if (designerMode || fieldValue === undefined || isUpdatingRef.current) return;
     
-    const timeoutId = setTimeout(() => {
-      const event = { target: { value: fieldValue } };
-      
-      if (!data.hidden && !parentHidden) {
-        validate();
-      }
-      
-      queueMicrotask(() => {
-        onChange?.(event);
-        onChanged?.(event);
-      });
-    }, 0);
+    const event = { target: { value: fieldValue } };
     
-    return () => clearTimeout(timeoutId);
-  }, [fieldValue, onChange, onChanged, designerMode, validate, data.hidden, parentHidden]);
+    if (!data.hidden && !parentHidden) {
+      validate();
+    }
+    
+    queueMicrotask(() => {
+      debouncedOnChange(event);
+    });
+  }, [fieldValue, designerMode, validate, data.hidden, parentHidden, debouncedOnChange]);
 
   const readOnly = propReadOnly || data.readOnly;
   const hasLabel = () => withoutLabel !== true;
@@ -139,18 +150,18 @@ const BaseInput = (props) => {
             fieldRef.current = field;
           }
           
-          const combinedOnChange = useMemo(() => {
-            return (e) => {
-              if (isDisabled) return;
-              const event = e;
-              
-              if (field.onChange) {
-                field.onChange(event);
-              }
-              
-              handleInputChange(event);
-            };
-          }, [field.onChange, isDisabled, handleInputChange]);
+          const combinedOnChange = useCallback((e) => {
+            if (isDisabled || isUpdatingRef.current) return;
+            
+            const newValue = extractValue(e);
+            if (_.isEqual(prevFieldValue.current, newValue)) return;
+            
+            if (field.onChange) {
+              field.onChange(e);
+            }
+            
+            handleInputChange(e);
+          }, [field.onChange, isDisabled, e => extractValue(e)]);
 
           return (
             <FormItem className={cn("flex flex-col rounded shadow-sm", className)}>
@@ -168,7 +179,7 @@ const BaseInput = (props) => {
         }}
       />
     );
-  }, [props.control, props.disabled, props.defaultValue, props.rules, data, handleInputChange, isInvalid]);
+  }, [props.control, props.disabled, props.defaultValue, props.rules, data, handleInputChange, isInvalid, extractValue]);
 
   if (propRender) {
     return renderInput(propRender);

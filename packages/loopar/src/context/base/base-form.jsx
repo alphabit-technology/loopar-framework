@@ -156,7 +156,7 @@ export default class BaseForm extends BaseDocument {
               }
             }
 
-            updatedData[key] = filesToSave;
+            filesToSave.length && (updatedData[key] = filesToSave);
           }
         }
 
@@ -164,7 +164,7 @@ export default class BaseForm extends BaseDocument {
           delete updatedData[key];
         }
 
-        if(["background_color", "color_overlay"].includes(key) && value) {
+        /*if(["background_color", "color_overlay"].includes(key) && value) {
           const defaultColors = [{color: "", alpha: 0.5}, {r:0, g:0, b:0, a:0}];
           
           defaultColors.forEach((defaultColor) => {
@@ -172,7 +172,7 @@ export default class BaseForm extends BaseDocument {
               delete updatedData[key];
             }
           });
-        }
+        }*/
       }
 
       return updatedData;

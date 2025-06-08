@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
@@ -55,9 +55,12 @@ export function ElementEditor() {
   if (!updatingElement) return null;
 
   const elementName = updatingElement.element;
-  const data = updatingElement.data;
+  const data = useMemo(() => {
+    return {...updatingElement.data,};
+  }, [updatingElement.data, elementName]);
+  
   const Element = __META_COMPONENTS__[elementName]?.default || {};
-  const prevData = useRef({ ...data });
+  //const prevData = useRef({ ...data });
 
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
 
@@ -104,18 +107,22 @@ export function ElementEditor() {
 
     return formFields;
   }, [metaFieldsData, dontHaveMetaElements, data]);
-    
+
+  const prevData = useRef(__FORM_FIELDS__);
   const saveData = (_data) => {
-    
+    if(!prevData.current || _.isEqual(prevData.current, _data)) return;
+
+    prevData.current = { ..._data };
+
     function cleanObject(obj) {
       return Object.fromEntries(
-        Object.entries(obj).filter(([_, value]) => value ?? false)
+        Object.entries({...obj}).filter(([_, value]) => value ?? false)
       );
     }
 
     function cleanKey(obj) {
       return Object.fromEntries(
-        Object.entries(obj).map(([key, value]) => [key.replace(data.key, ""), value])
+        Object.entries({...obj}).map(([key, value]) => [key.replace(data.key, ""), value])
       );
     }
     
@@ -123,10 +130,7 @@ export function ElementEditor() {
     newData.key = data.key;
     newData.value = data.value;
 
-    if (!_.isEqual( prevData.current, cleanObject(newData))) {
-      prevData.current = { ...newData };
-      updateElement(newData.key, newData, false, false);
-    }
+    updateElement(newData.key, cleanObject(newData), false, true);
   };
   
   const formRef = useRef(null);
@@ -136,7 +140,7 @@ export function ElementEditor() {
       value={{}}
     >
       <FormWrapper
-        key={data.key + updatingElement.__version__}
+        key={data.key + updatingElement.__version__ || ""}
         __DOCUMENT__={__FORM_FIELDS__} 
         onChange={saveData}
         formRef={formRef}

@@ -47,6 +47,9 @@ export const DragAndDropProvider = (props) => {
     handleSetElements(metaComponents);
   }, [metaComponents]);
 
+  // This function is called two times, the first time to set elements y Droppable Component (target)
+  // and the second time to update elements in Original Container
+  const proccess = useRef(0)
   const updateContainer = (key, updatedElements) => {
     if(!key) return;
 
@@ -72,8 +75,13 @@ export const DragAndDropProvider = (props) => {
       handleSetElements(updateE(selfElements));
     }
 
-    props.onDrop && props.onDrop(JSON.stringify(elementsRef.current));
-    
+    proccess.current += 1;
+    if(proccess.current === 2) {
+      proccess.current = 0;
+      setTimeout(() => {
+        props.onDrop && props.onDrop(JSON.stringify(elementsRef.current));
+      }, 0);
+    }
   }
 
   useEffect(() => {

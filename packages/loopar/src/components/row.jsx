@@ -18,7 +18,6 @@ export default function Row(props) {
   const [ cols, setCols ] = useState(props.elements || []);
   const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();
-
   const prevElementsRef = useRef(props.elements);
 
   const handleSetLayout = (layout) => {
@@ -38,7 +37,9 @@ export default function Row(props) {
         })
       }
 
-      setElements(addCols, setCols(addCols));
+      
+      setElements(addCols);
+      setCols(addCols);
     }
   }, [layout, cols, setElements]);
 
@@ -61,7 +62,7 @@ export default function Row(props) {
   }, []);
 
   useEffect(() => {
-    if (!_.isEqual(prevElementsRef.current, props.elements)) {
+    if (prevElementsRef.current && !_.isEqual(prevElementsRef.current, props.elements)) {
       setCols(props.elements || []);
       prevElementsRef.current = props.elements;
     }

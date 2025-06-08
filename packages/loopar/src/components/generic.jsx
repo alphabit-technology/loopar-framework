@@ -1,4 +1,4 @@
-import {ComponentDefaults, tagDontHaveChild} from "./base/ComponentDefaults";
+import {ComponentDefaults, tagDontHaveChild, validTags} from "./base/ComponentDefaults";
 import loopar from "loopar";
 import React from "react";
 import { Droppable } from "@droppable";

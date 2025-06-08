@@ -9,7 +9,7 @@ import {useDocument} from "@context/@/document-context";
 
 export const Sidebar = () => {
   const { handleSetSidebarOpen, sidebarOpen, docRef } = useDocument();
-  const { handleChangeMode, designerModeType } = useDesigner();
+  const { handleChangeMode, designerModeType, updatingElement } = useDesigner();
   
   return (
     <div 
@@ -58,7 +58,7 @@ export const Sidebar = () => {
         >
           {
             (designerModeType == "editor") ? (
-              <ElementEditor/>
+              <ElementEditor key={updatingElement?.data.key}/>
             ) : <DesignerForm/>
           }
         </ScrollArea>

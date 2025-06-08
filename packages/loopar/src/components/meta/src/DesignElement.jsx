@@ -141,7 +141,10 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
           <ElementTitle element={elementProps} active={hover && !dragging} style={{ top: 0 }} />
         )}
         {disabled ? <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 rounded" /> : null}
-        <Comp {...elementProps} key={elementKey}/>
+        <Comp 
+          {...elementProps} 
+          key={elementKey}
+        />
       </div>
     </HiddenContext.Provider>
   );

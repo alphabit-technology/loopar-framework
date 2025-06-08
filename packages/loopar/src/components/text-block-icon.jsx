@@ -43,7 +43,6 @@ export default function TextBlockIcon(props) {
           </div>
         </div>
         <div className="items-top">
-          
           <Paragraph
             alignment={orientation == "Vertical" ? "center" : "left"}
             textSize= {data.text_size || "xl"}

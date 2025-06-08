@@ -6,6 +6,9 @@ import { useDesigner } from "@context/@/designer-context";
 
 export function ElementTitle({element, active, ...props}) {
   const designer = useDesigner();
+  const title = element.elementTitle || element.element || "";
+
+  if(!title) return null;
 
   const handleEditElement = (e) => {
     e.preventDefault();

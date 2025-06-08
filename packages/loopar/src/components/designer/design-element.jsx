@@ -23,7 +23,7 @@ export function DesignElement(props){
     }
   }
 
-  const className = "w-full bg-card/70 rounded border border-secondary/20 hover:border-secondary/50 transition-colors";
+  const className = "w-full bg-card/70 rounded transition-colors";
 
   const dragStart = (e) => {
     const el = elementToCreate();

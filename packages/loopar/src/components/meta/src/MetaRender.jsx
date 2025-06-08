@@ -46,7 +46,8 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
   
   if ([HTML_BLOCK, MARKDOWN].includes(meta.element)) {
     return <PureHTMLBlock
-      element={meta} {...loopar.utils.renderizableProps(metaProps)}
+      element={meta}
+      {...loopar.utils.renderizableProps(metaProps)}
       data={data}
       className={className}
       style={style}
