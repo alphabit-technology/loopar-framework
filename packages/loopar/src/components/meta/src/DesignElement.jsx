@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, use } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
@@ -7,7 +7,8 @@ import { useDesigner } from "@context/@/designer-context";
 import { useDragAndDrop } from "@@droppable/DragAndDropContext";
 import { cn } from "@cn/lib/utils";
 
-export const DesignElement = ({ element, Comp, parentKey }) => {
+export const DesignElement = (props/*{ element, Comp, parentKey }*/) => {
+  const { element, Comp, parentKey } = props;
   const [hover, setHover] = useState(false);
   const debouncedHover = useRef(null);
 
@@ -28,6 +29,7 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
   const { __REFS__ } = useDroppable();
   const draggableRef = useRef(null);
   const { key: elementKey, ...elementProps } = element;
+  
 
   useEffect(() => {
     if (!elementProps.data) return;
@@ -107,13 +109,13 @@ export const DesignElement = ({ element, Comp, parentKey }) => {
     });
   };
 
-  const handleDragStart = useCallback((e) => {
+  const handleDragStart = (e) => {
     e.stopPropagation();
     if(designerModeType === "preview") return;
 
     setInitializedDragging(true);
     dragStart(e);
-  }, [designerModeType, setCurrentDragging]);
+  }
 
   const style = useMemo(() => {
     if (designing && currentDragging && currentDragging.key === elementProps.data.key) {

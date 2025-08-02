@@ -75,7 +75,7 @@ const BaseInput = (props) => {
     !onChange && (isUpdatingRef.current = true);
 
     const newValue = extractValue(event);
-    
+
     if (!_.isEqual(prevFieldValue.current, newValue)) {
       setFieldValue(newValue);
       prevFieldValue.current = newValue;
@@ -114,15 +114,16 @@ const BaseInput = (props) => {
   }, [onChange, onChanged]);
 
   useEffect(() => {
-    if (designerMode || fieldValue === undefined || isUpdatingRef.current) return;
+    if ((designerMode || fieldValue === undefined || isUpdatingRef.current) && !onChange) return;
     
     const event = { target: { value: fieldValue } };
     
     if (!data.hidden && !parentHidden) {
       validate();
     }
-    
+
     queueMicrotask(() => {
+     
       debouncedOnChange(event);
     });
   }, [fieldValue, designerMode, validate, data.hidden, parentHidden, debouncedOnChange]);

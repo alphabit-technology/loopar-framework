@@ -37,7 +37,6 @@ export default function Row(props) {
         })
       }
 
-      
       setElements(addCols);
       setCols(addCols);
     }
@@ -62,9 +61,8 @@ export default function Row(props) {
   }, []);
 
   useEffect(() => {
-    if (prevElementsRef.current && !_.isEqual(prevElementsRef.current, props.elements)) {
+    if (cols && !_.isEqual(cols, props.elements)) {
       setCols(props.elements || []);
-      prevElementsRef.current = props.elements;
     }
   }, [props.elements]);
 
@@ -102,7 +100,6 @@ export default function Row(props) {
             gap: `${_spacing}rem`
           }}
         />
-        
       </div>
       <LayoutSelector setLayout={handleSetLayout} current={layout}/>
     </RowContextProvider>

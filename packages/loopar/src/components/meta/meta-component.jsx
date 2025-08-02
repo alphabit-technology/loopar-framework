@@ -8,16 +8,17 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 
 export default function MetaComponentBase ({ elements=[], parent, className, parentKey}) {
-  const id = useId();
+  const isDesigner = useDesigner().designerMode;
+
   return elements.map((meta, index) => {
     if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
       return meta;
     }
-
-    const key = parentKey + (meta.data?.key || `${id}-${index}`);
+    
+    const key = (meta.data?.key || parentKey) + (isDesigner ? 'd' : '') + index;
 
     return (
-      <Meta 
+      <Meta
         meta={meta}
         parent={parent}
         className={className}

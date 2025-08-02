@@ -65,7 +65,7 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
   return (
     <Comp
       {...metaProps}
-      key={metaProps.key || null}
+      //key={metaProps.key || null}
       className={className}
       style={style}
       value={data.value}
@@ -75,7 +75,8 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
         }
         docRef.__REFS__[data.name] = ref;
         parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
-      }
-    } />
+      }}
+      key={null}
+    />
   );
 }

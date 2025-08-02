@@ -58,7 +58,6 @@ export function TableSearch(props){
                       }}
                       dontHaveLabel={true}
                       onChange={(e) => {
-                        console.log("Search value changed:", e);
                         saveData([SELECT, SWITCH, CHECKBOX].includes(c.element) || e.target.value == "" ? 0: 300)
                       }}
                     />

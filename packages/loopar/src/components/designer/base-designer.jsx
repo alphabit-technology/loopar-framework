@@ -42,10 +42,10 @@ export const BaseDesigner = (props) => {
   const [activeId] = useState(null);
   const {designerMode} = useDesigner();
   const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
-  
+
   const [updatingElementName, setUpdatingElementName] = useCookies(name + "updatingElementName");
-  const [designerModeType = "designer", setDesignerModeType] = useCookies(name + "designer-mode-type");
-  
+  const [designerModeType, setDesignerModeType] = useCookies(name + "designer-mode-type");
+
   const selfKey = data.key;
 
   const handleChangeMode = (opt=null) => {
@@ -92,7 +92,7 @@ export const BaseDesigner = (props) => {
 
   useEffect(() => {
     setUpdatingElement(findElement("key", updatingElementName, metaComponents));
-  }, [updatingElementName]);
+  }, [updatingElementName, metaComponents]);
 
   const updateElements = (target, elements, current = null) => {
     const currentElements = metaComponents;
@@ -148,7 +148,7 @@ export const BaseDesigner = (props) => {
     }
 
     const updateE = (structure) => {
-      return structure.map((el) => {
+      return [...structure].map((el) => {
         if (!el.data) return el;
         
         if (el.data.key === key) {
@@ -158,34 +158,17 @@ export const BaseDesigner = (props) => {
           el.elements = updateE(el.elements || []);
         }
 
-        /**Purify Data */
-        /*el.data = Object.entries(el.data).reduce((obj, [key, value]) => {
-          if (
-            key === "background_color" &&
-            JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
-          ) {
-            return obj;
-          }
-
-          if (![null,undefined,"","0","false",false,'{"color":"#000000","alpha":0.5}',].includes(value)) {
-            obj[key] = value;
-          }
-          return obj;
-        }, {});*/
-        /**Purify Meta */
-
         return {...el};
       });
     };
 
     setMeta(JSON.stringify(updateE(selfElements)));
 
-    
     if (key === updatingElementName && !fromEditor) {
       setUpdatingElement({
         ...updatingElement,
         data: {...data},
-        __version__: (updatingElement.__version__ || 0) + 1
+        //__version__: (updatingElement.__version__ || 0) + 1
       });
     }
   }
@@ -283,25 +266,11 @@ export const BaseDesigner = (props) => {
     });
   }
 
-  /*const getDesignerButton = () => {
-    if (designerModeType == "preview") {
-      return <><BrushIcon className="mr-2" /> Design</>
-    }
-  
-    if (designerModeType == "editor") {
-      if (sidebarOpen) {
-        return <><BrushIcon className="mr-2" /> Design</>
-      } else {
-        return <><EyeIcon className="mr-2" /> Preview</>
-      }
-    }
-
-    if (designerModeType == "designer") {
-      return <><EyeIcon className="mr-2" /> Preview</>
-    }
-  }*/
-
   const isDesigner = typeof designerMode != "undefined" ? !designerMode : true;
+
+  useEffect(() => {
+    //console.debug(["Designer mode", metaComponents]);
+  }, [metaComponents]);
 
   return (
     <DesignerContext.Provider

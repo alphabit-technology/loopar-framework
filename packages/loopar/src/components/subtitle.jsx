@@ -5,7 +5,7 @@ import { cn } from "@cn/lib/utils";
 
 export default function SubTitle(props) {
   const {designing} = useDesigner();
-  const {getText} = BaseText(props);
+  const {getText} = BaseText({...props, defaultText: "SubTitle"});
   const {getTextSize, getTextAlign} = ComponentDefaults(props);
 
   return (

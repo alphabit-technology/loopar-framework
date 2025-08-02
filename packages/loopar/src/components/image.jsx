@@ -1,65 +1,76 @@
-import {useEffect, useState} from "react";
+import { useState, useMemo} from "react";
 import {ImageIcon} from "lucide-react";
 import LazyLoad from 'react-lazy-load';
+import { cn } from "@cn/lib/utils";
 
 export function FallbackImage(props) {
   const [loading, setLoading] = useState(true);
   const [isValidImage, setIsValidImage] = useState(false);
-  const [imgRef, setImgRef] = useState(null);
   const { coverProps, imageProps, data } = props;
 
   const handleLoad = (valid) => {
     setIsValidImage(valid);
+    setLoading(false);
   }
 
-  useEffect(() => {
-    if(imgRef) setTimeout(() => setLoading(false), 100);
-  }, [imgRef]);
-  
-  const aspectRatio = () => {
-    if(data.aspect_ratio) {
-      const [w=1, h=1] = data.aspect_ratio.split(":");
+  const aspectRatio = useMemo(() => {
+    if (data.aspect_ratio) {
+      const [w = 1, h = 1] = data.aspect_ratio.split(":");
       return (h / w) * 100;
     }
-
     return 60;
-  }
+  }, [data.aspect_ratio]);
 
   return (
     <>
-      <LazyLoad>
-        <>
-          <div className="overflow-hidden w-full h-full p-0 m-0">
-            <img
-              className={`absolute aspect-auto top-0 left-0 w-0 h-0 rounded-xm ${isValidImage ? "opacity-0" : "opacity-100"}`}
-              {...imageProps}
-              src={imageProps?.src || "/"}
-              onLoad={() => handleLoad(true)}
-              onError={() => handleLoad(false)}
-              ref={setImgRef}
-            />
-          </div>
-        </>
-      </LazyLoad>
-
-      <div
-        className="top-0"
-        style={{ paddingTop: `${aspectRatio()}%` }}
-      >
-        {(!isValidImage && !loading ) &&
-          <ImageIcon
-            style={{
-              marginTop: `-${aspectRatio()}%`, 
-              border: "12px solid #fff"
-            }}
-            className={`h-full w-full transition-all ease-in opacity-5 duration-300 hover:scale-105 aspect-square border-4 rounded-lg`}
-          />
+    <div 
+      className="relative w-full h-full overflow-hidden"
+      style={{ paddingTop: `${aspectRatio}%` }}
+    >
+      {/* Representative image */}
+      <div 
+        className={
+          cn(
+            'absolute w-full h-full transition-all duration-300 ease-in-out',
+            !loading && !isValidImage && "opacity-0"
+          )
         }
-        <div
-          className="absolute inset-0 top-0 left-0 right-0 bottom-0 w-full h-full rounded-xm "
-          {...coverProps}
-        />
+        style={{
+          top: 0, left: 0, right: 0, bottom: 0,
+          ...(coverProps.style || {}),
+        }}
+      >
       </div>
+      {/*<div 
+        className={
+          cn(
+          `absolute w-full h-full rounded box-content`,
+           !loading ? "opacity-0" : "bg-primary/8",
+           'transition-all duration-300 ease-in-out'
+          )
+        }
+        style={{
+          top: 0, left: 0, right: 0, bottom: 0,
+        }}
+      >
+      </div>*/}
+    </div>
+    <LazyLoad>
+      <img
+        className={`absolute top-0 left-0 w-0 h-0 opacity-0 rounded`}
+        src={imageProps?.src || "/"}
+        onLoad={() => handleLoad(true)}
+        onError={() => handleLoad(false)}
+      />
+    </LazyLoad>
+    {(!isValidImage && !loading ) &&
+      <ImageIcon
+        style={{
+          top: 0, left: 0, right: 0, bottom: 0,
+        }}
+        className={`absolute h-full w-full transition-all ease-in opacity-10 duration-300 border-9 border-primary/70 border-insi rounded`}
+      />
+    }
     </>
   )
 }

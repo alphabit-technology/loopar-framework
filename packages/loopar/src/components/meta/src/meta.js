@@ -1,6 +1,9 @@
 import elementManage from "@@tools/element-manage";
 import fileManager from "@@file/file-manager";
 import {loopar} from "loopar";
+import {useMemo} from "react";
+
+import { useDesigner } from "@context/@/designer-context";
 
 export function designElementProps(el) {
   if (!el.data) {
@@ -21,13 +24,10 @@ export function designElementProps(el) {
   return newProps;
 };
 
-export function prepareMeta(metaProps, parent, image) {
-  const data = metaProps.data || {};
+export function prepareMeta(metaProps) {
+  metaProps.data ??= {};
+  const data = metaProps.data;
   metaProps.elements = metaProps.elements || [];
-
-  if (image && (!data || !data.background_image || data.background_image === '[]')) {
-    metaProps.src = "/uploads/empty-image.svg"
-  }
 
   const getSrc = () => {
     if (data) {
@@ -49,7 +49,7 @@ export function prepareMeta(metaProps, parent, image) {
       }
     }
 
-    if (data.background_image && data.background_image !== '[]') {
+    if (data.background_image && Array.isArray(data.background_image) && data.background_image.length > 0) {
       const src = getSrc();
 
       if (src && src.length > 0) {
@@ -92,6 +92,14 @@ export function prepareMeta(metaProps, parent, image) {
           };
         }
       }
+    }else{
+      metaProps.imageProps = {};
+
+      if (metaProps.element === "image") {
+        metaProps.coverProps = {
+          style: {}
+        }
+      }
     }
 
     if (metaProps.element != "image") {
@@ -101,23 +109,28 @@ export function prepareMeta(metaProps, parent, image) {
       };
     }
   }
+
+  return metaProps
 }
 
-export const buildMetaProps = ({ metaProps, parent = {}, isDesigner }) => {
-  prepareMeta(metaProps, parent, false);
+export const useBuildMetaProps = (props) => {
+  const { isDesigner } = useDesigner();
 
-  if (isDesigner) return designElementProps(metaProps, parent);
-  metaProps.data ??= {};
+  const metaProps = useMemo(() => {
+    return prepareMeta(props.meta);
+  }, [props.meta]);
+
+  if (isDesigner) return designElementProps(metaProps);
+
   const data = metaProps.data;
 
   return {
     element: metaProps.element,
-    ...{
-      key: metaProps.key || "element" + data.key,
-    },
     ...metaProps,
+    key: metaProps.key || "element" + data.key,
   };
 };
+
 
 
 export function evaluateCondition(condition, values) {

@@ -10,8 +10,8 @@ export default function MetaDesigner(props) {
 
   return renderInput((field) => {
     const handleChange = (value) => {
-      if(valueRef.current === value) return;
-      valueRef.current = value;
+      ///if(valueRef.current === value) return;
+      //valueRef.current = value;
       field.onChange(value);
     };
     

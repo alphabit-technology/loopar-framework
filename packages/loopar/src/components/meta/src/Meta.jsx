@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@cn/lib/utils";
 import { useDocument } from "@context/@/document-context";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { buildMetaProps, extractFieldNames, evaluateCondition } from "./meta";
+import { extractFieldNames, evaluateCondition, useBuildMetaProps } from "./meta";
 import { MetaRender } from "./MetaRender";
 import { DesignElement } from "./DesignElement";
 
-export const Meta = ({ meta, parent, parentKey, className }) => {
+export const Meta = (props) => {
+  const { meta, parent, parentKey, className } = props;
+
   if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
     return meta;
   }
@@ -17,7 +19,7 @@ export const Meta = ({ meta, parent, parentKey, className }) => {
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode// && designer.designerModeType != "preview";
-  const metaProps = buildMetaProps({ metaProps: meta, parent, isDesigner });
+  const metaProps = useBuildMetaProps({ meta, parent, isDesigner });
   
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];

@@ -4,6 +4,54 @@ import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
 import _ from 'lodash';
 
+export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
+  const cloned = JSON.parse(JSON.stringify(elements));
+
+  function insert(nodes) {
+    return nodes.map(node => {
+      if (!node.data) return node;
+
+      if (node.data.key === targetKey) {
+        const filtered = (node.elements || []).filter(
+          child => child.data.key !== dropped.el.data.key
+        );
+        filtered.splice(globalPosition, 0, dropped.el);
+        return { ...node, elements: filtered };
+      }
+
+      return {
+        ...node,
+        elements: insert(node.elements || [])
+      };
+    });
+  }
+
+  function remove(nodes) {
+    return nodes.reduce((acc, node) => {
+      if (!node.data) {
+        acc.push(node);
+        return acc;
+      }
+
+      if (node.data.key === dropped.parentKey && dropped.parentKey !== targetKey) {
+        const filtered = (node.elements || []).filter(
+          child => child.data.key !== dropped.key
+        );
+        acc.push({ ...node, elements: filtered });
+      } else {
+        acc.push({
+          ...node,
+          elements: remove(node.elements || [])
+        });
+      }
+
+      return acc;
+    }, []);
+  }
+
+  return remove(insert(cloned));
+}
+
 export const DragAndDropContext = createContext({
   currentDropZone: null,
   setCurrentDropZone: () => { },
@@ -32,6 +80,7 @@ export const DragAndDropProvider = (props) => {
   const [dragging, setDragging] = useState(false);
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
+  const [globalPosition, setGlobalPosition] = useState(null);
 
   const elementsRef = useRef(elements);
   const containerRef = useRef(null);
@@ -47,43 +96,6 @@ export const DragAndDropProvider = (props) => {
     handleSetElements(metaComponents);
   }, [metaComponents]);
 
-  // This function is called two times, the first time to set elements y Droppable Component (target)
-  // and the second time to update elements in Original Container
-  const proccess = useRef(0)
-  const updateContainer = (key, updatedElements) => {
-    if(!key) return;
-
-    if(key === data.key) {
-      // If the key is the same as the container, update the elements directly
-      handleSetElements([...updatedElements]);
-    }else{
-      // If the key is different, find the element in the container and update it
-      const selfElements = [...elementsRef.current];
-
-      const updateE = (structure) => {
-        return structure.map((el) => {
-          if(!el.data) return el;
-          if (el.data.key === key) {
-            el.elements = updatedElements;
-          } else {
-            el.elements = updateE(el.elements || []);
-          }
-          return el;
-        });
-      };
-
-      handleSetElements(updateE(selfElements));
-    }
-
-    proccess.current += 1;
-    if(proccess.current === 2) {
-      proccess.current = 0;
-      setTimeout(() => {
-        props.onDrop && props.onDrop(JSON.stringify(elementsRef.current));
-      }, 0);
-    }
-  }
-
   useEffect(() => {
     if (draggingEvent && movement) {
       const scrollSpeed = 25;
@@ -97,17 +109,30 @@ export const DragAndDropProvider = (props) => {
     }
   }, [draggingEvent]);
 
+  const handleCompleteDrop = (target, dropped) => {
+    const newElements = completeDrop({
+      elements: [{
+        data,
+        elements: elementsRef.current || []
+      }],
+      targetKey: target,
+      dropped,
+      globalPosition,
+    })[0].elements || [];
+
+    handleSetElements(newElements);
+    props.onDrop?.(JSON.stringify(newElements));
+  };
+
   const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setInitializedDragging(false);
-
-    if(movement){
-      setDrop(currentDragging);
-    }else{
-      setCurrentDragging(null);
-      setDropZone(null);
-    }
-
+    movement && handleCompleteDrop(dropZone, currentDragging);
+    setMovement(null);
     setDragging(false);
+    setDropZone(null);
+    setCurrentDragging(null);
   }
 
   useEffect(() => {
@@ -182,12 +207,12 @@ export const DragAndDropProvider = (props) => {
         movement,
         setMovement,
         handleDrop,
-        dragging,
+        dragging, setDragging,
         drop,
         setDrop,
         setInitializedDragging,
-        updateContainer,
-        baseElements: elements
+        baseElements: elements,
+        setGlobalPosition
       }}
     >
       <div
