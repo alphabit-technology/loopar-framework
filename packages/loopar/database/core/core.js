@@ -2,9 +2,12 @@ import { loopar } from "loopar";
 
 export default class Core {
   constructor() {
-    this.dbConfig = env.dbConfig || {};
+  //this.dbConfig = env.dbConfig || {};
   }
 
+  get dbConfig() {
+    return env.dbConfig || {};
+  }
   async initialize() {
     const dbConfig = this.dbConfig;
     const dialect = dbConfig.dialect || "";
