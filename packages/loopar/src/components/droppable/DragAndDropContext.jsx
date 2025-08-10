@@ -53,8 +53,6 @@ export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
 }
 
 export const DragAndDropContext = createContext({
-  currentDropZone: null,
-  setCurrentDropZone: () => { },
   currentDragging: null,
   setCurrentDragging: () => { },
   movement: null,
@@ -64,19 +62,15 @@ export const DragAndDropContext = createContext({
   handleDrop: () => { },
   dragging: false,
   setDragging: () => { },
-  drop: false,
-  setDrop: () => { },
   setInitializedDragging: () => { }
 });
 
 export const DragAndDropProvider = (props) => {
   const { metaComponents, data } = props;
-  const [activeId] = useState(null);
   const [dropZone, setDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
   const [movement, setMovement] = useState(null);
-  const [drop, setDrop] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
@@ -120,19 +114,24 @@ export const DragAndDropProvider = (props) => {
       globalPosition,
     })[0].elements || [];
 
-    handleSetElements(newElements);
-    props.onDrop?.(JSON.stringify(newElements));
+    //handleSetElements(newElements);
+
+    setTimeout(() => {
+      handleSetElements(newElements);
+      setDragging(false);
+      props.onDrop?.(JSON.stringify(newElements));
+    }, 0);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setInitializedDragging(false);
-    movement && handleCompleteDrop(dropZone, currentDragging);
-    setMovement(null);
-    setDragging(false);
     setDropZone(null);
     setCurrentDragging(null);
+
+    movement && handleCompleteDrop(dropZone, currentDragging);
+    setMovement(null);
   }
 
   useEffect(() => {
@@ -198,7 +197,6 @@ export const DragAndDropProvider = (props) => {
     <DragAndDropContext.Provider
       value={{
         metaComponents,
-        activeId,
         dropZone,
         setDropZone,
         currentDragging,
@@ -208,8 +206,6 @@ export const DragAndDropProvider = (props) => {
         setMovement,
         handleDrop,
         dragging, setDragging,
-        drop,
-        setDrop,
         setInitializedDragging,
         baseElements: elements,
         setGlobalPosition

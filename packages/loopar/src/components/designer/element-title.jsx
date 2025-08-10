@@ -52,7 +52,7 @@ export function ElementTitle({element, active, ...props}) {
         size="xs"
         className="h-5 rounded-none pointer-events-none rounded-tr px-1 text-secondary"
       >
-        {(element.data.key/*element.elementTitle || element.element*/).toString().split(".")[0].toUpperCase()}
+        {(element.elementTitle || element.element).toString().split(".")[0].toUpperCase()}
       </Button>
     </div>
   )

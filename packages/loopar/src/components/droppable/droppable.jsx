@@ -32,10 +32,10 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   useEffect(() => {
     prevElements.current = props.elements;
-    setElements(props.elements || []);
+    if(dropZone || !dragging) setElements(props.elements || []);
   }, [props.elements, dropZone]);
 
-  const dropping = useMemo(() => {
+  const dragOver = useMemo(() => {
     return dragging && dropZone && dropZone === data.key &&
       (currentDragging && data.key !== currentDragging?.key)
   }, [dropZone, currentDragging, data.key, dragging]);
@@ -58,7 +58,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
     handleSetElements(newElements);
 
-    return newElements;
+    //return newElements;
   };
 
   useEffect(() => {
@@ -130,7 +130,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
         position
       );
     }
-  }, [position, dropZone, data, currentDragging]);
+  }, [position, dropZone, data, currentDragging, dragging]);
 
   useEffect(() => {
     if(!dragging) return;
@@ -164,7 +164,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   const ClassNames = cn(
     "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
-    dropping ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow h-full' : "",
+    dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow h-full' : "",
     className,
     renderizableProps.className,
     //"transition-all duration-100 ease-in-out",
