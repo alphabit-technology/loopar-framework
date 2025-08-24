@@ -1,4 +1,3 @@
-import React from "react"
 
 import {
   DropdownMenu,
@@ -10,12 +9,13 @@ import { Link } from "@link"
 import { buttonVariants } from "@cn/components/ui/button"
 import { User2Icon, UserRoundCogIcon, LogOutIcon, Globe2Icon } from "lucide-react"
 
-const MakeButton = ({ Icon, text, link, notControlled, ...props }) => (
+const MakeButton = ({ Icon, text, link, notControlled, onClick, ...props }) => (
   <Link
     {...props}
     to={link}
     variant="ghost"
     notControlled={notControlled}
+    {...(onClick ? {onClick} : {})}
   >
     <Icon className="h-7 w-7 mr-2" />
     {text}

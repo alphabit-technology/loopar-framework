@@ -23,10 +23,17 @@ export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
+  id= "loopar-"+sha1(this.pathRoot);
   pathCore = process.argv[1];
   session = new Session();
   #cookie = new Cookie();
-  auth = new Auth(this.cookie, this.getUser.bind(this), this.disabledUser.bind(this));
+
+  auth = new Auth(
+    this.id,
+    this.cookie, 
+    this.getUser.bind(this),
+    this.disabledUser.bind(this)
+  );
   #server = {};
 
   validateGitRepository(appName, repository) {
@@ -80,6 +87,7 @@ export class Loopar extends Document {
 
   async initialize() {
     console.log('......Initializing Loopar.......');
+    console.log('Loopar ID:', this.id);
     this.utils = Helpers;
     this.dateUtils = dateUtils;
     await this.GlobalEnvironment();
@@ -265,7 +273,7 @@ export class Loopar extends Document {
       await fileManage.setConfigFile('server.config', {
         "port": process.env.PORT || 3000,
         "session": {
-          "secret": "secrctekeyf5d665dd56ff59fbd24699e502a528f77eb786e8",
+          "secret": this.id,
           "saveUninitialized": false,
           "cookie": { "maxAge": 86400000 },
           "resave": false

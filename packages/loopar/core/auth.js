@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken';
+import { loopar } from 'loopar';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'user-auth'; 
+const REFRESH_THRESHOLD = 1800;
 
 export default class Auth {
-  constructor(cookie, getUser, disabledUser) {
+  constructor(tokenName, cookie, getUser, disabledUser) {
+    this.tokenName = tokenName;
     this.cookie = cookie;
     this.getUser = getUser;
     this.disabledUser = disabledUser;
@@ -9,40 +14,90 @@ export default class Auth {
 
   authUser() {
     try {
-      return jwt.verify(this.cookie.get('auth_token'), 'user-auth');
+      const token = this.cookie.get(this.tokenName);
+      if (!token) return null;
+      return jwt.verify(token, JWT_SECRET);
     } catch (error) {
       return null;
     }
   }
 
-  killSession() {
-    this.cookie.remove('auth_token');
-    this.cookie.remove('logged');
+  async killSession(res) {
+    const optsExpire = { httpOnly: true, path: '/', expires: new Date(0) };
+
+    try {
+      if (this.cookie && typeof this.cookie.remove === 'function') {
+        await this.cookie.remove(this.tokenName).catch(() => {});
+        await this.cookie.remove('logged').catch(() => {});
+      }
+    } catch (e) {}
+
+    try {
+      if (res && this.cookie && typeof this.cookie.remove === 'function') {
+        await this.cookie.remove(res, this.tokenName).catch(() => {});
+        await this.cookie.remove(res, 'logged').catch(() => {});
+      }
+    } catch (e) {}
+
+    try {
+      if (this.cookie && typeof this.cookie.set === 'function') {
+        await this.cookie.set(this.tokenName, '', optsExpire).catch(() => {});
+        await this.cookie.set('logged', '', optsExpire).catch(() => {});
+        if (res) {
+          await this.cookie.set(res, this.tokenName, '', optsExpire).catch(() => {});
+          await this.cookie.set(res, 'logged', '', optsExpire).catch(() => {});
+        }
+      }
+    } catch (e) {}
+
+    try {
+      if (res && typeof res.clearCookie === 'function') {
+        res.clearCookie(this.tokenName, { path: '/' });
+        res.clearCookie('logged', { path: '/' });
+      }
+    } catch (e) {}
   }
 
   async logout() {
-    this.cookie.remove('auth_token');
-    this.cookie.remove('logged');
+    loopar.cookie.remove('logged');
+    return this.killSession();
   }
 
   async award() {
-    const token = this.cookie.get('auth_token');
-
+    const token = this.cookie.get(this.tokenName);
     if (!token) return this.killSession();
 
     try {
-      const userData = jwt.verify(token, 'user-auth', { ignoreExpiration: true });
+      const userData = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+      if (!userData) return this.killSession();
 
-      if(await this.disabledUser(userData?.name)) return this.killSession();
+      if (await this.disabledUser?.(userData?.name)) return this.killSession();
 
       const now = Math.floor(Date.now() / 1000);
+      const exp = userData.exp || 0;
 
-      if (userData.exp - now < 1800) {
-        const newToken = jwt.sign(userData, 'user-auth', { expiresIn: '1d' });
-        this.cookie.set(res, 'auth_token', newToken, { httpOnly: true });
+      if (exp - now < REFRESH_THRESHOLD) {
+        const payload = {
+          name: userData.name,
+          email: userData.email,
+          avatar: userData.avatar,
+          profile_picture: userData.profile_picture
+        };
+
+        const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+        await this.cookie.set(this.tokenName, newToken, { httpOnly: true });
+        await this.cookie.set('logged', '1');
+        return payload;
       }
 
-      return userData;
+      return {
+        name: userData.name,
+        email: userData.email,
+        avatar: userData.avatar,
+        profile_picture: userData.profile_picture,
+        exp: userData.exp,
+        iat: userData.iat
+      };
     } catch (error) {
       console.log(["Award error", error]);
       return this.killSession();
@@ -50,17 +105,17 @@ export default class Auth {
   }
 
   login(user) {
-    const userData = {
+    const payload = {
       name: user.name,
       email: user.email,
       avatar: user.name.substring(0, 1).toUpperCase(),
       profile_picture: user.profile_picture,
-    }
+    };
 
-    const token = jwt.sign(userData, 'user-auth', { expiresIn: '1d' });
-    this.cookie.set('auth_token', token, { httpOnly: true });
-    this.cookie.set('logged', true);
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+    this.cookie.set(this.tokenName, token, { httpOnly: true });
+    this.cookie.set('logged', '1');
 
-    return userData;
+    return payload;
   }
 }

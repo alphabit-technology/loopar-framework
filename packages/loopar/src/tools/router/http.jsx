@@ -80,11 +80,6 @@ export default class HTTP {
     try {
       const fetchPromise = fetch(self.url, self.options)
         .then(async response => {
-          if (response.redirected) {
-            window.location.href = response.url;
-            return;
-          }
-
           const isJson = response.headers.get('content-type')?.includes('application/json');
           const data = isJson ? await response.json() : null;
 
@@ -93,8 +88,15 @@ export default class HTTP {
             throw error;
           }
 
-          options.success?.(data);
+          if(options.success) {
+             options.success?.(data);
+          } else if (response.redirected) {
+            window.location.href = response.url;
+            return;
+          }
+
           data?.notify && self.notify(data.notify);
+
           return data;
         });
 

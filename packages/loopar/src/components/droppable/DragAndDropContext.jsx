@@ -114,13 +114,8 @@ export const DragAndDropProvider = (props) => {
       globalPosition,
     })[0].elements || [];
 
-    //handleSetElements(newElements);
-
-    setTimeout(() => {
-      handleSetElements(newElements);
-      setDragging(false);
-      props.onDrop?.(JSON.stringify(newElements));
-    }, 0);
+    setDragging(false);
+    props.onDrop?.(JSON.stringify(newElements));
   };
 
   const handleDrop = (e) => {

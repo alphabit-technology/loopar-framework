@@ -29,22 +29,7 @@ export default class BaseForm extends BaseDocument {
       action: action,
       params: {...this.params, ...params},
       body: this.#getFormData(true),
-      success: r => {
-        if (r && r.success) {
-          //this.lastData = JSON.stringify(this.getFormValues);
-          //this.context.refresh();
-          /*if (loopar.rootApp && loopar.rootApp.refresh) {
-            loopar.rootApp.refresh().then(() => {
-              loopar.notify(r.message);
-            });*/
-          //} else {
-            //window.location.reload();
-          // }
-        }
-
-        options.success && options.success(r);
-        //resolve(r);
-      },
+      ...(options.success ? {success: r => options.success(r)} : null),
       error: r => {
         options.error && options.error(r);
       },

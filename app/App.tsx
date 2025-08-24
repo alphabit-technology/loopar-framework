@@ -29,6 +29,7 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
     >
       <div className="relative flex flex-col">
         <div className="flex-1" translate="yes">
+          
           <WorkspaceProvider
             __META__={__META__}
             ENVIRONMENT={ENVIRONMENT}

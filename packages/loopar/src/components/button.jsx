@@ -11,7 +11,7 @@ const buttons = {
 };
 
 export default function MetaButton(props){
-  const data = props.data;
+  const data = props.data || {};
   const {docRef} = useDocument();
 
   const handleClick = (e) => {

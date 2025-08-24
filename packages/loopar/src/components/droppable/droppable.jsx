@@ -30,21 +30,20 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   const dropZoneRef = useRef();
   const prevElements = useRef(props.elements);
 
-  useEffect(() => {
-    prevElements.current = props.elements;
-    if(dropZone || !dragging) setElements(props.elements || []);
-  }, [props.elements, dropZone]);
-
-  const dragOver = useMemo(() => {
-    return dragging && dropZone && dropZone === data.key &&
-      (currentDragging && data.key !== currentDragging?.key)
-  }, [dropZone, currentDragging, data.key, dragging]);
-
   const handleSetElements = (elements) => {
     if(_.isEqual(prevElements.current, elements)) return;
     prevElements.current = elements;
     setElements(elements);
   }
+
+  useEffect(() => {
+    handleSetElements(props.elements || []);
+  }, [props.elements]);
+
+  const dragOver = useMemo(() => {
+    return dragging && dropZone && dropZone === data.key &&
+      (currentDragging && data.key !== currentDragging?.key)
+  }, [dropZone, currentDragging, data.key, dragging]);
 
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
@@ -57,8 +56,6 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     element && newElements.splice(afterAt, 0, element);
 
     handleSetElements(newElements);
-
-    //return newElements;
   };
 
   useEffect(() => {
@@ -143,9 +140,14 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     }
   }, [movement, dropZone, currentDragging]);
 
-  const clearDragged = useCallback(() => elements.filter(el =>
-    el.$$typeof !== Symbol.for('react.transitional.element')
-  ), [elements]);
+  const clearDragged = useCallback(() => {
+    if(!dragging) return elements;
+    
+    return elements.filter(el =>
+      el.$$typeof !== Symbol.for('react.transitional.element') &&
+      (currentDragging ? el.data?.key !== currentDragging.key : true)
+    );
+  }, [elements, currentDragging, dragging]);
 
   const handleSetDropZone = useCallback(() => {
     if(!currentDragging || currentDragging?.key === data.key) return;

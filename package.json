@@ -1,6 +1,6 @@
 {
   "name": "loopar-framework",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

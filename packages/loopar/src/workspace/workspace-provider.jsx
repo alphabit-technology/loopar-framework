@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
@@ -151,7 +151,7 @@ export function WorkspaceProvider({
   const fetchDocument = (url) => {
     const route = window.location;
     if (route.hash.includes("#")) return;
-    
+
     return new Promise((resolve, reject) => {
       loopar.send({
         action: route.pathname,
@@ -168,14 +168,14 @@ export function WorkspaceProvider({
     });
   }
 
-  useEffect(() => {
-    loaded ? fetchDocument(pathname) : setLoaded(true);
-    __WORKSPACE_NAME__ == "web" && setOpenNav(false);
-  }, [pathname]);
-
   const getActiveDocument = useCallback(() => {
     return Object.values(Documents).find((Document) => Document.active) || {};
   }, [Documents]);
+
+  useEffect(() => {
+    loaded ? fetchDocument(pathname) : setLoaded(true);
+    __WORKSPACE_NAME__ == "web" && setOpenNav(false);
+  }, [pathname, activePage]);
 
   const getActiveParentMenu = useCallback(() => {
     const {__DOCUMENT__} = getActiveDocument();
@@ -214,6 +214,16 @@ export function WorkspaceProvider({
     return theme || "dark"
   }
   
+  useEffect(() => {
+    const handlePopState = (event) => {
+      event.preventDefault();
+      window.history.pushState(null, null, window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const value = {
     theme: getTheme(),
     __META__,
