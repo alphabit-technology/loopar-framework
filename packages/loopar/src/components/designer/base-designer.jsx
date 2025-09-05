@@ -153,6 +153,8 @@ export const BaseDesigner = (props) => {
         
         if (el.data.key === key) {
           el.data = merge ? Object.assign({}, el.data, data) : data;
+
+          //console.log("Updated element", el);
           el.data.key ??= elementManage.getUniqueKey();
         } else {
           el.elements = updateE(el.elements || []);

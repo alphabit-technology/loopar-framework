@@ -118,7 +118,7 @@ export const useBuildMetaProps = (props) => {
 
   const metaProps = useMemo(() => {
     return prepareMeta(props.meta);
-  }, [props.meta]);
+  }, [props.meta.data]);
 
   if (isDesigner) return designElementProps(metaProps);
 
@@ -130,8 +130,6 @@ export const useBuildMetaProps = (props) => {
     key: metaProps.key || "element" + data.key,
   };
 };
-
-
 
 export function evaluateCondition(condition, values) {
   let sanitizedCondition = condition.replace(/and/g, '&&').replace(/or/g, '||').replace(/=/g, '==');

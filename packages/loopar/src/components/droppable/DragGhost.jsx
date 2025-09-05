@@ -4,7 +4,7 @@ import { memo } from 'react';
 export const DragGhost = memo(function DragGhost() {
   const { draggingEvent, movement, currentDragging, dragging } = useDragAndDrop();
 
-  if (!draggingEvent || !dragging || !movement || !currentDragging) return null;
+  if (!(draggingEvent && dragging && movement && currentDragging)) return null;
 
   const { size, offset } = currentDragging;
 

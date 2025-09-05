@@ -23,7 +23,6 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     handleDrop,
     dragging,
     setGlobalPosition
-    
   } = useDragAndDrop();
 
   const droppableEvents = {};
@@ -147,7 +146,8 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       el.$$typeof !== Symbol.for('react.transitional.element') &&
       (currentDragging ? el.data?.key !== currentDragging.key : true)
     );
-  }, [elements, currentDragging, dragging]);
+  }, [elements, currentDragging, dragging, data.key, dropZone]);
+  
 
   const handleSetDropZone = useCallback(() => {
     if(!currentDragging || currentDragging?.key === data.key) return;

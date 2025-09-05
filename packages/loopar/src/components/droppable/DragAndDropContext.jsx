@@ -1,5 +1,5 @@
 import { useContext, createContext, useState, useEffect, useRef } from 'react';
-import { DragGhost } from "./drag-ghost.jsx";
+import { DragGhost } from "./DragGhost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
 import _ from 'lodash';
@@ -62,7 +62,12 @@ export const DragAndDropContext = createContext({
   handleDrop: () => { },
   dragging: false,
   setDragging: () => { },
-  setInitializedDragging: () => { }
+  initializedDragging: false,
+  setInitializedDragging: () => { },
+  dropZone: null,
+  setDropZone: () => { },
+  baseElements: [],
+  setGlobalPosition: () => { }
 });
 
 export const DragAndDropProvider = (props) => {
@@ -116,6 +121,7 @@ export const DragAndDropProvider = (props) => {
 
     setDragging(false);
     props.onDrop?.(JSON.stringify(newElements));
+    handleSetElements(newElements);
   };
 
   const handleDrop = (e) => {
