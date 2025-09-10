@@ -1,8 +1,10 @@
 import { cn } from "@cn/lib/utils";
-import React from "react";
+import React, {useEffect} from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import 'vite/modulepreload-polyfill';
+
+import { useNavigate } from 'react-router';
 
 interface RootLayoutProps {
   __META__: {
@@ -20,6 +22,20 @@ interface RootLayoutProps {
 const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
   const __WORKSPACE__ = __META__.__WORKSPACE__;
   const __DOCUMENT__ = __META__.__DOCUMENT__;
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname;
+      const isDesk = path.startsWith('/desk');
+      const isAuth = !!localStorage.getItem('token');
+      if (isDesk && !isAuth) {
+        navigate('/auth/login', { replace: true });
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [navigate]);
 
   return (
     <main

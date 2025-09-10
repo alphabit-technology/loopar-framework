@@ -111,6 +111,8 @@ export const DesignElement = (props/*{ element, Comp, parentKey }*/) => {
 
   const handleDragStart = (e) => {
     e.stopPropagation();
+    if (e.button !== 0) return;
+    
     if(designerModeType === "preview") return;
 
     setInitializedDragging(true);

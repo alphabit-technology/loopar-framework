@@ -1,35 +1,48 @@
 import {loopar} from 'loopar';
 import BaseDocument from "@context/base/base-document";
 import { dataInterface } from '@global/element-definition';
-import { useWorkspace } from "@workspace/workspace-provider"; 
+import Sanitize from "sanitize-filename";
 import _ from "lodash";
 
 export default class BaseForm extends BaseDocument {
-  tagName = "form";
   formFields = {};
   hasSidebar = true;
   lastData = null;
+  currentData = null;
   __FORM_REFS__ = {};
   #Form = null;
 
   save() {
-    this.send({ action: this.props.meta.action });
+    this.send({ action: this.__META__.action });
+  }
+
+  hasChanges() {
+    return !_.isEqual(this.lastData, this.currentData);
   }
 
   send({ action, params={}, ...options } = {}) {
     this.validate();
-    
-    /*if (!this.notRequireChanges && !this.props.__IS_NEW__ && (!this.lastData || (this.lastData && this.lastData === JSON.stringify(this.getFormValues)))) {
-      this.lastData = JSON.stringify(this.getFormValues);
+
+    if (!this.notRequireChanges && !this.__IS_NEW__ && !this.hasChanges()) {
       loopar.notify("No changes to save", "warning");
       return;
-    }*/
-    
+    }
+     
     loopar.send({
       action: action,
       params: {...this.params, ...params},
       body: this.#getFormData(true),
-      ...(options.success ? {success: r => options.success(r)} : null),
+      success: r => {
+        this.lastData = this.currentData;
+        options.success && options.success(r);
+      },
+     /*  ...(options.success ? {success: r => {
+         console.log(["Save response", r]);
+        this.lastData = current;
+        options.success(r);
+      }} : {success: r => {
+        this.lastData = current;
+      }}), */
       error: r => {
         options.error && options.error(r);
       },
@@ -40,7 +53,7 @@ export default class BaseForm extends BaseDocument {
   get params() {
     const searchParams = new URLSearchParams(window.location.search);
     return {
-      name: this.props.meta.__DOCUMENT_NAME__,
+      name: this.__DOCUMENT_NAME__,
       ...(Object.fromEntries(searchParams.entries()) || {}),
     }
   }
@@ -96,7 +109,7 @@ export default class BaseForm extends BaseDocument {
     return this.#getFormValues(toSave);
   }
 
-  buildDesignerToSave(structure) {
+  buildDesignerToSave(structure, toSave = false) {
     const __files = [];
 
     const fixFieldData = (field) => {
@@ -124,21 +137,22 @@ export default class BaseForm extends BaseDocument {
                   for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                   }
-                  
-                  const newFile = new File([bytes], file.name, { type: mimeType  });
+
+                  const safeFileName = toSave ? Sanitize(file.name || "file").replaceAll(/\s+/g, "-") : file.name || "file";
+
+                  const newFile = new File([bytes], safeFileName, { type: mimeType  });
                   __files.push(newFile);
 
                   filesToSave.push({
-                    name: file.name,
+                    name: safeFileName,
                     size: newFile.size,
                     type: mimeType
                   });
-                }else{
-                  filesToSave.push(file);
+                  continue;
                 }
-              }else{
-                filesToSave.push(file);
               }
+
+              filesToSave.push(file)
             }
 
             filesToSave.length && (updatedData[key] = filesToSave);
@@ -181,7 +195,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   #getFormValues(toSave = false) {
-    if(!this.Form)  return this.meta.__DOCUMENT__;
+    if(!this.Form)  return this.__META__.__DOCUMENT__;
     
     const fields = this.__FIELDS__;
     let __FILES__ = [];
@@ -218,10 +232,11 @@ export default class BaseForm extends BaseDocument {
         }
 
         if(field.def.element === DESIGNER && toSave) {
-          const {files, designer} = this.buildDesignerToSave(JSON.parse(value));
+          const {files, designer} = this.buildDesignerToSave(JSON.parse(value), toSave);
           obj[name] = JSON.stringify(designer);
           __FILES__ = [...(__FILES__ || []), ...(files || [])];
 
+          obj.__FILES__ = __FILES__;
           return obj;
         }
       }
@@ -262,6 +277,11 @@ export default class BaseForm extends BaseDocument {
 
   set Form(Form) {
     this.#Form = Form;
+
+    Form.watch((value, { name, type }) => {
+      if(!this.lastData) this.lastData = value;
+      this.currentData = value;
+    });
   }
 
   get Form() {

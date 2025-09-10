@@ -4,6 +4,26 @@ import { cn } from "@cn/lib/utils";
 
 import { useDesigner } from "@context/@/designer-context";
 
+const ComponentNamePreview = ({Component}) => {
+
+ const toComponentName = (name) => {
+    return (name || "")
+      .toLowerCase()
+      .split(/[_\-\s]+/)              // separa por _, -, o espacios
+      .filter(Boolean)                // elimina vacíos
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+  }
+
+  return (
+    <div className="text-xs text-secondary italic">
+      {"<"}
+      {toComponentName(Component)}
+      {"/>"}
+    </div>
+  )
+}
+
 export function ElementTitle({element, active, ...props}) {
   const designer = useDesigner();
   const title = element.elementTitle || element.element || "";
@@ -52,7 +72,7 @@ export function ElementTitle({element, active, ...props}) {
         size="xs"
         className="h-5 rounded-none pointer-events-none rounded-tr px-1 text-secondary"
       >
-        {(element.elementTitle || element.element).toString().split(".")[0].toUpperCase()}
+        <ComponentNamePreview Component={element.elementTitle || element.element} />
       </Button>
     </div>
   )

@@ -251,7 +251,7 @@ export default class Router {
       /**In this point system detect that file es not a public source, else the system will be try to server private file */
       req.tryToServePrivateFile = true;
 
-      return next();
+      //return next();
       const errString = this.errTemplate({
         code: 404,
         title: "Source not found",

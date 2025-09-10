@@ -146,7 +146,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       el.$$typeof !== Symbol.for('react.transitional.element') &&
       (currentDragging ? el.data?.key !== currentDragging.key : true)
     );
-  }, [elements, currentDragging, dragging, data.key, dropZone]);
+  }, [elements, currentDragging, dragging, data.key]);
   
 
   const handleSetDropZone = useCallback(() => {

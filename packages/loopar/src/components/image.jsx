@@ -61,6 +61,8 @@ export function FallbackImage(props) {
         src={imageProps?.src || "/"}
         onLoad={() => handleLoad(true)}
         onError={() => handleLoad(false)}
+        alt={imageProps?.alt || ""}
+        title={imageProps?.title || ""}
       />
     </LazyLoad>
     {(!isValidImage && !loading ) &&

@@ -41,16 +41,17 @@ export default class BaseDocument extends React.Component {
   }
   
   render(content) {
+    const meta = this.state.meta;
     return (
       <DocumentProvider
         docRef={this}
         formValues={this.getFormValues ? this.getFormValues() : {}}
-        name={this.state.meta?.__DOCUMENT_NAME__}
-        title={this.state.meta?.__DOCUMENT_TITLE__}
-        spacing={this.state.meta?.__SPACING__}
+        name={meta?.__DOCUMENT_NAME__}
+        title={meta?.__DOCUMENT_TITLE__}
+        spacing={meta?.__SPACING__}
       >
         <>
-          <title>{this.state.meta?.__DOCUMENT_TITLE__}</title>
+          <title>{meta?.__DOCUMENT_TITLE__}</title>
           {content}
         </>
       </DocumentProvider>
@@ -63,6 +64,18 @@ export default class BaseDocument extends React.Component {
 
   get meta() {
     return this.state.meta || this.props.meta || {};
+  }
+
+  get __META__(){
+    return this.state.meta || this.props.meta || {};
+  }
+
+  get __IS_NEW__() {
+    return this.meta.__IS_NEW__;
+  }
+
+  get __DOCUMENT_NAME__() {
+    return this.__META__.__DOCUMENT_NAME__;
   }
 
   setFieldDf(fieldName, attr, value) {
@@ -126,16 +139,9 @@ export default class BaseDocument extends React.Component {
   initActions() {
     this.__WRITABLE_FIELDS__.forEach(field => {
       this.on(field.data.name, "changed", (e) => {
-        //console.log(["context", this.meta])
-        //this.state.meta.__DOCUMENT__ = e.target.value;
-        //this.hydrate();;
         this.setState({})
-        // const meta = { ...this.state.meta };
-        // meta.__DOCUMENT__[field.data.name] = e.target.value;
-        // this.setState({meta: meta})
       });
     });
-
   }
 
   componentDidMount() {
@@ -150,14 +156,6 @@ export default class BaseDocument extends React.Component {
 
     this[name] = value;
   }
-
-  // componentDidUpdate(prevProps) {
-  //   // Compara las props anteriores con las actuales
-  //   if (prevProps.meta !== this.props.meta) {
-  //     // Actualiza el estado si las props han cambiado
-  //     this.setState({ meta: this.props.meta });
-  //   }
-  // }
 
   getPageKey() {
     return this.meta.key;
@@ -176,7 +174,6 @@ export default class BaseDocument extends React.Component {
 
   setScrollPosition() {
     loopar.cookie.set(this.getPageKey(), window.scrollY || window.pageYOffset);
-    //localStorage.setItem(this.getPageKey(), window.scrollY || window.pageYOffset);
   }
 
   componentWillUnmount() {

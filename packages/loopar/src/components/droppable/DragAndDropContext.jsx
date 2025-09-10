@@ -127,6 +127,7 @@ export const DragAndDropProvider = (props) => {
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
     setInitializedDragging(false);
     setDropZone(null);
     setCurrentDragging(null);

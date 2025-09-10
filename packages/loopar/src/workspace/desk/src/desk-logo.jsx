@@ -12,8 +12,18 @@ export const DeskLogo = (props) => {
       <div
         className='inline-flex items-center'
       >
-        <img {...imageProps}/>
-        <img {...imageProps} src="/assets/public/images/logo-dark-min.svg" className="h-8 w-20 md:hidden" style={{minWidth:40, maxWidth:40}}/>
+        <img 
+          {...imageProps}
+          loading="lazy"
+          decoding="async"
+        />
+        <img {...imageProps} 
+          src="/assets/public/images/logo-dark-min.svg" 
+          className="h-8 w-20 md:hidden" 
+          style={{minWidth:40, maxWidth:40}}
+          loading="lazy"
+          decoding="async"
+        />
       </div>
     </div>
   );
