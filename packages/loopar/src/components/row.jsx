@@ -93,11 +93,13 @@ export default function Row(props) {
             '@container',
             `grid xm:grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full`,
             'grid-container dynamic box-border',
+            data.class
           )}
           style={{
             "--gap-solver": `${gapSolver}rem`,
             "--column-layout": `calc(${layoutAdjust.join("% - var(--gap-solver)) calc(")}% - var(--gap-solver))`,
-            gap: `${_spacing}rem`
+            gap: `${_spacing}rem`,
+            ...props.style || {}
           }}
         />
       </div>

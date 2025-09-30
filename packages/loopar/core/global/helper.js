@@ -1,4 +1,3 @@
-//import { decamelize } from '/tools/decamelize.js';
 import cookie from './cookie-manager.js';
 import dayjs from 'dayjs';
 const _text = (text) => {
@@ -320,6 +319,46 @@ const ObjectDeepExtend = function (destination, source, visited = new WeakMap())
   return destination;
 };
 
+// Pseudocódigo de validación + reintento
+async function generateMetadata(prompt, params, apiCall) {
+  for (let attempt=0; attempt<3; attempt++) {
+    const resp = await apiCall(prompt, params); // tu llamada a Gemini
+    let text = resp.text.trim();
+    // Si viene con markdown o ```json``` quitarlo
+    text = text.replace(/^```json\s*/i,'').replace(/```$/,'').trim();
+    try {
+      const arr = JSON.parse(text);
+      if (!Array.isArray(arr)) throw new Error('not-array');
+      // validación mínima: cada node tiene element,id,name,label
+      const ok = arr.every(node => {
+        const has = node && node.element && node.id && node.name && node.label;
+        return !!has;
+      });
+      if (!ok) throw new Error('missing-fields');
+      return arr; // ok
+    } catch (err) {
+      // preparar prompt de corrección
+      prompt = `Previous output invalid: ${err.message}. RETURN ONLY VALID JSON ARRAY with required fields. Example: ${/* corta muestra */'[...]'}`;
+      // ajustar params si quieres más determinismo
+      params.temperature = 0;
+      params.top_k = 1;
+      // continue -> nuevo intento
+    }
+  }
+  throw new Error('failed to generate valid metadata');
+}
+
+
+const evaluateAIResponse = (message, start="[", end = start) => {
+  if (message.includes(start)) {
+    const startIndex = message.indexOf(start);
+    const endIndex = message.lastIndexOf(end);
+    return message.substring(startIndex, endIndex + end.length);
+  }
+
+  return message;
+};
+
 export {
   Capitalize,
   UPPERCASE,
@@ -351,5 +390,6 @@ export {
   compare,
   getArrayMax,
   objToRGBA,
-  ObjectDeepExtend
+  ObjectDeepExtend,
+  evaluateAIResponse
 }

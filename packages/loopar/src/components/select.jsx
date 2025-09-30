@@ -24,7 +24,7 @@ export default function MetaSelect(props){
     setRows(getPrepareOptions(initialRows));
   }, []);
 
-  const search = useCallback((target, delay = true) => {
+  const search = (target, delay = true) => {
     if(data.disabled) return;
 
     const q = target?.target?.value || "";
@@ -44,18 +44,17 @@ export default function MetaSelect(props){
 
         if (delay) {
           clearTimeout(lastSearch.current);
-          lastSearch.current = setTimeout(() => {
-            getServerData(q).then(resolve);
-          }, 200);
+          lastSearch.current = setTimeout(() => getServerData(q).then(resolve), 200);
         } else {
           getServerData(q).then(resolve);
         }
       }
     });
-  }, []);
+  };
 
   const isLocal = () => {
-    return buildOptions().length > 1;
+    const options = data.options;
+    return !options || typeof options == "object" || options.includes("\n");
   };
 
   const getModel = () => {

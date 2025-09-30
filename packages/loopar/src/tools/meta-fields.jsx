@@ -110,7 +110,7 @@ export const getMetaFields = (data) => {
         },
         hidden: { element: SWITCH },
         disabled: { element: SWITCH },
-        collapsed: { element: SWITCH }
+        collapsible: { element: SWITCH }
       }
     },
     {

@@ -108,6 +108,18 @@ export const elementsDefinition = {
   ]
 }
 
+export const inputType = {
+  data: "text",
+  text: "text",
+  email: "email",
+  decimal: "number",
+  percent: "number",
+  currency: "text",
+  int: "number",
+  long_int: "number",
+  read_only: "text",
+};
+
 export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
   value.forEach(element => {
     acc[element.element] = { def: { ...element, ...{ group: key, isWritable: key === FORM_ELEMENT } } };
@@ -356,6 +368,82 @@ global.ELEMENT_DEFINITION = function (element, or = null) {
 global.fieldIsWritable = (field) => {
   return elementsDict[field.element]?.def?.isWritable;
 }
+
+export const AIPrompt = (prompt, document_type ) => {
+  const exampleJSON = [
+    {
+      element: "row",
+      elements: [
+        {
+          element: "col",
+          elements: [
+            {
+              element: "input",
+              data: {
+                label: "Name",
+                name: "name"
+              }
+            },
+            {
+              element: "input",
+              data: {
+                label: "Input 1",
+                name: "input1"
+              }
+            }
+          ]
+        },
+        {
+          element: "col",
+          elements: [
+            {
+              element: "input",
+              data: {
+                label: "Input 2",
+                name: "input2"
+              }
+            },
+            {
+              element: "input",
+              data: {
+                label: "Input 3",
+                name: "input3"
+              }
+            }
+          ]
+        }
+      ],
+    }
+  ];
+
+  const elements = elementsNames.filter(e => {
+    if (document_type === "Entity") {
+      return e !== SECTION
+    } else {
+      return true;
+    }
+  });
+
+  return {
+    system: {
+      role: 'developer',
+      content:
+        `You are a strict JSON generator: example: ${JSON.stringify(exampleJSON)}. ALWAYS output valid JSON ONLY, nothing else (no commentary, no trailing commas, no explanation). If you cannot produce valid JSON, output {"error":"<short description>"} only.
+        All elements MUST be objects with keys: "element" (string), data (object) {label, name, key}. If the element can have children, include an "elements" array. Use unique "id" values. Follow the exact structure shown in examples.
+        Use strict the following elements only: ${elements.join(",")}.
+        If you need to use a element like: ${ [...new Set(Object.keys(inputType))].join(", ")} strict use element="input" and set format in data.format: ${ [...new Set(Object.keys(inputType))].join(", ")}.
+        `,
+    },
+    user: {
+      content: `Resolve the following request:"${prompt}"`
+    }
+  }
+
+  return `I have a template generator that generates forms and pages with these elements: ${elements.join(",")},
+                 based on a metadata structure like this: ${JSON.stringify(exampleJSON)} resolve the following request:
+                  "${prompt}", I need the metadata in JSON not in html, strictly with the format that I have shown you. Each element compulsorily requires the data with the name, label and id as a minimum.`
+}
+
 export const GlobalEnvironment = () => {
   global.VALIDATION_ERROR = { code: 400, title: 'Validation error' };
   global.NOT_FOUND_ERROR = { code: 404, title: 'Not found' };

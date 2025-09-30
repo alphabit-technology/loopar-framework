@@ -39,7 +39,7 @@ export function UserInfo() {
       <DropdownMenuContent align="end">
         <div className="grid grid-cols-1 p-2">
           <MakeButton Icon={UserRoundCogIcon} text="Profile" link="/desk/User/profile" />
-          <MakeButton Icon={LogOutIcon} text="Log Out" link="/auth/logout" notControlled="true"/>
+          <MakeButton Icon={LogOutIcon} text="Log Out" link="/Auth/logout" notControlled="true"/>
           <MakeButton Icon={Globe2Icon} text="Web Site" link="/Home" target="_blank" />
         </div>
       </DropdownMenuContent>

@@ -5,6 +5,8 @@ import { fileManage } from '../file-manage.js';
 import { renderMarkdownSSR } from "markdown";
 import { parseDocStructure } from './tools.js';
 
+import { Sequelize } from 'sequelize';
+
 export default class CoreDocument {
   #fields = {};
   documentType = "Entity";
@@ -31,6 +33,7 @@ export default class CoreDocument {
 
   async setApp() {
     const __REF__ = this.__ENTITY__.__REF__;
+
     if (loopar.installing) {
       this.__APP__ = loopar.installingApp;
       return;
@@ -119,9 +122,19 @@ export default class CoreDocument {
     return rels
   }
 
-  #makeField({ field, fieldName = field.data.name, value = null } = {}) {
+  async #makeField({ field, fieldName = field.data.name, value = null } = {}) {
     const nameToGet = (name) => {
       return loopar.utils.Capitalize(name.replaceAll(/_./g, match => match.charAt(1).toUpperCase()))
+    }
+
+    const checkIfFieldExistLikeAttribute = Object.getOwnPropertyDescriptor(this, fieldName);
+
+    if(checkIfFieldExistLikeAttribute) {
+      loopar.throw(`
+        The field name ${fieldName} is already used as attribute of the ${this.__ENTITY__.name} document
+        please change the name of the field in the doc_structure of the ${this.__ENTITY__.name} Entity
+        or rename your attribute in the ${this.__ENTITY__.name} class.
+      `)
     }
 
     if (!this.#fields[fieldName]) {
@@ -140,20 +153,47 @@ export default class CoreDocument {
         this.#fields[fieldName] = new DynamicField(field, value || this.__DOCUMENT__[fieldName]);
       }
 
-      Object.defineProperty(this, `get${nameToGet(fieldName)}`, {
+      /* Object.defineProperty(this, `get${nameToGet(fieldName)}`, {
         get: () => {
           return this.#fields[fieldName];
         }
-      });
+      }); */
 
-      Object.defineProperty(this, fieldName, {
-        get: () => {
-          return this.#fields[fieldName].value;
-        },
-        set: (val) => {
-          this.#fields[fieldName].value = val;
-        }
-      });
+      if(field.element === FORM_TABLE) {
+        Object.defineProperty(this, fieldName, {
+          get: async () => {
+            const field = this.#fields[fieldName];
+            const currentValue = field.value;
+            if((!currentValue || currentValue.length === 0) && !this.__IS_NEW__) {
+              return await this.getChildValues(field.options);
+            }
+            return field.value;
+          },
+          set: (val) => {
+            if (Array.isArray(val)) {
+              this.#fields[fieldName].value = val;
+            } else {
+              const v = loopar.utils.isJSON(val) ? JSON.parse(val) : [];
+              if (Array.isArray(v)) {
+                this.#fields[fieldName].value = v;
+              }
+            }
+          },
+          configurable: false,
+          enumerable: true 
+        });
+      }else{
+        Object.defineProperty(this, fieldName, {
+          get: () => {
+            return this.#fields[fieldName].value;
+          },
+          set: (val) => {
+            this.#fields[fieldName].value = val;
+          },
+          configurable: false,
+          enumerable: true 
+        });
+      }
     }
   }
 
@@ -166,7 +206,7 @@ export default class CoreDocument {
 
     await Promise.all(fields.map(async (field) => {
       if ((fieldIsWritable(field) || field.element === FORM_TABLE) && entityFields.includes(field.data.name)) {
-        this.#makeField({ field });
+        await this.#makeField({ field });
       }
 
       await this.#makeFields(field.elements || []);
@@ -187,22 +227,32 @@ export default class CoreDocument {
     return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
   }
 
-  async deleteChildRecords(force=false) {
+  async deleteChildRecords(force = false) {
     const ID = await this.__ID__();
     const childValuesReq = this.childValuesReq;
 
     if (Object.keys(childValuesReq).length === 0) return;
+    
+    //try {
+      for (const [key, value] of Object.entries(childValuesReq)) {
+        const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
 
-    for (const [key, value] of Object.entries(childValuesReq)) {
-      const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
-
-      if(values || force){
-        await loopar.db.knex(loopar.db.literalTableName(key)).where({
-          //parent_document: this.__ENTITY__.name,
-          parent_id: ID
-        }).del();
+        if (values || force) {
+          await loopar.db.sequelize.query(
+            `DELETE FROM ${loopar.db.tableName(key)} WHERE parent_id = ?`,
+            {
+              replacements: [ID],
+              type: Sequelize.QueryTypes.DELETE,
+              transaction: loopar.db.transaction
+            }
+          );
+        }
       }
-    }
+      
+    /* } catch (error) {
+      await loopar.db.transaction.rollback();
+      throw error;
+    } */
   }
 
   async save() {
@@ -519,25 +569,21 @@ export default class CoreDocument {
   async getChildValues(field) {
     return await loopar.getListToForm(field, {
       filters: {
-        "=": {
-          parent_id: await this.__ID__()
-        }
+        parent_id: await this.__ID__()
       }
     })
   }
 
   async getChildRawValues(field) {
     return await loopar.db.getAll(field, ["*"], {
-      "=": {
-        parent_id: await this.__ID__()
-      }
+      parent_id: await this.__ID__()
     })
   }
 
   get stringifyValues() {
     return Object.values(this.#fields)
       .filter(field => field.element !== FORM_TABLE)
-      //.filter(field => (field.element === PASSWORD && field.value != this.protectedPassword))
+      .filter(field => (field.element === PASSWORD ? field.value != this.protectedPassword : true))
       .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
   }
 

@@ -1,4 +1,4 @@
-import { useContext, createContext} from 'react';
+/* import { useContext, createContext} from 'react';
 
 export const DroppableContext = createContext({
   droppable: false,
@@ -9,3 +9,4 @@ export const DroppableContext = createContext({
 });
 
 export const useDroppable = () => useContext(DroppableContext);
+ */

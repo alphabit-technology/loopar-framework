@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
 import { HiddenContext, useHidden } from "@context/@/hidden-context";
-import { useDroppable } from "@context/@/droppable-context";
+import { useDroppable } from "../../droppable/DroppableContext.jsx";
 import { useDesigner } from "@context/@/designer-context";
 import { useDragAndDrop } from "@@droppable/DragAndDropContext";
 import { cn } from "@cn/lib/utils";
@@ -35,13 +35,13 @@ export const DesignElement = (props/*{ element, Comp, parentKey }*/) => {
     if (!elementProps.data) return;
     const key = elementProps.data.key;
 
-    if (key) {
+    if (key && __REFS__) {
       __REFS__[key] = draggableRef.current;
       return () => {
         delete __REFS__[key];
       };
     }
-  }, [elementProps.data, __REFS__]);
+  }, [elementProps.data, __REFS__, draggableRef]);
 
   if (parentHidden) {
     return (
@@ -64,10 +64,6 @@ export const DesignElement = (props/*{ element, Comp, parentKey }*/) => {
   const disabled = useMemo(() => {
     return elementProps.data && (elementProps.data.hidden || elementProps.data.disabled);
   }, [elementProps.data]);
-
-  /**const selfDragging = useMemo(() => {
-    return designing && currentDragging && currentDragging.key === elementProps.data.key;
-  }, [designing, currentDragging, elementProps.data.key]);*/
 
   const className = useMemo(() => {
     return cn(

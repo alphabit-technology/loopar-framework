@@ -2,7 +2,7 @@ import Router from "@@tools/router/router";
 import * as Helpers from "@global/helper";
 import * as dateUtils from "@global/date-utils";
 import scriptManager from "@@tools/script-manager";
-import { elementsDict } from "@global/element-definition";
+import { elementsDict, AIPrompt } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
 
 class Loopar extends Router {
@@ -319,4 +319,4 @@ class Loopar extends Router {
 
 const loopar = new Loopar();
 export default loopar;
-export { loopar, elementsDict };
+export { loopar, elementsDict, AIPrompt };

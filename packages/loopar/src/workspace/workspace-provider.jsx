@@ -173,7 +173,11 @@ export function WorkspaceProvider({
   }, [Documents]);
 
   useEffect(() => {
-    loaded ? fetchDocument(pathname) : setLoaded(true);
+    setTimeout(() => {setLoaded(true)})
+  })
+
+  useEffect(() => {
+    loaded && fetchDocument(pathname);
     __WORKSPACE_NAME__ == "web" && setOpenNav(false);
   }, [pathname, activePage]);
 

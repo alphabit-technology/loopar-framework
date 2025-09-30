@@ -11,9 +11,7 @@ export default class SingleController extends BaseController {
   }
 
   async getParent(){
-    return await loopar.db.getValue('Menu Item', "page", {
-      "=": {page: this.document}
-    });
+    return await loopar.db.getValue('Menu Item', "page", {page: this.document});
   }
 
   async sendAction(action) {

@@ -56,7 +56,7 @@ export default class BaseController extends CoreController {
       await document.save();
 
       return await this.success(
-        `${(Entity.name === "Entity") ? document.type : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
+        `${(Entity.name === "Entity") ? document.type || "Entity" : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
       );
     } else {
       return await this.render({ ...await document.__data__(), ...this.response || {} });

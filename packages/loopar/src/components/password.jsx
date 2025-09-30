@@ -1,4 +1,5 @@
 import Input from "@input";
+import BaseInput from "@base-input";
 
 export default function Password(props){
   return (
@@ -7,4 +8,10 @@ export default function Password(props){
       {...props}
     />
   );
+}
+
+Password.metaFields = () => {
+  return [
+    ...BaseInput.metaFields(),
+  ]
 }

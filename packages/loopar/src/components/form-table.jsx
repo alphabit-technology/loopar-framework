@@ -326,15 +326,18 @@ export default function FormTableInput(props) {
   );
 }
  
-FormTable.metaFields = ()=>{
+FormTableInput.metaFields = ()=>{
   return [
-    {
-      group: "form",
-      elements: {
-        options: {
-          element: TEXTAREA,
+    ...BaseInput.metaFields(),
+    [
+      {
+        group: "form",
+        elements: {
+          options: {
+            element: TEXTAREA,
+          },
         },
-      },
-    },
+      }
+    ],
   ];
 }

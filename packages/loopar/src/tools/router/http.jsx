@@ -90,8 +90,12 @@ export default class HTTP {
 
           if(options.success) {
              options.success?.(data);
-          } else if (response.redirected) {
-            window.location.href = response.url;
+          }
+
+          if(response.redirected) {
+            setTimeout(() => {
+              window.location.href = response.url;
+            }, 0);
             return;
           }
 

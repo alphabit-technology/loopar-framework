@@ -15,7 +15,7 @@ function getComponent(component) {
     if (__META_COMPONENTS__[component]) {
       resolve(__META_COMPONENTS__[component]);
     } else {
-      const moduleImport = components[`src/${cParse}`];
+      const moduleImport = components[`src/${cParse}`] || components[`src/generic`] || null;
       if(!moduleImport) {
         console.warn("Component not found: " + component);
         resolve(null);

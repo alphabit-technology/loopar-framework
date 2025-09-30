@@ -2,28 +2,15 @@ import BaseInput from "@base-input";
 import {FormLabel, invalidClass} from "./input/index.js";
 import { Input as FormInput } from "@cn/components/ui/input";
 import loopar from "loopar";
+import {inputType} from '@global/element-definition'
 import {
   FormControl,
   FormDescription
 } from "@cn/components/ui/form";
 
-const inputTypeMap = {
-  data: "text",
-  text: "text",
-  email: "email",
-  decimal: "number",
-  percent: "number",
-  currency: "text",
-  int: "number",
-  long_int: "number",
-  password: "password",
-  read_only: "text",
-};
-
-
 export default function Input(props) {
   const { renderInput, data } = BaseInput(props);
-  const type = props.type || inputTypeMap[data?.format || "data"];
+  const type = props.type || inputType[(data?.format || "data").toLowerCase()] || "text";
   const _type = type == "number" ? {
     type: type,
     min: typeof data.min != "undefined" ? data.min : -Infinity,
@@ -73,18 +60,7 @@ Input.metaFields = () => {
           format: {
             element: SELECT,
             data: {
-              options: [
-                { option: "data", value: "Data" },
-                { option: "text", value: "Text" },
-                { option: "email", value: "Email" },
-                { option: "decimal", value: "Decimal" },
-                { option: "percent", value: "Percent" },
-                { option: "currency", value: "Currency" },
-                { option: "int", value: "Int" },
-                { option: "long_int", value: "Long Int" },
-                { option: "password", value: "Password" },
-                { option: "read_only", value: "Read Only" },
-              ],
+              options: Object.entries(inputType).map(([value]) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) })),
               selected: "data",
             },
           },

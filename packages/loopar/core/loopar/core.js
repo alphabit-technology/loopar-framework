@@ -124,8 +124,16 @@ export class Core {
     });
   }
 
+  toEntityKey(str) {
+    if (!str) return '';
+    
+    return decodeURIComponent(str)
+      .replace(/[-_\s]+/g, '')
+      .toLowerCase();
+  }
+
   getRef(entity, alls=true) {
-    return this.getRefs(null, alls)[entity];
+    return this.getRefs(null, alls)[this.toEntityKey(entity)] || null;
   }
 
   getRefs(app, alls = false) {
@@ -143,7 +151,7 @@ export class Core {
 
         const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
         if (alls || installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp)) {
-          result[ref.__NAME__] = ref;
+          result[this.toEntityKey(ref.__NAME__)] = ref;
         }
       }
     }

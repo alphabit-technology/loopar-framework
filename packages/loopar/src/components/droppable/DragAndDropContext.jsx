@@ -3,6 +3,8 @@ import { DragGhost } from "./DragGhost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
 import _ from 'lodash';
+const DOWN = 'down';
+const UP = 'up';
 
 export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
   const cloned = JSON.parse(JSON.stringify(elements));
@@ -96,17 +98,20 @@ export const DragAndDropProvider = (props) => {
   }, [metaComponents]);
 
   useEffect(() => {
-    if (draggingEvent && movement) {
-      const scrollSpeed = 25;
-      const scrollBuffer = 100;
+    if (draggingEvent && movement && currentDragging) {
+      const scrollSpeed = 10;
+      const scrollBuffer = 50;
 
-      if (movement.y <= scrollBuffer) {
+      const draggedTop = movement.y - currentDragging.offset.y;
+      const draggedBottom = draggedTop + currentDragging.size.height;
+
+      if (global.verticalDirection === UP && draggedTop <= scrollBuffer) {
         window.scrollTo(0, window.scrollY - scrollSpeed);
-      } else if (movement.y > window.innerHeight - scrollBuffer) {
+      } else if (global.verticalDirection === DOWN && draggedBottom > window.innerHeight - scrollBuffer) {
         window.scrollBy(0, scrollSpeed);
       }
     }
-  }, [draggingEvent]);
+  }, [draggingEvent, global.verticalDirection]);
 
   const handleCompleteDrop = (target, dropped) => {
     const newElements = completeDrop({
@@ -163,6 +168,7 @@ export const DragAndDropProvider = (props) => {
 
       if (enoughMovement()) {
         !dragging && setDragging(true);
+        
         setMovement({
           x: e.clientX,
           y: e.clientY,
@@ -210,7 +216,8 @@ export const DragAndDropProvider = (props) => {
         dragging, setDragging,
         setInitializedDragging,
         baseElements: elements,
-        setGlobalPosition
+        setGlobalPosition,
+        containerRef
       }}
     >
       <div

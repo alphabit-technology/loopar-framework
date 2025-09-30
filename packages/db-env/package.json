@@ -1,0 +1,14 @@
+{
+  "name": "db-env",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "sequelize": "v7.0.0-alpha2.2",
+    "@sequelize/sqlite3": "7.0.0-alpha.46",
+    "@sequelize/core": "7.0.0-alpha.46",
+    "sqlite3": "^5.1.7",
+    "better-sqlite3": "^12.2.0",
+    "@sequelize/mysql":"7.0.0-alpha.46",
+    "@sequelize/mariadb":"7.0.0-alpha.46"
+  }
+}

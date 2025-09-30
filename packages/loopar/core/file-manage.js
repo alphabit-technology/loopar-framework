@@ -2,7 +2,7 @@ import path from "pathe";
 import { loopar } from "./loopar.js";
 import fs, { access, existsSync } from 'fs';
 import { pathToFileURL } from 'url';
-/// in case this failed, try to import resolvePath, resolvePathSync } from 'mlly'
+
 class FileManage {
   async makeFile(destiny, name, content, ext = 'js', replace = false) {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
@@ -72,7 +72,6 @@ class FileManage {
     const moduleName = fileRote.split('/').pop().split('.')[0];
 
     try {
-     // console.log('fileRote', isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
       let normalizedPath = path.resolve(isRelative ? fileRote : path.join(loopar.pathRoot, fileRote));
       normalizedPath = pathToFileURL(normalizedPath).href;
  
@@ -153,6 +152,18 @@ export default class ${name}${_EXTENDS} {
 
     return await this.makeFile(destiny, name, classContent, ext);
   }
+
+  /**
+ * Convierte nombre de entidad a formato de archivo
+ * "AI Model" -> "ai-model"
+ * "CustomerOrder" -> "customer-order"
+ */
+toKebabCase(str) {
+  // Primero convertir a snake_case, luego a kebab-case
+  return inflection.dasherize(
+    inflection.underscore(str.replace(/\s+/g, ''))
+  );
+}
 
   fileName(name, ext = 'js') {
     return `${loopar.utils.lowercase(loopar.utils.decamelize(name, { separator: '-' }))}.${ext}`;

@@ -12,9 +12,45 @@ import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
-import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx"
-
+import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx";
+import {Prompt} from "./src/prompt/Prompt.jsx";
 import MarkdownPreview from '@uiw/react-markdown-preview';
+import {elementsNames, elementsDict} from "@global/element-definition"
+
+const updateE = (structure, data, key, merge) => {
+  return [...structure].map((el) => {
+    if (!el.data) return el;
+
+    if(!elementsNames.includes(el.element)) {
+      el.data.tag = el.element;
+      el.element = "generic";
+    }
+    
+    if (el.data.key === key) {
+      el.data = merge ? Object.assign({}, el.data, data) : data;
+      el.data.key ??= elementManage.getUniqueKey();
+    } else {
+      el.elements = updateE(el.elements || [], data, key, merge);
+    }
+
+    return {...el};
+  });
+};
+
+const fixMeta = (structure) => {
+
+  return [...structure].map((el) => {
+    el.data ??= {}
+    el.data.key ??= elementManage.getUniqueKey();
+    el.data.id ??= el.data.key;
+    el.data.name ??= el.data.key;
+    el.data.label ??= loopar.utils.Capitalize((el.data.name || el.data.key).replaceAll("_", " "));
+
+    el.elements = fixMeta(el.elements || []);
+
+    return {...el};
+  });
+}
 
 const DesignerButton = () => {
   const { designerMode, designerModeType } = useDesigner();
@@ -45,6 +81,8 @@ export const BaseDesigner = (props) => {
 
   const [updatingElementName, setUpdatingElementName] = useCookies(name + "updatingElementName");
   const [designerModeType, setDesignerModeType] = useCookies(name + "designer-mode-type");
+  const [sendingPrompt, setSendingPrompt] = useState(false);
+  const [currentPrompt, setCurrentPrompt] = useState("Generate a form that allows me to manage inventory data");
 
   const selfKey = data.key;
 
@@ -147,24 +185,7 @@ export const BaseDesigner = (props) => {
       }
     }
 
-    const updateE = (structure) => {
-      return [...structure].map((el) => {
-        if (!el.data) return el;
-        
-        if (el.data.key === key) {
-          el.data = merge ? Object.assign({}, el.data, data) : data;
-
-          //console.log("Updated element", el);
-          el.data.key ??= elementManage.getUniqueKey();
-        } else {
-          el.elements = updateE(el.elements || []);
-        }
-
-        return {...el};
-      });
-    };
-
-    setMeta(JSON.stringify(updateE(selfElements)));
+    setMeta(JSON.stringify(updateE(selfElements, data, key, merge)));
 
     if (key === updatingElementName && !fromEditor) {
       setUpdatingElement({
@@ -204,7 +225,7 @@ export const BaseDesigner = (props) => {
 
   const setMeta = (meta) => {
     if(loopar.utils.isJSON(meta)){
-      props.onChange(meta);
+      props.onChange(JSON.stringify(fixMeta(JSON.parse(meta))));
     }else{
       console.error(["Invalid JSON object", meta]);
       loopar.throw("Invalid JSON object");
@@ -228,43 +249,20 @@ export const BaseDesigner = (props) => {
     });
   }
 
-  const handleDesingIA = (e) => {
-    e.preventDefault();
+  const sendPrompt = (prompt, document_type) => {
+    setCurrentPrompt(prompt);
 
-    !designerMode && loopar.prompt({
-      title: "Design IA",
-      label: (
-        <div className="relative bg-card/50 border text-card-foreground">
-          <pre className="relative p-4 h-full">
-            <code className="w-full h-full text-pretty font-mono text-md font-bold text-green-600">
-              <p className="pb-2 border-b-2">
-                Based on the type of API you have contracted with OpenAI,
-                you may need to wait for a specific
-              </p>
-              <p className="pt-2">
-                Petition example: "Generate a form that allows me to
-                manage inventory data."
-              </p>
-            </code>
-          </pre>
-        </div>
-      ),
-      ok: (prompt) => {
-        loopar.send({
-          action: `/desk/GPT/prompt`,
-          params: { prompt, document_type: "entity" },
-          body: { prompt, document_type: "entity" },
-          success: (res) => {
-            setMeta(res.message);
-          }
-        });
+    loopar.send({
+      action: `/desk/GPT/prompt`,
+      params: { prompt, document_type },
+      body: { prompt, document_type },
+      success: (res) => {
+        setMeta(res.message);
+        setSendingPrompt(false);
       },
-      validate: (prompt) => {
-        !prompt && loopar.throw("Please enter a valid Prompt");
-
-        return true;
-      },
-      size: "lg"
+      always: () => {
+        //setSendingPrompt(false);
+      }
     });
   }
 
@@ -296,6 +294,12 @@ export const BaseDesigner = (props) => {
     >
       <BaseFormContext.Provider value={{}}>
         <div className="">
+            <Prompt 
+              defaultPrompt={currentPrompt} 
+              open={sendingPrompt} 
+              onClose={() => setSendingPrompt(false)}
+              onComplete={setMeta}
+            />
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
               <h2 className="text-3xl">{data.label}</h2>
@@ -317,10 +321,10 @@ export const BaseDesigner = (props) => {
               </Button>
               <Button
                 variant="secondary"
-                onClick={handleDesingIA}
+                onClick={() => setSendingPrompt(true)}
               >
                 <SparkleIcon className="mr-2" />
-                Design IA
+                Design AI
               </Button>
             </div>
           </div>
@@ -357,7 +361,7 @@ export const BaseDesigner = (props) => {
                 <div
                   className="contents w-full prose dark:prose-invert"
                 >
-                    <MarkdownPreview source={`\`\`\`jsx\n${JSON.stringify(metaComponents, null, 2)}\n\`\`\``} />
+                  <MarkdownPreview source={`\`\`\`jsx\n${JSON.stringify(metaComponents, null, 2)}\n\`\`\``} />
                 </div>
               </div>
             </Tab>
@@ -395,7 +399,7 @@ export const Designer = (props) => {
             variant="secondary"
           >
             <SparkleIcon className="mr-2" />
-            Design IA
+            Design AI
           </Button>
         </div>
       </div>

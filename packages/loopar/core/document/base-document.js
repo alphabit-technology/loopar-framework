@@ -2,10 +2,54 @@
 
 import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
+import {Op} from '@sequelize/core';
+
+function combineSequelizeConditions(...conditions) {
+  const validConditions = conditions.filter(cond => {
+    if (!cond || typeof cond !== 'object' || Array.isArray(cond)) {
+      return false;
+    }
+    
+    const hasNormalKeys = Object.keys(cond).length > 0;
+    const hasSymbols = Object.getOwnPropertySymbols(cond).length > 0;
+    
+    return hasNormalKeys || hasSymbols;
+  });
+  
+  if (validConditions.length === 0) return {};
+  if (validConditions.length === 1) return validConditions[0];
+  
+  return { [Op.and]: validConditions };
+}
+
 
 export default class BaseDocument extends CoreDocument {
+
   constructor(props) {
     super(props);
+  }
+
+  validateReservedFieldName(fieldName){
+    const restricrtedClass = [BaseDocument, CoreDocument]
+
+    for(const C of restricrtedClass){
+      const exist = Object.prototype.hasOwnProperty.call(this, fieldName);
+
+      if(exist){
+        console.log([fieldName, exist])
+      }
+    }
+  }
+
+  validateFieldNameLikeMethod(fieldName){
+    const checkIfFieldExistLikeAttribute = Object.getOwnPropertyDescriptor(this, fieldName);
+    if (checkIfFieldExistLikeAttribute) {
+      loopar.throw(`
+        The field name ${fieldName} is already used as attribute of the ${this.__ENTITY__.name} document
+        please change the name of the field in the doc_structure of the ${this.__ENTITY__.name} Entity,
+        or rename the attribute in the ${this.__ENTITY__.name} class.
+      `);
+    }
   }
 
   getFieldProperties(field_name) {
@@ -28,26 +72,20 @@ export default class BaseDocument extends CoreDocument {
   }
 
   /**
-   * Build condition to get list
-   * @param q
-   * {
-   *    name: "Document",
-   *    module: "Core",
-   *    is_single: 1,
-   *    is_static: 0,
-   * }
-   * @returns
-   * {
-   *    '=': {
-   *       name: "Document",
-   *       module: "Core",
-   *       is_single: 1,
-   *       is_static: 0,
-   *    },
-   * }
-   */
-  buildCondition(q = null) {
+ * @queryFormat
+ * {
+      AND: {
+        "=": { type: "user" },
+        OR: {
+          "IN": { id: [1,2,3] },
+          "LIKE": [ ["first_name","last_name"], "smith" ]
+        },
+        "BETWEEN": { created_at: ["2024-01-01","2024-12-31"] }
+      }
+    }
 
+  */
+  buildCondition(q = null){
     /**
      * If q is null, return empty object
      */
@@ -60,50 +98,32 @@ export default class BaseDocument extends CoreDocument {
       if (!this.fields[field] || value === '') delete q[field];
     });
 
-    const con = Object.entries(q).reduce((acc, [key, value], index) => {
+    const conditions = [];
+
+    Object.entries(q).forEach(([key, value]) => {
       const field = this.fields[key];
-      if (!field) return acc;
+      
+      if (!field) return;
 
-      const operand = [SELECT, SWITCH, CHECKBOX].includes(field.element) ? '=' : 'LIKE';
-      acc[operand] ??= {};
-
-      if (value && value.length > 0) {
+      if (value && value.toString().length > 0) {
+        const isSelectType = [SELECT, SWITCH, CHECKBOX].includes(field.element);
+        
         if ([SWITCH, CHECKBOX].includes(field.element)) {
           if ([1, '1'].includes(value)) {
-            acc[operand][key] = 1;
+            conditions.push({ [key]: 1 });
           }
+        } else if (isSelectType) {
+          conditions.push({ [key]: value });
         } else {
-          acc[operand][key] = value;
+          conditions.push({ [key]: { [Op.like]: `%${value}%` } });
         }
       }
+    });
 
-      return acc;
-    }, {});
+    if (conditions.length === 0) return {};
+    if (conditions.length === 1) return conditions[0];
 
-    //console.log(["buildCondition..", con]);
-
-    return Object.entries(con).reduce((acc, [key, value], index) => {
-      if (index === 0) {
-
-        /**
-         * Firs condition don't need AND
-         */
-        acc = {
-          ...acc,
-          ...{ [key]: value }
-        }
-      } else {
-        /**
-         * Other conditions need AND
-         */
-        acc['AND'] = {
-          ...acc['AND'],
-          ...{ [key]: value }
-        };
-      }
-
-      return acc;
-    }, {});
+    return { [Op.and]: conditions };
   }
 
   async getList({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
@@ -133,10 +153,9 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = { ...this.buildCondition(q), ...filters };
+    const condition = combineSequelizeConditions(this.buildCondition(q), filters);
     
     pagination.totalRecords = await this.records(condition);
-
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
     const selfPagination = JSON.parse(JSON.stringify(pagination));
     loopar.db.pagination = pagination;
@@ -181,7 +200,7 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = { ...this.buildCondition(q), ...filters };
+    const condition = combineSequelizeConditions(this.buildCondition(q), filters);
 
     pagination.totalRecords = await this.records(condition);
 
@@ -205,7 +224,12 @@ export default class BaseDocument extends CoreDocument {
   }
 
   buildConditionToSelect(q = null) {
-    return { 'LIKE': [this.getFieldSelectNames(), `%${q}%`] };
+    if (q === null) return {};
+    if (q === '') return {};
+    
+    if (this.getFieldSelectNames().length === 1) {
+      return { [this.getFieldSelectNames()]: { [Op.like]: `%${q}%` } };
+    }
   }
 
   titleFields() {

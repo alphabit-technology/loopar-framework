@@ -1,7 +1,7 @@
 
 'use strict';
 
-import Knex from '../database/knex.js';
+import {SequelizeORM} from 'db-env';
 import { GlobalEnvironment } from './global/element-definition.js';
 import path from "pathe";
 import { fileManage } from "./file-manage.js";
@@ -9,7 +9,7 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
-import { Session, Cookie } from "./session.js";
+import { Session, Cookie } from "./server/session.js";
 import dayjs from "dayjs";
 import crypto from "crypto-js";
 import { getHttpError } from './global/http-errors.js';
@@ -17,7 +17,7 @@ import * as lucideIcons from 'lucide-react'
 import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
 import { Document } from './loopar/document.js';
-import { tailwinInit } from './loopar/tailwindbase.js';
+import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
 
 export class Loopar extends Document {
   #installingApp = false;
@@ -27,6 +27,7 @@ export class Loopar extends Document {
   pathCore = process.argv[1];
   session = new Session();
   #cookie = new Cookie();
+  setTailwindTemp = setTailwindTemp;
 
   auth = new Auth(
     this.id,
@@ -92,7 +93,7 @@ export class Loopar extends Document {
     this.dateUtils = dateUtils;
     await this.GlobalEnvironment();
     await this.#loadConfig();
-    this.db = new Knex();
+    this.db = new SequelizeORM();
 
     await this.db.initialize();
     await this.build();
@@ -179,7 +180,7 @@ export class Loopar extends Document {
 
     const writeModules = async (data) => {
       this.db.pagination = null;
-      const groupList = await this.db.getList('Module Group', ['name', 'description'], { '=': { in_sidebar: 1 } });
+      const groupList = await this.db.getList('Module Group', ['name', 'description'], {in_sidebar: 1 });
 
       for (const g of groupList) {
         const modulesGroup = { name: g.name, description: g.description, modules: [] };
@@ -187,20 +188,13 @@ export class Loopar extends Document {
         const moduleList = await this.db.getList(
           'Module',
           ['name', 'icon', 'description', 'module_group'],
-          {
-            '=': {
-              module_group: g.name,
-              in_sidebar: 1
-            }
-          }
+          {module_group: g.name, in_sidebar: 1}
         );
 
         for (const m of moduleList) {
           const module = { link: m.name, icon: m.icon, description: m.description, routes: [] };
 
-          const routeList = await this.db.getList("Entity", ['name', 'is_single'], {
-            '=': { module: m.name }
-          });
+          const routeList = await this.db.getList("Entity", ['name', 'is_single'], {module: m.name});
 
           module.routes = routeList.map(route => {
             return { link: route.is_single ? 'update' : route.name, description: route.name }
@@ -237,8 +231,8 @@ export class Loopar extends Document {
 
       data.webApp = {
         ...(webApp || {}),
-        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { '=': { parent_id: webApp.id } }) : [],
-        menu_actions: webApp ? await this.db.getAll("Menu Action", ["*"], { '=': { parent_id: webApp.id } }) : []
+        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { parent_id: webApp.id }) : [],
+        menu_actions: webApp ? await this.db.getAll("Menu Action", ["*"], { parent_id: webApp.id }) : []
       }
 
       await writeModules(data);
@@ -284,10 +278,50 @@ export class Loopar extends Document {
 
   async GlobalEnvironment() {
     GlobalEnvironment();
+    
+    const handleFatalError = async (err, source) => {
+      console.error(`${source}:`, err);
+      this.installingApp = null;
+      
+      await this.db.safeRollback();
+      
+      try {
+        this.server?.renderError({ 
+          error: getHttpError(err), 
+          redirect: err?.redirect 
+        });
+      } catch (renderError) {
+        console.error('Failed to render error:', renderError.message);
+      }
+    };
 
-    process.on('uncaughtException', err => {
+    process.on('uncaughtException', (err) => handleFatalError(err, 'uncaughtException'));
+    process.on('unhandledRejection', (err) => handleFatalError(err, 'unhandledRejection'));
+
+    global.Crypto = crypto;
+    global.AJAX = 'POST';
+    global.env = {};
+    global.dayjs = dayjs;
+
+    await this.#writeDefaultSSettings();
+
+    env.dbConfig = fileManage.getConfigFile('db.config');
+    env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
+    env.serverConfig = fileManage.getConfigFile('server.config');
+  }
+
+ /*  async GlobalEnvironment() {
+    GlobalEnvironment();
+
+    process.on('uncaughtException', async err => {
       this.installingApp = null;
       this.printError('LOOPAR: uncaughtException', err);
+
+      try {
+        //await this.db.rollbackTransaction();
+      } catch (error) {
+        this.printError('LOOPAR: uncaughtException rollback error', error);
+      }
 
       try {
         console.log('LOOPAR: render error', err);
@@ -308,7 +342,7 @@ export class Loopar extends Document {
     env.dbConfig = fileManage.getConfigFile('db.config');
     env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
     env.serverConfig = fileManage.getConfigFile('server.config');
-  }
+  } */
 
   throw(error, redirect = null) {
     error = typeof error === 'string' ? { code: 400, message: error } : error
@@ -327,14 +361,14 @@ export class Loopar extends Document {
       }
     }
 
-    return await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
+    return await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
       .select('name', 'email', 'password', 'disabled', 'profile_picture').first();
   }
 
   async disabledUser(user_id) {
     if (!this.__installed__ && this.installing && user_id === "Administrator") return false;
 
-    const status = await this.db.knex('tblUser').where({ name: user_id }).orWhere({ email: user_id })
+    const status = await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
       .select('disabled').first();
     
     return !status || status.disabled;

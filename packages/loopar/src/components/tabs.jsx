@@ -91,7 +91,7 @@ function TabFn(props/*{id, elementsDict, asChild = false, canCustomize, setEleme
     >
       <TabsList className="inline-table align-middle">
         {
-          elementsDict.map(({data}) => (
+          elementsDict.map(({data={}}) => (
             <TabsTrigger
               value={getKey(data)}
               onMouseDown={(e) => {

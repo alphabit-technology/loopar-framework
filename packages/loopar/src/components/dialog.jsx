@@ -1,4 +1,4 @@
-import React, { useRef, useId } from "react";
+import React, { useRef, useId , useEffect, useState, use} from "react";
 import loopar from "loopar";
 import {Button} from "@cn/components/ui/button";
 import { AlertCircle, InfoIcon, HelpCircle } from "lucide-react";
@@ -48,14 +48,20 @@ const Icon = ({type, size, ...props}) => {
 }
 
 const MetaDialog = (props) => {
+  const [open, setOpen] = useState(props.open || false);
+
+  useEffect(() => {
+    setOpen(props.open)
+  }, [props.open])
+  
   const handleSetOpenClose = (open) => {
     loopar.handleOpenCloseDialog(props.id, open);
     if(open) props.onOpen && props.onOpen();
     if(!open) props.onClose && props.onClose();
   };
 
-  const setDialogOpen = (open) => {
-    if(!open && props.validate && !props.validate(props.value)) return;
+  const setDialogOpen = (open, validate=true) => {
+    if(!open && validate && props.validate && !props.validate(props.value)) return;
     handleSetOpenClose(open);
   };
 
@@ -118,7 +124,7 @@ const MetaDialog = (props) => {
         cancelButton.onClick = () => {
           cancelFunc && cancelFunc();
           props.cancel && props.cancel();
-          setDialogOpen(false);
+          setDialogOpen(false, false);
         };
         //cancelButton.dismiss = true;
       }
@@ -129,11 +135,11 @@ const MetaDialog = (props) => {
 
   return (
     <DialogContextProvider>
-      <Dialog open={props.open} onOpenChange={handleSetOpenClose} key={props.id}>
+      <Dialog open={open} onOpenChange={handleSetOpenClose} key={props.id}>
         <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]} flex flex-col`}>
           <DialogHeader>
             <DialogTitle className="flex space-x-2">
-              <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>
+              {props.type && <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>}
               <h2 className="text-2xl">{props.title}</h2>
             </DialogTitle>
           </DialogHeader>
@@ -181,7 +187,7 @@ export default MetaDialog;
 
 export function Prompt (props) {
   const id = useId();
-  const [value, setValue] = React.useState("");
+  const [value, setValue] = useState(props.initialValue || "");
 
   const handleChange = (e) => {
     setValue(e.target.value);
@@ -208,6 +214,7 @@ export function Prompt (props) {
           className="border border-input rounded-xm bg-transparent p-2 mt-2"
           onChange={handleChange}
           rows={getRows()}
+          value={value}
         />
       </div>
     </MetaDialog>

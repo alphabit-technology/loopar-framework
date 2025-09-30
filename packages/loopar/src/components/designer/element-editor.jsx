@@ -129,6 +129,7 @@ export function ElementEditor() {
     const newData = cleanKey(_data);
     newData.key = data.key;
     newData.value = data.value;
+
     updateElement(newData.key, cleanObject(newData), false, true);
   };
   

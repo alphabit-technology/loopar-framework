@@ -40,14 +40,15 @@ export default function Generic({ ...props }) {
   )
 }
 
-
-Generic.getMetaFields = () => {
+Generic.metaFields = () => {
   return [
-    {
-      group: "HTML",
-      elements: {
-        tag: { element: INPUT },
-      },
-    },
-  ];
+    [
+      {
+        group: "HTML",
+        elements: {
+          tag: { element: "input", data: { format: "text" } },
+        },
+      }
+    ]
+  ]
 }

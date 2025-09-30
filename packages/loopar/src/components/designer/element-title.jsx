@@ -9,17 +9,19 @@ const ComponentNamePreview = ({Component}) => {
  const toComponentName = (name) => {
     return (name || "")
       .toLowerCase()
-      .split(/[_\-\s]+/)              // separa por _, -, o espacios
-      .filter(Boolean)                // elimina vacíos
+      .split(/[_\-\s]+/)
+      .filter(Boolean)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join('');
   }
 
   return (
-    <div className="text-xs text-secondary italic">
+    <div className="text-xs text-secondary italic text-gray-400">
+      <span className="text-blue-500 font-bold">
       {"<"}
       {toComponentName(Component)}
       {"/>"}
+      </span>
     </div>
   )
 }
@@ -70,7 +72,7 @@ export function ElementTitle({element, active, ...props}) {
       <Button
         variant="primary"
         size="xs"
-        className="h-5 rounded-none pointer-events-none rounded-tr px-1 text-secondary"
+        className="h-5 rounded-none pointer-events-none rounded-tr px-1"
       >
         <ComponentNamePreview Component={element.elementTitle || element.element} />
       </Button>

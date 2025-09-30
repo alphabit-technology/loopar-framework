@@ -20,14 +20,20 @@ export default class BaseForm extends BaseDocument {
     return !_.isEqual(this.lastData, this.currentData);
   }
 
+  checkChanges() {
+    if (!this.notRequireChanges && !this.__IS_NEW__ && !this.hasChanges()) {
+      loopar.notify("No changes to save", "warning");
+      return false;
+    }
+
+    return true;
+  }
+
   send({ action, params={}, ...options } = {}) {
     this.validate();
 
-    if (!this.notRequireChanges && !this.__IS_NEW__ && !this.hasChanges()) {
-      loopar.notify("No changes to save", "warning");
-      return;
-    }
-     
+    if(!this.checkChanges()) return;
+
     loopar.send({
       action: action,
       params: {...this.params, ...params},
@@ -36,13 +42,12 @@ export default class BaseForm extends BaseDocument {
         this.lastData = this.currentData;
         options.success && options.success(r);
       },
-     /*  ...(options.success ? {success: r => {
-         console.log(["Save response", r]);
-        this.lastData = current;
+      ...(options.success ? {success: r => {
+        this.lastData = this.currentData;
         options.success(r);
       }} : {success: r => {
-        this.lastData = current;
-      }}), */
+        this.lastData = this.currentData;
+      }}),
       error: r => {
         options.error && options.error(r);
       },

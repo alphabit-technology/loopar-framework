@@ -4,16 +4,11 @@ import cookieParser from "cookie-parser";
 import session from 'express-session';
 import useragent from "express-useragent";
 import express from "express";
-import { loopar } from "./loopar.js";
-import Router from "./router.js";
+import { loopar } from "../loopar.js";
+import Router from "./router/router.js";
 import path from "pathe";
-
-/*const compression = require('compression');
-const serveStatic = require('serve-static');*/
-
 import compression from 'compression';
 import serveStatic from 'serve-static';
-
 import { createServer as createViteServer } from 'vite'
 
 class Server extends Router {
@@ -22,8 +17,6 @@ class Server extends Router {
   url = null;
   isProduction = process.env.NODE_ENV == 'production';
   uploadPath = "uploads";
-  //staticFilesPath = "public/uploads/public";
-  //staticAssetsPath = "public/assets";
 
   constructor() { super() }
 

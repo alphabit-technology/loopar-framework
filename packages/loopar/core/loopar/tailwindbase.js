@@ -16,7 +16,7 @@ const getCss =  () => {
   }
 }
 
-async function setTailwindTemp(toElement, classes) {
+export async function setTailwindTemp(toElement, classes) {
   toElement && (tailwindClasses[toElement] = classes);
   let colector = "";
 

@@ -1,6 +1,6 @@
 
 import BaseDocument from "./core/document/base-document.js";
-import { server } from "./core/server.js";
+import { server } from "./core/server/server.js";
 import { loopar } from "./core/loopar.js";
 import { documentManage } from "./core/document/document-manage.js";
 import { fileManage } from "./core/file-manage.js";
@@ -13,9 +13,10 @@ import FormController from "./core/controller/form-controller.js";
 import SystemController from "./apps/core/modules/system/controllers/system/system-controller.js";
 import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.js";
 import * as Helpers from "./core/global/helper.js";
-import { elementsNames, elementsNameByType, elementsDict } from "./core/global/element-definition.js";
+import { elementsNames, elementsNameByType, elementsDict, AIPrompt } from "./core/global/element-definition.js";
 import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
+import { parseDocument } from './core/document/tools.js';
 
 export {
   loopar,
@@ -35,7 +36,9 @@ export {
   elementsNameByType,
   elementsDict,
   MetaComponents,
-  CoreInstaller
+  CoreInstaller,
+  AIPrompt,
+  parseDocument
 };
 
 await server.initialize();

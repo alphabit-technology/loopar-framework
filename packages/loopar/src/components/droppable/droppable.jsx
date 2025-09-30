@@ -1,31 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useHidden } from "@context/@/hidden-context";
-import { DroppableContext } from "@context/@/droppable-context";
 import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import MetaComponent from "@meta-component";
 import { useDragAndDrop } from "./DragAndDropContext";
+import { DroppableContextProvider, useDroppable } from "./DroppableContext";
 const UP = 'up';
 import _ from "lodash";
 import memoize from 'lodash.memoize';
 
 function DroppableContainer({ data = {}, children, className, Component = "div", ...props }) {
-  const __REFS__ = {}
   const [elements, setElements] = useState(props.elements || []);
   const [position, setPosition] = useState(null);
 
   const { 
-    dropZone, setDropZone, 
+    dropZone, 
     currentDragging, 
     movement,
     draggingEvent,
-    handleDrop,
     dragging,
-    setGlobalPosition
+    setGlobalPosition,
   } = useDragAndDrop();
 
-  const droppableEvents = {};
+  const {droppableEvents, dragOver, __REFS__} = useDroppable();
+
   const dropZoneRef = useRef();
   const prevElements = useRef(props.elements);
 
@@ -38,11 +37,6 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   useEffect(() => {
     handleSetElements(props.elements || []);
   }, [props.elements]);
-
-  const dragOver = useMemo(() => {
-    return dragging && dropZone && dropZone === data.key &&
-      (currentDragging && data.key !== currentDragging?.key)
-  }, [dropZone, currentDragging, data.key, dragging]);
 
   const setElement = (element, afterAt, current) => {
     current = currentDragging?.key;
@@ -68,33 +62,28 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   const getBrothers = useMemo(() => {
     return memoize(current => {
-      return Object
-        .keys(__REFS__)
-        .filter(e => e !== current)
-        .reduce((acc, key) => {
-          const el = __REFS__[key];
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            acc[key] =  rect
-          }
-          return acc;
-        }, {})
+      return Object.entries(__REFS__)
+        .filter(([key, el]) => el && key !== current)
+        .map(([key, el]) => el.getBoundingClientRect())
     });
-  }, [__REFS__, currentDragging]);
+  }, [__REFS__, currentDragging, dropZone]);
 
   const getIndex = useCallback((currentKey) => {
-    const brothers = Object.values(getBrothers(currentKey));
-    if (!movement) return brothers.length;
+    const brothers = getBrothers(currentKey);
 
+    if (!movement) return brothers.length;
     if (brothers.length === 0) return 0;
+
+    const draggedTop = movement.y - currentDragging.offset.y;
+    const draggedBottom = draggedTop + currentDragging.size.height;
 
     for (let i = 0; i < brothers.length; i++) {
       const rect = brothers[i];
 
-      if (verticalDirection === UP) {
-        if((movement.y - rect.height) < rect.y) return i; 
+      if (global.verticalDirection === UP) {
+        if (draggedTop < (rect.y + (rect.height * 0.75))) return i;
       } else {
-        if(rect.y > movement.y) return i;
+        if ((rect.y + (rect.height * 0.25)) > draggedBottom) return i;
       }
     }
 
@@ -147,20 +136,6 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       (currentDragging ? el.data?.key !== currentDragging.key : true)
     );
   }, [elements, currentDragging, dragging, data.key]);
-  
-
-  const handleSetDropZone = useCallback(() => {
-    if(!currentDragging || currentDragging?.key === data.key) return;
-    if(props.element == ROW && currentDragging.el.element != COL) return;
-
-    setDropZone(data.key);
-  }, [currentDragging, data.key, props.element, movement]);
-
-  if (currentDragging) {
-    droppableEvents.onPointerEnter = handleSetDropZone;
-    droppableEvents.onPointerOver = handleSetDropZone;
-    droppableEvents.onPointerUp = handleDrop
-  }
 
   const renderizableProps = loopar.utils.renderizableProps(props);
 
@@ -168,8 +143,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
     dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow h-full' : "",
     className,
-    renderizableProps.className,
-    //"transition-all duration-100 ease-in-out",
+    renderizableProps.className
   );
 
   return (
@@ -182,12 +156,10 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       className={ClassNames}
     >
       {children}
-      <DroppableContext.Provider value={{__REFS__ }}>
         <MetaComponent
           elements={elements}
           parentKey={data.key}
         />
-      </DroppableContext.Provider>
     </div>
   );
 }
@@ -199,7 +171,11 @@ export function Droppable(props) {
   const renderizableProps = loopar.utils.renderizableProps(props);
   const C = (designerMode && hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
 
-  if(designerMode && designerModeType != "preview" && !hidden) return <DroppableContainer {...props} />
+  if(designerMode && designerModeType != "preview" && !hidden) return (
+    <DroppableContextProvider {...props}>
+      <DroppableContainer {...props} />
+    </DroppableContextProvider>
+  )
 
   return (
     <C {...(C.toString() == 'Symbol(react.fragment)' ? {} : { ...renderizableProps, className: className })}>

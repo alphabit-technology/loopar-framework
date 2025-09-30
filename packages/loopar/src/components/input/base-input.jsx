@@ -29,12 +29,12 @@ const BaseInput = (props) => {
     return propData || {};
   }, [element, propData, names]);
 
-  const [data, setData] = useState(getInitialData);
+  const [data, setData] = useState(getInitialData());
   const [isInvalid, setIsInvalid] = useState(false);
   const [fieldValue, setFieldValue] = useState(undefined);
   
   const fieldRef = useRef(null);
-  const prevData = useRef(data);
+  const prevData = useRef(null);
   const prevFieldValue = useRef(fieldValue);
   const isUpdatingRef = useRef(false);
 
@@ -42,11 +42,13 @@ const BaseInput = (props) => {
     if (!designerMode) return;
 
     const newData = getInitialData();
+    //console.log(["new Data", newData])
     if (!_.isEqual(prevData.current, newData)) {
-      setData(newData);
+
       prevData.current = newData;
+      setData(newData);
     }
-  }, [propData, designerMode, getInitialData]);
+  }, [propData, designerMode, getInitialData, element]);
 
   useEffect(() => {
     if (!docRef) return;
