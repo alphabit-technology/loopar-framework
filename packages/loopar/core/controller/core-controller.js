@@ -159,7 +159,7 @@ export default class CoreController extends AuthController {
   }
 
   async success(message, options = {}) {
-    return { status: 200, success: true, message: message || "Success", ...options, notify: { type: "success", message: message || "Success" } };
+    return { status: 200, success: true, message: message || "Success", ...options, notify: options.notify || { type: "success", message: message || "Success" } };
   }
 
   async actionSidebar() {

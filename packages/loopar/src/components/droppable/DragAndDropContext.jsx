@@ -195,9 +195,10 @@ export const DragAndDropProvider = (props) => {
 
   useEffect(() => {
     document.body.style.userSelect = currentDragging ? 'none' : 'auto';
-
+    document.body.style.cursor = currentDragging ? 'grabbing' : 'auto';
     return () => {
       document.body.style.userSelect = 'auto';
+      document.body.style.cursor = 'auto';
     };
   }, [currentDragging]);
 

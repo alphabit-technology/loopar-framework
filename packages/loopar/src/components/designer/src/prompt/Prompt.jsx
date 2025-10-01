@@ -32,7 +32,6 @@ export const Prompt = ({
   }, [props.defaultPrompt])
 
   const handelComplete = (response) => {
-    console.log(["Prompt complete", loopar.utils.JSONparse(response)]);
     setSendingPrompt(false);
     onComplete && onComplete(response);
   }
@@ -42,7 +41,6 @@ export const Prompt = ({
     
     loopar.method("GPT", "prompt", { prompt, document_type }, {
       success: (res) => {
-        console.log(["GPT response", res]);
         onComplete && onComplete(res.message);
         onClose && onClose();
       },

@@ -7,6 +7,6 @@
     "vite-plugin-express": "^1.0.3",
     "vite-plugin-preload": "^0.4.4",
     "vite-plugin-compression": "0.5.1",
-    "@vitejs/plugin-react-swc": "4.0.1"
+    "@vitejs/plugin-react-swc": "4.1.0"
   }
 }

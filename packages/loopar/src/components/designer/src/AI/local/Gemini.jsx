@@ -78,7 +78,6 @@ export function GeminiSend({inputText, isUserActivated, onStart, onComplete,  fa
       if(navigator.userActivation.isActive) {
         setSendingPrompt(true);
         const prompt = AIPrompt(inputText, "Entity");
-        console.log(["Gemini prompt", prompt]);
         const session = await LanguageModel.create({
           temperature: 0.1,
           topK: 2,
