@@ -4,8 +4,9 @@ import { elementsDict } from "loopar";
 import fs from "fs";
 import path from "pathe";
 import { fileManage } from "../file-manage.js";
+import { Builder } from "./builder.js";
 
-export class Core {
+export class Core extends Builder {
   getApps() {
     const baseApps = this.getDirList(this.makePath(this.pathRoot, "apps")).map(app => {
       return {
@@ -67,78 +68,13 @@ export class Core {
     return (["Page", "Form", "Report", "View", "Controller"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
   }
 
-  async buildRefs() {
-    let types = {};
-    const docs = this.getEntities();
-
-    const getEntityFields = (fields) => {
-      const getFields = fields => fields.reduce((acc, field) => acc.concat(field, ...getFields(field.elements || [])), []);
-
-      return getFields(fields).filter(field => {
-        const def = elementsDict[field.element]?.def || {};
-        return def.isWritable && !!field.data.name// && !field.element.includes(FORM_TABLE);
-      }).map(field => field.data.name)
-    }
-
-    const refs = Object.values(docs).reduce((acc, doc) => {
-      if (doc.__document_status__ == "Deleted") return acc;
-      
-      const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
-      const isChild = doc.is_child ? 1 : 0;
-      const isSingle = this.entityIsSingle(doc);
-      const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
-
-      if (isBuilder) {
-        types[doc.name] = {
-          __ROOT__: doc.entityRoot,
-          __NAME__: doc.name,
-          __ENTITY__: doc.__ENTITY__ || "Entity",
-          __BUILD__: doc.build || doc.name,
-          __APP__: doc.__APP__,
-          __ID__: doc.id,
-          __TYPE__: doc.type,
-          __MODULE__: doc.__MODULE__,
-          __FIELDS__: getEntityFields(fields)
-        }
-      }
-
-      acc[doc.name] = {
-        __NAME__: doc.name,
-        __APP__: doc.__APP__,
-        __ENTITY__: doc.__ENTITY__ || "Entity",
-        __ROOT__: doc.entityRoot,
-        is_single: isSingle,
-        is_builder: isBuilder,
-        is_child: isChild,
-        __MODULE__: doc.__MODULE__,
-        __TYPE__: doc.type,
-        __FIELDS__: getEntityFields(fields)
-      }
-
-      return acc;
-    }, {});
-
-    await fileManage.setConfigFile('refs', {
-      types,
-      refs
-    });
-  }
-
-  toEntityKey(str) {
-    if (!str) return '';
-    
-    return decodeURIComponent(str)
-      .replace(/[-_\s]+/g, '')
-      .toLowerCase();
-  }
-
   getRef(entity, alls=true) {
-    return this.getRefs(null, alls)[this.toEntityKey(entity)] || null;
+    return this.getRefs(null, alls, entity)[this.utils.toEntityKey(entity)] || null;
   }
 
-  getRefs(app, alls = false) {
-    const refs = fileManage.getConfigFile('refs', null, {}).refs;
-    const installedApps = alls ? [] : Object.keys(fileManage.getConfigFile('installed-apps')).map(
+  getRefs(app, alls = false, e) {
+    const refs = this.__REFS__;
+    const installedApps = alls ? [] : Object.keys(this.__INSTALLED_APPS__).map(
       app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
     );
 
@@ -151,7 +87,7 @@ export class Core {
 
         const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
         if (alls || installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp)) {
-          result[this.toEntityKey(ref.__NAME__)] = ref;
+          result[this.utils.toEntityKey(ref.__NAME__)] = ref;
         }
       }
     }
@@ -164,7 +100,7 @@ export class Core {
   }
 
   getTypes(app) {
-    const types = fileManage.getConfigFile('refs', null, {}).types;
+    const types = this.__TYPES__;
 
     if (app) {
       return Object.values(types).filter(type => type.__APP__ === app);
@@ -189,14 +125,6 @@ export class Core {
     return !fs.existsSync(path) ? null : fs.readFileSync(path, 'utf8');
   }
 
-  /* exist(path) {
-    return new Promise(res => {
-      access(path, (err) => {
-        return res(!err);
-      });
-    });
-  } */
-
   async appStatus(appName) {
     return await this.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
   }
@@ -219,18 +147,6 @@ export class Core {
     } else {
       return null;
     }
-  }
-
-  makePath(...args) {
-    let pathArray = args;
-
-    if (!args[0].startsWith("./")) {
-      pathArray = ["/", ...args];
-    }
-
-    const joinedPath = path.join(...pathArray);
-
-    return this.utils.decamelize(joinedPath, { separator: '-' });
   }
 
   getUniqueKey() {

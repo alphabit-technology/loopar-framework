@@ -1,4 +1,5 @@
 'use strict';
+import {loopar} from "loopar"
 
 // ========================================
 // SHARED CONSTANTS
@@ -187,7 +188,7 @@ export const RouteParsing = {
    */
   findWebAppMenu(document, loopar) {
     const webApp = loopar.webApp || { menu_items: [] };
-    return webApp.menu_items?.find(item => item.link === document);
+    return webApp.menu_items?.find(item => loopar.utils.toEntityKey(item.link) === loopar.utils.toEntityKey(document));
   }
 };
 

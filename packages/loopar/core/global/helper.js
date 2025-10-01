@@ -359,6 +359,14 @@ const evaluateAIResponse = (message, start="[", end = start) => {
   return message;
 };
 
+const toEntityKey = (str) => {
+  if (!str) return '';
+  
+  return decodeURIComponent(str)
+    .replace(/[-_\s]+/g, '')
+    .toLowerCase();
+}
+
 export {
   Capitalize,
   UPPERCASE,
@@ -391,5 +399,6 @@ export {
   getArrayMax,
   objToRGBA,
   ObjectDeepExtend,
-  evaluateAIResponse
+  evaluateAIResponse,
+  toEntityKey
 }
