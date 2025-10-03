@@ -1,9 +1,5 @@
 import { loopar } from "loopar";
 import { Sequelize, QueryTypes } from '@sequelize/core';
-import { SequelizeQueryManager } from './query-builder.js';
-
-const tableDescriptionCache = new Map();
-const TABLE_CACHE_TTL = 60000;
 
 export default class Core {
   constructor(config = null) {
@@ -13,56 +9,6 @@ export default class Core {
 
   get dbConfig() {
     return this.customConfig || env.dbConfig || {};
-  }
-
-  async #initialize(retries = 3) {
-    const dbConfig = this.dbConfig;
-    const dialect = dbConfig.dialect || "";
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        if (dialect.includes('sqlite')) {
-          await this.connectWithSqlite();
-        } else if (dialect.includes('mysql')) {
-          await this.connectMySQL();
-        } else {
-          throw new Error(`Unsupported database dialect: ${dialect}`);
-        }
-        
-        return;
-      } catch (error) {
-        if (attempt === retries) {
-          throw error;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-      }
-    }
-  }
-
-  async initialize() {
-    await this.#initialize();
-    this.queryManager = new SequelizeQueryManager(this.sequelize);
-    
-    if (process.env.NODE_ENV === 'development') {
-      this.setupDebugHooks();
-    }
-  }
-
-  setupDebugHooks() {
-    const startTimes = new Map();
-    
-    this.sequelize.addHook('beforeQuery', (options) => {
-      startTimes.set(options, Date.now());
-    });
-    
-    this.sequelize.addHook('afterQuery', (options) => {
-      const duration = Date.now() - startTimes.get(options);
-      if (duration > 1000) {
-        console.warn(`Slow query (${duration}ms):`, options.sql?.substring(0, 100));
-      }
-      startTimes.delete(options);
-    });
   }
 
   get database() {
@@ -196,18 +142,9 @@ export default class Core {
     } else {
       await this.createTable(tableName, fields);
     }
-    
-    tableDescriptionCache.delete(literalName);
   }
 
   async hasTable(tableName) {
-    const cacheKey = `hasTable_${tableName}`;
-    const cached = tableDescriptionCache.get(cacheKey);
-    
-    if (cached && (Date.now() - cached.timestamp) < TABLE_CACHE_TTL) {
-      return cached.value;
-    }
-
     try {
       let query;
       
@@ -233,13 +170,10 @@ export default class Core {
       
       const exists = result && result.length > 0;
       
-      tableDescriptionCache.set(cacheKey, {
-        value: exists,
-        timestamp: Date.now()
-      });
       
       return exists;
     } catch (error) {
+      console.error('Error checking table existence:', error.message);
       return false;
     }
   }
@@ -264,6 +198,8 @@ export default class Core {
       type: QueryTypes.RAW,
       transaction: this.transaction
     });
+    
+    await this.createTableIndexes(tableName, fields);
   }
 
   async alterTable(tableName, fields, existingFields) {
@@ -272,7 +208,7 @@ export default class Core {
     );
     
     const alterations = [];
-    
+    const newFields = [];
     for (const field of fields) {
       if (!this.fieldIsWritable(field)) continue;
       
@@ -281,6 +217,7 @@ export default class Core {
       if (!existingColumns.has(columnName)) {
         const columnSQL = this.generateColumnSQL(field, 'alter');
         alterations.push(`ADD COLUMN ${columnSQL}`);
+        newFields.push(field); 
       }
       
       if (field.elements) {
@@ -290,6 +227,7 @@ export default class Core {
             if (!existingColumns.has(elementName)) {
               const elementSQL = this.generateColumnSQL(element, 'alter');
               alterations.push(`ADD COLUMN ${elementSQL}`);
+              newFields.push(element);
             }
           }
         }
@@ -312,8 +250,11 @@ export default class Core {
           });
         }
       }
+      
+      await this.createTableIndexes(tableName, newFields);
     }
   }
+
 
   fieldIsWritable(field) {
     return field && field.data && field.data.name && !field.data.computed;
@@ -428,28 +369,85 @@ export default class Core {
     for (const field of fields) {
       const data = field.data || {};
       
-      if (data.index && data.name !== 'id') {
-        const indexName = `idx_${data.name}`;
-        indexes.push(`INDEX ${indexName} (${this.escapeId(data.name)})`);
-      }
-      
-      if (data.unique && data.name !== 'id') {
-        const uniqueName = `uniq_${data.name}`;
-        indexes.push(`UNIQUE INDEX ${uniqueName} (${this.escapeId(data.name)})`);
+      if (this.dialect.includes('mysql')) {
+        if (data.index && data.name !== 'id') {
+          const indexName = `idx_${data.name}`;
+          indexes.push(`INDEX ${indexName} (${this.escapeId(data.name)})`);
+        }
+        
+        if (data.unique && data.name !== 'id') {
+          const uniqueName = `uniq_${data.name}`;
+          indexes.push(`UNIQUE INDEX ${uniqueName} (${this.escapeId(data.name)})`);
+        }
       }
     }
     
     return indexes;
   }
 
+  async createTableIndexes(tableName, fields) {
+    if (this.dialect.includes('mysql')) {
+      return;
+    }
+    
+    const indexQueries = [];
+    
+    for (const field of fields) {
+      if (!this.fieldIsWritable(field)) continue;
+      
+      const data = field.data || {};
+      
+      if (data.index && data.name !== 'id') {
+        const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
+        const indexName = `idx_${safeTableName}_${data.name}`;
+        const query = `CREATE INDEX IF NOT EXISTS ${indexName} ON ${tableName} (${this.escapeId(data.name)})`;
+        indexQueries.push(query);
+      }
+      
+      if (data.unique && data.name !== 'id') {
+        const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
+        const uniqueName = `uniq_${safeTableName}_${data.name}`;
+        const query = `CREATE UNIQUE INDEX IF NOT EXISTS ${uniqueName} ON ${tableName} (${this.escapeId(data.name)})`;
+        indexQueries.push(query);
+      }
+      
+      if (field.elements) {
+        for (const element of field.elements) {
+          if (!this.fieldIsWritable(element)) continue;
+          
+          const elementData = element.data || {};
+          
+          if (elementData.index && elementData.name !== 'id') {
+            const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
+            const indexName = `idx_${safeTableName}_${elementData.name}`;
+            const query = `CREATE INDEX IF NOT EXISTS ${indexName} ON ${tableName} (${this.escapeId(elementData.name)})`;
+            indexQueries.push(query);
+          }
+          
+          if (elementData.unique && elementData.name !== 'id') {
+            const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
+            const uniqueName = `uniq_${safeTableName}_${elementData.name}`;
+            const query = `CREATE UNIQUE INDEX IF NOT EXISTS ${uniqueName} ON ${tableName} (${this.escapeId(elementData.name)})`;
+            indexQueries.push(query);
+          }
+        }
+      }
+    }
+    
+    for (const query of indexQueries) {
+      try {
+        await this.sequelize.query(query, {
+          type: QueryTypes.RAW,
+          transaction: this.transaction
+        });
+      } catch (error) {
+        console.error(`Error creating index: ${query}`, error);
+      }
+    }
+  }
+
   async getTableDescription(document) {
     const tableName = this.literalTableName(document);
-    const cacheKey = `desc_${tableName}`;
-    const cached = tableDescriptionCache.get(cacheKey);
-    
-    if (cached && (Date.now() - cached.timestamp) < TABLE_CACHE_TTL) {
-      return cached.value;
-    }
 
     let query;
     let mapFunction;
@@ -492,11 +490,6 @@ export default class Core {
       
       const description = result.map(mapFunction);
       
-      tableDescriptionCache.set(cacheKey, {
-        value: description,
-        timestamp: Date.now()
-      });
-      
       return description;
     } catch (error) {
       console.error(`Error getting table description for ${tableName}:`, error.message);
@@ -508,7 +501,20 @@ export default class Core {
     if (value === null || value === undefined) {
       return 'NULL';
     }
-    return this.sequelize.escape(value);
+    
+    if (Array.isArray(value) && value.length === 0) {
+      return 'NULL';
+    }
+    
+    if (typeof value === 'string' || 
+        typeof value === 'number' || 
+        typeof value === 'boolean' ||
+        value instanceof Date ||
+        (Array.isArray(value) && value.length > 0)) {
+      return this.sequelize.escape(value);
+    }
+    
+    return 'NULL';
   }
 
   escapeId(identifier) {
@@ -550,10 +556,6 @@ export default class Core {
     return `${this.tablePrefix}${document}`;
   }
 
-  clearTableCache() {
-    tableDescriptionCache.clear();
-  }
-
   async close() {
     if (this._coreConnection) {
       await this._coreConnection.close();
@@ -564,16 +566,5 @@ export default class Core {
       await this.sequelize.close();
       this.sequelize = null;
     }
-    
-    this.clearTableCache();
   }
 }
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of tableDescriptionCache.entries()) {
-    if (now - value.timestamp > TABLE_CACHE_TTL) {
-      tableDescriptionCache.delete(key);
-    }
-  }
-}, TABLE_CACHE_TTL);

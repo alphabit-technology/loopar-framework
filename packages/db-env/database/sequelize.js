@@ -127,18 +127,18 @@ export class SequelizeORM extends Connector {
         }
       }
     } else {
-      const nextId = await this.nextId(document);
-      const currentId = parseInt(data.id || 0);
+      const nextId = parseInt(await this.nextId(document)) || 1;
+      const currentId = parseInt(data.id) || 0;
       data.id = (currentId && currentId >= nextId) ? currentId : nextId;
 
       const fields = Object.keys(data);
       const placeholders = fields.map(() => '?').join(', ');
-      const values_array = Object.values(data);
+      const valuesArray = Object.values(data);
       
       const query = `INSERT INTO ${this.tableName(document)} (${fields.join(', ')}) VALUES (${placeholders})`;
       
       await this.sequelize.query(query, {
-        replacements: values_array,
+        replacements: valuesArray,
         type: Sequelize.QueryTypes.INSERT,
         transaction: this.transaction
       });

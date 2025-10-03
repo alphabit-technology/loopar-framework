@@ -58,37 +58,74 @@ export class Session {
   }
 }
 
-export class Cookie{
-  cookies = {};
+export class Cookie {
+  #cookies = {};
   #res = null;
+  #req = null;
+
+  get res() {
+    return this.#res;
+  }
 
   set res(res) {
     this.#res = res;
   }
 
+  set req(req) {
+    this.#req = req;
+  }
+
+  get cookies() {
+    return this.#cookies;
+  }
+
+  set cookies(cookies) {
+    this.#cookies = cookies || {};
+  }
+
   set(name, value, options = {}) {
-    if(this.#res) this.#res.cookie(name, value, options);
+    const defaultOptions = {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      ...options
+    };
+
+    if (this.#res && typeof this.#res.cookie === 'function') {
+      this.#res.cookie(name, value, defaultOptions);
+      this.#cookies[name] = value;
+    }
   }
 
   get(name) {
-    const value = this.cookies[name];
-    if (value === 'undefined') {
-      return undefined;
+    let value = null;
+
+    if (this.#cookies && this.#cookies[name]) {
+      value = this.#cookies[name];
     }
 
-    if (value === 'true') {
-      return true;
+    else if (this.#req?.cookies?.[name]) {
+      value = this.#req.cookies[name];
+      this.#cookies[name] = value;
     }
 
-    if (value === 'false') {
-      return false;
+    else if (this.#req?.signedCookies?.[name]) {
+      value = this.#req.signedCookies[name];
+      this.#cookies[name] = value;
     }
+
+    if (value === 'undefined') return undefined;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
 
     return value;
   }
 
   remove(name, options = {}) {
-    this.#res.clearCookie(name, options);
-    this.cookies = this.#res.cookies || {};
+    if (this.#res && typeof this.#res.clearCookie === 'function') {
+      this.#res.clearCookie(name, { path: '/', ...options });
+    }
+    
+    delete this.#cookies[name];
   }
 }

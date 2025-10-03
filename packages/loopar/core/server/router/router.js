@@ -117,8 +117,9 @@ export default class Router {
       this.currentReq = req;
       this.currentRes = res;
       loopar.cookie.res = res;
+      loopar.cookie.req = req;  // ← AÑADIDO
       loopar.cookie.cookies = req.cookies;
-      loopar.session.req = req;
+       loopar.session.req = req;
       next();
     };
   }

@@ -1,5 +1,4 @@
 'use strict';
-import {loopar} from "loopar"
 
 // ========================================
 // SHARED CONSTANTS

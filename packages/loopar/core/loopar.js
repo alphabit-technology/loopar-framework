@@ -1,4 +1,3 @@
-
 'use strict';
 
 import {SequelizeORM} from 'db-env';
@@ -6,7 +5,7 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
-import { Session, Cookie } from "./server/session.js";
+import { Cookie, Session } from "./server/session.js";
 import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
 import { Document } from './loopar/document.js';
@@ -22,8 +21,21 @@ export class Loopar extends Document {
   #cookie = new Cookie();
   setTailwindTemp = setTailwindTemp;
 
+  constructor() {
+    super("Loopar");
+    console.log(["Loopar instance created", this.pathRoot, this.id]);
+  }
+
+  get authTokenName() {
+    return this.id;
+  }
+
+  get jwtSecret() {
+    return process.env.JWT_SECRET || 'user-auth';
+  }
+
   auth = new Auth(
-    this.id,
+    this.authTokenName,
     this.cookie, 
     this.getUser.bind(this),
     this.disabledUser.bind(this)
@@ -96,44 +108,9 @@ export class Loopar extends Document {
     await tailwinInit();
   }
 
-
   async systemsSettings() {
     return await this.getDocument("System Settings");
   }
-
- /*  async GlobalEnvironment() {
-    GlobalEnvironment();
-
-    process.on('uncaughtException', async err => {
-      this.installingApp = null;
-      this.printError('LOOPAR: uncaughtException', err);
-
-      try {
-        //await this.db.rollbackTransaction();
-      } catch (error) {
-        this.printError('LOOPAR: uncaughtException rollback error', error);
-      }
-
-      try {
-        console.log('LOOPAR: render error', err);
-        this.server && this.server.renderError({ error: getHttpError(err), redirect: err?.redirect });
-      } catch (error) {
-        this.printError(['LOOPAR: uncaughtException', err]);
-        this.printError(['LOOPAR: uncaughtException produced by', error]);
-      }
-    });
-
-    global.Crypto = crypto;
-    global.AJAX = 'POST';
-    global.env = {};
-    global.dayjs = dayjs;
-
-    await this.#writeDefaultSSettings();
-
-    env.dbConfig = fileManage.getConfigFile('db.config');
-    env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
-    env.serverConfig = fileManage.getConfigFile('server.config');
-  } */
 
   throw(error, redirect = null) {
     error = typeof error === 'string' ? { code: 400, message: error } : error
@@ -162,13 +139,18 @@ export class Loopar extends Document {
     const status = await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
       .select('disabled').first();
     
-    return !status || status.disabled;
+    return !status || status.disabled === 1 || status.disabled === '1'
   }
 
   get currentUser() {
     try {
-      return jwt.verify(this.cookie.get('auth_token'), 'user-auth');
+      const token = this.cookie.get(this.authTokenName);
+      
+      if (!token) return {};
+      
+      return jwt.verify(token, this.jwtSecret);
     } catch (error) {
+      console.error(['[currentUser] Error:', error.message]);
       return {};
     }
   }

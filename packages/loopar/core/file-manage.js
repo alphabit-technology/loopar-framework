@@ -159,7 +159,6 @@ export default class ${name}${_EXTENDS} {
  * "CustomerOrder" -> "customer-order"
  */
 toKebabCase(str) {
-  // Primero convertir a snake_case, luego a kebab-case
   return inflection.dasherize(
     inflection.underscore(str.replace(/\s+/g, ''))
   );

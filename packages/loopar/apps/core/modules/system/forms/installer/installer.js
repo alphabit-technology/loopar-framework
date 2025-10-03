@@ -176,7 +176,7 @@ export default class Installer extends BaseDocument {
           await doc.save({ validate: false });
         } else if (reinstall) {
           if (await isOwn(ent.name, document, data)) {
-            console.log(["Reinstalling//////////", ent.name, document.name])
+            console.log(["Reinstalling", ent.name, document.name])
             const doc = await loopar.getDocument(ent.name, document.name, data);
             await doc.save({ validate: false });
           } else {

@@ -89,7 +89,7 @@ export default class HTTP {
           }
 
           if(options.success) {
-             options.success?.(data.message || data);
+             options.success?.(data?.message || data);
           }
 
           if(response.redirected) {

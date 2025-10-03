@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { loopar } from 'loopar';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'user-auth'; 
+const getJWTSecret = () => loopar.jwtSecret;
 const REFRESH_THRESHOLD = 1800;
 
 export default class Auth {
@@ -15,9 +15,12 @@ export default class Auth {
   authUser() {
     try {
       const token = this.cookie.get(this.tokenName);
+      
       if (!token) return null;
-      return jwt.verify(token, JWT_SECRET);
+      
+      return jwt.verify(token, getJWTSecret());
     } catch (error) {
+      console.error(['[Auth.authUser] Error:', error.message]);
       return null;
     }
   }
@@ -65,10 +68,12 @@ export default class Auth {
 
   async award() {
     const token = this.cookie.get(this.tokenName);
+    
     if (!token) return this.killSession();
 
     try {
-      const userData = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+      const userData = jwt.verify(token, getJWTSecret(), { ignoreExpiration: true });
+
       if (!userData) return this.killSession();
 
       if (await this.disabledUser?.(userData?.name)) return this.killSession();
@@ -84,9 +89,10 @@ export default class Auth {
           profile_picture: userData.profile_picture
         };
 
-        const newToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
-        await this.cookie.set(this.tokenName, newToken, { httpOnly: true });
-        await this.cookie.set('logged', '1');
+        const newToken = jwt.sign(payload, getJWTSecret(), { expiresIn: '1d' });
+        await this.cookie.set(this.tokenName, newToken, { httpOnly: true, path: '/' });
+        await this.cookie.set('logged', '1', { httpOnly: false, path: '/' });
+        
         return payload;
       }
 
@@ -99,7 +105,6 @@ export default class Auth {
         iat: userData.iat
       };
     } catch (error) {
-      console.log(["Award error", error]);
       return this.killSession();
     }
   }
@@ -112,9 +117,10 @@ export default class Auth {
       profile_picture: user.profile_picture,
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
-    this.cookie.set(this.tokenName, token, { httpOnly: true });
-    this.cookie.set('logged', '1');
+    const token = jwt.sign(payload, getJWTSecret(), { expiresIn: '1d' });
+  
+    this.cookie.set(this.tokenName, token, { httpOnly: true, path: '/' });
+    this.cookie.set('logged', '1', { httpOnly: false, path: '/' });
 
     return payload;
   }

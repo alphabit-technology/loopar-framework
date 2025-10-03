@@ -4,6 +4,7 @@ import { Sequelize } from '@sequelize/core';
 import { SqliteDialect } from '@sequelize/sqlite3';
 import { MySqlDialect } from '@sequelize/mysql';
 import { MariaDbDialect } from '@sequelize/mariadb';
+import { SequelizeQueryManager } from './query-builder.js';
 
 export default class Connector extends Core {
   async connectWithSqlite() {
@@ -54,6 +55,24 @@ export default class Connector extends Core {
         loopar.throw("MySQL database not possible to connect, connecting to SQLite database");
       }
     }
+  }
+
+  async #initialize(retries = 3) {
+    const dbConfig = this.dbConfig;
+    const dialect = dbConfig.dialect || "";
+
+    if (dialect.includes('sqlite')) {
+      await this.connectWithSqlite();
+    }
+    
+    if (dialect.includes('mysql')) {
+      await this.connectMySQL();
+    }
+  }
+
+  async initialize() {
+    await this.#initialize();
+    this.queryManager = new SequelizeQueryManager(this.sequelize);
   }
 
   async testDatabase() {
@@ -112,7 +131,6 @@ export default class Connector extends Core {
 
   async testFramework(app) {
     if (!loopar.DBServerInitialized || !loopar.DBInitialized) {
-      console.log([loopar.DBServerInitialized, loopar.DBInitialized]);
       loopar.printError(`Loopar framework is not installed`);
       return false;
     }
@@ -133,6 +151,7 @@ export default class Connector extends Core {
         );
         return true;
       } catch (error) {
+        console.error(['Failed to test fields:', error.message]);
         return false;
       }
     }
@@ -143,7 +162,7 @@ export default class Connector extends Core {
 
       const exist = await this.hasTable(this.literalTableName(entity.name));
       const fieldsIsCorrect = await testFields(entity.name, ref.__FIELDS__);
-
+      
       if (!exist || !fieldsIsCorrect) {
         loopar.printError(`Loopar framework is not installed...`);
         return false;
