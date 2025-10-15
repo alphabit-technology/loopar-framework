@@ -89,8 +89,7 @@ export default class Installer extends BaseDocument {
       if (!this.checkIfAppExists()) {
         await this.clone("https://github.com/alphabit-technology/loopar.git");
         await loopar.buildRefs();
-        this.restartInstaller();
-        return;
+        return this.restartInstaller();
       }
     }
 
