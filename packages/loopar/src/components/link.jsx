@@ -1,6 +1,5 @@
-
 import loopar from "loopar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link as ReactLink, useLocation } from 'react-router';
 import { cn } from "@cn/lib/utils";
 import { buttonVariants } from "@cn/components/ui/button";
@@ -8,55 +7,71 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { activeLink } from "@workspace/defaults";
 import { useDesigner } from "@context/@/designer-context";
 
+const URL_STRUCTURE = ["workspace", "document", "action"];
+const HEADER_OFFSET = 15;
+
 export const makeUrl = (href) => {
-  if (href.startsWith("http") || href.startsWith("/")) return href;
+  if (!href || href.startsWith("http") || href.startsWith("/")) return href;
 
   const location = useLocation();
   const currentURL = global.url || location.pathname;
 
-  const urlStructure = ["workspace", "document", "action"];
   const urlArray = currentURL.split("/");
-
   const urlObject = {};
-  urlStructure.forEach((key, index) => {
+  
+  URL_STRUCTURE.forEach((key, index) => {
     urlObject[key] = urlArray[index + 1];
   });
 
   const [baseUrl, queryString] = href.split("?");
   const baseUrlSegments = baseUrl.split("/").reverse();
 
-  urlStructure.reverse().forEach((key, index) => {
+  URL_STRUCTURE.reverse().forEach((key, index) => {
     urlObject[key] = baseUrlSegments[index] || urlObject[key];
   });
 
-  return `/${Object.values(urlObject).filter(e => e && e !== "").join("/")}${queryString ? "?" + queryString : ""}`;
-}
+  const path = Object.values(urlObject).filter(Boolean).join("/");
+  return `/${path}${queryString ? `?${queryString}` : ""}`;
+};
 
-export function Link({ to = "", variant = "link", size, children, notControlled, activeClassName, ...props }) {
-  const [called, setCalled] = useState(false);
-  const url = makeUrl(to);
-  const location = useLocation();
-  const isAbsolute = url.includes("http");
-  const [active, setActive] = useState(null);
-  
-  const {setOpenNav, currentPage, workspace } = useWorkspace();
-  const {designing} = useDesigner();
-
-  const handleSetCalled = (called) => {
-    setCalled(called);
-  };
-
-  const getHeaderHeight = () => {
+const useHeaderHeight = () => {
+  return useCallback(() => {
     const header = document.querySelector('header');
-    return parseFloat(getComputedStyle(header).height);
-  };
+    return header ? parseFloat(getComputedStyle(header).height) : 0;
+  }, []);
+};
 
-  const detectActiveMenuViaScroll = () => {
+const useScrollToSection = (to) => {
+  const getHeaderHeight = useHeaderHeight();
+
+  return useCallback(() => {
+    if (!to.startsWith("#")) return;
+    
+    const targetId = to.substring(1);
+    const target = document.getElementById(targetId);
+
+    if (!target) return;
+
+    const offsetTop = target.getBoundingClientRect().top + window.scrollY - getHeaderHeight();
+
+    window.scrollTo({
+      top: offsetTop - HEADER_OFFSET,
+      behavior: 'smooth'
+    });
+  }, [to, getHeaderHeight]);
+};
+
+const useActiveSection = (to, enabled) => {
+  const [active, setActive] = useState(null);
+  const getHeaderHeight = useHeaderHeight();
+  const location = useLocation();
+
+  const detectActiveSection = useCallback(() => {
     const scroll = window.scrollY + getHeaderHeight();
     let activeSection = null;
     let minDistance = Infinity;
 
-    document.querySelectorAll('[id]').forEach(section => {
+    document.querySelectorAll('[id][data-section]').forEach(section => {
       const sectionTop = section.offsetTop;
       const sectionHeight = section.offsetHeight;
       const distance = Math.abs(sectionTop - scroll);
@@ -73,66 +88,87 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
     });
 
     setActive(activeSection);
-  };
+  }, [getHeaderHeight]);
 
   useEffect(() => {
-    if (called) {
-      if (to.startsWith("#")) {
-        goTo({ target: { getAttribute: () => to } });
-      }
-      handleSetCalled(false);
-    }
+    if (!enabled) return;
 
-    if (to.startsWith("#") && typeof window !== "undefined") {
-      window.addEventListener("scroll", detectActiveMenuViaScroll);
-      detectActiveMenuViaScroll();
-    }
-
+    const timeoutId = setTimeout(detectActiveSection, 100);
+    window.addEventListener("scroll", detectActiveSection, { passive: true });
+    
     return () => {
-      if (to.startsWith("#") && typeof window !== "undefined") {
-        window.removeEventListener("scroll", detectActiveMenuViaScroll);
-      }
+      window.removeEventListener("scroll", detectActiveSection);
+      clearTimeout(timeoutId);
     };
-  }, [called, location.pathname, location.search]);
+  }, [enabled, detectActiveSection, location.pathname]);
 
-  const handleOnClick = (e) => {
-    handleSetCalled(true);
-    props.onClick && props.onClick(e);
-    if(workspace === "web") setOpenNav(false);
-  };
+  return active;
+};
 
-  function goTo(e) {
-    const target = document.getElementById(e.target.getAttribute('href').substring(1));
+export function Link({ 
+  to = "", 
+  variant = "link", 
+  size, 
+  children, 
+  notControlled, 
+  activeClassName,
+  onClick,
+  ...props 
+}) {
+  const url = useMemo(() => makeUrl(to), [to]);
+  const location = useLocation();
+  const isAbsolute = url?.includes("http");
+  const isHashLink = to.startsWith("#");
+  
+  const { setOpenNav, currentPage, workspace } = useWorkspace();
+  const { designing } = useDesigner();
 
-    if (!target) return;
-    const offsetTop = target.getBoundingClientRect().top + window.scrollY - getHeaderHeight();
+  const scrollToSection = useScrollToSection(to);
+  const activeSection = useActiveSection(to, isHashLink);
 
-    window.scrollTo({
-      top: offsetTop - 15,
-      behavior: 'smooth'
-    });
-  }
+  const handleClick = useCallback((e) => {
+    if (isHashLink) {
+      e.preventDefault();
+      scrollToSection();
+    }
+    
+    onClick?.(e);
+    
+    if (workspace === "web") {
+      setOpenNav(false);
+    }
+  }, [isHashLink, scrollToSection, onClick, workspace, setOpenNav]);
 
-  const isAsctive = props.active || (active === to.split("#")[1] || (currentPage && (currentPage === to)));
+  const isActive = useMemo(() => {
+    if (props.active) return true;
+    if (isHashLink && activeSection) {
+      return activeSection === to.substring(1);
+    }
+    return currentPage && currentPage === to;
+  }, [props.active, isHashLink, activeSection, to, currentPage]);
 
   const className = cn(
     buttonVariants({ variant, size }),
     "justify-normal cursor-pointer p-2",
-    activeLink(isAsctive, activeClassName),
+    activeLink(isActive, activeClassName),
     props.className
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
-   
+  const commonProps = {
+    ...renderizableProps,
+    key: renderizableProps.key || to,
+    className,
+    ...(designing && { draggable: false })
+  };
+
   if (isAbsolute || notControlled) {
     return (
       <a
-        {...renderizableProps}
-        key={renderizableProps.key || to}
-        className={className}
+        {...commonProps}
         href={to}
         target={props._target}
-        {...(designing ? { draggable: false } : {})}
+        onClick={handleClick}
       >
         {children}
       </a>
@@ -141,19 +177,16 @@ export function Link({ to = "", variant = "link", size, children, notControlled,
 
   return (
     <ReactLink
-      {...renderizableProps}
-      key={renderizableProps.key || to}
-      className={className}
+      {...commonProps}
       to={url}
-      onClick={handleOnClick}
-      active
+      onClick={handleClick}
     >
       {children}
     </ReactLink>
   );
 }
 
-const variants = {
+const VARIANTS = {
   primary: "primary",
   secondary: "secondary",
   default: "default",
@@ -163,11 +196,16 @@ const variants = {
 
 export default function MetaLink(props) {
   const data = props.data || {};
-  const className = cn(props.className, data.class || "");
-  delete data.class;
+  const { class: dataClass, ...restData } = data;
+  const className = cn(props.className, dataClass);
 
   return (
-    <Link {...props} {...data} className={className} key={props.key || data.key || props.to} >
+    <Link 
+      {...props} 
+      {...restData} 
+      className={className} 
+      key={props.key || data.key || props.to}
+    >
       {data.label}
     </Link>
   );
@@ -192,14 +230,12 @@ MetaLink.metaFields = () => {
       variant: {
         element: SELECT,
         data: {
-          options: Object.keys(variants).map((button) => {
-            return {
-              option: button,
-              value: variants[button],
-            };
-          }),
+          options: Object.keys(VARIANTS).map((button) => ({
+            option: button,
+            value: VARIANTS[button],
+          })),
         },
       },
     },
   }];
-}
+};

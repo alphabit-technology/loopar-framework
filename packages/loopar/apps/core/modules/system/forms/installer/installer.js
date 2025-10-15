@@ -37,8 +37,34 @@ export default class Installer extends BaseDocument {
     loopar.installingApp = this.app_name;
 
     const moduleRoute = loopar.makePath('apps', this.app_name);
-    const appData = await fileManage.getConfigFile('installer', moduleRoute);
-    const ownEntities = loopar.getEntities(this.app_name);
+    const appData = await fileManage.getConfigFile('installer', moduleRoute).documents;
+    
+    
+    for (const e of Object.keys(appData).reverse()) {
+      console.warn([`Uninstalling ${e}`]);
+      const ent = appData[e];
+      const [constructor, name] = e.split(':');
+
+      if(ent.root){
+        if(await loopar.db.hasEntity(constructor, name)){
+          const entityData = await this.getDocumentData(name);
+          if(entityData && ent.app == this.app_name){
+            const doc = await loopar.getDocument(constructor, name);
+            console.warn([`Uninstalling ${constructor}:${name}`]);
+            await doc.delete({ sofDelete: false, force: true, updateHistory: false });
+          }else{
+            console.log([`No data found for ${constructor}:${name}, skipping...`]);
+          }
+        }
+      }else{
+        if (await loopar.db.count(constructor, name)) {
+          console.warn([`Deleting ${constructor}:${name}`]);
+          const doc = await loopar.getDocument(constructor, name);
+          await doc.delete({ sofDelete: false, force: true, updateHistory: false }); 
+        }
+      }
+    }
+    /*const ownEntities = loopar.getEntities(this.app_name);
     const ownEntitiesNames = ownEntities.map(e => e.name);
 
     const deleteDocuments = async (entity) => {
@@ -61,7 +87,7 @@ export default class Installer extends BaseDocument {
 
     for (const entity of appData.documents) {
       await deleteDocuments(entity);
-    }
+    }*/
 
     loopar.installingApp = null;
     await loopar.buildRefs();
@@ -104,17 +130,53 @@ export default class Installer extends BaseDocument {
     await loopar.build();
     return "App installed successfully!";
   }
-
-  /*getAppFromData(data, modu) {
-    const modules = data.Module.documents;
-    return Object.values(modules).find(e => e.name === modu).app_name;
-  }*/
   
   async getAppFromModule(module) {
     return await loopar.db.getValue('Module', 'app_name', module, {ifNotFound: null});
   }
 
   async installData(reinstall = false) {
+    console.log("Installing DATA", this.app_name);
+    const moduleRoute = loopar.makePath('apps', this.app_name);
+    const appData = await fileManage.getConfigFile('installer', moduleRoute).documents;
+
+    for (const e of Object.keys(appData)) {
+      console.log("Installing", e);
+      const ent = appData[e];
+      const [constructor, name] = e.split(':');
+
+      if(ent.root){
+        if(!await loopar.db.hasEntity(constructor, name)){
+          if(ent.app == this.app_name){
+            const entityData = await this.getDocumentData(name);
+            if(entityData){
+              const doc = await loopar.newDocument(constructor, entityData);
+              console.log(["Installing", constructor, name]);
+              await doc.save({ validate: false });
+            }else{
+              console.log([`No data found for ${constructor}:${name}, skipping...`]);
+            }
+          }else{
+            loopar.throw(`App ${this.app_name} require ${ent.app}:${ent.name} to be installed first`);
+          }
+        }
+      }else{
+        if (!await loopar.db.count(constructor, name)) {
+          console.log([`Inserting ${constructor}:${name}`]);
+          const doc = await loopar.newDocument(constructor, { ...ent, __document_status__: "Active" });
+          await doc.save({ validate: false });
+        } else if (reinstall) {
+          console.log([`Updating ${constructor}:${name}`]);
+          const doc = await loopar.getDocument(constructor, name, ent);
+          await doc.save({ validate: false });
+        }
+      }
+    }
+
+    return `App ${this.app_name} installed successfully!`;
+  }
+
+  async installData1(reinstall = false) {
     console.log("Installing DATA", this.app_name);
     const moduleRoute = loopar.makePath('apps', this.app_name);
     const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;

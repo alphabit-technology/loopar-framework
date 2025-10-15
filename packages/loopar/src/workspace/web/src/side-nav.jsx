@@ -51,10 +51,8 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
       >
         {treeIsActive && (
           <div className={`pl-3 ${isChild ? '' : ''}`}>
-            {item.items.map((subItem) => (
-              <>
-                <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
-              </>
+            {item.items.sort((a, b) => b.id - a.id).map((subItem) => (
+              <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
             ))}
           </div>
         )}

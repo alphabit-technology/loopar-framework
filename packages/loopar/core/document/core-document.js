@@ -44,7 +44,7 @@ export default class CoreDocument {
        * If is an Entity type App, the app name is the same as the document name
        */
       this.__APP__ = this.name;
-    } else if (this.isBuilder) {
+    } else if (this.is_builder) {
       /**
        * If is a Entity type Entity, the app name is the same as the module name
        */
@@ -383,10 +383,10 @@ export default class CoreDocument {
           if (options[0] === "") {
             errors.push(errForNotValidDocument);
           } else {
-            if (await loopar.db.hastEntity(options[0]) === 0) {
+            if (await loopar.db.hasEntity(null,options[0]) === 0) {
               errors.push(errForNotValidDocument);
             } else {
-              const link = await loopar.db.hastEntity(field.options, value);
+              const link = await loopar.db.hasEntity(field.options, value);
 
               if (link === 0) {
                 errors.push(`The value ${value} for ${field.name} does not exist in ${field.options} Entity`);
@@ -460,7 +460,7 @@ export default class CoreDocument {
               el.data.value_descriptive = label || value;
             } else {
               // const db = loopar.db;
-              // if (await db.hastEntity(data.options) && await db.count(data.options, data.value) > 0) {
+              // if (await db.hasEntity(null, data.options) && await db.count(data.options, data.value) > 0) {
               //   const doc = await loopar.getDocument(data.options, data.value);
               //   el.data.value_descriptive = await doc.getValueDescriptive();
               // }

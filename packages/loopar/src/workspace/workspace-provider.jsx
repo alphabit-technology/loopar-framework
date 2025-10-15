@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
@@ -39,25 +39,40 @@ export function WorkspaceProvider({
   const [activePage, setActivePage] = useState(props.activePage || "");
   const [activeModule, setActiveModule] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(false);
+  
+  const lastFetchedPath = useRef(pathname);
+  const isInitialMount = useRef(true);
 
   const memoizedDocuments = useMemo(() => {
     return Object.values(Documents)
       .filter(document => document.active)
       .map(document => {
         const { Module, __DOCUMENT__ } = document;
-        return Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
+        return Module && (
+          <div 
+            key={__DOCUMENT__.key}
+            style={{
+              transition: 'opacity 150ms ease-in-out',
+              opacity: 1,
+              width: '100%',
+              height: '100%'
+            }}
+          >
+            <Module meta={__DOCUMENT__} />
+          </div>
+        );
       });
   }, [Documents]);
 
   const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
-  const __DOCUMENTS__ = useMemo(() => memoizedDocuments, [Documents, refreshFlag]);
+  const __DOCUMENTS__ = useMemo(() => memoizedDocuments, [memoizedDocuments, refreshFlag]);
 
-  const handleSetOpenNav = useCallback(openNav => {
-    setOpenNav(openNav);
-  }, [openNav]);
+  const handleSetOpenNav = useCallback((newOpenNav) => {
+    setOpenNav(newOpenNav);
+  }, [setOpenNav]);
 
   const handleToogleSidebarNav = useCallback(() => {
-    handleSetOpenNav(!openNav);
+    setOpenNav(prev => !prev);
   }, [setOpenNav]);
 
   useEffect(() => {
@@ -77,38 +92,7 @@ export function WorkspaceProvider({
     root.classList.add(theme)
   }, [theme, pathname])
 
-  /**
-   * Document: [{
-   *    module: Component (imported),
-   *    meta: Meta data of Document,
-   *    key: Unique key of Document based on URL,
-   * }]
-   * #param res
-  */
-
-  const handleSetDocuments = (Documents) => {
-    setDocuments(Documents);
-  }
-
-  const loadDocument = (__META__, Module) => {
-    try {
-      const copyDocuments = { ...Documents };
-      const __DOCUMENT__ = __META__.__DOCUMENT__;
-
-      copyDocuments[__DOCUMENT__.key] = {
-        key: __DOCUMENT__.key,
-        Module: Module.default,
-        __DOCUMENT__: __DOCUMENT__,
-        active: true,
-      };
-
-      handleSetDocuments(copyDocuments);
-    } catch (err) {
-      goToErrorView(err);
-    }
-  }
-
-  const goToErrorView = (e) => {
+  const goToErrorView = useCallback((e) => {
     __META__.client_importer.client = "error-view";
     AppSourceLoader(__META__.client_importer).then((Module) => {
       __META__.__DOCUMENT__ = {
@@ -120,37 +104,54 @@ export function WorkspaceProvider({
 
       loadDocument(__META__, Module);
     });
-  }
+  }, [__META__]);
 
-  const setDocument = (r) => {
+  const loadDocument = useCallback((__META__, Module) => {
+    try {
+      const __DOCUMENT__ = __META__.__DOCUMENT__;
+
+      setDocuments(prevDocuments => ({
+        ...prevDocuments,
+        [__DOCUMENT__.key]: {
+          key: __DOCUMENT__.key,
+          Module: Module.default,
+          __DOCUMENT__: __DOCUMENT__,
+          active: true,
+        }
+      }));
+    } catch (err) {
+      goToErrorView(err);
+    }
+  }, [goToErrorView]);
+
+  const setDocument = useCallback((r) => {
     const __META__ = {
       key: r.key,
       __DOCUMENT__: r,
       client_importer: r.client_importer,
       __WORKSPACE__: r.__WORKSPACE__,
     }
-    const copyDocuments = { ...Documents };
 
-    Object.values(copyDocuments).forEach((Document) => {
-      Document.active = false;
-    });
+    AppSourceLoader(__META__.client_importer)
+      .then((Module) => {
+        setDocuments(prevDocuments => {
+          const updatedDocuments = { ...prevDocuments };
+          
+          Object.values(updatedDocuments).forEach((Document) => {
+            Document.active = false;
+          });
 
-    AppSourceLoader(__META__.client_importer).then((Module) => {
-      return loadDocument(__META__, Module);
-    }).catch(e => {
-      return goToErrorView(e);
-    });
-  }
+          return updatedDocuments;
+        });
+        
+        loadDocument(__META__, Module);
+      })
+      .catch(e => goToErrorView(e));
+  }, [loadDocument, goToErrorView]);
 
-  const refresh = () => {
-    fetchDocument(pathname).then(() => {
-      setRefreshFlag(prev => !prev);
-    });
-  }
-
-  const fetchDocument = (url) => {
+  const fetchDocument = useCallback((url) => {
     const route = window.location;
-    if (route.hash.includes("#")) return;
+    if (route.hash.includes("#")) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
       loopar.send({
@@ -161,63 +162,83 @@ export function WorkspaceProvider({
           resolve();
         },
         error: e => {
-          console.error("Err on fecth document", e);
-          reject();
+          console.error("Error on fetch document", e);
+          reject(e);
         }
       });
     });
-  }
+  }, [setDocument]);
+
+  const refresh = useCallback(() => {
+    fetchDocument(pathname).then(() => {
+      setRefreshFlag(prev => !prev);
+    });
+  }, [pathname, fetchDocument]);
 
   const getActiveDocument = useCallback(() => {
     return Object.values(Documents).find((Document) => Document.active) || {};
   }, [Documents]);
 
-  useEffect(() => {
-    setTimeout(() => {setLoaded(true)})
-  })
-
-  useEffect(() => {
-    loaded && fetchDocument(pathname);
-    __WORKSPACE_NAME__ == "web" && setOpenNav(false);
-  }, [pathname, activePage]);
-
   const getActiveParentMenu = useCallback(() => {
     const {__DOCUMENT__} = getActiveDocument();
     return __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
-  }, [Documents, pathname, refreshFlag]);
+  }, [getActiveDocument]);
 
-  useEffect(() => {
-    const {__DOCUMENT__} = getActiveDocument();
-    if (!__DOCUMENT__) return;
-    
-    const {__ENTITY__, __MODULE__} = __DOCUMENT__;
-
-    const activeParentMenu = __DOCUMENT__.activeParentMenu || __ENTITY__?.name;
-    const module = (activeParentMenu !== "Module" ? __DOCUMENT__?.module || __MODULE__  || __ENTITY__?.module : null) || null;
-
-    if (activeParentMenu) {
-      const activeDocumentName = __ENTITY__?.name;
-      activeDocumentName && activeDocumentName != activePage && setActivePage(activeDocumentName);
-    }
-
-    setActiveModule(module)
-
-  }, [Documents, pathname, refreshFlag]);
-
-  const getTheme = () => {
+  const getTheme = useCallback(() => {
     const theme = loopar.cookie.get(storageKey);
 
     if (theme === "system") {
       if (typeof window !== "undefined") {
         return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
       }
-
       return "dark"
     }
 
     return theme || "dark"
-  }
-  
+  }, [storageKey]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoaded(true);
+    }, 100);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (lastFetchedPath.current === pathname) return;
+    
+    lastFetchedPath.current = pathname;
+    fetchDocument(pathname);
+
+    if (__WORKSPACE_NAME__ === "web") {
+      setOpenNav(false);
+    }
+  }, [pathname, loaded, fetchDocument, __WORKSPACE_NAME__, setOpenNav]);
+
+  useEffect(() => {
+    const {__DOCUMENT__} = getActiveDocument();
+    if (!__DOCUMENT__) return;
+    
+    const {__ENTITY__, __MODULE__} = __DOCUMENT__;
+    const activeParentMenu = __DOCUMENT__.activeParentMenu || __ENTITY__?.name;
+    const module = (activeParentMenu !== "Module" ? __DOCUMENT__?.module || __MODULE__ || __ENTITY__?.module : null) || null;
+
+    if (activeParentMenu) {
+      const activeDocumentName = __ENTITY__?.name;
+      if (activeDocumentName && activeDocumentName !== activePage) {
+        setActivePage(activeDocumentName);
+      }
+    }
+
+    setActiveModule(module);
+  }, [Documents, getActiveDocument, activePage]);
+
   useEffect(() => {
     const handlePopState = (event) => {
       event.preventDefault();
@@ -228,7 +249,7 @@ export function WorkspaceProvider({
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     theme: getTheme(),
     __META__,
     setTheme,
@@ -236,7 +257,6 @@ export function WorkspaceProvider({
     setOpenNav: handleSetOpenNav,
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
-    //getActiveParentMenu: getActiveParentMenu,
     activeParentMenu: getActiveParentMenu(),
     ENVIRONMENT: props.ENVIRONMENT,
     Documents: Documents,
@@ -244,7 +264,22 @@ export function WorkspaceProvider({
     activeModule,
     refresh,
     __DOCUMENTS__
-  }
+  }), [
+    getTheme,
+    __META__,
+    setTheme,
+    openNav,
+    handleSetOpenNav,
+    handleToogleSidebarNav,
+    props.menuItems,
+    props.ENVIRONMENT,
+    getActiveParentMenu,
+    Documents,
+    activePage,
+    activeModule,
+    refresh,
+    __DOCUMENTS__
+  ]);
 
   return (
     <WorkspaceProviderContext.Provider value={value}>

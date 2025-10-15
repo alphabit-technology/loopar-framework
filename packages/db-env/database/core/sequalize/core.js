@@ -1,7 +1,180 @@
-import { loopar } from "loopar";
-import { Sequelize, QueryTypes } from '@sequelize/core';
+'use strict';
+import { loopar, TYPES, elementsDict } from "loopar";
+import { Sequelize, QueryTypes, DataTypes, Op } from '@sequelize/core';
+
+function stringToSequelizeType(typeString, field) {
+  const typeMap = {
+      'increments': DataTypes.INTEGER,
+      'INTEGER': DataTypes.INTEGER,
+      'BIGINT': DataTypes.BIGINT,
+      'FLOAT': DataTypes.FLOAT,
+      'DECIMAL': DataTypes.DECIMAL(field?.data?.precision || 10, field?.data?.scale || 2),
+      'DOUBLE': DataTypes.DOUBLE,
+      'SMALLINT': DataTypes.SMALLINT,
+      'TINYINT': DataTypes.TINYINT,
+      'STRING': field?.data?.length ? DataTypes.STRING(field.data.length) : DataTypes.STRING,
+      'TEXT': DataTypes.TEXT,
+      'TEXT.medium': DataTypes.TEXT('medium'),
+      'TEXT.long': DataTypes.TEXT('long'),
+      'UUID': DataTypes.UUID,
+      'ENUM': field?.data?.options ? DataTypes.ENUM(...field.data.options) : DataTypes.STRING,
+      'BOOLEAN': DataTypes.BOOLEAN,
+      'DATEONLY': DataTypes.DATEONLY,
+      'DATE': DataTypes.DATE,
+      'TIME': DataTypes.TIME,
+      'BLOB': DataTypes.BLOB,
+      'JSON': DataTypes.JSON,
+      'JSONB': DataTypes.JSONB,
+      'GEOMETRY': DataTypes.GEOMETRY,
+      'GEOMETRY.POINT': DataTypes.GEOMETRY('POINT'),
+      'GEOMETRY.MULTIPOINT': DataTypes.GEOMETRY('MULTIPOINT')
+  };
+  
+  return typeMap[typeString] || DataTypes.STRING;
+}
+
+function escapeId(identifier, dialect) {
+    if (!identifier) return '';
+    
+    const clean = identifier.replace(/[`'"]/g, '');
+    
+    if (dialect.includes('mysql')) {
+      return `\`${clean}\``;
+    } else if (dialect.includes('postgres')) {
+      return `"${clean}"`;
+    } else {
+      return `\`${clean}\``;
+    }
+}
+
+function getSequelizeType(field) {
+    const element = field.element || 'input';
+    const elementDef = elementsDict[element]?.def;
+    
+    let typeString = elementDef?.type || field.data?.format || TYPES.string;
+    
+    if (element === 'input' && field.data?.format) {
+        typeString = field.data.format;
+    }
+    
+    return stringToSequelizeType(typeString, field);
+}
+
+function sequelizeTypeToSQL(type, field, dialect) {
+    const typeString = type?.toString() || 'STRING';
+    
+    if (typeString.includes('INTEGER')) return dialect.includes('mysql') ? 'INT' : 'INTEGER';
+    if (typeString.includes('BIGINT')) return 'BIGINT';
+    if (typeString.includes('FLOAT')) return 'FLOAT';
+    if (typeString.includes('DOUBLE')) return 'DOUBLE';
+    if (typeString.includes('DECIMAL')) {
+      const precision = field?.data?.precision || 10;
+      const scale = field?.data?.scale || 2;
+      return `DECIMAL(${precision}, ${scale})`;
+    }
+    if (typeString.includes('STRING')) {
+      const length = field?.data?.length || 255;
+      return `VARCHAR(${length})`;
+    }
+    if (typeString.includes('TEXT')) {
+      if (typeString.includes('medium')) return 'MEDIUMTEXT';
+      if (typeString.includes('long')) return 'LONGTEXT';
+      return 'TEXT';
+    }
+    if (typeString.includes('BOOLEAN')) {
+      return dialect.includes('mysql') ? 'BOOLEAN' : 'INTEGER';
+    }
+    if (typeString.includes('DATEONLY')) return 'DATE';
+    if (typeString.includes('DATE')) return dialect.includes('mysql') ? 'DATETIME' : 'TIMESTAMP';
+    if (typeString.includes('TIME')) return 'TIME';
+    if (typeString.includes('JSON')) {
+      return (dialect.includes('mysql') || dialect.includes('postgres')) ? 'JSON' : 'TEXT';
+    }
+    if (typeString.includes('UUID')) {
+      return dialect.includes('postgres') ? 'UUID' : 'VARCHAR(36)';
+    }
+    if (typeString.includes('BLOB')) return 'BLOB';
+    if (typeString.includes('ENUM')) {
+      if (field?.data?.options && (dialect.includes('mysql') || dialect.includes('postgres'))) {
+        const values = field.data.options.map(o => `'${o}'`).join(', ');
+        return `ENUM(${values})`;
+      }
+      return 'VARCHAR(255)';
+    }
+    
+    return 'VARCHAR(255)';
+}
+
+function formatDefaultValue(value, field, dialect) {
+    if (value === 'CURRENT_TIMESTAMP' || value === 'NOW()') {
+        return 'CURRENT_TIMESTAMP';
+    }
+    
+    const type = getSequelizeType(field);
+    const typeString = type?.toString() || '';
+    
+    if (typeString.includes('INTEGER') || typeString.includes('FLOAT') || 
+        typeString.includes('DOUBLE') || typeString.includes('DECIMAL')) {
+        return value;
+    }
+    
+    if (typeString.includes('BOOLEAN')) {
+        if (dialect.includes('mysql')) {
+            return value ? 'TRUE' : 'FALSE';
+        }
+        return value ? '1' : '0';
+    }
+    
+    if (typeString.includes('JSON')) {
+        return `'${JSON.stringify(value)}'`;
+    }
+    
+    return `'${value.toString().replace(/'/g, "''")}'`;
+}
+
+function generateColumnSQL(field, action, dialect) {
+    const data = field.data;
+    const columnName = escapeId(data.name, dialect);
+    
+    // Manejo especial para ID con auto-increment
+    if ((data.name === 'id' || field.element === 'id') && action === 'create') {
+        if (dialect.includes('mysql')) {
+            return `${columnName} INT UNSIGNED AUTO_INCREMENT PRIMARY KEY`;
+        } else if (dialect.includes('sqlite')) {
+            return `${columnName} INTEGER PRIMARY KEY AUTOINCREMENT`;
+        } else if (dialect.includes('postgres')) {
+            return `${columnName} SERIAL PRIMARY KEY`;
+        }
+    }
+    
+    const type = getSequelizeType(field);
+    const sqlType = sequelizeTypeToSQL(type, field, dialect);
+    let sql = `${columnName} ${sqlType}`;
+    
+    const constraints = [];
+    
+    if (data.required && data.name !== 'id') {
+        constraints.push('NOT NULL');
+    }
+    
+    if (data.default_value !== undefined && data.default_value !== null && data.default_value !== '') {
+        const defaultValue = formatDefaultValue(data.default_value, field, dialect);
+        constraints.push(`DEFAULT ${defaultValue}`);
+    }
+    
+    if (data.unique && action === 'create') {
+        constraints.push('UNIQUE');
+    }
+    
+    if (constraints.length > 0) {
+        sql += ' ' + constraints.join(' ');
+    }
+    
+    return sql;
+}
 
 export default class Core {
+  Op=Op;
   constructor(config = null) {
     this.customConfig = config;
     this.transactionStack = [];
@@ -168,10 +341,7 @@ export default class Core {
         type: QueryTypes.SELECT
       });
       
-      const exists = result && result.length > 0;
-      
-      
-      return exists;
+      return result && result.length > 0;
     } catch (error) {
       console.error('Error checking table existence:', error.message);
       return false;
@@ -209,30 +379,24 @@ export default class Core {
     
     const alterations = [];
     const newFields = [];
-    for (const field of fields) {
-      if (!this.fieldIsWritable(field)) continue;
+    
+    const processField = (field) => {
+      if (!fieldIsWritable(field)) return;
       
       const columnName = field.data.name.toLowerCase();
       
       if (!existingColumns.has(columnName)) {
-        const columnSQL = this.generateColumnSQL(field, 'alter');
+        const columnSQL = generateColumnSQL(field, 'alter', this.dialect);
         alterations.push(`ADD COLUMN ${columnSQL}`);
-        newFields.push(field); 
+        newFields.push(field);
       }
       
-      if (field.elements) {
-        for (const element of field.elements) {
-          if (this.fieldIsWritable(element)) {
-            const elementName = element.data.name.toLowerCase();
-            if (!existingColumns.has(elementName)) {
-              const elementSQL = this.generateColumnSQL(element, 'alter');
-              alterations.push(`ADD COLUMN ${elementSQL}`);
-              newFields.push(element);
-            }
-          }
-        }
+      if (field.elements && Array.isArray(field.elements)) {
+        field.elements.forEach(processField);
       }
-    }
+    };
+    
+    fields.forEach(processField);
     
     if (alterations.length > 0) {
       if (this.dialect.includes('mysql')) {
@@ -255,17 +419,16 @@ export default class Core {
     }
   }
 
-
-  fieldIsWritable(field) {
-    return field && field.data && field.data.name && !field.data.computed;
+  escapeId(identifier) {
+    return escapeId(identifier, this.dialect);
   }
 
   generateColumnsSQL(fields, action = 'create') {
     const columns = [];
     
     const processField = (field) => {
-      if (this.fieldIsWritable(field)) {
-        columns.push(this.generateColumnSQL(field, action));
+      if (fieldIsWritable(field)) {
+        columns.push(generateColumnSQL(field, action, this.dialect));
       }
       
       if (field.elements && Array.isArray(field.elements)) {
@@ -275,92 +438,6 @@ export default class Core {
     
     fields.forEach(processField);
     return columns;
-  }
-
-  generateColumnSQL(field, action) {
-    const data = field.data;
-    const columnName = this.escapeId(data.name);
-    let type = this.getSequelizeColumnType(field);
-    let sql = `${columnName} ${type}`;
-    
-    if (data.name === 'id' && action === 'create') {
-      if (this.dialect.includes('mysql')) {
-        return `${columnName} INT UNSIGNED AUTO_INCREMENT PRIMARY KEY`;
-      } else if (this.dialect.includes('sqlite')) {
-        return `${columnName} INTEGER PRIMARY KEY AUTOINCREMENT`;
-      } else if (this.dialect.includes('postgres')) {
-        return `${columnName} SERIAL PRIMARY KEY`;
-      }
-    }
-    
-    const constraints = [];
-    
-    if (data.required && data.name !== 'id') {
-      constraints.push('NOT NULL');
-    }
-    
-    if (data.default_value !== undefined && data.default_value !== null && data.default_value !== '') {
-      const defaultValue = this.formatDefaultValue(data.default_value, field);
-      constraints.push(`DEFAULT ${defaultValue}`);
-    }
-    
-    if (data.unique && action === 'create') {
-      constraints.push('UNIQUE');
-    }
-    
-    if (constraints.length > 0) {
-      sql += ' ' + constraints.join(' ');
-    }
-    
-    return sql;
-  }
-
-  formatDefaultValue(value, field) {
-    const type = field.element === 'INPUT' ? field.data.format : field.element;
-    
-    switch (type) {
-      case 'boolean':
-        return value ? 'TRUE' : 'FALSE';
-      case 'int':
-      case 'bigint':
-      case 'float':
-      case 'double':
-      case 'decimal':
-        return isNaN(value) ? '0' : value;
-      case 'date':
-      case 'datetime':
-      case 'timestamp':
-        return value === 'CURRENT_TIMESTAMP' ? value : this.escape(value);
-      default:
-        return this.escape(value);
-    }
-  }
-
-  getSequelizeColumnType(field) {
-    const element = field.element || 'INPUT';
-    const format = field.data?.format || 'string';
-    const type = element === 'INPUT' ? format : element;
-    
-    const typeMapping = {
-      'string': 'VARCHAR(255)',
-      'text': 'TEXT',
-      'longtext': 'LONGTEXT',
-      'int': 'INT',
-      'bigint': 'BIGINT',
-      'float': 'FLOAT',
-      'double': 'DOUBLE',
-      'decimal': `DECIMAL(${field.data?.precision || 10}, ${field.data?.scale || 2})`,
-      'date': 'DATE',
-      'datetime': 'DATETIME',
-      'timestamp': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-      'time': 'TIME',
-      'boolean': this.dialect.includes('mysql') ? 'BOOLEAN' : 'INTEGER',
-      'json': this.dialect.includes('mysql') ? 'JSON' : 'TEXT',
-      'binary': 'BLOB',
-      'uuid': this.dialect.includes('postgres') ? 'UUID' : 'VARCHAR(36)'
-    };
-    
-    return typeMapping[type.toLowerCase()] || 'VARCHAR(255)';
   }
 
   generateIndexes(fields) {
@@ -392,8 +469,8 @@ export default class Core {
     
     const indexQueries = [];
     
-    for (const field of fields) {
-      if (!this.fieldIsWritable(field)) continue;
+    const processField = (field) => {
+      if (!fieldIsWritable(field)) return;
       
       const data = field.data || {};
       
@@ -411,28 +488,12 @@ export default class Core {
         indexQueries.push(query);
       }
       
-      if (field.elements) {
-        for (const element of field.elements) {
-          if (!this.fieldIsWritable(element)) continue;
-          
-          const elementData = element.data || {};
-          
-          if (elementData.index && elementData.name !== 'id') {
-            const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
-            const indexName = `idx_${safeTableName}_${elementData.name}`;
-            const query = `CREATE INDEX IF NOT EXISTS ${indexName} ON ${tableName} (${this.escapeId(elementData.name)})`;
-            indexQueries.push(query);
-          }
-          
-          if (elementData.unique && elementData.name !== 'id') {
-            const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '_');
-            const uniqueName = `uniq_${safeTableName}_${elementData.name}`;
-            const query = `CREATE UNIQUE INDEX IF NOT EXISTS ${uniqueName} ON ${tableName} (${this.escapeId(elementData.name)})`;
-            indexQueries.push(query);
-          }
-        }
+      if (field.elements && Array.isArray(field.elements)) {
+        field.elements.forEach(processField);
       }
-    }
+    };
+    
+    fields.forEach(processField);
     
     for (const query of indexQueries) {
       try {
@@ -488,9 +549,7 @@ export default class Core {
         type: QueryTypes.SELECT
       });
       
-      const description = result.map(mapFunction);
-      
-      return description;
+      return result.map(mapFunction);
     } catch (error) {
       console.error(`Error getting table description for ${tableName}:`, error.message);
       return [];
@@ -515,20 +574,6 @@ export default class Core {
     }
     
     return 'NULL';
-  }
-
-  escapeId(identifier) {
-    if (!identifier) return '';
-    
-    const clean = identifier.replace(/[`'"]/g, '');
-    
-    if (this.dialect.includes('mysql')) {
-      return `\`${clean}\``;
-    } else if (this.dialect.includes('postgres')) {
-      return `"${clean}"`;
-    } else {
-      return `\`${clean}\``;
-    }
   }
 
   query(tableName) {

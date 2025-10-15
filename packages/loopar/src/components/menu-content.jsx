@@ -9,6 +9,7 @@ const Section = ({ element }) => {
   return (
     <section
       id={element.data.label || element.data.id || element.data.key}
+      data-section="true"
     >
       <MetaComponent
         key={element.data.key}

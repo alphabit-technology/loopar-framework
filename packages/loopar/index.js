@@ -13,7 +13,7 @@ import FormController from "./core/controller/form-controller.js";
 import SystemController from "./apps/core/modules/system/controllers/system/system-controller.js";
 import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.js";
 import * as Helpers from "./core/global/helper.js";
-import { elementsNames, elementsNameByType, elementsDict, AIPrompt } from "./core/global/element-definition.js";
+import { elementsNames, elementsNameByType, elementsDict, AIPrompt, TYPES } from "./core/global/element-definition.js";
 import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
 import { parseDocument } from './core/document/tools.js';
@@ -38,7 +38,7 @@ export {
   MetaComponents,
   CoreInstaller,
   AIPrompt,
-  parseDocument
+  parseDocument, TYPES
 };
 
 await server.initialize();

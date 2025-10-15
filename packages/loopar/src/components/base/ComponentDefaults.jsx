@@ -87,7 +87,7 @@ export function ComponentDefaults(props) {
       });
     }
     
-    updateElements(props, removeDuplicates(newElements), null, callback);
+    updateElements && updateElements(props, removeDuplicates(newElements), null, callback);
   }
 
   return {

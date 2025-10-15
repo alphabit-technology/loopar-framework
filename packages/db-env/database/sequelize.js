@@ -257,7 +257,7 @@ export class SequelizeORM extends Connector {
     document = typeof document === 'object' ? document.name : document;
     document = document == "Document" ? "Entity" : document;
 
-    return await this.getRow(document, name, fields, { isSingle: ref.is_single, includeDeleted });
+    return await this.getRow(document, name, ref.__FIELDS__, { isSingle: ref.is_single, includeDeleted });
   }
 
   async getRow(table, id, fields = ['*'], { isSingle = false, includeDeleted = false } = {}) {
@@ -284,7 +284,7 @@ export class SequelizeORM extends Connector {
           ...(condition ? { [Op.and]: condition } : {})
         }
       }
-      const whereCondition = await this.WHERE(condition);
+      const whereCondition = await this.WHERE(condition || {});
       const fieldList = fields.join(', ');
       
       if (!all) {
@@ -317,8 +317,12 @@ export class SequelizeORM extends Connector {
     return fields.map(field => field === '*' ? field : this.escapeId(field)).join(', ');
   }
 
-  async hastEntity(document) {
-    return await this.hasTable(this.tableName(document));
+  async hasEntity(constructor, document) {
+    if(!constructor){
+      const ref = loopar.getRef(document);
+      constructor = ref?.__REF__?.name || "Entity";
+    }
+    return await this.count(constructor, { name: document }) > 0;
   }
 
   async count(document, condition) {
@@ -343,4 +347,3 @@ export class SequelizeORM extends Connector {
     return result[0]?.count || 0;
   }
 }
-

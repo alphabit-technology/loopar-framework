@@ -14,7 +14,7 @@ export class Session {
   }
 
   get(key, or = null) {
-    return this.req.session[key] || or;
+    return this.req?.session?.[key] || or;
   }
 
   async delete(key) {

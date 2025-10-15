@@ -1,38 +1,59 @@
 import dayjs from 'dayjs';
 import {getTime} from './date-utils.js';
-/**
- * @typedef {import('tedious').TYPES} TYPES
- */
-const TYPES = {
-  increments: 'increments',  // Auto-incrementing integer
-  integer: 'integer',  // Integer
-  bigInteger: 'bigInteger',  // Big Integer
-  float: 'float',  // Floating point number
-  decimal: 'decimal',  // Decimal with precision
-  double: 'double',  // High-precision float
-  smallint: 'smallint',  // Small Integer
-  tinyint: 'tinyint',  // Tiny Integer
-  string: 'string',  // Variable length string (like VARCHAR)
-  text: 'text',  // Long text (like TEXT)
-  mediumtext: 'mediumtext',  // Medium text (like MEDIUMTEXT)
-  longtext: 'longtext',  // Long text (like LONGTEXT)
-  uuid: 'uuid',  // UUID (universally unique identifier)
-  enum: 'enum',  // Enum type (limited set of values)
-  boolean: 'boolean',  // Boolean values (TRUE/FALSE)
-  date: 'date',  // Date without time
-  dateTime: 'dateTime',  // Date and time
-  time: 'time',  // Time only
-  timestamp: 'timestamp',  // Timestamp
-  timestamps: 'timestamps',  // Automatically creates created_at and updated_at fields
-  binary: 'binary',  // Binary data (BLOB)
-  json: 'json',  // JSON format
-  jsonb: 'jsonb',  // Binary JSON (PostgreSQL only)
-  geometry: 'geometry',  // Geometrical data (PostGIS)
-  point: 'point',  // Single point of coordinates
-  multiPoint: 'multiPoint'  // Multiple points (geometry)
-};
 
-const [LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML] = ['layout', 'design', 'form', 'html'];
+/**
+ * Database column types using Sequelize DataTypes
+ * This ensures compatibility and leverages Sequelize's built-in type system
+ */
+export const TYPES = Object.freeze({
+  increments: 'increments',
+  integer: 'INTEGER',
+  bigInteger: 'BIGINT',
+  float: 'FLOAT',
+  decimal: 'DECIMAL',
+  double: 'DOUBLE',
+  smallint: 'SMALLINT',
+  tinyint: 'TINYINT',
+  string: 'STRING',           // VARCHAR(255)
+  text: 'TEXT',
+  mediumtext: 'TEXT.medium',
+  longtext: 'TEXT.long',
+  uuid: 'UUID',
+  enum: 'ENUM',
+  boolean: 'BOOLEAN',
+  date: 'DATEONLY',
+  dateTime: 'DATE',
+  time: 'TIME',
+  timestamp: 'DATE',
+  timestamps: 'timestamps',
+  binary: 'BLOB',
+  json: 'JSON',
+  jsonb: 'JSONB',
+  geometry: 'GEOMETRY',
+  point: 'GEOMETRY.POINT',
+  multiPoint: 'GEOMETRY.MULTIPOINT'
+});
+
+/*Types to use in HTML inputs types*/
+export const inputType = {
+  data: "text",
+  text: "text",
+  email: "email",
+  decimal: "number",
+  percent: "number",
+  currency: "text",
+  int: "number",
+  long_int: "number",
+  read_only: "text",
+};
+export const ELEMENT_GROUPS = Object.freeze({
+  LAYOUT_ELEMENT: 'layout',
+  DESIGN_ELEMENT: 'design',
+  FORM_ELEMENT: 'form',
+  HTML_ELEMENT: 'html'
+});
+
+const { LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML_ELEMENT } = ELEMENT_GROUPS;
 
 export const elementsDefinition = {
   [LAYOUT_ELEMENT]: [
@@ -41,7 +62,6 @@ export const elementsDefinition = {
     { element: "row", icon: "Columns2" },
     { element: "col", icon: "Columns" },
     { element: "card", icon: "PanelTop" },
-    //{element: "table", icon: "fa fa-table"},
     { element: "banner", icon: "GalleryHorizontalEnd" },
     { element: "banner_image", icon: "ImagePlus" },
     { element: "tabs", icon: "AppWindow" },
@@ -67,12 +87,9 @@ export const elementsDefinition = {
     { element: "paragraph", icon: "Pilcrow" },
     { element: "direct-preview", icon: "View" },
     { element: "direct-preview-iframe", icon: "View" },
-    //{element: "link", icon: "fa fa-link"},
-    //{element: "list", icon: "fa fa-list"},
     { element: "stripe", icon: "CreditCard" },
     { element: "stripe_embebed", icon: "CreditCard" },
     { element: "seo", icon: "Globe", designerOnly: true },
-    //{ element: "element_title", icon: "fa fa-heading" },
     { element: 'particles', icon: 'DotsHorizontal' },
     { element: 'particles_settings', icon: 'DotsHorizontal' },
   ],
@@ -93,7 +110,7 @@ export const elementsDefinition = {
     { element: "text_editor", icon: "TextCursorInput", type: TYPES.longtext, clientOnly: true },
     { element: "checkbox", icon: "CheckSquare", type: TYPES.integer },
     { element: "switch", icon: "ToggleLeft", type: TYPES.integer },
-    { element: "id", icon: "BookKey", type: TYPES.integer, show_in_design: false },
+    { element: "id", icon: "BookKey", type: TYPES.increments, show_in_design: false },
     { element: "form_table", icon: "Sheet", type: TYPES.string },
     { element: "markdown_input", icon: "BookOpenCheck", type: TYPES.text, clientOnly: true },
     { element: "designer", icon: "Brush", type: TYPES.longtext },
@@ -107,18 +124,6 @@ export const elementsDefinition = {
     { element: "theme", icon: "Brush", type: TYPES.text },
   ]
 }
-
-export const inputType = {
-  data: "text",
-  text: "text",
-  email: "email",
-  decimal: "number",
-  percent: "number",
-  currency: "text",
-  int: "number",
-  long_int: "number",
-  read_only: "text",
-};
 
 export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
   value.forEach(element => {

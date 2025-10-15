@@ -1,4 +1,5 @@
 import { documentManage } from '../document/document-manage.js';
+import { loopar } from '../loopar.js';
 import { Console } from './console.js';
 
 export class Document extends Console {
@@ -31,11 +32,11 @@ export class Document extends Console {
 
   async getList(document, { data = {}, fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null, rowsOnly = false } = {}, ifNotFound = null) {
     const doc = await this.newDocument(document, data);
-    return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
+    return await doc.getList({ fields, filters, orderBy, limit, offset, page: parseInt(loopar.session.get(document + "_page", 1), rowsOnly), q });
   }
 
   async getListToForm(document, { data = {}, fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null, rowsOnly = false } = {}, ifNotFound = null) {
     const doc = await this.newDocument(document, data);
-    return await doc.getListToForm({ fields, filters, orderBy, limit, offset, page: parseInt(this.session.get(document + "_page", 1), rowsOnly), q });
+    return await doc.getListToForm({ fields, filters, orderBy, limit, offset, page: parseInt(loopar.session.get(document + "_page", 1), rowsOnly), q });
   }
 }
