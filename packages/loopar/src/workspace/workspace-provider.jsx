@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, useTransition } from "react"
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
@@ -39,6 +39,7 @@ export function WorkspaceProvider({
   const [activePage, setActivePage] = useState(props.activePage || "");
   const [activeModule, setActiveModule] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(false);
+  const [isPending, startTransition] = useTransition();
   
   const lastFetchedPath = useRef(pathname);
   const isInitialMount = useRef(true);
@@ -48,19 +49,7 @@ export function WorkspaceProvider({
       .filter(document => document.active)
       .map(document => {
         const { Module, __DOCUMENT__ } = document;
-        return Module && (
-          <div 
-            key={__DOCUMENT__.key}
-            style={{
-              transition: 'opacity 150ms ease-in-out',
-              opacity: 1,
-              width: '100%',
-              height: '100%'
-            }}
-          >
-            <Module meta={__DOCUMENT__} />
-          </div>
-        );
+        return Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
       });
   }, [Documents]);
 
@@ -80,10 +69,7 @@ export function WorkspaceProvider({
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 
       root.classList.add(systemTheme)
       return
@@ -110,15 +96,17 @@ export function WorkspaceProvider({
     try {
       const __DOCUMENT__ = __META__.__DOCUMENT__;
 
-      setDocuments(prevDocuments => ({
-        ...prevDocuments,
-        [__DOCUMENT__.key]: {
-          key: __DOCUMENT__.key,
-          Module: Module.default,
-          __DOCUMENT__: __DOCUMENT__,
-          active: true,
-        }
-      }));
+      startTransition(() => {
+        setDocuments(prevDocuments => ({
+          ...prevDocuments,
+          [__DOCUMENT__.key]: {
+            key: __DOCUMENT__.key,
+            Module: Module.default,
+            __DOCUMENT__: __DOCUMENT__,
+            active: true,
+          }
+        }));
+      });
     } catch (err) {
       goToErrorView(err);
     }
@@ -132,8 +120,8 @@ export function WorkspaceProvider({
       __WORKSPACE__: r.__WORKSPACE__,
     }
 
-    AppSourceLoader(__META__.client_importer)
-      .then((Module) => {
+    AppSourceLoader(__META__.client_importer).then((Module) => {
+      startTransition(() => {
         setDocuments(prevDocuments => {
           const updatedDocuments = { ...prevDocuments };
           
@@ -143,10 +131,10 @@ export function WorkspaceProvider({
 
           return updatedDocuments;
         });
-        
-        loadDocument(__META__, Module);
-      })
-      .catch(e => goToErrorView(e));
+      });
+      
+      loadDocument(__META__, Module);
+    }).catch(e => goToErrorView(e));
   }, [loadDocument, goToErrorView]);
 
   const fetchDocument = useCallback((url) => {
@@ -213,6 +201,7 @@ export function WorkspaceProvider({
 
     if (lastFetchedPath.current === pathname) return;
     
+    console.log(["visit", pathname]);
     lastFetchedPath.current = pathname;
     fetchDocument(pathname);
 
@@ -263,7 +252,8 @@ export function WorkspaceProvider({
     activePage: activePage,
     activeModule,
     refresh,
-    __DOCUMENTS__
+    __DOCUMENTS__,
+    isPending
   }), [
     getTheme,
     __META__,
@@ -278,7 +268,8 @@ export function WorkspaceProvider({
     activePage,
     activeModule,
     refresh,
-    __DOCUMENTS__
+    __DOCUMENTS__,
+    isPending
   ]);
 
   return (

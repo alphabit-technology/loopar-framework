@@ -10,11 +10,8 @@ import { useDesigner } from "@context/@/designer-context";
 const URL_STRUCTURE = ["workspace", "document", "action"];
 const HEADER_OFFSET = 15;
 
-export const makeUrl = (href) => {
+const buildUrl = (href, currentURL) => {
   if (!href || href.startsWith("http") || href.startsWith("/")) return href;
-
-  const location = useLocation();
-  const currentURL = global.url || location.pathname;
 
   const urlArray = currentURL.split("/");
   const urlObject = {};
@@ -26,12 +23,28 @@ export const makeUrl = (href) => {
   const [baseUrl, queryString] = href.split("?");
   const baseUrlSegments = baseUrl.split("/").reverse();
 
-  URL_STRUCTURE.reverse().forEach((key, index) => {
+  URL_STRUCTURE.slice().reverse().forEach((key, index) => {
     urlObject[key] = baseUrlSegments[index] || urlObject[key];
   });
 
   const path = Object.values(urlObject).filter(Boolean).join("/");
   return `/${path}${queryString ? `?${queryString}` : ""}`;
+};
+
+export const useMakeUrl = (href) => {
+  const location = useLocation();
+  
+  return useMemo(() => {
+    const currentURL = global.url || location.pathname;
+    return buildUrl(href, currentURL);
+  }, [href, location.pathname]);
+};
+
+export const makeUrl = (href) => {
+  if (!href || href.startsWith("http") || href.startsWith("/")) return href;
+  
+  const currentURL = global.url || (typeof window !== 'undefined' ? window.location.pathname : '');
+  return buildUrl(href, currentURL);
 };
 
 const useHeaderHeight = () => {
@@ -115,13 +128,13 @@ export function Link({
   onClick,
   ...props 
 }) {
-  const url = useMemo(() => makeUrl(to), [to]);
   const location = useLocation();
-  const isAbsolute = url?.includes("http");
-  const isHashLink = to.startsWith("#");
-  
   const { setOpenNav, currentPage, workspace } = useWorkspace();
   const { designing } = useDesigner();
+  
+  const url = useMakeUrl(to);
+  const isAbsolute = url?.includes("http");
+  const isHashLink = to.startsWith("#");
 
   const scrollToSection = useScrollToSection(to);
   const activeSection = useActiveSection(to, isHashLink);
@@ -157,7 +170,6 @@ export function Link({
   const renderizableProps = loopar.utils.renderizableProps(props);
   const commonProps = {
     ...renderizableProps,
-    key: renderizableProps.key || to,
     className,
     ...(designing && { draggable: false })
   };
@@ -169,6 +181,7 @@ export function Link({
         href={to}
         target={props._target}
         onClick={handleClick}
+        key={renderizableProps.key || to}
       >
         {children}
       </a>
@@ -180,6 +193,7 @@ export function Link({
       {...commonProps}
       to={url}
       onClick={handleClick}
+      key={renderizableProps.key || url}
     >
       {children}
     </ReactLink>
