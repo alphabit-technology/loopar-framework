@@ -3,10 +3,8 @@ import { loopar, fileManage } from "loopar";
 import BaseDocument from "../../../../../../core/document/base-document.js";
 
 export default class Installer extends BaseDocument {
-  async getDocumentData(document) {
-    const ref = loopar.getRef(document);
-
-    return await fileManage.getConfigFile(document, ref.__ROOT__);
+  async getDocumentData(document, root) {
+    return await fileManage.getConfigFile(document, root);
   }
 
   getNameToFileName(name) {
@@ -47,7 +45,7 @@ export default class Installer extends BaseDocument {
 
       if(ent.root){
         if(await loopar.db.hasEntity(constructor, name)){
-          const entityData = await this.getDocumentData(name);
+          const entityData = await this.getDocumentData(name, ent.root);
           if(entityData && ent.app == this.app_name){
             const doc = await loopar.getDocument(constructor, name);
             console.warn([`Uninstalling ${constructor}:${name}`]);
@@ -64,30 +62,6 @@ export default class Installer extends BaseDocument {
         }
       }
     }
-    /*const ownEntities = loopar.getEntities(this.app_name);
-    const ownEntitiesNames = ownEntities.map(e => e.name);
-
-    const deleteDocuments = async (entity) => {
-      const deleteDocument = async (ent, document) => {
-        if (document.__document_status__ === "Deleted") return;
-        if (!await loopar.db.count(ent.name, document.name)) return;
-
-        await deleteDocuments(document);
-
-        if (document.path && !ownEntitiesNames.includes(document.name)) return;
-
-        console.warn("Uninstalling:", ent.name, document.name);
-        await loopar.deleteDocument(ent.name, document.name, { sofDelete: false, force: true, updateHistory: false });
-      }
-
-      for (const document of (entity.documents || []).sort((a, b) => b.id - a.id)) {
-        await deleteDocument(entity, document);
-      }
-    }
-
-    for (const entity of appData.documents) {
-      await deleteDocuments(entity);
-    }*/
 
     loopar.installingApp = null;
     await loopar.buildRefs();
@@ -148,7 +122,7 @@ export default class Installer extends BaseDocument {
       if(ent.root){
         if(!await loopar.db.hasEntity(constructor, name)){
           if(ent.app == this.app_name){
-            const entityData = await this.getDocumentData(name);
+            const entityData = await this.getDocumentData(name, ent.root);
             if(entityData){
               const doc = await loopar.newDocument(constructor, entityData);
               console.log(["Installing", constructor, name]);
