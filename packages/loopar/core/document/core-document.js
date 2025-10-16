@@ -508,7 +508,7 @@ export default class CoreDocument {
     }
   }
 
-  async values() {
+  async values(raw=false) {
     const value = async (field) => {
       if (field.element === DESIGNER) {
         return field.value ? JSON.stringify(await parseDocStructure(field.value, false))/*JSON.stringify(field.value.filter(field => (field.data || []).name !== ID))*/ : "[]";
@@ -529,7 +529,7 @@ export default class CoreDocument {
         return JSON.stringify({ option: field.value, value: field.value });
       }*/
       else if (field.element === PASSWORD) {
-        return field.value && field.value.length > 0 ? this.protectedPassword : "";
+        return raw ? field.value : (field.value && field.value.length > 0 ? this.protectedPassword : "");
       } else if(field.element === MARKDOWN){
         return field.value//
         return this.__PARSED__ ? await renderMarkdownSSR(field.value) : field.value;

@@ -20,7 +20,7 @@ export default class Installer extends BaseDocument {
 
     if (fileManage.existFileSync(installerRoute)) {
       const InstallerModel = await fileManage.importClass(installerRoute);
-      new InstallerModel(await this.values()).install();
+      new InstallerModel(await this.values(true)).install();
     } else {
       loopar.throw(`App ${this.app_name} not provide a installer model`);
     }
@@ -81,7 +81,7 @@ export default class Installer extends BaseDocument {
     });
   }
 
-  async install(resintall=false) {
+  async install(reinstall = false) {
     loopar.installingApp = this.app_name;
     console.log("Installing App", this.app_name);
 
@@ -93,7 +93,7 @@ export default class Installer extends BaseDocument {
       }
     }
 
-    await this.installData(resintall);
+    await this.installData(reinstall);
 
     loopar.installingApp = null;
     const installedApps = fileManage.getConfigFile('installed-apps');
@@ -114,7 +114,6 @@ export default class Installer extends BaseDocument {
     const appData = await fileManage.getConfigFile('installer', moduleRoute).documents;
 
     for (const e of Object.keys(appData)) {
-      console.log("Installing", e);
       const ent = appData[e];
       const [constructor, name] = e.split(':');
 
@@ -144,99 +143,6 @@ export default class Installer extends BaseDocument {
           await doc.save({ validate: false });
         }
       }
-    }
-
-    return `App ${this.app_name} installed successfully!`;
-  }
-
-  async installData1(reinstall = false) {
-    console.log("Installing DATA", this.app_name);
-    const moduleRoute = loopar.makePath('apps', this.app_name);
-    const appData = (await fileManage.getConfigFile('installer', moduleRoute)).documents;
-    const ownEntities = loopar.getEntities(this.app_name);
-
-    const buildEntity = async (entity, data) => {
-      if (!ownEntities.find(e => e.name === data.name)) return;
-
-      if (!await loopar.db.count(entity, data.name)) {
-        const E = await loopar.newDocument(entity, data);
-        await E.save({ save: false, validate: false });
-      }
-    }
-
-    const isOwn = async (entity, document, data) => {
-      if (ownEntities.find(e => e.name == entity)) {
-        return true;
-      }
-
-      if (entity == "App" && document.name == this.app_name) {
-        return true;
-      }
-
-      if (entity == "Module" && document.name == data.module) {
-        return true;
-      }
-
-      if (entity == "Module") {
-        return this.app_name == await this.getAppFromModule(document.name);
-      }
-
-      const appFromModule = await this.getAppFromModule(data.module);
-      return appFromModule == this.app_name;
-    }
-
-    const insertDocuments = async (entity) => {
-      const insertDocument = async (ent, document) => {
-        for (const req of (document.requires || [])) {
-          const ref = loopar.getRef(document.name);
-
-          if (ref) {
-            for (const doc of (req.documents || [])) {
-              await buildEntity(ref.__ENTITY__, doc);
-            }
-          } else {
-            await insertDocuments(req);
-          }
-        }
-
-        const data = document.path ? await fileManage.getConfigFile(document.name, document.path) : document.data;
-        
-        if (!data) return;
-        if (data.__document_status__ && data.__document_status__ === "Deleted") return;
-
-       
-        if (!await loopar.db.count(ent.name, document.name)) {
-          console.log(["Installing", ent.name, document.name])
-          const doc = await loopar.newDocument(ent.name, { ...data, __document_status__: "Active" });
-          await doc.save({ validate: false });
-        } else if (reinstall) {
-          if (await isOwn(ent.name, document, data)) {
-            console.log(["Reinstalling", ent.name, document.name])
-            const doc = await loopar.getDocument(ent.name, document.name, data);
-            await doc.save({ validate: false });
-          } else {
-            console.log(["Not Reinstalling", ent, document])
-          }
-        }
-
-        for (const child of (document.documents || [])) {
-          await insertDocument(document, child);
-        }
-      }
-
-      const ref = loopar.getRef(entity.name);
-      if (ref) {
-        const data = await fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
-        await buildEntity(ref.__ENTITY__, data);
-      }
-
-      for (const document of (entity.documents || []).sort((a, b) => a.id - b.id)) {
-        await insertDocument(entity, document);
-      }
-    }
-
-    for (const entity of appData) {
-      await insertDocuments(entity);
     }
 
     return `App ${this.app_name} installed successfully!`;
