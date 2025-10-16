@@ -201,7 +201,6 @@ export function WorkspaceProvider({
 
     if (lastFetchedPath.current === pathname) return;
     
-    console.log(["visit", pathname]);
     lastFetchedPath.current = pathname;
     fetchDocument(pathname);
 
