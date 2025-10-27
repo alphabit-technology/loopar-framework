@@ -13,7 +13,7 @@ const initialState = {
   setTheme: () => null,
   openNav: loopar.cookie.get("openNav"),
   setOpenNav: () => null,
-  Documents: {},
+  ActiveView: null,
   setDocuments: () => null,
   activePage: "",
   setActivePage: () => null,
@@ -32,7 +32,7 @@ export function WorkspaceProvider({
   const pathname = usePathname();
   const [theme, setTheme] = useCookies(storageKey);
   const __META__ = props.__META__ || {}
-  const __WORKSPACE_NAME__ = __META__.__WORKSPACE__?.name || "desk"
+  const __WORKSPACE_NAME__ = __META__.name || "desk"
 
   const [Documents, setDocuments] = useState(props.Documents || {});
   const [loaded, setLoaded] = useState(false);
@@ -40,21 +40,22 @@ export function WorkspaceProvider({
   const [activeModule, setActiveModule] = useState(null);
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const __META_CACHE__ = {};
   
   const lastFetchedPath = useRef(pathname);
   const isInitialMount = useRef(true);
 
-  const memoizedDocuments = useMemo(() => {
+  const memoizedActiveView = useMemo(() => {
     return Object.values(Documents)
-      .filter(document => document.active)
-      .map(document => {
-        const { Module, __DOCUMENT__ } = document;
-        return Module && <Module meta={__DOCUMENT__} key={__DOCUMENT__.key} />;
+      .filter(doc => doc.active)
+      .map(doc => {
+        const { View } = doc;
+        return View && <View Document={doc.Document} key={doc.key} />;
       });
   }, [Documents]);
 
   const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
-  const __DOCUMENTS__ = useMemo(() => memoizedDocuments, [memoizedDocuments, refreshFlag]);
+  const ActiveView = useMemo(() => memoizedActiveView, [memoizedActiveView, refreshFlag]);
 
   const handleSetOpenNav = useCallback((newOpenNav) => {
     setOpenNav(newOpenNav);
@@ -79,10 +80,13 @@ export function WorkspaceProvider({
   }, [theme, pathname])
 
   const goToErrorView = useCallback((e) => {
-    __META__.client_importer.client = "error-view";
-    AppSourceLoader(__META__.client_importer).then((Module) => {
-      __META__.__DOCUMENT__ = {
-        key: "error404",
+    __META__.Document = {
+      key: "error404",
+      entryPoint: "error-view",
+    };
+    
+    AppSourceLoader(__META__.Document).then((Module) => {
+      __META__.Document.data = {
         code: 404,
         title: "Source not found",
         description: e.message
@@ -94,15 +98,12 @@ export function WorkspaceProvider({
 
   const loadDocument = useCallback((__META__, Module) => {
     try {
-      const __DOCUMENT__ = __META__.__DOCUMENT__;
-
       startTransition(() => {
-        setDocuments(prevDocuments => ({
-          ...prevDocuments,
-          [__DOCUMENT__.key]: {
-            key: __DOCUMENT__.key,
-            Module: Module.default,
-            __DOCUMENT__: __DOCUMENT__,
+        setDocuments(setDocuments => ({
+          ...setDocuments,
+          [__META__.key]: {
+            View: Module.default,
+            ...__META__,
             active: true,
           }
         }));
@@ -113,14 +114,21 @@ export function WorkspaceProvider({
   }, [goToErrorView]);
 
   const setDocument = useCallback((r) => {
-    const __META__ = {
-      key: r.key,
-      __DOCUMENT__: r,
-      client_importer: r.client_importer,
-      __WORKSPACE__: r.__WORKSPACE__,
+    let __META__ = {};
+
+    if(__META_CACHE__[r.instance]){
+      __META__ = __META_CACHE__[r.instance];
+      __META__.Document = {...__META_CACHE__[r.instance].Document, ...r}
+    }else{
+      __META__ = {
+        key: r.key,
+        Document: r,
+      }
+
+      __META_CACHE__[r.instance] = __META__
     }
 
-    AppSourceLoader(__META__.client_importer).then((Module) => {
+    AppSourceLoader(__META__.Document).then((Module) => {
       startTransition(() => {
         setDocuments(prevDocuments => {
           const updatedDocuments = { ...prevDocuments };
@@ -132,7 +140,7 @@ export function WorkspaceProvider({
           return updatedDocuments;
         });
       });
-      
+     
       loadDocument(__META__, Module);
     }).catch(e => goToErrorView(e));
   }, [loadDocument, goToErrorView]);
@@ -140,11 +148,12 @@ export function WorkspaceProvider({
   const fetchDocument = useCallback((url) => {
     const route = window.location;
     if (route.hash.includes("#")) return Promise.resolve();
+    const preloadedMeta = __META_CACHE__[loopar.utils.urlInstance(route)] ? true : false;
 
     return new Promise((resolve, reject) => {
       loopar.send({
         action: route.pathname,
-        params: route.search,
+        params: `${route.search.length ? route.search + "&" : "?"}preloaded=${preloadedMeta}`,
         success: r => {
           setDocument(r);
           resolve();
@@ -164,12 +173,12 @@ export function WorkspaceProvider({
   }, [pathname, fetchDocument]);
 
   const getActiveDocument = useCallback(() => {
-    return Object.values(Documents).find((Document) => Document.active) || {};
+    return (Object.values(Documents).find(Document => Document.active) || {}).Document
   }, [Documents]);
 
   const getActiveParentMenu = useCallback(() => {
-    const {__DOCUMENT__} = getActiveDocument();
-    return __DOCUMENT__?.activeParentMenu || __DOCUMENT__?.__ENTITY__?.name;
+    const Document = getActiveDocument();
+    return Document?.activeParentMenu || Document.Entity?.name;
   }, [getActiveDocument]);
 
   const getTheme = useCallback(() => {
@@ -210,22 +219,22 @@ export function WorkspaceProvider({
   }, [pathname, loaded, fetchDocument, __WORKSPACE_NAME__, setOpenNav]);
 
   useEffect(() => {
-    const {__DOCUMENT__} = getActiveDocument();
-    if (!__DOCUMENT__) return;
+    const Document = getActiveDocument();
+    if (!Document) return;
     
-    const {__ENTITY__, __MODULE__} = __DOCUMENT__;
-    const activeParentMenu = __DOCUMENT__.activeParentMenu || __ENTITY__?.name;
-    const module = (activeParentMenu !== "Module" ? __DOCUMENT__?.module || __MODULE__ || __ENTITY__?.module : null) || null;
+    const entity = Document.Entity || {};
+    const activeParentMenu = Document.activeParentMenu || entity?.name;
+    const moduleName = (activeParentMenu !== "Module" ? Document?.meta?.module || entity?.module : null) || null;
 
     if (activeParentMenu) {
-      const activeDocumentName = __ENTITY__?.name;
+      const activeDocumentName = entity?.name;
       if (activeDocumentName && activeDocumentName !== activePage) {
         setActivePage(activeDocumentName);
       }
     }
 
-    setActiveModule(module);
-  }, [Documents, getActiveDocument, activePage]);
+    setActiveModule(moduleName);
+  }, [ActiveView, getActiveDocument, activePage]);
 
   useEffect(() => {
     const handlePopState = (event) => {
@@ -246,13 +255,13 @@ export function WorkspaceProvider({
     toogleSidebarNav: handleToogleSidebarNav,
     menuItems: props.menuItems,
     activeParentMenu: getActiveParentMenu(),
-    ENVIRONMENT: props.ENVIRONMENT,
-    Documents: Documents,
+    ENVIRONMENT: __META__.environment || props.ENVIRONMENT,
+    ActiveView,
     activePage: activePage,
     activeModule,
     refresh,
-    __DOCUMENTS__,
-    isPending
+    isPending,
+    workspace: __WORKSPACE_NAME__
   }), [
     getTheme,
     __META__,
@@ -261,13 +270,12 @@ export function WorkspaceProvider({
     handleSetOpenNav,
     handleToogleSidebarNav,
     props.menuItems,
-    props.ENVIRONMENT,
+    __META__.environment || props.ENVIRONMENT,
     getActiveParentMenu,
-    Documents,
+    ActiveView,
     activePage,
     activeModule,
     refresh,
-    __DOCUMENTS__,
     isPending
   ]);
 

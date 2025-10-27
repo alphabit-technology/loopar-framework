@@ -3,8 +3,7 @@ import { loopar, elementsDict } from "loopar";
 
 export const extractElements = (__META__, elements, environment) => {
   let extractedElements = [];
-  const __DOCUMENT__ = __META__.__DOCUMENT__ || {};
-  const ENTITY = __DOCUMENT__.__ENTITY__ || {};
+  const ENTITY = __META__.Document.Entity || {};
 
   const extract = (elements, environment) => {
     for (const el of elements || []) {
@@ -28,8 +27,9 @@ export const extractElements = (__META__, elements, environment) => {
 }
 
 export function requireComponents(__META__) {
-  const __DOCUMENT__ = __META__.__DOCUMENT__ || {};
-  const action = ["update", "create", "form"].includes(__META__.action) ? "form" : __META__.action;
+  const Document = __META__.Document || {};
+  const Entity = Document.Entity || {};
+  const action = ["update", "create", "form"].includes(Document.meta.action) ? "form" : Document.meta.action;
 
   const filterByWritable = (structure) => {
     return structure.reduce((acc, element) => {
@@ -45,11 +45,10 @@ export function requireComponents(__META__) {
     }, []);
   }
 
-  const ENTITY = __DOCUMENT__?.__ENTITY__ || {};
-  const DOCUMENT = __DOCUMENT__?.__DOCUMENT__ || {};
+  const data = Document.data || {};
 
-  const entityDocStructure = JSON.parse(ENTITY.doc_structure || "[]");
-  const documentDocStructure = JSON.parse(DOCUMENT.doc_structure || "[]");
+  const entityDocStructure = JSON.parse(Entity.doc_structure || "[]");
+  const documentDocStructure = JSON.parse(data.doc_structure || "[]");
 
   if (action === "list") {
     return [

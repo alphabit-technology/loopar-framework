@@ -31,17 +31,9 @@ interface Element {
   ref: Function,
 }
 
-interface __DOCUMENT__ {
+interface __DATA__ {
 
 }
-
-// interface MetaInterface {
-//   key: String,
-//   __ENTITY__: {
-//     STRUCTURE: Array<Element>
-//   },
-//   __DOCUMENT__: {}
-// }
 
 interface docRef {
 
@@ -115,14 +107,14 @@ export const FormProvider = ({ children, values, docRef, formRef, STRUCTURE, onC
 export const useFormContext = () => useContext(BaseFormContext);
 
 export function FormWrapper({
-  __DOCUMENT__, 
+  __DATA__, 
   docRef, 
   children, 
   formRef, 
   STRUCTURE,
   onChange
-} : { 
-  __DOCUMENT__: __DOCUMENT__, 
+} : {
+  __DATA__: __DATA__, 
   docRef: docRef, 
   children: React.ReactNode, 
   formRef: Function, 
@@ -131,7 +123,7 @@ export function FormWrapper({
 }) {
   return (
     <FormProvider 
-      values={__DOCUMENT__} 
+      values={__DATA__} 
       docRef={docRef} 
       formRef={formRef} 
       STRUCTURE={STRUCTURE} 

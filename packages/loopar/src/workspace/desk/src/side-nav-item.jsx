@@ -25,9 +25,7 @@ export const SideNavItem = (props) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    //console.log(["activeModule", activeModule])
     const moduleName = decodeURIComponent(pathname?.pathname.split('/')[2]);
-    //console.log(["activeModule", activeModule, moduleName])
     setActive(moduleName === path || path == activeModule);
   }, [pathname, activeModule]);
 

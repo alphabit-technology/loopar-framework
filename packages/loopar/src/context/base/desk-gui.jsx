@@ -60,7 +60,7 @@ export default function DeskGUI(props) {
       >
         {docRef.__hasHeader__ && 
           <AppBarr 
-            meta={docRef.meta} 
+            Document={docRef.Document}
             toggleSidebar={toggleSidebar}
             viewTypeToggle={props.viewTypeToggle}
             viewType={props.viewType}

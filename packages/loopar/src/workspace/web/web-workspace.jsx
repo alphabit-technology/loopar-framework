@@ -51,7 +51,6 @@ const Layout = (({ ...props }) => {
     : 'grid-cols-1 w-full';
 
   const className = `grid min-h-dvh w-full grid-rows-[1fr_auto] pt-web-header-height ${containerClass}`;
-  //const itemClass = `relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`;
 
   return (
     <div className="vaul-drawer-wrapper flex flex-col min-h-screen">
@@ -88,19 +87,18 @@ const Layout = (({ ...props }) => {
 });
 
 export default function WebWorkspace(props) {
-  const { __DOCUMENTS__, __META__ } = useWorkspace();
+  const { ActiveView, __META__ } = useWorkspace();
 
   const getWebApp = () => {
-    const workspace = __META__.__WORKSPACE__ || {};
-    return workspace.web_app || {};
+    return __META__.web_app || {};
   }
 
-  const activePage = __META__.__DOCUMENT__?.__ENTITY__?.name;
+  const activePage = __META__.Document.Entity.name;
 
   return (
     <BaseWorkspace activePage={activePage} webApp={getWebApp()}>
       <Layout {...props}>
-        {__DOCUMENTS__}
+        {ActiveView}
       </Layout>
     </BaseWorkspace>
   )

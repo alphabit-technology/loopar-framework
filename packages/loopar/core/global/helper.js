@@ -112,8 +112,15 @@ function debug_name(name) {
  * @returns
  */
 
-function hash(input) {
-  return Crypto.MD5(input).toString();
+function hash(str) {
+  let hash = 0;
+  
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash;
+  }
+  
+  return (hash >>> 0).toString(36);
 }
 
 /**
@@ -337,6 +344,19 @@ const toEntityKey = (str) => {
     .toLowerCase();
 }
 
+const urlHash = (route) => {
+  const query = route.search ? route.search.split('?') : '';
+  route.query = query[1] || '';
+
+  const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'name').join();
+
+
+  return hash(`${route.pathname}${key}`.toLowerCase());
+}
+
+const urlInstance = (route) => {
+  return hash(`${route.pathname}`.toLowerCase());
+}
 export {
   Capitalize,
   UPPERCASE,
@@ -370,5 +390,8 @@ export {
   objToRGBA,
   ObjectDeepExtend,
   evaluateAIResponse,
-  toEntityKey
+  toEntityKey,
+  fixJSON,
+  urlHash,
+  urlInstance
 }

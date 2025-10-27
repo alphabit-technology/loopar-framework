@@ -21,7 +21,7 @@ const TabContent = ({element, parent, onDrop}) => {
   return <>{element.content}</>
 }
 
-function TabFn(props/*{id, elementsDict, asChild = false, canCustomize, setElements, parent}*/){
+function TabFn(props){
   const {id, elementsDict, asChild = false, canCustomize, setElements, parent} = props;
   
   const {designerMode, isDesigner, handleEditElement, handleDeleteElement} = useDesigner();
@@ -181,13 +181,11 @@ export default function MetaTabs(props){
     <div className="p-2 my-3 border border-separate" id={data.id}>
       {data.label && <h4 className="p-2">{data.label}</h4>}
       <TabFn
-        id={data.id || data.name}
+        id={data.id || data.name || data.key}
         data={data}
         elementsDict={elementsDict}
         asChild={props.asChild}
-        setElements={(elements, callback) => {
-          setElements(elements, callback);
-        }}
+        setElements={setElements}
         canCustomize={props.canCustomize}
         parent={parentKey}
       />

@@ -6,6 +6,7 @@ import WorkspaceController from '../../controller/workspace-controller.js';
 import BaseController from '../../controller/base-controller.js';
 import { getHttpError } from '../../global/http-errors.js';
 import { RouterUtils } from './router-utils.js';
+import _ from 'lodash';
 
 export default class Router {
   debugger = false;
@@ -99,10 +100,21 @@ export default class Router {
       const errControlled = new BaseController({ req, res });
       errControlled.dictUrl = req._parsedUrl;
       const e = await errControlled.getError(error.code, error);
-      req.__WORKSPACE__.__DOCUMENT__ = e;
-      req.__WORKSPACE__.__DOCUMENT__.__DOCUMENT_TITLE__ = error.title;
 
-      this.render(res, await this.App.render(req.__WORKSPACE__));
+      req.__WORKSPACE__ = _.merge(
+        req.__WORKSPACE__ || {},
+        {
+          Document: {
+            ...e,
+            meta: {
+              title: error.title
+            },
+            entryPoint: "error-view",
+          }
+        }
+      );
+
+      return this.render(res, await this.App.render(req.__WORKSPACE__, true));
     } catch (err) {
       return this.throw(err, res);
     }
@@ -223,7 +235,7 @@ export default class Router {
   setupControllerMiddleware() {
     return async (req, res, next) => {
       await this.makeController(req, res);
-      const response = req.__WORKSPACE__.__DOCUMENT__;
+      const response = req.__WORKSPACE__;
 
       if (response?.redirect) {
         return this.redirect(res, response.redirect);
@@ -354,7 +366,7 @@ export default class Router {
     const errControlled = new BaseController({ req, res });
     errControlled.dictUrl = req._parsedUrl;
     const e = await errControlled.servePrivateFile("logo-test.png");
-    req.__WORKSPACE__.__DOCUMENT__ = e;
+    req.__WORKSPACE__.Document = e;
     return this.render(res, await this.App.render(req.__WORKSPACE__, true));
   }
 
@@ -378,7 +390,7 @@ export default class Router {
       title: "Not found", 
       message: `Document ${params.document} not found` 
     });
-    req.__WORKSPACE__.__DOCUMENT__ = e;
+    req.__WORKSPACE__.Document = e;
     return this.render(res, await this.App.render(req.__WORKSPACE__, true));
   }
 
@@ -406,10 +418,25 @@ export default class Router {
       Controller.action = action;
 
       const result = await Controller.sendAction(action) || {};
-      req.__WORKSPACE__.__DOCUMENT__ = result;
-      
+
       if (result && typeof result === "object") {
-        req.__WORKSPACE__.__DOCUMENT__.__MODULE__ = ref?.__MODULE__;
+        if (req.method === 'POST' || result.redirect ) {
+          req.__WORKSPACE__ = result;
+        }else{
+          req.__WORKSPACE__ = _.merge(
+            req.__WORKSPACE__ || {},
+            {
+              Document: _.merge(
+                result,
+                {
+                  meta: {
+                    module: ref?.module
+                  }
+                }
+              )
+            }
+          );
+        }
       }
     };
 

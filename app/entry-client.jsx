@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@error-boundary";
 (async () => {
   const __META_SCRIPT__ = document.getElementById('__loopar-meta-data__');
   const __META__ = JSON.parse(__META_SCRIPT__?.textContent || "{}");
-  const { Workspace, Document } = await Loader(__META__, "client");
+  const { Workspace, View } = await Loader(__META__, "client");
 
   window.lastY = 0;
   window.verticalDirection = null;
@@ -17,10 +17,12 @@ import { ErrorBoundary } from "@error-boundary";
     <BrowserRouter>
       <ErrorBoundary>
         <App
-          __META__={__META__}
-          Workspace={Workspace}
-          Document={Document}
-          ENVIRONMENT="client"
+          __META__={{
+            ...__META__,
+            components: {Workspace, View},
+            environment: "client",
+            services: {}
+          }}
         />
       </ErrorBoundary>
     </BrowserRouter>

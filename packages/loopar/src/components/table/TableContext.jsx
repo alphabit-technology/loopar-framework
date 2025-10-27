@@ -8,6 +8,8 @@ import {
   useRef
 } from "react";
 
+import _ from "lodash";
+
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { DropdownListGridActions } from "./DropdownListGridActions";
@@ -19,7 +21,7 @@ const TableContext = createContext();
 export const useTable = () => useContext(TableContext);
 
 export const TableProvider = ({
-  initialMeta,
+  initialDocument,
   docRef = {},
   hasSearchForm = false,
   viewType: _viewType,
@@ -28,9 +30,9 @@ export const TableProvider = ({
   children,
   ...props
 }) => {
-  const [meta, setMeta] = useState(initialMeta || {});
+  const [Document, setDocument] = useState(initialDocument || {});
   const [selectedRows, setSelectedRows] = useState([]);
-  const [pagination, setPagination] = useState(initialMeta?.pagination || {});
+  const [pagination, setPagination] = useState(initialDocument?.pagination || {});
   const lastSearch = useRef(null);
   
   const setPage = (page) => {
@@ -48,18 +50,18 @@ export const TableProvider = ({
   }, [props.rows]);
 
   useEffect(() => {
-    setMeta(initialMeta || {});
-  }, [initialMeta]);
+    setDocument(initialDocument || {});
+  }, [initialDocument]);
 
   const baseColumns = useMemo(() => {
-    if (!meta) return [];
+    if (!Document) return [];
     const parseElements = (elements = []) =>
       elements
         .map((el) => [{ ...el }, ...parseElements(el.elements || [])])
         .flat();
-    const STRUCTURE = JSON.parse(meta.__ENTITY__?.doc_structure || "[]");
+    const STRUCTURE = JSON.parse(Document.Entity?.doc_structure || "[]");
     return parseElements(STRUCTURE);
-  }, [meta]);
+  }, [Document.Entity]);
 
   const selectRow = (row, checked) => {
     setSelectedRows((prevSelected) =>
@@ -94,22 +96,26 @@ export const TableProvider = ({
   };
 
   const search = (searchData, force=false) => {
-    if (JSON.stringify(searchData) === JSON.stringify(lastSearch.current) && !force) return;
+    if(!lastSearch.current){
+      lastSearch.current = searchData;
+      return;
+    }
+
+    if(_.isEqual(searchData, lastSearch.current) && !force) return;
     lastSearch.current = searchData;
 
     loopar.method(
-      meta.__ENTITY__.name,
-      docRef.action || meta.action,
+      Document.Entity.name,
+      docRef.action || Document.meta.action,
       {},
       {
         body: {
           q: searchData,
           page: (pagination && pagination.page) || 1,
         },
-        success: (res) => {
-          setMeta(res);
-          setPagination(res.pagination || {});
-          setRows(res.rows || []);
+        success: r => {
+          setRows(r.rows || []);
+          setPagination(r.pagination || {});
         },
       }
     );
@@ -133,7 +139,7 @@ export const TableProvider = ({
       title: "Confirm",
       message: `Are you sure you want to delete ${row.name}?`,
       ok: async () => {
-        await loopar.method(meta.__ENTITY__.name, "delete", {
+        await loopar.method(Document.Entity.name, "delete", {
           name: row.name,
         });
       },
@@ -172,9 +178,9 @@ export const TableProvider = ({
     loopar.dialog({
       type: "confirm",
       title: "Confirm",
-      message: `Are you sure you want to delete [${selectedRows.join(", ")}] ${meta.__ENTITY__?.name || "documents"}?`,
+      message: `Are you sure you want to delete [${selectedRows.join(", ")}] ${Document.Entity?.name || "documents"}?`,
       ok: async () => {
-        await loopar.method(meta.__ENTITY__.name, "bulkDelete", {
+        await loopar.method(Document.Entity.name, "bulkDelete", {
           names: JSON.stringify(selectedRows),
         });
       },
@@ -208,10 +214,10 @@ export const TableProvider = ({
   };
 
   const tableContextValue = {
-    meta,
+    Document,
     rows,
     setRows,
-    setMeta,
+    setDocument,
     addRow,
     toggleRowSelect,
     selectedRows,

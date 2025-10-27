@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect, useReducer } from 'react';
 import { dataInterface } from "@global/element-definition";
 import { FormItem, FormMessage } from "@cn/components/ui/form";
 import { FormField } from "./form-field";
@@ -10,10 +10,39 @@ import { useDesigner } from "@context/@/designer-context";
 import _ from "lodash";
 import { useDocument } from "@context/@/document-context";
 
+const inputReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_DATA':
+      return { ...state, data: action.payload };
+    case 'SET_INVALID':
+      return { ...state, isInvalid: action.payload };
+    case 'SET_FIELD_VALUE':
+      return { ...state, fieldValue: action.payload };
+    case 'SET_IS_UPDATING':
+      return { ...state, isUpdating: action.payload };
+    case 'RESET':
+      return { ...state, ...action.payload };
+    default:
+      return state;
+  }
+};
+
 const BaseInput = (props) => {
-  const { element, data: propData, onChange, onChanged, readOnly: propReadOnly, withoutLabel, render: propRender } = props;
+  const { 
+    element, 
+    data: propData, 
+    onChange, 
+    onChanged, 
+    readOnly: propReadOnly, 
+    withoutLabel, 
+    render: propRender 
+  } = props;
   
-  const names = useMemo(() => element ? elementManage.elementName(element) : {}, [element]);
+  const names = useMemo(
+    () => element ? elementManage.elementName(element) : {}, 
+    [element]
+  );
+  
   const parentHidden = useHidden();
   const { docRef } = useDocument();
   const { designerMode } = useDesigner();
@@ -23,44 +52,49 @@ const BaseInput = (props) => {
       const data = propData || {};
       data.id ??= names.id || names.key;
       data.name ??= names.name || data.id;
-      data.label ??= loopar.utils.Capitalize(data.name?.replaceAll("_", " ") || "");
+      data.label ??= loopar.utils.Capitalize(
+        data.name?.replaceAll("_", " ") || ""
+      );
       return data;
     }
     return propData || {};
-  }, [element, propData, names]);
+  }, [element, propData, names.id, names.key, names.name]);
 
-  const [data, setData] = useState(getInitialData());
-  const [isInvalid, setIsInvalid] = useState(false);
-  const [fieldValue, setFieldValue] = useState(undefined);
+  const initialState = {
+    data: getInitialData(),
+    isInvalid: false,
+    fieldValue: undefined,
+    isUpdating: false
+  };
+
+  const [state, dispatch] = useReducer(inputReducer, initialState);
   
   const fieldRef = useRef(null);
   const prevData = useRef(null);
-  const prevFieldValue = useRef(fieldValue);
-  const isUpdatingRef = useRef(false);
+  const prevFieldValue = useRef(state.fieldValue);
+  const debouncedOnChangeRef = useRef(null);
 
   useEffect(() => {
     if (!designerMode) return;
 
     const newData = getInitialData();
-    //console.log(["new Data", newData])
     if (!_.isEqual(prevData.current, newData)) {
-
       prevData.current = newData;
-      setData(newData);
+      dispatch({ type: 'SET_DATA', payload: newData });
     }
-  }, [propData, designerMode, getInitialData, element]);
+  }, [propData, designerMode, getInitialData]);
 
   useEffect(() => {
     if (!docRef) return;
     
-    const fieldName = data.name;
+    const fieldName = state.data.name;
     if (fieldName) {
-      docRef.__REFS__[fieldName] = data;
+      docRef.__REFS__[fieldName] = state.data;
       return () => {
         delete docRef.__REFS__[fieldName];
       };
     }
-  }, [docRef, data]);
+  }, [docRef, state.data]);
 
   const extractValue = useCallback((event) => {
     if (event && typeof event === "object") {
@@ -69,73 +103,97 @@ const BaseInput = (props) => {
     return event;
   }, []);
 
-  const handleInputChange = useCallback((event) => {
-    if (designerMode || isUpdatingRef.current) return;
-
-    // Prevents multiple updates during the same event loop
-    // But only if onChange is not provided, to allow external control
-    !onChange && (isUpdatingRef.current = true);
-
-    const newValue = extractValue(event);
-
-    if (!_.isEqual(prevFieldValue.current, newValue)) {
-      setFieldValue(newValue);
-      prevFieldValue.current = newValue;
+  const validate = useCallback(() => {
+    if (state.data.hidden || parentHidden) {
+      return { valid: true };
     }
     
-    requestAnimationFrame(() => {
-      isUpdatingRef.current = false;
-    });
-  }, [designerMode, extractValue]);
-
-  const validate = useCallback(() => {
-    if (data.hidden || parentHidden) return { valid: true };
-    
-    if (!fieldRef.current) return { valid: true };
+    if (!fieldRef.current) {
+      return { valid: true };
+    }
     
     try {
-      const validation = dataInterface({ data }, fieldRef.current.value).validate();
+      const validation = dataInterface(
+        { data: state.data }, 
+        fieldRef.current.value
+      ).validate();
       
-      setIsInvalid(prev => {
-        const newInvalid = !validation.valid;
-        return prev === newInvalid ? prev : newInvalid;
-      });
+      if (validation.valid !== !state.isInvalid) {
+        dispatch({ 
+          type: 'SET_INVALID', 
+          payload: !validation.valid 
+        });
+      }
       
       return validation;
     } catch (error) {
       console.error("Validation error:", error);
       return { valid: true };
     }
-  }, [data, parentHidden]);
+  }, [state.data, state.isInvalid, parentHidden]);
 
-  const debouncedOnChange = useMemo(() => {
-    return _.debounce((event) => {
+  useEffect(() => {
+    debouncedOnChangeRef.current = _.debounce((event) => {
       onChange?.(event);
       onChanged?.(event);
     }, 10);
+
+    return () => {
+      if (debouncedOnChangeRef.current) {
+        debouncedOnChangeRef.current.cancel();
+      }
+    };
   }, [onChange, onChanged]);
 
   useEffect(() => {
-    if ((designerMode || fieldValue === undefined || isUpdatingRef.current) && !onChange) return;
+    if (designerMode || state.fieldValue === undefined || state.isUpdating) {
+      if (!onChange) return;
+    }
     
-    const event = { target: { value: fieldValue } };
+    const event = { target: { value: state.fieldValue } };
     
-    if (!data.hidden && !parentHidden) {
+    if (!state.data.hidden && !parentHidden) {
       validate();
     }
 
     queueMicrotask(() => {
-     
-      debouncedOnChange(event);
+      debouncedOnChangeRef.current?.(event);
     });
-  }, [fieldValue, designerMode, validate, data.hidden, parentHidden, debouncedOnChange]);
+  }, [
+    state.fieldValue, 
+    designerMode, 
+    state.isUpdating,
+    state.data.hidden, 
+    parentHidden, 
+    validate,
+    onChange
+  ]);
 
-  const readOnly = propReadOnly || data.readOnly;
+  const handleInputChange = useCallback((event) => {
+    if (designerMode || state.isUpdating) return;
+
+    if (!onChange) {
+      dispatch({ type: 'SET_IS_UPDATING', payload: true });
+    }
+
+    const newValue = extractValue(event);
+
+    if (!_.isEqual(prevFieldValue.current, newValue)) {
+      dispatch({ type: 'SET_FIELD_VALUE', payload: newValue });
+      prevFieldValue.current = newValue;
+    }
+    
+    requestAnimationFrame(() => {
+      dispatch({ type: 'SET_IS_UPDATING', payload: false });
+    });
+  }, [designerMode, state.isUpdating, extractValue, onChange]);
+
+  const readOnly = propReadOnly || state.data.readOnly;
   const hasLabel = () => withoutLabel !== true;
 
   const renderInput = useCallback((input, className = "") => {
-    const fieldName = data.name || data.key || data.id || "";
-    const isDisabled = !!data.disabled;
+    const fieldName = state.data.name || state.data.key || state.data.id || "";
+    const isDisabled = !!state.data.disabled;
     
     const fieldProps = {
       name: fieldName,
@@ -152,11 +210,11 @@ const BaseInput = (props) => {
           if (fieldRef.current !== field) {
             fieldRef.current = field;
           }
-          
           const combinedOnChange = useCallback((e) => {
-            if (isDisabled || isUpdatingRef.current) return;
+            if (isDisabled || state.isUpdating) return;
             
             const newValue = extractValue(e);
+            
             if (_.isEqual(prevFieldValue.current, newValue)) return;
             
             if (field.onChange) {
@@ -164,31 +222,47 @@ const BaseInput = (props) => {
             }
             
             handleInputChange(e);
-          }, [field.onChange, isDisabled, e => extractValue(e)]);
+          }, [field.onChange, isDisabled]);
 
           return (
             <FormItem className={cn("flex flex-col rounded shadow-sm", className)}>
               {input({ 
                 ...field, 
                 onChange: combinedOnChange, 
-                isInvalid,
+                isInvalid: state.isInvalid,
                 ref: fieldRef 
-              }, data)}
+              }, state.data)}
               <FormMessage>
-                {field.message || (isInvalid && field.invalidMessage)}
+                {field.message || (state.isInvalid && field.invalidMessage)}
               </FormMessage>
             </FormItem>
           );
         }}
       />
     );
-  }, [props.control, props.disabled, props.defaultValue, props.rules, data, handleInputChange, isInvalid, extractValue]);
+  }, [
+    props.control, 
+    props.disabled, 
+    props.defaultValue, 
+    props.rules, 
+    state.data,
+    state.isInvalid,
+    state.isUpdating,
+    handleInputChange, 
+    extractValue
+  ]);
 
   if (propRender) {
     return renderInput(propRender);
   }
 
-  return { renderInput, validate, readOnly, hasLabel, data };
+  return { 
+    renderInput, 
+    validate, 
+    readOnly, 
+    hasLabel, 
+    data: state.data 
+  };
 };
 
 BaseInput.metaFields = () => {

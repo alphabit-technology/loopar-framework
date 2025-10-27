@@ -10,7 +10,7 @@ export default class ErrorController extends SingleController {
 
   async actionView() {
     const error = await loopar.newDocument("Error");
-    Object.assign(error.__DOCUMENT__, {
+    Object.assign(error.data, {
       code: this.code || 500,
       title: this.title,
       message: this.description

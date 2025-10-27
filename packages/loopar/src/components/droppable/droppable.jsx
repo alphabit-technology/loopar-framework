@@ -129,7 +129,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   }, [movement, dropZone, currentDragging]);
 
   const clearDragged = useCallback(() => {
-    if(!dragging) return elements;
+    if(!dragging || !movement) return elements;
     
     return elements.filter(el =>
       el.$$typeof !== Symbol.for('react.transitional.element') &&

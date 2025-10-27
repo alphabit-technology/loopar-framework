@@ -1,192 +1,234 @@
 import BaseInput from "@base-input";
-import {FormLabel} from "./input/index.js";
-import { useState, useEffect, useRef, useCallback} from "react";
+import { FormLabel } from "./input/index.js";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import loopar from "loopar";
 import { Select } from "./select/base-select";
+import { FormDescription } from "@cn/components/ui/form";
 
-import {
-  FormDescription
-} from "@cn/components/ui/form";
-
-export default function MetaSelect(props){
-  const [rows, setRows] = useState(props.rows || []);
-  const [filteredOptions, setFilteredOptions] = useState([]);
+export default function MetaSelect(props) {
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
   const titleFields = useRef(["label"]);
   const model = useRef(null);
-  const lastSearch = useRef(null);
+  const abortControllerRef = useRef(null);
   const fieldRef = useRef(null);
   
   const { renderInput, data } = BaseInput(props);
 
-  useEffect(() => {
-    const val = fieldRef.current?.value || "";
-    const initialRows = loopar.utils.isJSON(val) ? [JSON.parse(val)] : [{ value: val, label: val }];
-    setRows(getPrepareOptions(initialRows));
+  const isLocal = useMemo(() => {
+    const options = data.options;
+    return !options || typeof options === "object" || options.includes("\n");
+  }, [data.options]);
+
+  const buildLabel = useCallback((opt) => {
+    if (!opt) return null;
+    
+    if (typeof opt === "object") {
+      if (Array.isArray(titleFields.current)) {
+        const values = titleFields.current
+          .map(lbl => opt[lbl])
+          .filter(val => val);
+        
+        return values.reduce((acc, el, index) => {
+          acc.push(el);
+          if (index < values.length - 1) acc.push(" - ");
+          return acc;
+        }, []);
+      } else {
+        return opt[titleFields.current];
+      }
+    }
+    
+    return opt;
   }, []);
 
-  const search = (target, delay = true) => {
-    if(data.disabled) return;
-
-    const q = target?.target?.value || "";
-    return new Promise((resolve, reject) => {
-      if (isLocal()) {
-        setFilteredOptions(buildOptions().filter((row) => {
-          return (typeof row == "object" ? `${row.value} ${row.label}` : row)
-            .toLowerCase()
-            .includes(q);
-        }).map((row) => {
-          return typeof row == "object" ? row : { value: row, label: row };
-        }));
-
-        resolve();
-      } else {
-        model.current = buildOptions()[0];
-
-        if (delay) {
-          clearTimeout(lastSearch.current);
-          lastSearch.current = setTimeout(() => getServerData(q).then(resolve), 200);
-        } else {
-          getServerData(q).then(resolve);
-        }
-      }
-    });
-  };
-
-  const isLocal = () => {
-    const options = data.options;
-    return !options || typeof options == "object" || options.includes("\n");
-  };
-
-  const getModel = () => {
-    return model.current?.value;
-  }
-
-  const getServerData = (q) => {
-    if(data.disabled) return;
+  const buildOption = useCallback((option) => {
+    if (!option) return { null: null };
     
-    return new Promise((resolve) => {
-      loopar.send({
-        action: `/desk/${getModel()}/search`,
-        params: { q },
-        success: (r) => {
-          titleFields.current = r.title_fields;
-          setFilteredOptions(getPrepareOptions(r.rows.map(row => ({ value: row.name, label: row }))));
-          resolve();
-        },
-        error: (r) => {
-          console.log(r);
-        },
-        freeze: false,
-      });
-    });
-  };
-
-  useEffect(() => {
-    setRows(filteredOptions);
-  }, [filteredOptions]);
-
-  const buildOption = (option) => {
-    const separator = (arr, separator) => 
-      arr.reduce((acc, el, index) => {
-        acc.push(el);
-        if (index < arr.length - 1) acc.push(separator);
-        return acc;
-      }, []);
-    
-    const buildLabel = (opt) => {
-      if (opt) {
-        if (typeof opt === "object") {
-          if (Array.isArray(titleFields.current)) {
-            const values = titleFields.current.map(lbl => opt[lbl]).filter(val => val);
-            
-            return separator(values, " - ");
-          } else {
-            return opt[titleFields.current];
-          }
-        } else {
-          return opt;
-        }
-      }
-    };
-
-    return option ? (typeof option === "object"
-      ? {
+    if (typeof option === "object") {
+      return {
         value: option.value,
         label: buildLabel(option.label || option.value),
         formattedValue: option.formattedValue,
-      }
-      : {
-        value: option || fieldRef.current.value,
-        label:  option || fieldRef.current.value,
-      }) : { null: null };
-  };
+      };
+    }
+    
+    return {
+      value: option || fieldRef.current?.value,
+      label: option || fieldRef.current?.value,
+    };
+  }, [buildLabel]);
 
-  const buildOptions = () => {
+  const builtOptions = useMemo(() => {
     const opts = data.options || "";
 
-    if (typeof opts == "object") {
+    if (typeof opts === "object") {
       if (Array.isArray(opts)) {
-        return opts.map(i => buildOption(i))
+        return opts.map(i => buildOption(i));
       } else {
         return Object.keys(opts).map((key) => ({
           value: key,
           label: opts[key],
         }));
       }
-    } else if (typeof opts == "string") {
+    } else if (typeof opts === "string") {
       return opts.split(/\r?\n/).map((item) => {
         const [value, label] = item.split(":");
         return { value, label: label || value };
       });
     } else if (Array.isArray(opts)) {
-      return opts.reduce((acc, item) => {
-        acc.push(buildOption(item))
-        return acc;
-      }, []);
+      return opts.map(item => buildOption(item));
     }
-  }
+    
+    return [];
+  }, [data.options, buildOption]);
 
-  const getPrepareOptions = (options) => {
+  const getPrepareOptions = useCallback((options) => {
     return options.map(option => buildOption(option));
-  };
+  }, [buildOption]);
 
-  const currentOption = (option) => {
-    if (option) {
-      const rowOption = rows.find(r => r.value === option);
-      const valueDescriptive =  rowOption?.label || data.value_descriptive;
-      return {
-        ...(rowOption || buildOption(option)),
-        formattedValue: props.formattedValue || valueDescriptive
-      };
+  useEffect(() => {
+    if (!fieldRef.current) return;
+    
+    const val = fieldRef.current.value || "";
+    const initialRows = loopar.utils.isJSON(val) 
+      ? [JSON.parse(val)] 
+      : [{ value: val, label: val }];
+    
+    setRows(getPrepareOptions(initialRows));
+  }, [getPrepareOptions]);
+
+  const getModel = useCallback(() => {
+    return model.current?.value;
+  }, []);
+
+  const getServerData = useCallback((q) => {
+    if (data.disabled) return Promise.resolve();
+    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
+    
+    abortControllerRef.current = new AbortController();
+    
+    setIsLoading(true);
+    setError(null);
+    
+    return new Promise((resolve, reject) => {
+      loopar.send({
+        action: `/desk/${getModel()}/search`,
+        params: { q },
+        signal: abortControllerRef.current.signal,
+        success: (r) => {
+          titleFields.current = r.title_fields;
+          const preparedRows = getPrepareOptions(
+            r.rows.map(row => ({ 
+              value: row.name, 
+              label: row 
+            }))
+          );
+          setRows(preparedRows);
+          setIsLoading(false);
+          resolve(preparedRows);
+        },
+        error: (err) => {
+          if (err.name !== 'AbortError') {
+            console.error("Error fetching data:", err);
+            setError(err.message || "Error loading data");
+            setIsLoading(false);
+            reject(err);
+          }
+        },
+        freeze: false,
+      });
+    });
+  }, [data.disabled, getModel, getPrepareOptions]);
 
-    return null;
-  };
+  const search = useCallback((target, delay = true) => {
+    if (data.disabled) return Promise.resolve();
+
+    const q = target?.target?.value || "";
+    
+    return new Promise((resolve) => {
+      if (isLocal) {
+        const filtered = builtOptions.filter((row) => {
+          const searchText = typeof row === "object" 
+            ? `${row.value} ${row.label}`.toLowerCase()
+            : String(row).toLowerCase();
+          return searchText.includes(q.toLowerCase());
+        }).map((row) => {
+          return typeof row === "object" 
+            ? row 
+            : { value: row, label: row };
+        });
+        
+        setRows(filtered);
+        resolve(filtered);
+      } else {
+        model.current = builtOptions[0];
+        
+        if (delay) {
+          const timeoutId = setTimeout(() => {
+            getServerData(q).then(resolve).catch(() => resolve([]));
+          }, 300);
+          
+          return () => clearTimeout(timeoutId);
+        } else {
+          getServerData(q).then(resolve).catch(() => resolve([]));
+        }
+      }
+    });
+  }, [data.disabled, isLocal, builtOptions, getServerData]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const currentOption = useCallback((option) => {
+    if (!option) return null;
+    
+    const rowOption = rows.find(r => r.value === option);
+    const valueDescriptive = rowOption?.label || data.value_descriptive;
+    
+    return {
+      ...(rowOption || buildOption(option)),
+      formattedValue: props.formattedValue || valueDescriptive
+    };
+  }, [rows, data.value_descriptive, props.formattedValue, buildOption]);
 
   return renderInput((field) => {
     fieldRef.current = field;
+    
     return (
       <>
         <FormLabel {...props} field={field} />
         <Select
           field={field}
           options={rows}
-          search={(delay) => search(delay)}
+          search={search}
           data={data}
           onSelect={field.onChange}
           selected={currentOption(field.value)}
+          isLoading={isLoading}
+          error={error}
         />
-        {(data.description && props.simpleInput != true) && (
+        {(data.description && props.simpleInput !== true) && (
           <FormDescription>{data.description}</FormDescription>
         )}
       </>
-    )
+    );
   });
-};
+}
 
 MetaSelect.metaFields = () => {
   return [
-  ...BaseInput.metaFields(),
+    ...BaseInput.metaFields(),
     [
       {
         group: "form",
@@ -202,4 +244,4 @@ MetaSelect.metaFields = () => {
       },
     ]
   ];
-}
+};

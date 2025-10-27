@@ -13,15 +13,13 @@ export default class ViewContext extends BaseDocument {
   }
 
   render(content) {
-    const meta = this.props.meta;
-
     return super.render(
       <FormWrapper>
         <DeskGUI
           docRef={this}
         >
           <>
-          <MetaComponent elements={JSON.parse(meta.__ENTITY__.doc_structure)} parent={this}/>
+          <MetaComponent elements={JSON.parse(this.Document.Entity.doc_structure)} parent={this}/>
           {content}
           </>
         </DeskGUI>

@@ -111,7 +111,6 @@ export const Meta = (props) => {
       )
     }
   } else {
-    //console.warn(["Component: " + def.element + " is not loaded yet"]);
     return null;
   }
 };

@@ -13,7 +13,7 @@ export default class BaseForm extends BaseDocument {
   #Form = null;
 
   save() {
-    this.send({ action: this.__META__.action });
+    this.send({ action: this.Document.meta.action });
   }
 
   hasChanges() {
@@ -200,7 +200,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   #getFormValues(toSave = false) {
-    if(!this.Form)  return this.__META__.__DOCUMENT__;
+    if(!this.Form)  return this.Document.data || {};
     
     const fields = this.__FIELDS__;
     let __FILES__ = [];

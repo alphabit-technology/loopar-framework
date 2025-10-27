@@ -4,12 +4,12 @@ import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar";
 import { titleize } from "inflection";
+import _ from "lodash";
 
 export default class CoreController extends AuthController {
   error = {};
   defaultImporterFiles = ['index', 'form'];
   response = {};
-
   hasData() {
     return Object.keys(this.data || {}).length > 0;
   }
@@ -41,22 +41,10 @@ export default class CoreController extends AuthController {
       description = arguments[1] || arguments[0];
     }
 
-    document.__DOCUMENT__ = {
+    document.data = {
       code: code || 404,
       title: title || `Document ${titleize(this.document)} not found`,
       description: description || "The document you are looking for does not exist",
-    };
-
-    return await this.render(document);
-  }
-
-  async getError(code, { title = "Error", description = "An error occurred" } = {}) {
-    const document = await loopar.newDocument("Error");
-
-    document.__DOCUMENT__ = {
-      code: code,
-      title: title,
-      description: description,
     };
 
     return await this.render(document);
@@ -92,10 +80,8 @@ export default class CoreController extends AuthController {
         const fileSize = privateFile.size || 0;
       }
     }
-         
-    document.__DOCUMENT__ = {
-      file: file
-    };
+
+    document.data = { file }
 
     return await this.render(document);
   }
@@ -104,22 +90,46 @@ export default class CoreController extends AuthController {
     return { redirect: url };
   }
 
-  async render(__DOCUMENT__) {
-    __DOCUMENT__.action = this.action;
+  /* async render(meta) {
+    return _.merge(meta, {
+      data: { file }
+    });
+  } */
 
-    return {
-      client_importer: this.clientImporter(__DOCUMENT__),
-      key: this.getKey(),
-      __DOCUMENT_TITLE__: titleize(__DOCUMENT__.__DOCUMENT_TITLE__ || this.name || this.document || "Document"),
-      ...__DOCUMENT__,
-    }
+  redirect(url = null) {
+    return { redirect: url };
   }
 
-  clientImporter(__DOCUMENT__) {
-    if (!__DOCUMENT__.__ENTITY__) return {};
+  async getError(code, { title = "Error", description = "An error occurred" } = {}) {
+    const document = await loopar.newDocument("Error");
+
+    return await this.render({
+      ...await document.__meta__(),
+      data: {
+        code: code,
+        title: title,
+        description: description,
+      }
+    });
+  }
+
+  async render(meta) {
+    return _.merge(meta, {
+      key: this.getKey(),
+      instance: this.getInstance(),
+      meta: {
+        title: titleize(meta.title || this.name || this.document || "Document"),
+        action: this.action,
+      },
+      entryPoint: this.clientImporter(meta),
+    });
+  }
+
+  clientImporter(Document) {
+    if (!Document) return null;
 
     const getClient = () => {
-      if(["Page", "View"].includes(__DOCUMENT__.__ENTITY__.type)) return "view";
+      if(["Page", "View"].includes(Document.Entity.type)) return "view";
       if (this.client) return this.client;
       
 
@@ -133,20 +143,17 @@ export default class CoreController extends AuthController {
       }
     }
 
-    const document = __DOCUMENT__.__ENTITY__.name;
+    const name = Document.Entity.name;
 
-    return {
-      client: `${loopar.utils.decamelize(document, { separator: '-' })}-${getClient()}`,
-    }
+    return `${loopar.utils.decamelize(name, { separator: '-' })}-${getClient()}`
   }
 
   getKey(route = this.dictUrl) {
-    const query = route.search ? route.search.split('?') : '';
-    route.query = query[1] || '';
+    return loopar.utils.urlHash(route);
+  }
 
-    const key = route.query.split('&').map(q => q.split('=')).filter(q => q[0] === 'name').join();
-
-    return loopar.utils.hash(`${route.pathname}${key}`.toLowerCase());
+  getInstance(route = this.dictUrl) {
+    return loopar.utils.urlInstance(route);
   }
 
   static async sidebarData() {

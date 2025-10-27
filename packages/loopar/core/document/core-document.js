@@ -9,9 +9,7 @@ import { Sequelize } from 'sequelize';
 
 export default class CoreDocument {
   #fields = {};
-  documentType = "Entity";
-  fieldDocStructure = 'doc_structure';
-  protectedPassword = "********";
+  #protectedPassword = "********";
 
   constructor(props) {
     Object.assign(this, props);
@@ -19,6 +17,10 @@ export default class CoreDocument {
 
   get fields() {
     return this.#fields;
+  }
+
+  get protectedPassword() {
+    return this.#protectedPassword
   }
 
   async onLoad() {
@@ -65,13 +67,12 @@ export default class CoreDocument {
   }
 
   async __init__() {
-    await this.#makeFields(JSON.parse(this.__ENTITY__[this.fieldDocStructure]));
-    //this.__ENTITY__.STRUCTURE = JSON.parse(this.__ENTITY__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
+    await this.#makeFields(JSON.parse(this.__ENTITY__.doc_structure));
 
-    if (this.__DOCUMENT__ && this.__DOCUMENT__[this.fieldDocStructure]) {
-      this.__DOCUMENT__[this.fieldDocStructure] = JSON.stringify(
+    if (this.__DATA__ && this.__DATA__.doc_structure) {
+      this.__DATA__.doc_structure = JSON.stringify(
         JSON.parse(
-          this.__DOCUMENT__[this.fieldDocStructure]).filter(field => (field.data || {}).name !== ID
+          this.__DATA__.doc_structure).filter(field => (field.data || {}).name !== ID
           )
       );
     }
@@ -143,14 +144,14 @@ export default class CoreDocument {
 
         this.#fields[fieldName] = new DynamicField(
           field,
-          (Array.isArray(val) && val.length > 0) ? value : this.__DOCUMENT__[fieldName]
+          (Array.isArray(val) && val.length > 0) ? value : this.__DATA__[fieldName]
         );
       } else {
         if (fieldName === "doc_structure") {
-          //console.log("doc_structure", value, this.__DOCUMENT__[fieldName])
+          //console.log("doc_structure", value, this.__DATA__[fieldName])
         }
 
-        this.#fields[fieldName] = new DynamicField(field, value || this.__DOCUMENT__[fieldName]);
+        this.#fields[fieldName] = new DynamicField(field, value || this.__DATA__[fieldName]);
       }
 
       /* Object.defineProperty(this, `get${nameToGet(fieldName)}`, {
@@ -198,7 +199,7 @@ export default class CoreDocument {
   }
 
   getDocypeStructure() {
-    return JSON.parse(this.__ENTITY__[this.fieldDocStructure]).filter(field => field.data.name !== ID);
+    return JSON.parse(this.__ENTITY__.doc_structure).filter(field => field.data.name !== ID);
   }
 
   async #makeFields(fields = this.getDocypeStructure()) {
@@ -311,7 +312,7 @@ export default class CoreDocument {
       //}
 
       await this.updateHistory();
-      const files = this.__DOCUMENT__.__REQ_FILES__ || [];
+      const files = this.__DATA__.__REQ_FILES__ || [];
 
       for (const file of files) {
         const fileManager = await loopar.newDocument("File Manager");
@@ -429,10 +430,10 @@ export default class CoreDocument {
     await this.trigger('afterDelete', this);
   }
 
-  async __data__() {
+  async __meta__(withData = true) {
     const entity = this.__ENTITY__;
 
-    const isDesigner = (elements) => {
+   /*  const isDesigner = (elements) => {
       for (const element of elements) {
         if (element.element == DESIGNER) return true;
 
@@ -440,17 +441,17 @@ export default class CoreDocument {
           return isDesigner(element.elements);
         }
       }
-    }
+    } */
 
     //if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
 
-    const __DOCUMENT__ = await this.values();
+    const __DATA__ = await this.values();
       
     if (!this.__IS_NEW__) {
       const updateValue = async (structure) => {
         return Promise.all(structure.map(async (el) => {
           const data = el.data;
-          const val = __DOCUMENT__[data.name];
+          const val = __DATA__[data.name];
       
           if (el.element === SELECT) {
             const options = (data.options || "").split("\n");
@@ -469,7 +470,7 @@ export default class CoreDocument {
           if(el.element === FORM_TABLE) {
             const ref = loopar.getRef(data.options);
             el.__META__ = {
-              __ENTITY__: {
+              Entity: {
                 doc_structure: await loopar.db.getValue(ref.__ENTITY__, "doc_structure", ref.__NAME__),
               }
             }
@@ -487,24 +488,23 @@ export default class CoreDocument {
       };
 
       await updateDocStructure();
-      // entity.doc_structure = JSON.stringify(updateValue(
-      //   JSON.parse(entity.doc_structure)
-      // ))
     }
 
     const __ENTITY__ = entity;
     delete __ENTITY__.__REF__;
     
     return {
-      __ENTITY__: {
+      name: this.__DOCUMENT_NAME__,
+      isNew: this.__IS_NEW__,
+      Entity: {
+        id: __ENTITY__.id,
         name: __ENTITY__.name,
         module: __ENTITY__.module,
         doc_structure: __ENTITY__.doc_structure,
       },
-      __DOCUMENT_NAME__: this.__DOCUMENT_NAME__,
-      __DOCUMENT__: await this.values(),
-      __IS_NEW__: this.__IS_NEW__,
-      __SPACING__: this.__SPACING__
+      ...(withData ? { data: await this.rawValues() } : {}),
+      //data: await this.rawValues(),
+      spacing: this.__SPACING__
     }
   }
 
@@ -531,8 +531,7 @@ export default class CoreDocument {
       else if (field.element === PASSWORD) {
         return raw ? field.value : (field.value && field.value.length > 0 ? this.protectedPassword : "");
       } else if(field.element === MARKDOWN){
-        return field.value//
-        return this.__PARSED__ ? await renderMarkdownSSR(field.value) : field.value;
+        return field.value;
       } else {
         return field.stringifyValue;
       }
@@ -551,7 +550,7 @@ export default class CoreDocument {
 
   async rawValues() {
     const value = async (field) => {
-      if (field.name === this.fieldDocStructure) {
+      if (field.element === DESIGNER) {
         return field.value ? JSON.stringify(field.value.filter(field => (field.data || []).name !== ID)) : "[]";
       } else if (field.element === FORM_TABLE) {
         return await this.getChildRawValues(field.options);

@@ -17,10 +17,10 @@ import { TableSearch } from "./TableSearch";
 
 export function ListGrid(props) {
   const { docRef } = props;
-  const {baseColumns, meta, selectorCol, deleteRow, search} = useTable();
+  const {baseColumns, Document, selectorCol, deleteRow, search} = useTable();
 
   const getDocumentTitle = (row) => {
-    const titleFields = meta.__ENTITY__.title_fields?.split(",");
+    const titleFields = Document.Entity.title_fields?.split(",");
 
     if(titleFields){
       return titleFields.map((field) => row[field]).join(" ");

@@ -16,7 +16,7 @@ export default class BaseDocument extends React.Component {
   
     this.state = {
       ...this.state,
-      meta: props.meta,
+      Document: props.Document,
     };
   }
 
@@ -41,17 +41,18 @@ export default class BaseDocument extends React.Component {
   }
   
   render(content) {
-    const meta = this.state.meta;
+    const Document = this.state.Document;
     return (
       <DocumentProvider
         docRef={this}
         formValues={this.getFormValues ? this.getFormValues() : {}}
-        name={meta?.__DOCUMENT_NAME__}
-        title={meta?.__DOCUMENT_TITLE__}
-        spacing={meta?.__SPACING__}
+        name={Document.name}
+        title={Document.meta.title}
+        spacing={Document.spacing}
+        Document={this.Document}
       >
         <>
-          <title>{meta?.__DOCUMENT_TITLE__}</title>
+          <title>{Document.meta.title}</title>
           {content}
         </>
       </DocumentProvider>
@@ -62,16 +63,20 @@ export default class BaseDocument extends React.Component {
     return this.__REFS__[name];
   }
 
-  get meta() {
+  /* get meta() {
     return this.state.meta || this.props.meta || {};
+  } */
+
+  get Document() {
+    return this.props.Document || {};
   }
 
   get __META__(){
-    return this.state.meta || this.props.meta || {};
+    return this.state.__META__ || this.props.__META__ || {};
   }
 
   get __IS_NEW__() {
-    return this.meta.__IS_NEW__;
+    return this.Document.isNew;
   }
 
   get __DOCUMENT_NAME__() {
@@ -90,11 +95,11 @@ export default class BaseDocument extends React.Component {
   }
 
   get __ENTITY__() {
-    return this.meta.__ENTITY__;
+    return this.__META__.Entity || {};
   }
 
   get __STRUCTURE__() {
-    return this.__ENTITY__.STRUCTURE || JSON.parse(this.__ENTITY__.doc_structure || "{}");
+    return this.Document.STRUCTURE || JSON.parse(this.Document.Entity.doc_structure || "[]");
   }
 
   get __FIELDS__() {
@@ -158,7 +163,7 @@ export default class BaseDocument extends React.Component {
   }
 
   getPageKey() {
-    return this.meta.key;
+    return this.Document.key;
   }
 
   getCurrentScrollPosition() {

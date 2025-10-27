@@ -9,11 +9,11 @@ export default class InstallerContext extends BaseForm {
   }
 
   render(content = []) {
-    const meta = this.props.meta;
+    const Document = this.Document;
 
     return super.render([
-      <FormWrapper meta={meta} docRef={this}>
-        <MetaComponent elements={JSON.parse(meta.__ENTITY__.doc_structure)} parent={this} />
+      <FormWrapper Document={Document} docRef={this}>
+        <MetaComponent elements={JSON.parse(Document.Entity.doc_structure)} parent={this} />
         {content}
       </FormWrapper>
     ]);

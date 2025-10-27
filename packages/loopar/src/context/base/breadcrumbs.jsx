@@ -2,36 +2,37 @@ import loopar from "loopar";
 import {Link} from "@link";
 import { HomeIcon, ChevronRight } from "lucide-react";
 
-export function Breadcrumbs({ meta }) {
+export function Breadcrumbs({ Document }) {
   let context = null;
+  const {Entity} = Document;
   const makeLinks = () => {
     const dataLinks = [];
 
-    if (meta.__ENTITY__.module) {
+    if (Entity.module) {
       const text = loopar.utils.Capitalize(
-        context === "module" ? "Home" : meta.__ENTITY__.module
+        context === "module" ? "Home" : Entity.module
       );
       const link =
-        context === "module" ? "/" : `/${meta.__ENTITY__.module}`;
+        context === "module" ? "/" : `/${Entity.module}`;
 
       dataLinks.push({ text: text, link: link, has_icon: true });
     }
 
     if (
-      meta.__ENTITY__.name &&
+      Entity.name &&
       context !== "module" &&
-      !meta.__ENTITY__.is_single
+      !Entity.is_single
     ) {
       dataLinks.push({
-        text: loopar.utils.Capitalize(meta.__ENTITY__.name),
-        link: `/${meta.__ENTITY__.name}/list`,
+        text: loopar.utils.Capitalize(Entity.name),
+        link: `/${Entity.name}/list`,
         has_icon: false,
       });
     }
 
-    if (meta.action) {
+    if (Document.meta.action) {
       dataLinks.push({
-        text: context === "module" ? meta.module_group : meta.action,
+        text: context === "module" ? Document.module_group : Document.meta.action,
         to: null,
         has_icon: false,
       });

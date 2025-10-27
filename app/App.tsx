@@ -3,25 +3,63 @@ import React, {useEffect} from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import 'vite/modulepreload-polyfill';
-
 import { useNavigate } from 'react-router';
+
+type ViewType = "module" | "app" | "page" | "list" | "view" | "form";
+type Environment = "development" | "staging" | "production";
+
+interface EntityInterface {
+  name: string;
+  doc_structure: string;
+  id: string | number;
+}
+
+interface DocumentInterface {
+  name: string;
+  meta: {
+    action: string;
+    title: string;
+    type?: ViewType;
+    [key: string]: unknown;
+  };
+  data: Record<string, unknown>;
+  Entity: EntityInterface;
+  spacing: Record<string, unknown>;
+}
+
+interface CookieOptions {
+  expires?: Date | number;
+  path?: string;
+  domain?: string;
+  secure?: boolean;
+  sameSite?: "strict" | "lax" | "none";
+}
+
+interface CookieManager {
+  get(key: string): string | undefined;
+  set(key: string, value: string, options?: CookieOptions): void;
+  remove(key: string): void;
+}
 
 interface RootLayoutProps {
   __META__: {
-    __DOCUMENT__: any;
-    __WORKSPACE__: any;
-    key: string;
-    client_importer: string;
+    name: string;
+    services: {
+      cookieManager: CookieManager;
+    };
+    environment: Environment;
+    components: {
+      Workspace: React.FC<any>;
+      View: React.FC<any>;
+    };
+    Document: DocumentInterface;
+    menu_data?: Record<string, unknown>;
   };
-  Workspace: React.FC<any>;
-  Document: React.FC<any>;
-  ENVIRONMENT: string;
-  cookieManager: any;
 }
 
-const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) => {
-  const __WORKSPACE__ = __META__.__WORKSPACE__;
-  const __DOCUMENT__ = __META__.__DOCUMENT__;
+const Main = ({ __META__ }: RootLayoutProps) => {
+  const { components, Document } = __META__;
+  const { Workspace, View } = components;
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -47,19 +85,16 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
         <div className="flex-1" translate="yes">
           <WorkspaceProvider
             __META__={__META__}
-            ENVIRONMENT={ENVIRONMENT}
             Documents={{
-              [__DOCUMENT__.key]: {
-                key: __DOCUMENT__.key,
-                Module: Document,
-                __DOCUMENT__: __DOCUMENT__,
+              [Document.name]: {
+                ...__META__,
+                View,
                 active: true,
               }
             }}
           >
             <Workspace
-              {...__WORKSPACE__}
-              __META__={__META__}
+              menuData={__META__.menu_data}
             />
           </WorkspaceProvider>
         </div>
@@ -68,18 +103,15 @@ const Main = ({ __META__, Workspace, Document, ENVIRONMENT }: RootLayoutProps) =
   );
 }
 
-const App = ({ __META__, Workspace, Document, ENVIRONMENT, cookieManager }: RootLayoutProps) => {
+const App = ({ __META__, }: RootLayoutProps) => {
   const [, setUpdate] = React.useState(false);
+  const { cookieManager } = __META__.services;
 
   return (
     <>
       <CookiesProvider manager={cookieManager} updater={setUpdate}>
         <Main
           __META__={__META__}
-          Workspace={Workspace}
-          Document={Document}
-          ENVIRONMENT={ENVIRONMENT}
-          cookieManager={cookieManager}
         />
       </CookiesProvider>
     </>

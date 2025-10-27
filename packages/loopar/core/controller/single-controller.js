@@ -33,14 +33,22 @@ export default class SingleController extends BaseController {
     const menu = webApp.menu_items.find(item => [item.page, item.link].includes(action));
 
     const document = await loopar.getDocument(menu?.page || action);
-    document.__ENTITY__ = {
+    /* document.__ENTITY__ = {
       name: document.__ENTITY__?.name,
       doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
-    }
-    const parent = await this.getParent();
-    document.activeParentMenu = parent;
-    document.__DOCUMENT_TITLE__ = menu?.link || this.document;
+    } */
+    //const parent = await this.getParent();
+    //document.activeParentMenu = parent;
+    //document.__DOCUMENT_TITLE__ = menu?.link || this.document;
 
-    return await this.render(document);
+    return await this.render({
+      //...await document.__meta__(),
+      Entity: {
+        name: document.__ENTITY__?.name,
+        doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
+      },
+      activeParentMenu: await this.getParent(),
+      __DOCUMENT_TITLE__: menu?.link || this.document,
+    });
   }
 }

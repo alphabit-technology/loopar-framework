@@ -2,7 +2,6 @@
 'use strict';
 
 import ViewContext from '@context/view-context';
-import React from 'react';
 
 const ImageWithPlaceholder = ({ data }) => {
   const message = data.message || data.description || 'An error occurred';
@@ -34,7 +33,7 @@ export default class ErrorView extends ViewContext {
   }
 
   render() {
-    const data = this.props.meta.__DOCUMENT__;
+    const data = this.Document?.data || {};
 
     return (
       <ImageWithPlaceholder 

@@ -28,6 +28,7 @@ export default class AuthController {
 
     if(this.actionsEnabled && !this.actionsEnabled.includes(action)) return resolve('Not permitted');
 
+    
     if (workspace == "web") return true;
     if (workspace == "loopar") return true;
 

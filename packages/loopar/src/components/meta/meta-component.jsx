@@ -33,7 +33,6 @@ export const MetaComponent = ({ component = "div", render, ...props }) => {
   const isDesigner = useDesigner().designerMode;
   const ref = useRef(null);
   const { ENVIRONMENT } = useWorkspace();
-
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === component));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
 

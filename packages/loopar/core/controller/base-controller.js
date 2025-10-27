@@ -25,6 +25,15 @@ export default class BaseController extends CoreController {
     }, {});
 
     const list = await loopar.getList(this.document, { data, q: (data && Object.keys(data).length > 0) ? data : null });
+
+    if(this.preloaded == 'true') {
+      return {
+        instance: this.getInstance(),
+        rows: list.rows,
+        pagination: list.pagination
+      }
+    }
+
     return await this.render(list);
   }
 
@@ -42,7 +51,11 @@ export default class BaseController extends CoreController {
       await document.save();
       return this.redirect('update?name=' + document.name);
     } else {
-      Object.assign(this.response, await document.__data__());
+      if(this.preloaded == 'true') {
+        return await document.values();
+      }
+      
+      Object.assign(this.response, await document.__meta__());
       return await this.render(this.response);
     }
   }
@@ -59,7 +72,13 @@ export default class BaseController extends CoreController {
         `${(Entity.name === "Entity") ? document.type || "Entity" : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
       );
     } else {
-      return await this.render({ ...await document.__data__(), ...this.response || {} });
+      if(this.preloaded == 'true') {
+        return {
+          instance: this.getInstance(),
+          data: await document.values()
+        }
+      }
+      return await this.render({ ...await document.__meta__(), ...this.response || {} });
     }
   }
 

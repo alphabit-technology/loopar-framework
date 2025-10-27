@@ -3,6 +3,7 @@
 import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
 import {Op} from '@sequelize/core';
+import _ from 'lodash';
 
 function combineSequelizeConditions(...conditions) {
   const validConditions = conditions.filter(cond => {
@@ -71,29 +72,10 @@ export default class BaseDocument extends CoreDocument {
     return labels.length === 0 ? ['Name'] : labels;
   }
 
-  /**
- * @queryFormat
- * {
-      AND: {
-        "=": { type: "user" },
-        OR: {
-          "IN": { id: [1,2,3] },
-          "LIKE": [ ["first_name","last_name"], "smith" ]
-        },
-        "BETWEEN": { created_at: ["2024-01-01","2024-12-31"] }
-      }
-    }
-
-  */
   buildCondition(q = null){
-    /**
-     * If q is null, return empty object
-     */
+
     if (q === null) return {};
 
-    /**
-     * Debug q for empty values and not existing fields
-     */
     Object.entries(q).forEach(([field, value]) => {
       if (!this.fields[field] || value === '') delete q[field];
     });
@@ -167,13 +149,14 @@ export default class BaseDocument extends CoreDocument {
       return await this.getList({ fields, filters, q, rowsOnly });
     }
 
-    return Object.assign((rowsOnly ? {} : await this.__data__()), {
-      labels: this.getFieldListLabels(),
-      fields: listFields,
-      rows: rows,
-      pagination: selfPagination,
-      q
-    });
+    return {...(rowsOnly ? {} : await this.__meta__(false)), ...{
+        labels: this.getFieldListLabels(),
+        fields: listFields,
+        rows: rows,
+        pagination: selfPagination,
+        q
+      }
+    };
   }
 
   async getListToForm({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
@@ -215,12 +198,6 @@ export default class BaseDocument extends CoreDocument {
     }
 
     return rows;
-
-    /*return {
-      rows: rows,
-      //pagination: selfPagination,
-      //q,
-    };*/
   }
 
   buildConditionToSelect(q = null) {

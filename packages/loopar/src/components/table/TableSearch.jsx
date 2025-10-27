@@ -5,6 +5,7 @@ import { useMemo, useRef, useCallback } from "react";
 
 export function TableSearch(props){
   const {meta, baseColumns} = useTable();
+  const Document = meta;
   const formRef = useRef(null);
   const debounceTimer = useRef(null);
 
@@ -26,10 +27,10 @@ export function TableSearch(props){
     );
   }, [baseColumns]);
 
-  const searchData = meta && meta.q && typeof meta.q == "object" ? meta.q : {};
+  const searchData = meta && Document.q && typeof Document.q == "object" ? Document.q : {};
 
   return (
-    <FormWrapper __DOCUMENT__={searchData} className="w-full" formRef={formRef}>
+    <FormWrapper __DATA__={searchData} className="w-full" formRef={formRef}>
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 items-center">
         {searchFields.length > 0 && searchFields.map((c) => {
           if (c.data.name !== "selector_all") {

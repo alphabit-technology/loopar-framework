@@ -54,7 +54,9 @@ export default defineConfig(({ command }) => {
     plugins: [
       { ...image(), enforce: 'pre' },
       tailwindcss(),
-      react({ devTarget: "esnext" }),
+      react({ 
+        devTarget: "esnext",
+      }),
       viteCompression({
         algorithm: 'brotliCompress',
         threshold: 64,

@@ -24,29 +24,29 @@ export const SaveButton = () => {
   )
 }
 
-const FormPrimaryActions = ({meta}) => {
+const FormPrimaryActions = ({Document}) => {
   const {docRef} = useDocument();
-  const { __ENTITY__, __DOCUMENT__ } = meta;
+  const {Entity, data={}} = Document;
 
-  const gotoAction = (row, entity) => {
-    if(["Entity", "Builder"].includes(entity.name)) return row.is_single ? "update" : "list";
-    if(["Page Builder", "View Builder"].includes(entity.name)) return "view";
+  const gotoAction = (row, Entity) => {
+    if(["Entity", "Builder"].includes(Entity.name)) return row.is_single ? "update" : "list";
+    if(["Page Builder", "View Builder"].includes(Entity.name)) return "view";
   }
 
-  const goTo = gotoAction(__DOCUMENT__, __ENTITY__);
+  const goTo = gotoAction(data, Entity);
 
   if (!docRef || !docRef.canUpdate) return null;
   return (
     <>
       <SaveButton />
-      {!meta.__IS_NEW__ && goTo && (
+      {!Document.isNew && goTo && (
         <Link
           variant="secondary"
-          to={`/desk/${__DOCUMENT__.name}/${goTo}`}
+          to={`/desk/${data.name}/${goTo}`}
         >
           <>
             <ArrowBigRight className="pr-1" />
-            Go to {loopar.utils.Capitalize(__DOCUMENT__.name)}
+            Go to {loopar.utils.Capitalize(data.name)}
           </>
         </Link>
       )}
@@ -54,18 +54,19 @@ const FormPrimaryActions = ({meta}) => {
   );
 }
 
-export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props}) {
-  const context = ["create", "update"].includes(meta.action) ? "form" : meta.action;
+export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...props}) {
   const {docRef} = useDocument();
-  const { __ENTITY__, __DOCUMENT__ } = meta;
+  const {data, meta, Entity} = Document;
+
+  const contextName = ["create", "update"].includes(meta.action) ? "form" : meta.action;
 
   const title = ((meta.title || context === 'module') ? meta.module_group :
-      (['list', 'view'].includes(context) || meta.action === 'create' || __ENTITY__.is_single) ? __ENTITY__.name : __DOCUMENT__.name) || __ENTITY__.name;
+      (['list', 'view'].includes(context) || meta.action === 'create' || Entity.is_single) ? Entity.name : data.name) || Entity.name;
 
   const listPrimaryActions = () => {
     return (
       <>
-        {context === 'list' ? (
+        {contextName === 'list' ? (
           <>
             {docRef.primaryAction ? (
               docRef.primaryAction()
@@ -73,7 +74,7 @@ export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props})
               <Link
                 variant="secondary"
                 tabIndex="0"
-                to={`/desk/${__ENTITY__.name}/create`}
+                to={`/desk/${Entity.name}/create`}
               >
                 <PlusIcon className="pr-1" />
                 New
@@ -103,12 +104,12 @@ export function AppBarr({meta, sidebarOpen, viewTypeToggle, viewType, ...props})
         <div className="gap-1">
           <h1 className="text-4xl font-bold">{title}</h1>
           <div className="flex flex-row items-center gap-1">
-            {props.hasBreadcrumb ? <Breadcrumbs meta={meta}/> : <div className="py-2"/>}
+            {props.hasBreadcrumb ? <Breadcrumbs Document={Document}/> : <div className="py-2"/>}
           </div>
         </div>
         <div className="flex flex-row space-x-1 overflow-auto" style={{height: "fit-content"}}>
           {Object.values(customActions)}
-          <FormPrimaryActions meta={meta}/>
+          <FormPrimaryActions Document={Document}/>
           {listPrimaryActions()}
         </div>
       </div>

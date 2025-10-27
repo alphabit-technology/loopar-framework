@@ -5,9 +5,8 @@ import {useCookies} from "@services/cookie";
 import {GridView} from "@@table/GridView";
 import { TableProvider } from "@@table/TableContext";
 
-function ListContextMildware({content, meta, docRef, hasSearchForm = true, onlyGrid}){
-  const {__ENTITY__} = meta;
-  const [viewType, setViewType] = useCookies(__ENTITY__.name + "_viewType") || __ENTITY__.default_list_view || "List";
+function ListContextMildware({content, Document, docRef, hasSearchForm = true, onlyGrid}){
+  const [viewType, setViewType] = useCookies(Document.Entity.name + "_viewType") || Document.Entity.default_list_view || "List";
 
   const getViewType = () => {
     return onlyGrid === true ? "Grid" : viewType;
@@ -24,7 +23,7 @@ function ListContextMildware({content, meta, docRef, hasSearchForm = true, onlyG
     >
       {content}
       {(
-        <TableProvider initialMeta={meta} docRef={docRef} rows={meta.rows}>
+        <TableProvider initialDocument={Document} docRef={docRef} rows={Document.rows}>
           {getViewType() === 'List' ? (
             <ListGrid
               hasSearchForm={hasSearchForm}
@@ -55,7 +54,7 @@ export default class ListContext extends BaseDocument {
     return super.render(
       <ListContextMildware
         content={content}
-        meta={this.props.meta} 
+        Document={this.Document} 
         hasSearchForm={this.hasSearchForm}
         renderGrid={this.renderGrid}
         docRef={this}

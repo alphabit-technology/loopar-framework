@@ -257,7 +257,9 @@ export class SequelizeORM extends Connector {
     document = typeof document === 'object' ? document.name : document;
     document = document == "Document" ? "Entity" : document;
 
-    return await this.getRow(document, name, ref.__FIELDS__, { isSingle: ref.is_single, includeDeleted });
+    fields = fields[0] === '*' ? ref.__FIELDS__ : fields.filter(field => ref.__FIELDS__.includes(field));
+
+    return await this.getRow(document, name, fields, { isSingle: ref.is_single, includeDeleted });
   }
 
   async getRow(table, id, fields = ['*'], { isSingle = false, includeDeleted = false } = {}) {

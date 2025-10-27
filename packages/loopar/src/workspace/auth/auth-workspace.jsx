@@ -68,12 +68,12 @@ const Layout = (({ ...props }) => {
 });
 
 export default function AuthWorkspace(props) {
-  const { __DOCUMENTS__ } = useWorkspace();
+  const { ActiveView } = useWorkspace();
 
   return (
     <BaseWorkspace>
       <Layout {...props}>
-        {__DOCUMENTS__}
+        {ActiveView}
       </Layout>
     </BaseWorkspace>
   )

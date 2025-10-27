@@ -17,8 +17,8 @@ export default class SystemController extends BaseController {
         return this.redirect('/desk');
       }
     } else {
-      const response = await model.__data__();
-      response.__DOCUMENT__ = {
+      const response = await model.__meta__();
+      response.data = {
         dialect: "mysql",
         host: "localhost",
         port: "3306",
@@ -60,7 +60,7 @@ export default class SystemController extends BaseController {
       });  
     } else {
       const model = await loopar.newDocument("Installer", this.data)
-      const response = await model.__data__();
+      const response = await model.__meta__();
 
       return await this.render(response);
     }
@@ -80,7 +80,7 @@ export default class SystemController extends BaseController {
       });  
     } else {
       const model = await loopar.newDocument("Update", this.data)
-      const response = await model.__data__();
+      const response = await model.__meta__();
 
       return await this.render(response);
     }

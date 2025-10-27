@@ -31,11 +31,10 @@ export default class FormContext extends BaseForm {
 
   render(content: React.ReactNode) {
     if (content) return content;
-    const meta = this.meta;
     const STRUCTURE = this.__STRUCTURE__;
     
     return super.render(
-      <FormWrapper __DOCUMENT__={meta.__DOCUMENT__} STRUCTURE={STRUCTURE} docRef={this}>
+      <FormWrapper __DATA__={this.Document.data} STRUCTURE={STRUCTURE} docRef={this}>
         <DeskGUI docRef={this}>
           {[
             ...STRUCTURE.map((el: Element) => {

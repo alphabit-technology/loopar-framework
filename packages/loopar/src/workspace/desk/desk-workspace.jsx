@@ -4,8 +4,8 @@ import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 
 export default function DeskWorkspace(props){
-  const {openNav, __DOCUMENTS__} = useWorkspace();
-  const menuData = props.menu_data || [];
+  const {openNav, ActiveView} = useWorkspace();
+  const menuData = props.menuData || [];
 
   return (
     <BaseWorkspace menuData={menuData}>
@@ -24,7 +24,7 @@ export default function DeskWorkspace(props){
           }`}
         >
           <div className="p-4">
-            {__DOCUMENTS__}
+            {ActiveView}
           </div>
           </div>
         </section>

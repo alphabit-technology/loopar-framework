@@ -4,7 +4,7 @@ import MetaComponent from "@meta-component";
 export default class PageContext extends BaseDocument {
   render(content = []) {
     return super.render([
-      <MetaComponent elements={JSON.parse(this.meta.__ENTITY__.doc_structure)} parent={this}/>,
+      <MetaComponent elements={JSON.parse(this.Document.Entity.doc_structure)} parent={this}/>,
       content
     ]);
   }

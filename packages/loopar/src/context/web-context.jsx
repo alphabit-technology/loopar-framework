@@ -17,7 +17,7 @@ export default class WebContext extends BaseDocument {
   render(content = []) {
     return super.render(
       <>
-      <MetaComponent elements={JSON.parse(this.meta.__ENTITY__.doc_structure)} parent={this}/>
+      <MetaComponent elements={JSON.parse(this.Document.__ENTITY__.doc_structure)} parent={this}/>
       {content}
       </>
     );

@@ -141,7 +141,7 @@ export function ElementEditor() {
     >
       <FormWrapper
         key={data.key + updatingElement.__version__ || ""}
-        __DOCUMENT__={__FORM_FIELDS__} 
+        __DATA__={__FORM_FIELDS__} 
         onChange={saveData}
         formRef={formRef}
       >

@@ -100,7 +100,7 @@ const useActiveSection = (to, enabled) => {
       }
     });
 
-    setActive(activeSection);
+    //setActive(activeSection);
   }, [getHeaderHeight]);
 
   useEffect(() => {
@@ -154,9 +154,9 @@ export function Link({
 
   const isActive = useMemo(() => {
     if (props.active) return true;
-    if (isHashLink && activeSection) {
+    /* if (isHashLink && activeSection) {
       return activeSection === to.substring(1);
-    }
+    } */
     return currentPage && currentPage === to;
   }, [props.active, isHashLink, activeSection, to, currentPage]);
 

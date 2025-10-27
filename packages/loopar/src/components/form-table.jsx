@@ -248,7 +248,7 @@ const FormTable = (props) => {
   )
 }
 
-const FormTableControl = ({meta, docRef}) => {
+const FormTableControl = ({Document, docRef}) => {
   const { control, register } = useFormContext();
   const { fields, move, remove, append } = useFieldArray({
     control,
@@ -257,7 +257,7 @@ const FormTableControl = ({meta, docRef}) => {
 
   return (
     <TableProvider
-      initialMeta={meta}
+      initialDocument={Document}
       docRef={docRef}
       rows={fields}
     >
@@ -295,8 +295,8 @@ const FormTableMiddleware = memo(function FormTableMiddleware(props) {
   }, [prevRows.current.length]);
 
   return (
-    <FormWrapper __DOCUMENT__={{ rows }} onChange={saveData} key={`form-wrapper-${changes}`}>
-      <FormTableControl meta={meta} docRef={docRef}/>
+    <FormWrapper __DATA__={{ rows }} onChange={saveData} key={`form-wrapper-${changes}`}>
+      <FormTableControl Document={meta} docRef={docRef}/>
     </FormWrapper>
   );
 });

@@ -16,8 +16,8 @@ export default class WorkspaceController extends AuthController {
     meta.action = this.action;
 
     const WORKSPACE = {
+      name: workspace,
       user: loopar.currentUser,
-      name: workspace
     }
 
     if (workspace === "desk") {
@@ -28,8 +28,13 @@ export default class WorkspaceController extends AuthController {
 
     return {
       key: this.getKey(),
-      __WORKSPACE__: WORKSPACE,
-      __DOCUMENT__: this.__DOCUMENT__
+      ...WORKSPACE,
+      Document: {
+        meta: {
+          action: this.action
+        },
+        data: this.__DATA__
+      }
     }
   }
 
@@ -47,7 +52,6 @@ export default class WorkspaceController extends AuthController {
       }
     }
 
-    //const workSpaceName = __META__.__WORKSPACE__.name;
     const url = this.req.originalUrl;
     const isProduction = process.env.NODE_ENV == 'production';
     let HTML, template;
@@ -67,8 +71,6 @@ export default class WorkspaceController extends AuthController {
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
-    //html = html.replace('${TITLE}', __META__.__DOCUMENT__?.__DOCUMENT_TITLE__ || __META__.__DOCUMENT__?.activeParentMenu || 'Loopar');
-
     html = html.replace(`<!--__loopar-meta-data__-->`, `
       <script id="__loopar-meta-data__" type="application/json">
         ${JSON.stringify(__META__)}

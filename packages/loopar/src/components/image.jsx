@@ -27,7 +27,6 @@ export function FallbackImage(props) {
       className="relative w-full h-full overflow-hidden"
       style={{ paddingTop: `${aspectRatio}%` }}
     >
-      {/* Representative image */}
       <div 
         className={
           cn(
@@ -41,19 +40,6 @@ export function FallbackImage(props) {
         }}
       >
       </div>
-      {/*<div 
-        className={
-          cn(
-          `absolute w-full h-full rounded box-content`,
-           !loading ? "opacity-0" : "bg-primary/8",
-           'transition-all duration-300 ease-in-out'
-          )
-        }
-        style={{
-          top: 0, left: 0, right: 0, bottom: 0,
-        }}
-      >
-      </div>*/}
     </div>
     <LazyLoad>
       <img
