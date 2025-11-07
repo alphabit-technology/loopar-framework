@@ -160,7 +160,7 @@ export default class Connector extends Core {
       const ref = loopar.getRef(entity.name);
       if (ref.is_single || ref.is_builder) continue;
 
-      const exist = await this.hasTable(this.literalTableName(entity.name));
+      const exist = await this.hasTable(entity.name);
       const fieldsIsCorrect = await testFields(entity.name, ref.__FIELDS__);
       
       if (!exist || !fieldsIsCorrect) {

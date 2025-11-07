@@ -11,6 +11,7 @@ import Auth from './auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
 
+
 export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []

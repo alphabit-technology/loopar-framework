@@ -2,7 +2,7 @@ import BaseInput from "@base-input";
 import { FormLabel } from "./input/index.js";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import loopar from "loopar";
-import { Select } from "./select/base-select";
+import { Select } from "./select/base-select.jsx";
 import { FormDescription } from "@cn/components/ui/form";
 
 export default function MetaSelect(props) {
@@ -146,10 +146,16 @@ export default function MetaSelect(props) {
     });
   }, [data.disabled, getModel, getPrepareOptions]);
 
+  const searchTimeoutRef = useRef(null);
+
   const search = useCallback((target, delay = true) => {
     if (data.disabled) return Promise.resolve();
 
     const q = target?.target?.value || "";
+  
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
     
     return new Promise((resolve) => {
       if (isLocal) {
@@ -170,11 +176,9 @@ export default function MetaSelect(props) {
         model.current = builtOptions[0];
         
         if (delay) {
-          const timeoutId = setTimeout(() => {
+          searchTimeoutRef.current = setTimeout(() => {
             getServerData(q).then(resolve).catch(() => resolve([]));
-          }, 300);
-          
-          return () => clearTimeout(timeoutId);
+          }, 200);
         } else {
           getServerData(q).then(resolve).catch(() => resolve([]));
         }
@@ -217,6 +221,7 @@ export default function MetaSelect(props) {
           selected={currentOption(field.value)}
           isLoading={isLoading}
           error={error}
+          isLocal={isLocal}
         />
         {(data.description && props.simpleInput !== true) && (
           <FormDescription>{data.description}</FormDescription>

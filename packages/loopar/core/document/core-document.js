@@ -99,7 +99,6 @@ export default class CoreDocument {
           })
         }
       });
-      
     }
 
     const rels = []
@@ -107,9 +106,7 @@ export default class CoreDocument {
       if(r.entity === "Document History") continue;
 
       const docs = await loopar.db.getAll(r.entity, ["name"], {
-        "=": {
-          [r.field]: this.name
-        }
+        [r.field]: this.name
       }, { isSingle: r.is_single });
 
       rels.push(...docs.filter(doc => doc.name).map(doc => {
@@ -154,11 +151,11 @@ export default class CoreDocument {
         this.#fields[fieldName] = new DynamicField(field, value || this.__DATA__[fieldName]);
       }
 
-      /* Object.defineProperty(this, `get${nameToGet(fieldName)}`, {
+      Object.defineProperty(this, `get${nameToGet(fieldName)}`, {
         get: () => {
           return this.#fields[fieldName];
         }
-      }); */
+      });
 
       if(field.element === FORM_TABLE) {
         Object.defineProperty(this, fieldName, {
@@ -236,6 +233,9 @@ export default class CoreDocument {
     
     //try {
       for (const [key, value] of Object.entries(childValuesReq)) {
+        if(key == this.name) continue;
+        if(!await loopar.db.hasTable(key)) continue;
+        
         const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
 
         if (values || force) {
@@ -260,7 +260,7 @@ export default class CoreDocument {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
 
-    async function updateRows(Ent, rows, parentType, parentId) {
+   const updateRows = async (Ent, rows, parentType, parentId) => {
       const nextId = await loopar.db.nextId(Ent);
       for (const [index, row] of rows/*.sort((a, b) => a.id - b.id)*/.entries()) {
         row.id = nextId + index;
@@ -273,8 +273,11 @@ export default class CoreDocument {
       }
     }
     
-    async function updateChildRecords(childValuesReq, parentType, parentId) {
+    const updateChildRecords = async (childValuesReq, parentType, parentId) => {
       for (const [key, value] of Object.entries(childValuesReq)) {
+        if(key == this.name) continue;
+        if(!await loopar.db.hasTable(key)) continue;
+
         const rows = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
         if(!rows) continue;
 
@@ -284,6 +287,7 @@ export default class CoreDocument {
 
     return new Promise(async (resolve) => {
       this.setUniqueName();
+
       if (validate) await this.validate();
 
       if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
@@ -302,14 +306,14 @@ export default class CoreDocument {
         }
       }
 
-      //if (!loopar.installing) {
-      const childValuesReq = this.childValuesReq;
+      if (!loopar.installing) {
+        const childValuesReq = this.childValuesReq;
 
-      if (Object.keys(childValuesReq).length) {
-        await this.deleteChildRecords();
-        await updateChildRecords(childValuesReq, this.__ENTITY__.name, await this.__ID__());
+        if (Object.keys(childValuesReq).length) {
+          await this.deleteChildRecords();
+          await updateChildRecords(childValuesReq, this.__ENTITY__.name, await this.__ID__());
+        }
       }
-      //}
 
       await this.updateHistory();
       const files = this.__DATA__.__REQ_FILES__ || [];

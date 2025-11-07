@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useTransition } from "react";
 import { CaretSortIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { cn } from "@cn/lib/utils";
 import { Button } from "@cn/components/ui/button";
@@ -35,6 +35,7 @@ export function Select({
   const [active, setActive] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleRows, setVisibleRows] = useState([]);
+  const [isPending, startTransition] = useTransition();
   
   const containerRef = useRef(null);
   const observerRef = useRef(null);
@@ -55,63 +56,86 @@ export function Select({
 
   const loadMoreRows = useCallback(() => {
     if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
+      startTransition(() => {
+        setCurrentPage(prev => prev + 1);
+      });
     }
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    setVisibleRows(paginatedRows[1] || []);
+    startTransition(() => {
+      setCurrentPage(1);
+      setVisibleRows(paginatedRows[1] || []);
+    });
   }, [options, paginatedRows]);
 
   useEffect(() => {
     if (!paginatedRows[currentPage] || !open) return;
     
-    setVisibleRows(prevRows => {
-      if (currentPage === 1) {
-        return paginatedRows[1] || [];
-      }
-      
-      const newRows = [...prevRows, ...paginatedRows[currentPage]];
-      const uniqueRows = Array.from(
-        new Map(newRows.map(item => [item?.value, item])).values()
-      ).filter(Boolean);
-      
-      return uniqueRows;
+    startTransition(() => {
+      setVisibleRows(prevRows => {
+        if (currentPage === 1) {
+          return paginatedRows[1] || [];
+        }
+        
+        const newRows = [...prevRows, ...paginatedRows[currentPage]];
+        const uniqueRows = Array.from(
+          new Map(newRows.map(item => [item?.value, item])).values()
+        ).filter(Boolean);
+        
+        return uniqueRows;
+      });
     });
   }, [currentPage, open, paginatedRows]);
 
   useEffect(() => {
-    if (!open || !sentinelRef.current) return;
+    if (!open || visibleRows.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && currentPage < totalPages) {
-          loadMoreRows();
-        }
-      },
-      {
-        root: containerRef.current,
-        rootMargin: '50px',
-        threshold: 0.1
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    const setupObserver = () => {
+      if (!sentinelRef.current) {
+        return;
       }
-    );
 
-    observer.observe(sentinelRef.current);
-    observerRef.current = observer;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && currentPage < totalPages) {
+            loadMoreRows();
+          }
+        },
+        {
+          root: containerRef.current,
+          rootMargin: '100px',
+          threshold: 0
+        }
+      );
+
+      observer.observe(sentinelRef.current);
+      observerRef.current = observer;
+    };
+
+    const timeoutId = setTimeout(setupObserver, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       if (observerRef.current) {
         observerRef.current.disconnect();
+        observerRef.current = null;
       }
     };
-  }, [open, loadMoreRows, currentPage, totalPages]);
+  }, [open, currentPage, totalPages, visibleRows.length, loadMoreRows]);
 
   const openHandler = useCallback((shouldOpen) => {
     setOpen(shouldOpen);
     
     if (shouldOpen) {
-      setCurrentPage(1);
+      startTransition(() => {
+        setCurrentPage(1);
+      });
       search(null, false).catch(err => {
         console.error("Search error:", err);
       });
@@ -119,7 +143,9 @@ export function Select({
   }, [search]);
 
   const searchHandler = useCallback((e) => {
-    setCurrentPage(1);
+    startTransition(() => {
+      setCurrentPage(1);
+    });
     search(e, true).catch(err => {
       console.error("Search error:", err);
     });
@@ -198,6 +224,9 @@ export function Select({
     return renderButton({ disabled: true });
   }
 
+  const showLoading = isLoading || (isPending && visibleRows.length === 0);
+  const hasMorePages = currentPage < totalPages;
+
   return (
     <Popover open={open} onOpenChange={openHandler}>
       <PopoverTrigger asChild>
@@ -222,28 +251,28 @@ export function Select({
             onKeyUp={searchHandler}
           />
           
-          {isLoading && (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">
-                Loading...
-              </span>
-            </div>
-          )}
-          
           {error && (
             <div className="p-4 text-sm text-destructive">
               Error: {error}
             </div>
           )}
           
-          {!isLoading && !error && visibleRows.length === 0 && (
+          {showLoading && visibleRows.length === 0 && (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          
+          {!showLoading && !error && visibleRows.length === 0 && (
             <CommandEmpty>No results found.</CommandEmpty>
           )}
           
-          {!isLoading && !error && visibleRows.length > 0 && (
+          {!error && visibleRows.length > 0 && (
             <CommandGroup
-              className="max-h-[250px] overflow-auto"
+              className={cn(
+                "max-h-[250px] overflow-auto",
+                isPending && "opacity-60 transition-opacity"
+              )}
               ref={containerRef}
             >
               {visibleRows.map((option) => {
@@ -273,17 +302,16 @@ export function Select({
                 );
               })}
               
-              {currentPage < totalPages && (
+              {hasMorePages && (
                 <div 
                   ref={sentinelRef} 
-                  className="h-1 w-full"
-                  aria-hidden="true"
-                />
-              )}
-              
-              {currentPage < totalPages && (
-                <div className="flex items-center justify-center p-2">
+                  className="w-full py-2 flex items-center justify-center"
+                  style={{ minHeight: '40px' }}
+                >
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
                 </div>
               )}
             </CommandGroup>

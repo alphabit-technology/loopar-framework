@@ -28,9 +28,10 @@ export class Builder {
       const isChild = doc.is_child ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
       const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
-
+      const id = parseInt(doc.id) || 0;
       if (isBuilder) {
         types[doc.name] = {
+          id: id,
           __ROOT__: doc.entityRoot,
           __NAME__: doc.name,
           __ENTITY__: doc.__ENTITY__ || "Entity",
@@ -44,6 +45,7 @@ export class Builder {
       }
 
       acc[doc.name] = {
+        id: id,
         __NAME__: doc.name,
         __APP__: doc.__APP__,
         __ENTITY__: doc.__ENTITY__ || "Entity",

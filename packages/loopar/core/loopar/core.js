@@ -46,13 +46,15 @@ export class Core extends Builder {
 
             if (data) {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
-              data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
-              data.type = titleize(singularize(core.name));
-              data.__MODULE__ = module.name;
-              //replace all - with space and titleize
-              data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
+              if(data.__document_status__ !== 'Deleted') {
+                data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
+                data.type = titleize(singularize(core.name));
+                data.__MODULE__ = module.name;
+                //replace all - with space and titleize
+                data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
 
-              acc.push(data);
+                acc.push(data);
+              }
             } else {
               console.log([`Entity [${entity.name}] not found`]);
             }

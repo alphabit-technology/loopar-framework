@@ -306,8 +306,7 @@ export default class Core {
 
   async makeTable(name, fields) {
     const tableName = this.tableName(name);
-    const literalName = this.literalTableName(name);
-    const exists = await this.hasTable(literalName);
+    const exists = await this.hasTable(name);
     
     if (exists) {
       const dbFields = await this.getTableDescription(name);
@@ -318,6 +317,7 @@ export default class Core {
   }
 
   async hasTable(tableName) {
+    tableName = this.literalTableName(tableName);
     try {
       let query;
       

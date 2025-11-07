@@ -34,7 +34,9 @@ export default class CoreController extends AuthController {
   }
 
   async notFound({code = 404, title = "Not Found", description = "The page you are looking for does not exist"} = {}) {
-    const document = await loopar.newDocument("Error");
+    const doc = await loopar.newDocument("Error");
+    const document = await doc.__meta__();
+    
     if(typeof arguments[0] === 'string') {
       code = "404";
       title = !arguments[1] ? "Not Found" : arguments[0];
@@ -47,6 +49,9 @@ export default class CoreController extends AuthController {
       description: description || "The document you are looking for does not exist",
     };
 
+    if(this.method === "POST") {
+      return document.data;
+    }
     return await this.render(document);
   }
 
