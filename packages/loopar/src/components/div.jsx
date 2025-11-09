@@ -1,3 +1,9 @@
 import { Droppable } from "@droppable";
 
-export default Droppable;
+export default function Div(props) {
+  return (
+    <Droppable
+      {...props}
+    />
+  );
+}
