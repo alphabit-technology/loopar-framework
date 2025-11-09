@@ -1,9 +1,24 @@
 import elementManage from "@@tools/element-manage";
 
-export const getExtention = (file="")=>{
+export const getExtention = (file = "") => {
   const match = file.match(/\.([a-z0-9]+)$/i);
-  return match ? match[1] : '';
-}
+  if (match) return match[1].toLowerCase();
+
+  if (file.includes('http')) {
+    const cloudinaryMatch = file.match(/\/(?:image|video|raw|auto)\/(upload|fetch)\//i);
+    if (cloudinaryMatch) {
+      const type = file.match(/\/(image|video|raw|auto)\//i)?.[1];
+      if (type === 'image') return 'jpg';
+      if (type === 'video') return 'mp4';
+      if (type === 'raw') return 'pdf';
+    }
+
+    const urlMatch = file.match(/\.([a-z0-9]+)(?:[?#]|$)/i);
+    if (urlMatch) return urlMatch[1].toLowerCase();
+  }
+
+  return '';
+};
 
 class FileManager {
   groupElement = FILE_INPUT;
@@ -62,14 +77,65 @@ class FileManager {
     return 'default';
   }
 
-  getFileType(file) {
-    if (!file) return null;
-    if (elementManage.isJSON(file)) {
-      file = JSON.parse(file);
+  getTypeFromURL(url) {
+    if (url.includes('cloudinary.com')) {
+      if (url.includes('/image/')) return 'image';
+      if (url.includes('/video/')) return 'video';
+      if (url.includes('/raw/')) return 'application';
     }
 
-    return file.type === "folder" ? "folder" : this.getTypeByExtension(getExtention(file.name));
+    const imagePatterns = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)/i;
+    const videoPatterns = /\.(mp4|webm|ogg|avi|mov)/i;
+    const audioPatterns = /\.(mp3|wav|ogg|m4a)/i;
+
+    if (imagePatterns.test(url)) return 'image';
+    if (videoPatterns.test(url)) return 'video';
+    if (audioPatterns.test(url)) return 'audio';
+
+    return null;
   }
+
+  getFileType(file) {
+  if (!file) return null;
+  
+  if (elementManage.isJSON(file)) {
+    file = JSON.parse(file);
+  }
+
+  if (file.type && file.type !== "folder") {
+    if (this.fileIcons[file.type]) {
+      return file.type;
+    }
+    
+    if (file.type.includes('/')) {
+      const mimeCategory = file.type.split('/')[0];
+      if (this.fileIcons[mimeCategory]) {
+        return mimeCategory;
+      }
+    }
+  }
+
+  if (file.type === "folder") {
+    return "folder";
+  }
+
+  const ext = getExtention(file.name);
+  if (ext) {
+    return this.getTypeByExtension(ext);
+  }
+
+  if (typeof file.name === 'string' && file.name.includes('http')) {
+    const urlType = this.getTypeFromURL(file.name);
+    if (urlType) return urlType;
+  }
+
+  if (file.src && typeof file.src === 'string' && file.src.includes('http')) {
+    const urlType = this.getTypeFromURL(file.src);
+    if (urlType) return urlType;
+  }
+
+  return 'default';
+}
 
   getFileSize(bytes, decimals = 2) {
     bytes = parseInt(bytes);
@@ -102,13 +168,16 @@ class FileManager {
   getMappedFiles(files = []) {
     if (typeof files === "string" && !elementManage.isJSON(files)) {
       if (this.isURL(files)) {
+        const detectedType = this.getTypeFromURL(files) || "image";
+        const ext = getExtention(files) || (detectedType === 'image' ? 'jpg' : 'file');
+        
         files = [{
           name: files,
           src: files,
-          type: "image",
-          extention: "png",
+          type: detectedType,
+          extention: ext,
           previewSrc: files
-        }]
+        }];
       } else {
         files = [files];
       }
@@ -132,13 +201,15 @@ class FileManager {
 
     return (files || []).filter(file => (typeof file == "object" && file.name) && !Array.isArray(file)).map(file => {
       const ext = getExtention(file.name);
+      const fileType = this.getFileType(file);
+      
       return file instanceof File ? file : {
         ...file,
-        type: this.getFileType(file),
+        type: fileType,
         src: this.getSrc(file),
-        extention: ext,
+        extention: ext || (fileType === 'image' ? 'jpg' : 'file'),
         previewSrc: this.getSrc(file, true, ext)
-      }
+      };
     });
   }
 

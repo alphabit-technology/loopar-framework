@@ -68,17 +68,43 @@ export const validateFile = (file, acceptedTypes = "*/*") => {
   const fileExtension = getExtention(file.name);
   acceptedTypes = Array.isArray(acceptedTypes) ? acceptedTypes : acceptedTypes.split(',');
 
-  for (let i = 0; i < acceptedTypes.length; i++) {
-    const acceptedType = acceptedTypes[i];
+  if (acceptedTypes.includes('*/*')) {
+    return;
+  }
 
-    if (acceptedType == fileType || acceptedType == fileExtension || acceptedType === '*/*') {
+  for (let i = 0; i < acceptedTypes.length; i++) {
+    const acceptedType = acceptedTypes[i].trim();
+
+    if (acceptedType === fileType || acceptedType === fileExtension) {
       return;
     }
 
-    if (acceptedType.endsWith('/*') && fileType.startsWith(acceptedType.slice(0, -2))) {
-      return;
+    if (acceptedType.endsWith('/*')) {
+      const baseType = acceptedType.slice(0, -2);
+      if (fileType.startsWith(baseType)) {
+        return;
+      }
+    }
+
+    if (acceptedType.startsWith('.')) {
+      const extWithoutDot = acceptedType.slice(1).toLowerCase();
+      const mimeExtension = fileType.split('/')[1]?.toLowerCase();
+      
+      const extensionMap = {
+        'jpg': ['jpeg', 'jpg'],
+        'jpeg': ['jpeg', 'jpg'],
+        'png': ['png'],
+        'gif': ['gif'],
+        'webp': ['webp'],
+        'svg': ['svg+xml', 'svg'],
+        'pdf': ['pdf'],
+      };
+
+      if (extensionMap[extWithoutDot]?.includes(mimeExtension)) {
+        return;
+      }
     }
   }
 
-  loopar.throw(`File type "${fileType}" is not supported!`);
+  loopar.throw(`File type "${fileType}" (${fileExtension || 'no extension'}) is not supported! Accepted types: ${acceptedTypes.join(', ')}`);
 }
