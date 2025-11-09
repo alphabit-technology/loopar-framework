@@ -69,6 +69,7 @@ export const elementsDefinition = {
     { element: "generic", icon: "Code" },
     { element: "menu_content", icon: "PanelRight" },
     { element: "fragment", icon: "Scan" },
+    { element: "container", icon: "Dock" },
   ],
   [DESIGN_ELEMENT]: [
     { element: "image", icon: "Image" },

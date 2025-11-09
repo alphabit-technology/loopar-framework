@@ -45,6 +45,7 @@ export default class SingleController extends BaseController {
       //...await document.__meta__(),
       Entity: {
         name: document.__ENTITY__?.name,
+        background_image: document.__ENTITY__?.background_image,
         doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
       },
       activeParentMenu: await this.getParent(),

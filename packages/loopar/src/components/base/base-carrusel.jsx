@@ -13,6 +13,7 @@ const BaseCarrusel = (props) => {
   const [focus, setFocus] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const intervalRef = useRef(null);
+  const sliderRef = useRef([]);
 
   const getTransition = () => {
     return loopar.getAnimation(data.transition, "flip");
@@ -77,6 +78,7 @@ const BaseCarrusel = (props) => {
           return (
             <Droppable
               className="absolute w-full h-full"
+              data={data}
               elements={[
                 {
                   ...element,

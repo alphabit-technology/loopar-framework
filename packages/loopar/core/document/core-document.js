@@ -506,7 +506,7 @@ export default class CoreDocument {
         module: __ENTITY__.module,
         doc_structure: __ENTITY__.doc_structure,
       },
-      ...(withData ? { data: await this.rawValues() } : {}),
+      ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
       //data: await this.rawValues(),
       spacing: this.__SPACING__
     }

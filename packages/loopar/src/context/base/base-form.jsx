@@ -228,6 +228,7 @@ export default class BaseForm extends BaseDocument {
                 name: file.name,
                 size: file.size,
                 type: file.type,
+                src: file.src
               });
             }
           }

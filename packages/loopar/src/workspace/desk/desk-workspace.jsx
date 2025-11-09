@@ -19,13 +19,11 @@ export default function DeskWorkspace(props){
             items={menuData}
           />
          <div
-          className={`flex flex-col flex-1 w-full overflow-auto duration-100 ease-in ${
-            openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"
-          }`}
-        >
-          <div className="p-4">
-            {ActiveView}
-          </div>
+            className={`flex flex-col flex-1 w-full p-4 overflow-auto duration-100 ease-in ${
+              openNav ? "lg:pl-sidebar-width" : "lg:pl-collapse-sidebar-width"
+            }`}
+          >
+              {ActiveView}
           </div>
         </section>
       </div>

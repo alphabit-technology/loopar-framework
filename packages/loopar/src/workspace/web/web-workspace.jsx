@@ -62,7 +62,7 @@ const Layout = (({ ...props }) => {
         >
           <SideNav sideMenuItems={menuItemsTree} childMenu={childMenu} />
           <div
-            className={` relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'} mt-5`}
+            className={` relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'}`}
           >
             <div className="grid grid-cols-1">
               {props.children}

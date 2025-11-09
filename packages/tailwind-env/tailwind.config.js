@@ -70,8 +70,9 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
-        },
+        }
       },
+      
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -110,6 +111,7 @@ export default {
         '2': '2px',
       },
       spacing: {
+        page: "calc(100vh - 6rem)",
         sidebarWidth: "250px",
         webSidebarWidth: "270px",
         collapseSidebarWidth: "80px",

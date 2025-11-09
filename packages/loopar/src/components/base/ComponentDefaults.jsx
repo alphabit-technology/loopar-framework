@@ -49,7 +49,7 @@ export function ComponentDefaults(props) {
       left: "text-left",
       center: "text-center",
       right: "text-right"
-    }[align] || "text-left";
+    }[(align || "left").toLowerCase()] || "text-left";
   }
 
   const set = (key, value) => {
