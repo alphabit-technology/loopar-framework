@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "sequelize": "v7.0.0-next.1",
-    "@sequelize/sqlite3": "7.0.0-alpha.47",
     "@sequelize/core": "7.0.0-alpha.47",
-    "@sequelize/mysql":"7.0.0-alpha.47",
-    "@sequelize/mariadb":"7.0.0-alpha.47"
+    "@sequelize/mariadb": "7.0.0-alpha.47",
+    "@sequelize/mysql": "7.0.0-alpha.47",
+    "@sequelize/sqlite3": "7.0.0-alpha.47",
+    "sequelize": "v7.0.0-next.1"
   }
 }

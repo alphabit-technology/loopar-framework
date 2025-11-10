@@ -380,7 +380,7 @@ export default class Router {
     if (req.method === 'POST') {
       return this.renderAjax(res, { 
         code: 404, 
-        message: `Document ${params.document} not found` 
+        message: `Document ${params.document} not found..` 
       });
     }
 

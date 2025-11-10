@@ -78,6 +78,7 @@ export default class Installer extends BaseDocument {
       for(const e of Object.keys(appData.postInstaller)){
         let ent = appData.postInstaller[e];
         if(ent == 'link') ent = appData.documents[e];
+        if(!ent) continue;
 
         if(ent.app && ent.app != this.app_name) continue;
 
@@ -126,7 +127,8 @@ export default class Installer extends BaseDocument {
     await fileManage.setConfigFile('installed-apps', installedApps);
     
     await loopar.build();
-    return "App installed successfully!";
+    console.log(`App ${this.app_name} installed successfully!`);
+    return `App ${this.app_name} installed successfully!`;
   }
   
   async getAppFromModule(module) {

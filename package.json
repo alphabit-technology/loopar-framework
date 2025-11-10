@@ -17,5 +17,6 @@
     "build": "node bin/build-clean.js && npm-run-all build:client build:server",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr app/entry-server.jsx"
-  }
+  },
+  "packageManager": "yarn@4.11.0"
 }

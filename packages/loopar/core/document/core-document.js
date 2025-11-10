@@ -101,7 +101,7 @@ export default class CoreDocument {
       });
     }
 
-    const rels = []
+    const rels = [];
     for (const r of relatedEntities) {
       if(r.entity === "Document History") continue;
 

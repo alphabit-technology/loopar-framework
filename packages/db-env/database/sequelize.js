@@ -268,17 +268,126 @@ export class SequelizeORM extends Connector {
     return row.length ? row[0] : null;
   }
 
+  async getDocEAV(document, fields = ['*'], condition = null, { includeDeleted = false } = {}) {
+    let replacements = [document];
+    const documentFilterConditions = [];
+      
+    if (condition && Object.keys(condition).length > 0) {
+      for (const [fieldName, fieldValue] of Object.entries(condition)) {
+        if (fieldName === '__document_status__') continue;
+        
+        if (typeof fieldValue === 'object' && fieldValue !== null) {
+          const operator = Object.keys(fieldValue)[0];
+          const value = fieldValue[operator];
+          
+          switch(operator) {
+            case Op.ne:
+              documentFilterConditions.push(`
+                EXISTS (
+                  SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+                  WHERE sub.document = main.document 
+                  AND sub.field = ? 
+                  AND sub.value != ?
+                )
+              `);
+              replacements.push(fieldName, value);
+              break;
+            case Op.like:
+              documentFilterConditions.push(`
+                EXISTS (
+                  SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+                  WHERE sub.document = main.document 
+                  AND sub.field = ? 
+                  AND sub.value LIKE ?
+                )
+              `);
+              replacements.push(fieldName, value);
+              break;
+            case Op.in:
+              const placeholders = value.map(() => '?').join(',');
+              documentFilterConditions.push(`
+                EXISTS (
+                  SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+                  WHERE sub.document = main.document 
+                  AND sub.field = ? 
+                  AND sub.value IN (${placeholders})
+                )
+              `);
+              replacements.push(fieldName, ...value);
+              break;
+            default:
+              documentFilterConditions.push(`
+                EXISTS (
+                  SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+                  WHERE sub.document = main.document 
+                  AND sub.field = ? 
+                  AND sub.value = ?
+                )
+              `);
+              replacements.push(fieldName, value);
+          }
+        } else {
+          documentFilterConditions.push(`
+            EXISTS (
+              SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+              WHERE sub.document = main.document 
+              AND sub.field = ? 
+              AND sub.value = ?
+            )
+          `);
+          replacements.push(fieldName, fieldValue);
+        }
+      }
+    }
+    
+    if (!includeDeleted) {
+      documentFilterConditions.push(`
+        NOT EXISTS (
+          SELECT 1 FROM ${this.tableName('Document Single Values')} sub
+          WHERE sub.document = main.document 
+          AND sub.field = ? 
+          AND sub.value = ?
+        )
+      `);
+      replacements.push('__document_status__', 'Deleted');
+    }
+    
+    let whereClause = 'document = ?';
+    
+    if (documentFilterConditions.length > 0) {
+      whereClause += ' AND ' + documentFilterConditions.join(' AND ');
+    }
+    
+    if (fields[0] !== '*') {
+      const fieldPlaceholders = fields.map(() => '?').join(',');
+      whereClause += ` AND field IN (${fieldPlaceholders})`;
+      replacements.push(...fields);
+    }
+    
+    const query = `SELECT field, value FROM ${this.tableName('Document Single Values')} main
+                    WHERE ${whereClause}`;
+    
+    const result = await this.sequelize.query(query, {
+      replacements,
+      type: Sequelize.QueryTypes.SELECT
+    });
+    
+    const reconstructed = result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {});
+    
+    if (fields[0] !== '*') {
+      const completeObject = {};
+      fields.forEach(field => {
+        completeObject[field] = reconstructed[field] !== undefined ? reconstructed[field] : null;
+      });
+      return [completeObject];
+    }
+    
+    return [reconstructed];
+  }
+  
   async getList(document, fields = ['*'], condition=null, { isSingle = false, all = false, includeDeleted = false } = {}) {
     if (isSingle) {
-      const query = `SELECT field, value FROM ${this.tableName('Document Single Values')} 
-                     WHERE document = ?`;
-      
-      const result = await this.sequelize.query(query, {
-        replacements: [document],
-        type: Sequelize.QueryTypes.SELECT
-      });
-      
-      return [result.reduce((acc, row) => ({ ...acc, [row.field]: row.value }), {})];
+      return await this.getDocEAV(document, fields, condition, { includeDeleted });
     } else {
       if (!includeDeleted) {
         condition = {
