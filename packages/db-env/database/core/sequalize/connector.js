@@ -5,12 +5,13 @@ import { SqliteDialect } from '@sequelize/sqlite3';
 import { MySqlDialect } from '@sequelize/mysql';
 import { MariaDbDialect } from '@sequelize/mariadb';
 import { SequelizeQueryManager } from './query-builder.js';
+import path from 'pathe';
 
 export default class Connector extends Core {
   async connectWithSqlite() {
     try {
-      await fileManage.makeFolder('', "path/to");
-      const dbPath = loopar.makePath(loopar.pathRoot, 'path/to', `${this.database}.sqlite`);
+      await fileManage.makeFolder("sites", loopar.tenantId, "database");
+      const dbPath = loopar.makePath(loopar.pathRoot, "sites", loopar.tenantId, 'database', `${loopar.tenantId}.sqlite`);
 
       this.sequelize = new Sequelize({
         dialect: SqliteDialect,
@@ -57,6 +58,21 @@ export default class Connector extends Core {
     }
   }
 
+  get coreConnection() {
+    if (this.dialect.includes('sqlite')) {
+      return this.sequelize;
+    }
+    
+    if (!this._coreConnection) {
+      this._coreConnection = new Sequelize({
+        ...this.dbConfig,
+        pool: { max: 2, min: 0 }
+      });
+    }
+    
+    return this._coreConnection;
+  }
+  
   async #initialize(retries = 3) {
     const dbConfig = this.dbConfig;
     const dialect = dbConfig.dialect || "";
@@ -121,10 +137,11 @@ export default class Connector extends Core {
       await this.coreConnection.query('SELECT 1+1 as result', {
         type: Sequelize.QueryTypes.SELECT
       });
-      loopar.printSuccess('Database server is running');
+      loopar.printSuccess('\nDatabase server is running\n');
       return true;
     } catch (e) {
-      loopar.printError('Database server is not running');
+      console.log(["Database Server Eeror", e]);
+      loopar.printError('\nDatabase server is not running\n');
       return false;
     }
   }

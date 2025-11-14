@@ -181,26 +181,11 @@ export default class Core {
   }
 
   get dbConfig() {
-    return this.customConfig || env.dbConfig || {};
+    return loopar.getDbConfig();
   }
 
   get database() {
     return this.dbConfig.database;
-  }
-
-  get coreConnection() {
-    if (this.dialect.includes('sqlite')) {
-      return this.sequelize;
-    }
-    
-    if (!this._coreConnection) {
-      this._coreConnection = new Sequelize({
-        ...this.dbConfig,
-        pool: { max: 2, min: 0 }
-      });
-    }
-    
-    return this._coreConnection;
   }
 
   async alterSchema() {

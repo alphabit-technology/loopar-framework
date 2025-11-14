@@ -3,7 +3,7 @@ import { loopar, fileManage, BaseDocument } from "loopar";
 export default class Connector extends BaseDocument {
   async connect() {
     const values = await this.values();
-    const dbConfig = await fileManage.getConfigFile('db.config');
+    const dbConfig = loopar.getDbConfig();
     const originalConfig = dbConfig.connection || {};
 
     Object.assign(dbConfig, {
@@ -11,9 +11,8 @@ export default class Connector extends BaseDocument {
       connection: Object.assign(originalConfig, values)
     });
 
-    await fileManage.setConfigFile('db.config', dbConfig);
+    await loopar.setDbConfig(dbConfig);
 
-    env.dbConfig = dbConfig;
     await loopar.db.initialize();
 
     if (await loopar.db.testServer()) {

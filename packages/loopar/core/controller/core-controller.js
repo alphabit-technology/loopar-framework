@@ -105,7 +105,7 @@ export default class CoreController extends AuthController {
     return { redirect: url };
   }
 
-  async getError(code, { title = "Error", description = "An error occurred" } = {}) {
+  async getError(code, { title = "Error", description = "An error occurred.." } = {}) {
     const document = await loopar.newDocument("Error");
 
     return await this.render({

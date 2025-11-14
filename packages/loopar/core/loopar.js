@@ -10,37 +10,78 @@ import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
-
+import { Server } from './server/server.js';
+import { fileManage } from './file-manage.js';
 
 export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
-  id= "loopar-"+sha1(this.pathRoot);
-  pathCore = process.argv[1];
   session = new Session();
   #cookie = new Cookie();
   setTailwindTemp = setTailwindTemp;
 
   constructor() {
     super("Loopar");
-    console.log(["Loopar instance created", this.pathRoot, this.id]);
+    this.utils = Helpers;
+    this.dateUtils = dateUtils;
+    this.server = new Server();
+    this.db = new SequelizeORM();
   }
 
+  async init({
+    tenantId,
+    tenantPath,
+    installedApps,
+    appsBasePath
+  }){
+    this.tenantId = tenantId;
+    this.tenantPath = tenantPath;
+    this.pathCore = `${process.cwd()}/packages/loopar`
+    this.id = "loopar-"+sha1(tenantId);
+    //this.installedApps = installedApps;
+    this.appsBasePath = appsBasePath;
+
+    //console.log(["Loopar instance created", this.pathRoot, this.id]);
+
+    this.auth = new Auth(
+      this.authTokenName,
+      this.cookie, 
+      this.getUser.bind(this),
+      this.disabledUser.bind(this)
+    );
+    
+    await this.initialize();
+
+    await this.server.initialize({
+      tenantId,
+      tenantPath,
+      installedApps,
+      appsBasePath
+    });
+  }
+
+  async initialize() {
+    console.log(`......Initializing Loopar....... [${this.id}]` );
+    
+    await this.buildGlobalEnvironment();
+    await this.loadConfig();
+   
+
+    await this.db.initialize();
+    await this.build();
+    await this.buildIcons();
+
+    await tailwinInit();
+  }
+  
   get authTokenName() {
     return this.id;
   }
 
   get jwtSecret() {
-    return process.env.JWT_SECRET || 'user-auth';
+    return sha1(this.id);
   }
-
-  auth = new Auth(
-    this.authTokenName,
-    this.cookie, 
-    this.getUser.bind(this),
-    this.disabledUser.bind(this)
-  );
 
   #server = {};
 
@@ -75,6 +116,14 @@ export class Loopar extends Document {
     return regex.test(repository);
   }
 
+  getInstalledApps() {
+    return fileManage.getConfigFile('installed-apps', 'sites/' + this.tenantId);
+  }
+
+  setInstalledApps(apps) {
+    return fileManage.setConfigFile('installed-apps', apps, 'sites/' + this.tenantId);
+  }
+
   gitAppOptions(app) {
     return {
       baseDir: app ? this.makePath(this.pathRoot, "apps", app) : this.makePath(this.pathRoot, "apps"),
@@ -93,20 +142,17 @@ export class Loopar extends Document {
     return sha1(value);
   }
 
-  async initialize() {
-    console.log('......Initializing Loopar.......');
-    console.log('Loopar ID:', this.id);
-    this.utils = Helpers;
-    this.dateUtils = dateUtils;
-    await this.buildGlobalEnvironment();
-    await this.loadConfig();
-    this.db = new SequelizeORM();
+  #dbConfig = null;
 
-    await this.db.initialize();
-    await this.build();
-    await this.buildIcons();
+  getDbConfig() {
+    if (this.#dbConfig) return this.#dbConfig;
+    this.#dbConfig = fileManage.getConfigFile('db.config', `sites/${this.tenantId}`);
+    return this.#dbConfig;
+  }
 
-    await tailwinInit();
+  async setDbConfig(config) {
+    this.#dbConfig = config;
+    return await fileManage.setConfigFile('db.config', config, `sites/${this.tenantId}`);
   }
 
   async systemsSettings() {
@@ -162,4 +208,4 @@ export class Loopar extends Document {
   }
 }
 
-export const loopar = await new Loopar();
+export const loopar = new Loopar();

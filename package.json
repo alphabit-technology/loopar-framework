@@ -11,12 +11,14 @@
   ],
   "scripts": {
     "preinstall": "node bin/installer-clean.js",
-    "dev": "cross-env NODE_ENV=development && node node_modules/loopar",
-    "start": "cross-env NODE_ENV=production && node node_modules/loopar",
-    "start-backend": "node node_modules/loopar",
+    "dev": "pm2 start ecosystem.config.mjs",
+    "start": "pm2 start ecosystem.config.mjs --env production",
+    "stop": "pm2 delete all",
+    "restart": "pm2 restart all",
+    "logs": "pm2 logs",
+    
     "build": "node bin/build-clean.js && npm-run-all build:client build:server",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr app/entry-server.jsx"
-  },
-  "packageManager": "yarn@4.11.0"
+  }
 }

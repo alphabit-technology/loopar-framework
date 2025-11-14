@@ -221,7 +221,7 @@ export const SystemValidation = {
    */
   getRedirectPath(loopar) {
     const status = this.getStatus(loopar);
-    
+     
     if (status.needsConnect) return status.connectPath;
     if (status.needsInstallOrUpdate) {
       return status.needsUpdate ? status.updatePath : status.installPath;

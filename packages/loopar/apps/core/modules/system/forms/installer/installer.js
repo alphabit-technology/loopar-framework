@@ -122,9 +122,9 @@ export default class Installer extends BaseDocument {
     await this.installData(reinstall);
 
     loopar.installingApp = null;
-    const installedApps = fileManage.getConfigFile('installed-apps');
+    const installedApps = loopar.getInstalledApps();
     installedApps[this.app_name] = true;
-    await fileManage.setConfigFile('installed-apps', installedApps);
+    loopar.setInstalledApps(installedApps);
     
     await loopar.build();
     console.log(`App ${this.app_name} installed successfully!`);

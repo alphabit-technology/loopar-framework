@@ -1,0 +1,7 @@
+{
+  "dialect": "sqlite",
+  "connection": {
+    "database": "sqlite",
+    "password": ""
+  }
+}

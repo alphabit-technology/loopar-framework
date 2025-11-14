@@ -12,7 +12,7 @@ class FileManage {
     } catch (e) {
       return;
     }
-
+    
     return new Promise(resolve => {
       fs.writeFile(filePath, content, (err) => {
         if (err) throw new Error(err);
@@ -107,8 +107,8 @@ class FileManage {
     }
   }
 
-  async makeFolder(destiny, name) {
-    const folderPath = loopar.makePath(loopar.pathRoot, destiny, name);
+  async makeFolder(...args) {
+    const folderPath =  loopar.makePath(loopar.pathRoot, ...args);
 
     return new Promise(resolve => {
       fs.mkdir(folderPath, { recursive: true }, (err) => {

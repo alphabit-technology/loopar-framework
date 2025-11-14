@@ -1,7 +1,6 @@
 'use strict';
 
 import cookieParser from "cookie-parser";
-import session from 'express-session';
 import useragent from "express-useragent";
 import express from "express";
 import { loopar } from "../loopar.js";
@@ -9,9 +8,10 @@ import Router from "./router/router.js";
 import path from "pathe";
 import compression from 'compression';
 import serveStatic from 'serve-static';
-import { createServer as createViteServer } from 'vite'
+import { createServer as createViteServer } from 'vite';
+import tenantSessionMiddleware from "./tenant-session.js"
 
-class Server extends Router {
+export class Server extends Router {
   express = express;
   server = new express();
   url = null;
@@ -21,11 +21,16 @@ class Server extends Router {
   constructor() { super() }
 
   async initialize() {
-    await loopar.initialize();
-    
     if (!this.isProduction) {
       this.vite = await createViteServer({
-        server: { middlewareMode: true },
+        server: {
+          middlewareMode: true,
+          hmr: {
+            protocol: 'ws',
+            host: 'localhost',
+            port: parseInt(process.env.PORT) + 10000,
+          }
+        },
         appType: 'custom'
       });
 
@@ -58,13 +63,10 @@ class Server extends Router {
   }
 
   #initializeSession() {
-    const sessionConfig = env.serverConfig.session;
-    sessionConfig.maxAge = sessionConfig.maxAge * 1000 * 60 * 60 * 24;
-
     this.server.use(cookieParser());
     this.server.use(this.express.json());
     this.server.use(this.express.urlencoded({ extended: true }));
-    this.server.use(session(sessionConfig));
+    this.server.use(tenantSessionMiddleware);
   }
 
   async #exposePublicDirectories() {
@@ -96,7 +98,7 @@ class Server extends Router {
 
   #start() {
     loopar.server = this;
-    const port = env.serverConfig.port;
+    const port = process.env.PORT;
 
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
@@ -123,5 +125,3 @@ class Server extends Router {
     });*/
   }
 }
-
-export const server = new Server();

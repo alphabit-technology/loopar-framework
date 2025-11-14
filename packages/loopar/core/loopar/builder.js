@@ -68,7 +68,7 @@ export class Builder {
 
     this.__REFS__ = refs;
     this.__TYPES__ = types;
-    this.__INSTALLED_APPS__ = fileManage.getConfigFile('installed-apps');
+    this.__INSTALLED_APPS__ = this.getInstalledApps();
   }
 
   makePath(...args) {
@@ -223,27 +223,25 @@ export class Builder {
   }
 
   async writeDefaultSSettings() {
-    await fileManage.makeFolder('', "config");
+    await fileManage.makeFolder("config");
 
-    if (!fileManage.existFileSync(path.join('config', 'db.config.json'))) {
-      await fileManage.setConfigFile('db.config', {});
+    if (!fileManage.existFileSync(path.join('sites',this.tenantId, 'db.config.json'))) {
+      await fileManage.setConfigFile('db.config', {}, path.join('sites', this.tenantId));
     }
 
     if (!fileManage.existFileSync(path.join('config', 'loopar.config.json'))) {
       await fileManage.setConfigFile('loopar.config', {});
     }
 
-    if (!fileManage.existFileSync(path.join('config', 'server.config.json'))) {
+    /* if (!fileManage.existFileSync(path.join('config', 'server.config.json'))) {
       await fileManage.setConfigFile('server.config', {
-        "port": process.env.PORT || 3000,
         "session": {
-          "secret": this.id,
           "saveUninitialized": false,
           "cookie": { "maxAge": 86400000 },
           "resave": false
         }
       });
-    }
+    } */
   }
 
   async buildGlobalEnvironment() {
@@ -253,7 +251,7 @@ export class Builder {
       console.error(`${source}:`, err);
       this.installingApp = null;
       
-      await this.db.safeRollback();
+      this.db && (await this.db.safeRollback());
       
       try {
         this.server?.renderError({ 
@@ -275,9 +273,9 @@ export class Builder {
 
     await this.writeDefaultSSettings();
 
-    env.dbConfig = fileManage.getConfigFile('db.config');
+    //env.dbConfig = fileManage.getConfigFile('db.config');
     env.looparConfig = fileManage.getConfigFile('loopar.config', null, {});
-    env.serverConfig = fileManage.getConfigFile('server.config');
+    //env.serverConfig = fileManage.getConfigFile('server.config');
   }
 
   async makeDefaultFolders() {

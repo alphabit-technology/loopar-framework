@@ -347,6 +347,8 @@ export default class Router {
     }
 
     const ref = loopar.getRef(loopar.utils.Capitalize(params.document), false);
+
+    console.log(["DOcument", params.document, ref]);
     
     if (!ref) {
       return await this.handleDocumentNotFound(req, res, params);
@@ -380,7 +382,7 @@ export default class Router {
     if (req.method === 'POST') {
       return this.renderAjax(res, { 
         code: 404, 
-        message: `Document ${params.document} not found..` 
+        message: `Document ${params.document} not found.` 
       });
     }
 
