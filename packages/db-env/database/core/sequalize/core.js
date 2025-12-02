@@ -366,14 +366,14 @@ export default class Core {
     const newFields = [];
     
     const processField = (field) => {
-      if (!fieldIsWritable(field)) return;
-      
-      const columnName = field.data.name.toLowerCase();
-      
-      if (!existingColumns.has(columnName)) {
-        const columnSQL = generateColumnSQL(field, 'alter', this.dialect);
-        alterations.push(`ADD COLUMN ${columnSQL}`);
-        newFields.push(field);
+      if (fieldIsWritable(field)){      
+        const columnName = field.data.name.toLowerCase();
+        
+        if (!existingColumns.has(columnName)) {
+          const columnSQL = generateColumnSQL(field, 'alter', this.dialect);
+          alterations.push(`ADD COLUMN ${columnSQL}`);
+          newFields.push(field);
+        }
       }
       
       if (field.elements && Array.isArray(field.elements)) {

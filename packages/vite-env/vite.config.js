@@ -1,18 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { readdirSync, lstatSync } from 'fs';
-import {resolve} from 'pathe';
-import viteCompression from 'vite-plugin-compression';
+import { resolve } from 'pathe';
+import viteCompression from 'vite-plugin-compression2';
 import { visualizer } from 'rollup-plugin-visualizer';
 import tailwindcss from '@tailwindcss/vite';
-import image from '@rollup/plugin-image';
 const framework = process.cwd();
 const loopar = 'node_modules/loopar';
 
 const resRoot = (...args) => resolve(framework, ...args);
 const resLoopar = (...args) => resRoot(loopar, ...args);
 
-const Alias = (dir, dirOnly=false) => {
+const Alias = (dir, dirOnly = false) => {
   return readdirSync(dir).reduce((acc, name) => {
     const fullPath = resolve(dir, name);
     const baseName = name.split(".")[0];
@@ -27,8 +26,10 @@ const Alias = (dir, dirOnly=false) => {
   }, {});
 };
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+  const isDev = command === 'serve';
   const isServerBuild = command === 'build:server';
+
   return {
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', 'd.ts'],
@@ -41,63 +42,70 @@ export default defineConfig(({ command }) => {
         '@loopar': resLoopar('src/'),
         '@global': resLoopar('core/global'),
         '@workspace': resLoopar('src/workspace'),
-        //'@assets': resRoot('static/assets'),
         '@publicSRC': resRoot('public/src'),
         '@context': resLoopar('src/context'),
         '@services': resLoopar('services'),
         '/app': resRoot('app'),
         '@uiw': resRoot('node_modules/@uiw/'),
         'lucide-react': resRoot('node_modules/lucide-react'),
-        'file-type': resRoot('node_modules/file-type')
+        'file-type': resRoot('node_modules/file-type'),
       },
     },
+
     plugins: [
-      { ...image(), enforce: 'pre' },
       tailwindcss(),
-      react({ 
-        devTarget: "esnext",
-      }),
+      react({ devTarget: "esnext" }),
+
       viteCompression({
-        algorithm: 'brotliCompress',
-        threshold: 64,
+        algorithm: 'zstd',
+        threshold: 1024,
         deleteOriginFile: false,
       }),
+
       visualizer({ open: false }),
     ],
+
     optimizeDeps: {
       force: true,
       enabled: true,
+      include: ["lucide-react", "react-icons/pi", "lodash"]
     },
+
     css: {
       preprocessorOptions: { css: { extract: true } },
       modules: { hot: true },
     },
+
     ssr: {
-      noExternal: ['lucide-react', 'react-icons/pi'],
+      noExternal: ['lucide-react', 'react-icons/pi', 'lodash'],
     },
+
     build: {
       outDir: resRoot(isServerBuild ? 'dist/server' : 'dist/client'),
       ssr: isServerBuild,
       manifest: true,
       target: 'esnext',
-      minify: 'terser',
+
+      minify: "terser",
+
       cssCodeSplit: true,
       sourcemap: false,
+
       rollupOptions: {
-        input: resRoot(isServerBuild ? 'app/entry-server.jsx' : 'main.html'),
+        input: resRoot(isServerBuild ? 'app/entry-server.jsx' : 'main.html')
       },
       chunkSizeWarningLimit: 1000,
     },
+
     esbuild: { treeShaking: true },
+
     server: {
       allowedHosts: true,
       hmr: true,
       watch: { usePolling: true },
-      fs: {
-        // Allow serving files from one level up to the project root
-        allow: ['..'],
-      },
-      //fs: { allow: ['.'] }
+      fs: { allow: ['..'] },
+      middlewareMode: true,
+      include: []
     },
   };
 });

@@ -1,7 +1,7 @@
 import loopar from "loopar";
 import {Link} from "@link";
-import { useTable } from "./TableContext"
-import BaseTable from "./BaseTable"
+import { useTable } from "./TableContext.jsx"
+import BaseTable from "./BaseTable.jsx"
 import {useCallback, useMemo} from "react";
 import {Trash2Icon} from "lucide-react";
 import {BaseIcon} from "@icon-input";
@@ -20,6 +20,7 @@ export function ListGrid(props) {
   const {baseColumns, Document, selectorCol, deleteRow, search} = useTable();
 
   const getDocumentTitle = (row) => {
+    
     const titleFields = Document.Entity.title_fields?.split(",");
 
     if(titleFields){

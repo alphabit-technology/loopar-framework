@@ -20,10 +20,11 @@ export class Loopar extends Document {
   session = new Session();
   #cookie = new Cookie();
   setTailwindTemp = setTailwindTemp;
+  utils = Helpers;
 
   constructor() {
     super("Loopar");
-    this.utils = Helpers;
+    
     this.dateUtils = dateUtils;
     this.server = new Server();
     this.db = new SequelizeORM();
@@ -31,15 +32,15 @@ export class Loopar extends Document {
 
   async init({
     tenantId,
-    tenantPath,
     installedApps,
     appsBasePath
   }){
     this.tenantId = tenantId;
-    this.tenantPath = tenantPath;
+    this.tenantPath = this.makePath(this.pathRoot, "sites", tenantId);
+    //this.tenantPath = tenantPath;
     this.pathCore = `${process.cwd()}/packages/loopar`
     this.id = "loopar-"+sha1(tenantId);
-    //this.installedApps = installedApps;
+    this.installedApps = installedApps;
     this.appsBasePath = appsBasePath;
 
     //console.log(["Loopar instance created", this.pathRoot, this.id]);
@@ -52,12 +53,13 @@ export class Loopar extends Document {
     );
     
     await this.initialize();
+    //this.tenantPath = t
 
     await this.server.initialize({
       tenantId,
-      tenantPath,
+      //tenantPath,
       installedApps,
-      appsBasePath
+      //appsBasePath
     });
   }
 
@@ -67,12 +69,11 @@ export class Loopar extends Document {
     await this.buildGlobalEnvironment();
     await this.loadConfig();
    
-
     await this.db.initialize();
     await this.build();
-    await this.buildIcons();
+    //await this.buildIcons();
 
-    await tailwinInit();
+    //await tailwinInit();
   }
   
   get authTokenName() {

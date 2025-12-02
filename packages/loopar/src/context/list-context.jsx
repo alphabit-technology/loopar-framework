@@ -5,7 +5,7 @@ import {useCookies} from "@services/cookie";
 import {GridView} from "@@table/GridView";
 import { TableProvider } from "@@table/TableContext";
 
-function ListContextMildware({content, Document, docRef, hasSearchForm = true, onlyGrid}){
+function ListContextMildware({content, Document, docRef, hasSearchForm = true, onlyGrid, onlyList}){
   const [viewType, setViewType] = useCookies(Document.Entity.name + "_viewType") || Document.Entity.default_list_view || "List";
 
   const getViewType = () => {
@@ -24,7 +24,7 @@ function ListContextMildware({content, Document, docRef, hasSearchForm = true, o
       {content}
       {(
         <TableProvider initialDocument={Document} docRef={docRef} rows={Document.rows}>
-          {getViewType() === 'List' ? (
+          {getViewType() === 'List' || onlyList ? (
             <ListGrid
               hasSearchForm={hasSearchForm}
               docRef={docRef}
@@ -59,6 +59,7 @@ export default class ListContext extends BaseDocument {
         renderGrid={this.renderGrid}
         docRef={this}
         onlyGrid={this.onlyGrid}
+        onlyList={this.onlyList}
       />
     )
   }

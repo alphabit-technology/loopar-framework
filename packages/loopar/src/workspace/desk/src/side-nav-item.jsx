@@ -2,6 +2,7 @@ import {Link} from "@link";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useCookies } from "@services/cookie";
 import { useEffect } from "react";
+import Icon from "@icon";
 
 import { useLocation } from 'react-router';
 
@@ -12,7 +13,8 @@ const usePathname = () => {
 export const SideNavItem = (props) => {
   const {
     external,
-    Icon,
+    icon,
+    DefaultIcon,
     path,
     title,
     compact,
@@ -36,7 +38,7 @@ export const SideNavItem = (props) => {
       active={active}
       //activeClassName="bg-red-500 font-medium text-primary-foreground hover:bg-primary"
     >
-      {Icon && <Icon className="h-7"/>}
+      <Icon data={{icon}} className="h-6 w-6"/>
       { title && title.split(' ').map((word, index) => (
         <small 
           key={path + index} 
@@ -57,7 +59,7 @@ export const SideNavItem = (props) => {
       to={`/desk/${path}`}
       active={active}
     >
-      {Icon && <Icon className="mr-2"/> }
+      <Icon data={{icon}} className="mr-2 h-6 w-6"/>
       <span className="w-full">{title}</span>
     </Link>
   );

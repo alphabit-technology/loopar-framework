@@ -1,7 +1,7 @@
-import { useTable } from "./TableContext";
+import { useTable } from "./TableContext.jsx";
 import { Pagination } from "./pagination.jsx";
 
-import {SimpleTable} from "./SimpleTable";
+import {SimpleTable} from "./SimpleTable.jsx";
 function BaseTable(props) {
   const {rows} = useTable();
 

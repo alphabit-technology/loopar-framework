@@ -6,7 +6,6 @@ const REFRESH_THRESHOLD = 1800;
 
 export default class Auth {
   constructor(tenantId, cookie, getUser, disabledUser) {
-    console.log(["Auth initialize", tenantId])
     this.tenantId = tenantId;
     this.tokenName = `loopar_token_${tenantId}`;
     this.loggedCookieName = `logged_${tenantId}`;

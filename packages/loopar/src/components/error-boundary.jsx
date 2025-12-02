@@ -15,7 +15,7 @@ const formatComponentStack = (componentStack) => {
 
 function fallbackRender({ error, resetErrorBoundary }) {
   console.error(error);
-  if(__ENV__ === 'production') {
+  if(process.env.NODE_ENV === 'production') {
     return (
       <div
         className='flex justify-center items-center flex-col min-h-screen bg-background'

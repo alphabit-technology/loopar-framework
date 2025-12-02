@@ -68,14 +68,15 @@ class Loopar extends Router {
   }
 
   throw(error, m, throwError = true) {
+    console.log(["Loopar.throw", error])
     this.emit('freeze', false);
-    const { type, title, content, message } = typeof error === "object" ? error
+    const { type, title, content, message, description, status } = typeof error === "object" ? error
         : { title: "Error", content: error, message: m };
 
     this.emit('dialog', {
       type: type || "error",
       title: title,
-      content: content || message,
+      content: content || message || status,
     });
     
     if(throwError){

@@ -2,7 +2,6 @@ import { cn } from "@cn/lib/utils";
 import React, {useEffect} from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
-import 'vite/modulepreload-polyfill';
 import { useNavigate } from 'react-router';
 
 type ViewType = "module" | "app" | "page" | "list" | "view" | "form";

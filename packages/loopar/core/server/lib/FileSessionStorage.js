@@ -12,14 +12,12 @@ export class FileSessionStore extends Store {
   constructor(options = {}) {
     super(options);
     this.sessionsDir = options.path || './sessions';
-    this.ttl = options.ttl || 86400; // 24 horas por defecto
+    this.ttl = options.ttl || 86400;
     
-    // Crear directorio de forma síncrona al inicio
     if (!existsSync(this.sessionsDir)) {
       fs.mkdir(this.sessionsDir, { recursive: true }).catch(console.error);
     }
     
-    // Limpiar sessions expiradas cada hora
     if (options.reapInterval !== -1) {
       this.reapInterval = setInterval(
         () => this.reap(),
@@ -28,19 +26,16 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Generar path del archivo de session
   #getFilePath(sid) {
     return path.join(this.sessionsDir, `${sid}.json`);
   }
   
-  // Obtener session
   async get(sid, callback) {
     try {
       const filePath = this.#getFilePath(sid);
       const data = await fs.readFile(filePath, 'utf8');
       const session = JSON.parse(data);
       
-      // Verificar expiración
       if (session.cookie?.expires) {
         const expires = new Date(session.cookie.expires);
         if (expires < new Date()) {
@@ -52,14 +47,13 @@ export class FileSessionStore extends Store {
       callback(null, session);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        callback(null, null); // Session no existe
+        callback(null, null);
       } else {
         callback(err);
       }
     }
   }
   
-  // Guardar session
   async set(sid, session, callback) {
     try {
       const filePath = this.#getFilePath(sid);
@@ -70,7 +64,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Destruir session
   async destroy(sid, callback) {
     try {
       const filePath = this.#getFilePath(sid);
@@ -78,22 +71,18 @@ export class FileSessionStore extends Store {
       callback?.(null);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        callback?.(null); // Ya no existe
+        callback?.(null);
       } else {
         callback?.(err);
       }
     }
   }
   
-  // Touch: actualizar tiempo de expiración
   async touch(sid, session, callback) {
     try {
       const filePath = this.#getFilePath(sid);
-      
-      // Verificar que existe
       await fs.access(filePath);
       
-      // Actualizar cookie expires
       if (session.cookie) {
         session.cookie.expires = new Date(Date.now() + this.ttl * 1000);
       }
@@ -105,7 +94,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Limpiar sessions expiradas
   async reap() {
     try {
       const files = await fs.readdir(this.sessionsDir);
@@ -126,7 +114,6 @@ export class FileSessionStore extends Store {
             }
           }
         } catch (err) {
-          // Ignorar errores de archivos individuales
         }
       }
     } catch (err) {
@@ -134,7 +121,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Obtener todas las sessions (opcional)
   async all(callback) {
     try {
       const files = await fs.readdir(this.sessionsDir);
@@ -149,7 +135,6 @@ export class FileSessionStore extends Store {
           const data = await fs.readFile(filePath, 'utf8');
           sessions[sid] = JSON.parse(data);
         } catch (err) {
-          // Ignorar archivos corruptos
         }
       }
       
@@ -159,7 +144,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Obtener cantidad de sessions
   async length(callback) {
     try {
       const files = await fs.readdir(this.sessionsDir);
@@ -170,7 +154,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Limpiar todas las sessions
   async clear(callback) {
     try {
       const files = await fs.readdir(this.sessionsDir);
@@ -187,7 +170,6 @@ export class FileSessionStore extends Store {
     }
   }
   
-  // Cleanup al cerrar
   close() {
     if (this.reapInterval) {
       clearInterval(this.reapInterval);

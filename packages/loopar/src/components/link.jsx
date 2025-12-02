@@ -179,7 +179,7 @@ export function Link({
       <a
         {...commonProps}
         href={to}
-        target={props._target}
+        _target={props._target}
         onClick={handleClick}
         key={renderizableProps.key || to}
       >

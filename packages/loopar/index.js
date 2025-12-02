@@ -1,6 +1,5 @@
 
 import BaseDocument from "./core/document/base-document.js";
-//import { server } from "./core/server/server.js";
 import { loopar } from "./core/loopar.js";
 import { documentManage } from "./core/document/document-manage.js";
 import { fileManage } from "./core/file-manage.js";
@@ -18,11 +17,8 @@ import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
 import { parseDocument } from './core/document/tools.js';
 
-//const loopar = new Loopar();
 export {
   loopar,
-  //Loopar,
-  //server,
   documentManage,
   BaseDocument,
   BaseController,
@@ -42,5 +38,3 @@ export {
   AIPrompt,
   parseDocument, TYPES
 };
-
-//await server.initialize();

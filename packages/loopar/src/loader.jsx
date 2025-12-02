@@ -85,16 +85,17 @@ const ErrorMessage = (props) => {
   );
 };
 
-const appSources = Object.entries(import.meta.glob([
-  '/apps/**/modules/**/**/**/client/*.jsx',
-  '../apps/core/modules/**/**/**/client/*.jsx',
-  './context/*.jsx',
-])).reduce((acc, [path, module]) => {
-  acc[path.split('/').pop().replace('.jsx', '')] = module;
-  return acc;
-}, {});
 
 export async function AppSourceLoader(Document) {
+  const appSources = Object.entries(import.meta.glob([
+    '/apps/**/modules/**/**/**/client/*.jsx',
+    '../apps/core/modules/**/**/**/client/*.jsx',
+    './context/*.jsx',
+  ], )).reduce((acc, [path, module]) => {
+    acc[path.split('/').pop().replace('.jsx', '')] = module;
+    return acc;
+  }, {});
+
   const source = Document?.entryPoint;
 
   return new Promise(async (resolve, reject) => {

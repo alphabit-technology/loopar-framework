@@ -7,6 +7,7 @@ import { ErrorBoundary } from "@error-boundary";
 (async () => {
   const __META_SCRIPT__ = document.getElementById('__loopar-meta-data__');
   const __META__ = JSON.parse(__META_SCRIPT__?.textContent || "{}");
+  global.__INSTALLED_APPS__ = __META__.__INSTALLED_APPS__;
   const { Workspace, View } = await Loader(__META__, "client");
 
   window.lastY = 0;

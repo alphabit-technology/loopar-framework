@@ -1,5 +1,5 @@
 import {PiX, PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
-import * as iconModules from "@app/auto/icon-import";
+import * as iconModules from "@app/auto/preloaded-icons";
 
 export function BaseIcon({ icon, className, children }) {
   if(icon == "XLogo") return <PiXLogo className={className} >{children}</PiXLogo>;

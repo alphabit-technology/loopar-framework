@@ -77,7 +77,19 @@ export default class WorkspaceController extends AuthController {
       </script>
     `);
 
-    html = html.replace(`<!--__loopar-env__-->`, `<script>window.__ENV__ = ${isProduction ? "'production'" : "'development'"};</script>`);
+    
+    
+
+    html = html.replace(`<!--__loopar-env__-->`, `
+      <script>
+        window.process = ${JSON.stringify({
+          env: {
+            TENANT_ID: process.env.TENANT_ID,
+            NODE_ENV: process.env.NODE_ENV,
+          }
+        })};
+      </script>
+    `);
 
     return {
       status: 200,

@@ -145,3 +145,9 @@ node_modules/.vite
 npm-debug.log*
 .idea/
 .vscode/
+
+# -----------------------------------
+# 🛠️ SOCKET FILES
+# -----------------------------------
+sockets/
+*.sock

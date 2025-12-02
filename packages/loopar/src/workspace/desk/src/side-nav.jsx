@@ -2,9 +2,8 @@
 
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
-import * as LucideIcons from "lucide-react";
+import {ChevronLeftIcon} from "lucide-react";
 import { useId, useEffect } from "react";
-import { ScrollArea } from "@cn/components/ui/scroll-area";
 
 export function SideNav({ items=[] }) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
@@ -31,8 +30,8 @@ export function SideNav({ items=[] }) {
                     active={active}
                     disabled={module.disabled}
                     external={module.external}
-                    Icon={LucideIcons[module.icon] || LucideIcons.ChevronLeftIcon}
-                    
+                    icon={module.icon}
+                    DefaultIcon={ChevronLeftIcon}
                     path={module.link}
                     title={module.description}
                     compact={!openNav}

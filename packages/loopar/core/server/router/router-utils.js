@@ -2,18 +2,16 @@
 
 // ========================================
 // SHARED CONSTANTS
-// ========================================
 export const ASSET_EXTENSIONS = new Set([
   'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', // Images
   'mp4', 'webm', 'ogg', 'mp3', 'wav', 'flac', 'aac', // Multimedia
   'woff', 'woff2', 'ttf', 'eot', 'otf', // Fonts
   'js', 'mjs', 'jsx', 'css', 'html', 'htm', 'xhtml', // Web files
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', // Documents
   'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'gzip', 'br', // Compressed files
   'json', 'xml', 'txt', 'yaml' // Data files
 ]);
 
-export const VALID_WORKSPACES = new Set(['desk', 'auth', 'loopar']);
+export const VALID_WORKSPACES = ['desk', 'auth', 'loopar'];
 
 export const SYSTEM_PATHS = {
   CONNECT: '/loopar/system/connect',
@@ -52,6 +50,7 @@ export function isAssetUrl(pathname) {
   if (pathname.includes("/api/") || pathname.includes("/admin/")) return false;
 
   // Fast path: find last dot
+  console.log(pathname);
   const lastDotIndex = pathname.lastIndexOf('.');
   if (lastDotIndex === -1) return false;
   
@@ -65,8 +64,8 @@ export function isAssetUrl(pathname) {
  * @returns {string} The workspace name ('desk', 'auth', 'loopar', or 'web')
  */
 export function getWorkspaceName(pathname) {
-  const context = pathname.split("/")[1];
-  return VALID_WORKSPACES.has(context.toLowerCase()) ? context.toLowerCase() : 'web'
+  const context = pathname.split("/")[1] || "web";
+  return VALID_WORKSPACES.includes(context.toLowerCase()) ? context.toLowerCase() : 'web'
 }
 
 /**

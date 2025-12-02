@@ -7,7 +7,7 @@ import { titleize } from "inflection";
 import _ from "lodash";
 
 export default class CoreController extends AuthController {
-  error = {};
+  //error = {};
   defaultImporterFiles = ['index', 'form'];
   response = {};
   hasData() {
@@ -171,7 +171,31 @@ export default class CoreController extends AuthController {
   }
 
   async success(message, options = {}) {
-    return { status: 200, success: true, message: message || "Success", ...options, notify: options.notify || { type: "success", message: message || "Success" } };
+    const notify = options.notify || {};
+    return {
+      status: 200, 
+      success: true, 
+      message: message || "Success", 
+      ...options, 
+      notify: {
+        ...notify,
+        type: notify.type || (options.success === false ? "error" : "success"),
+        message: notify.message || message || (options.success === false ? "Error" : "Success")
+      } 
+    };
+  }
+
+  async error(message, options, status){
+    return { 
+      status: status || 500, 
+      success: false, 
+      message: message || "Error", 
+      ...options, 
+      notify: {
+        ...options.notify,
+        type: options.notify.type || "error",
+        message: options.notify.message || message || "Error"
+      } };
   }
 
   async actionSidebar() {

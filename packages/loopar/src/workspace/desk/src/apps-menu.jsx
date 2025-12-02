@@ -8,7 +8,7 @@ import {
 
 import {Link} from "@link"
 import { buttonVariants } from "@cn/components/ui/button"
-import { ComponentIcon, CircuitBoardIcon, FilesIcon, LayoutGridIcon, Settings2Icon, User2Icon, CogIcon } from "lucide-react"
+import { ComponentIcon, CircuitBoardIcon, FilesIcon, LayoutGridIcon, Settings2Icon, User2Icon, CogIcon, ServerCogIcon, BrushIcon } from "lucide-react"
 
 const MakeButton = ({ Icon, text, link}) => (
   <Link
@@ -37,12 +37,14 @@ export function AppsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="grid grid-cols-2 p-2" onClick={() => setOpen(false)}>
+          <MakeButton Icon={BrushIcon} text="Entities" link="/desk/Entity/list"/>
           <MakeButton Icon={CogIcon} text="Builders" link="/desk/Builder/list"/>
-          <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/Module/list" />
           <MakeButton Icon={CircuitBoardIcon} text="Apps" link="/desk/App Manager/view"/>
-          <MakeButton Icon={FilesIcon} text="Files" link="/desk/File Manager/list" />
+          <MakeButton Icon={ComponentIcon} text="Modules" link="/desk/Module/list" />
           <MakeButton Icon={Settings2Icon} text="Settings" link="/desk/System Settings/update" />
+          <MakeButton Icon={FilesIcon} text="Files" link="/desk/File Manager/list" />
           <MakeButton Icon={User2Icon} text="Users" link="/desk/user/list" />
+          <MakeButton Icon={ServerCogIcon} text="Tenant Manager" link="/desk/Tenant Manager/list" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

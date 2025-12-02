@@ -129,9 +129,9 @@ export default class Router {
       this.currentReq = req;
       this.currentRes = res;
       loopar.cookie.res = res;
-      loopar.cookie.req = req;  // ← AÑADIDO
+      loopar.cookie.req = req;
       loopar.cookie.cookies = req.cookies;
-       loopar.session.req = req;
+      loopar.session.req = req;
       next();
     };
   }
@@ -176,9 +176,9 @@ export default class Router {
       if (req.method === 'POST') return next();
 
       const Controller = new WorkspaceController({ 
-        req, 
-        res, 
-        method: req.method 
+        req,
+        res,
+        method: req.method
       });
       Controller.dictUrl = req._parsedUrl;
       Controller.workspace = req.__WORKSPACE_NAME__;
@@ -306,10 +306,7 @@ export default class Router {
     // Setup middleware chain
     this.server.use(
       this.setupAssetMiddleware(), 
-      this.setupNotFoundSourceMiddleware()
-    );
-    
-    this.server.use(
+      this.setupNotFoundSourceMiddleware(),
       this.setupLoadHttpMiddleware(),
       this.setupSystemMiddleware(),
       this.setupBuildParamsMiddleware(),
@@ -348,8 +345,6 @@ export default class Router {
 
     const ref = loopar.getRef(loopar.utils.Capitalize(params.document), false);
 
-    console.log(["DOcument", params.document, ref]);
-    
     if (!ref) {
       return await this.handleDocumentNotFound(req, res, params);
     }

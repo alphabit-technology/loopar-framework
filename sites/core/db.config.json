@@ -3,5 +3,6 @@
   "connection": {
     "database": "sqlite",
     "password": ""
-  }
+  },
+  "database": "core"
 }

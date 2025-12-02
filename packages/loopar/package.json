@@ -6,6 +6,12 @@
   "type": "module",
   "author": "",
   "license": "ISC",
-  "dependencies": {
-  }
+  "bin": {
+    "loopar": "./bin/loopar-cli.js"
+  },
+  "files": [
+    "bin/",
+    "core/",
+    "src/"
+  ]
 }

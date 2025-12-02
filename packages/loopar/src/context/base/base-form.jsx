@@ -16,40 +16,46 @@ export default class BaseForm extends BaseDocument {
     this.send({ action: this.Document.meta.action });
   }
 
+  set Form(Form) {
+    this.#Form = Form;
+
+    Form.watch((value, { name, type }) => {
+      if(_.isEqual(value, this.currentData)) return;
+      this.lastData = _.cloneDeep(this.currentData);
+      this.currentData = _.cloneDeep(value);
+    });
+  }
+  
   hasChanges() {
-    return !_.isEqual(this.lastData, this.currentData);
+    return this.lastData && !_.isEqual(this.lastData, this.currentData);
   }
 
   checkChanges() {
-    if (!this.notRequireChanges && !this.__IS_NEW__ && !this.hasChanges()) {
+    if (!this.notRequireChanges && !this.hasChanges()) {
       loopar.notify("No changes to save", "warning");
       return false;
     }
-
+    
     return true;
   }
 
   send({ action, params={}, ...options } = {}) {
     this.validate();
 
-    if(!this.checkChanges()) return;
+    if (!this.checkChanges()) return;
+
+    const handleSuccess = (r) => {
+      this.lastData = _.cloneDeep(this.currentData);
+      if (options.success) options.success(r);
+    };
 
     loopar.send({
       action: action,
-      params: {...this.params, ...params},
+      params: { ...this.params, ...params },
       body: this.#getFormData(true),
-      success: r => {
-        this.lastData = this.currentData;
-        options.success && options.success(r);
-      },
-      ...(options.success ? {success: r => {
-        this.lastData = this.currentData;
-        options.success(r);
-      }} : {success: r => {
-        this.lastData = this.currentData;
-      }}),
-      error: r => {
-        options.error && options.error(r);
+      success: handleSuccess,
+      error: (r) => {
+        if (options.error) options.error(r);
       },
       freeze: true
     });
@@ -279,15 +285,6 @@ export default class BaseForm extends BaseDocument {
     }
 
     return formData;
-  }
-
-  set Form(Form) {
-    this.#Form = Form;
-
-    Form.watch((value, { name, type }) => {
-      if(!this.lastData) this.lastData = value;
-      this.currentData = value;
-    });
   }
 
   get Form() {

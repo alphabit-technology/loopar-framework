@@ -2,6 +2,9 @@ import BaseInput from "@base-input";
 import Select from "@select";
 import * as LucideIcons from "lucide-react";
 import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
+//import { iconNames } from 'lucide-react/dynamic.mjs';
+
+//import {iconNames} from "lucide-react/dynamic.js";
 
 const BaseIcons1 = {
   XLogo: PiXLogo,
@@ -10,6 +13,12 @@ const BaseIcons1 = {
   XlogoThin: PiXLogoThin,
   ...LucideIcons
 };
+
+/* iconNames.forEach(i => {
+  BaseIcons1[i] = i
+})
+
+console.log(iconNames); */
 
 const BaseIcons = Object.keys(BaseIcons1).filter(icon => !icon.includes("Icon") && !icon.includes("Lucide"));
 

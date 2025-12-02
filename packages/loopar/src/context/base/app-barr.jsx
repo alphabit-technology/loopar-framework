@@ -80,7 +80,7 @@ export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...pro
                 New
               </Link>
             )}
-            {docRef.onlyGrid !== true && <Button
+            {docRef.onlyGrid !== true && docRef.onlyList !== true && <Button
               className="p-1"
               variant="secondary"
               onClick={viewTypeToggle}

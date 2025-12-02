@@ -84,7 +84,6 @@ export function WorkspaceProvider({
       key: "error404",
       entryPoint: "error-view",
     };
-    
     AppSourceLoader(__META__.Document).then((Module) => {
       __META__.Document.data = {
         code: 404,
@@ -127,7 +126,6 @@ export function WorkspaceProvider({
 
       __META_CACHE__[r.instance] = __META__
     }
-
     AppSourceLoader(__META__.Document).then((Module) => {
       startTransition(() => {
         setDocuments(prevDocuments => {

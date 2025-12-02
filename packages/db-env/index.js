@@ -1,5 +1,1 @@
-import { SequelizeORM } from "./database/sequelize.js";
-
-export {
-  SequelizeORM
-}
+export { SequelizeORM } from "./database/sequelize.js";

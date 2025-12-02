@@ -142,19 +142,19 @@ export default class Installer extends BaseDocument {
     const installEntity = async (e, ent) => {
       const [constructor, name] = e.split(':');
 
-      if(!await loopar.db.hasEntity(constructor, name)){
-        if(!ent.app || ent.app == this.app_name){
-          const entityData = await this.getDocumentData(name, ent.root);
-          if(entityData){
-            const doc = await loopar.newDocument(constructor, entityData);
-            console.log(["Installing...........", constructor, name]);
-            await doc.save({ validate: false });
-          }else{
-            console.log([`No data found for ${constructor}:${name}, skipping...`]);
-          }
+      const exist = await loopar.db.hasEntity(constructor, name);
+
+      if(!ent.app || ent.app == this.app_name){
+        const entityData = await this.getDocumentData(name, ent.root);
+        if(entityData){
+          const doc = exist ? await loopar.getDocument(constructor, name, entityData) : await loopar.newDocument(constructor, entityData);
+          console.log([exist ? "Updating......." : "Installing.......", constructor, name]);
+          (!exist || reinstall) && await doc.save({ validate: false });
         }else{
-          loopar.throw(`App ${this.app_name} require ${ent.app}:${ent.name} to be installed first`);
+          console.log([`No data found for ${constructor}:${name}, skipping...`]);
         }
+      }else{
+        loopar.throw(`App ${this.app_name} require ${ent.app}:${ent.name} to be installed first`);
       }
     }
 

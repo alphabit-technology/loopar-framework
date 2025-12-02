@@ -1,2 +1,1 @@
-import viteConfig from "vite-env";
-export default viteConfig;
+export { default } from "vite-env";

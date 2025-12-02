@@ -10,6 +10,8 @@ import compression from 'compression';
 import serveStatic from 'serve-static';
 import { createServer as createViteServer } from 'vite';
 import tenantSessionMiddleware from "./tenant-session.js"
+import { zstdMiddleware } from './zstd-compression.js';
+
 
 export class Server extends Router {
   express = express;
@@ -21,7 +23,14 @@ export class Server extends Router {
   constructor() { super() }
 
   async initialize() {
-    if (!this.isProduction) {
+    if (this.isProduction) {
+      this.server.use(compression());
+
+      this.server.use(zstdMiddleware({
+        root: 'dist/client',
+        priority: ['zst', 'br', 'gz'],
+      }));
+    } else {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
@@ -35,23 +44,6 @@ export class Server extends Router {
       });
 
       this.server.use(this.vite.middlewares);
-    } else {
-      this.server.use(compression());
-
-      this.server.use(
-        serveStatic(path.join(loopar.pathRoot, 'dist'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.gz')) {
-              res.setHeader('Content-Encoding', 'gzip');
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-            if (path.endsWith('.br')) {
-              res.setHeader('Content-Encoding', 'br');
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-          },
-        })
-      );
     }
 
     await this.#exposePublicDirectories();
@@ -79,17 +71,22 @@ export class Server extends Router {
     /* because need to define directory like images */
     this.server.use("/assets/public/images", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
 
+    this.server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, "public")));
+    this.server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    /* because need to define directory like images */
+    this.server.use("/assets/public/images", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+
     await this.exposeClientAppFiles();
   }
 
   async exposeClientAppFiles(appName) {
     if (loopar.__installed__) {
-      const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
+      //const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
 
-      for (const app of installedsApps) {
-        const appPath = loopar.makePath(loopar.pathRoot, "apps", app.name, this.uploadPath, "public");
+      for (const app of loopar.installedApps) {
+        const appPath = loopar.makePath(loopar.pathRoot, "apps", app, this.uploadPath, "public");
 
-        console.log("Exposing public directory for: " + app.name)
+        console.log("Exposing public directory for: " + app)
         this.server.use("/assets/public", serveStatic(appPath));
         this.server.use("/assets/public/images", serveStatic(appPath));
       }
@@ -105,23 +102,5 @@ export class Server extends Router {
     this.server.listen(port, () => {
       console.log("Server is started in " + port + installMessage);
     });
-
-    const serverClose =  () => {
-      try {
-        this.server && this.server.close(() => {
-          console.log("Express server closed");
-          process.exit(0);
-        });
-      }catch (err) {
-        console.error(err);
-      }
-    }
-    /*process.on("SIGINT", () => {
-      serverClose();
-    });
-
-    process.on("SIGTERM", () => {
-      serverClose();
-    });*/
   }
 }
