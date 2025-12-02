@@ -11,7 +11,10 @@
   ],
   "scripts": {
     "preinstall": "node bin/installer-clean.js",
-    "start": "node bin/ensure-site.js && pm2 start loopar.ecosystem.config.mjs --silent && node loopar-status.js && pm2 log --lines 1000",
+
+    "dev": "node bin/ensure-site.js && pm2 start loopar.ecosystem.config.mjs && pm2 log --lines 1000", 
+    "start": "node bin/ensure-site.js && pm2 start loopar.ecosystem.config.mjs --silent && node loopar-status.js",
+
     "list": "node loopar-status.js",
     "restart": "pm2 restart all",
     "logs": "pm2 logs",
