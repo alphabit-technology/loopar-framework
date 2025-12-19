@@ -103,7 +103,7 @@ export default defineConfig(({ command }) => {
     build: {
       outDir: resRoot(isServerBuild ? 'dist/server' : 'dist/client'),
       ssr: isServerBuild,
-      manifest: !isServerBuild,
+      manifest: true,
       target: 'esnext',
       minify: isDev ? false : 'terser',
       terserOptions: !isDev ? {
@@ -141,7 +141,12 @@ export default defineConfig(({ command }) => {
       drop: isDev ? [] : ['console', 'debugger'],
     },
     server: {
-      allowedHosts: true
+      allowedHosts: true,
+      hmr: true,
+      watch: { usePolling: true },
+      fs: {
+        allow: ['..'],
+      }
     }
   };
 });
