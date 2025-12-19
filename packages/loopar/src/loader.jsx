@@ -102,7 +102,6 @@ export async function AppSourceLoader(Document) {
     try {
       const moduleImport = appSources[source];
 
-      console.log(["Source loader", source])
       if(!appSources[source]) {
        resolve({
         default: () => <ErrorMessage Document={Document}/>

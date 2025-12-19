@@ -43,7 +43,17 @@ export function WorkspaceProvider({
   const __META_CACHE__ = {};
   const navigate = useNavigate();
   
-  const lastFetchedPath = useRef(pathname);
+  const lastFetchedPath = useRef(null);
+
+  useEffect(() => {
+    if (!lastFetchedPath.current) {
+      lastFetchedPath.current = {
+        pathname: window.location.pathname,
+        search: window.location.search
+      };
+    }
+  }, []);
+
   const isInitialMount = useRef(true);
 
   const memoizedActiveView = useMemo(() => {
@@ -144,27 +154,40 @@ export function WorkspaceProvider({
     }).catch(e => goToErrorView(e));
   }, [loadDocument, goToErrorView]);
 
+  const fetchIdRef = useRef(0);
+
   const fetchDocument = useCallback((url) => {
-    const route = url || window.location;
-    if (route.hash.includes("#")) return Promise.resolve();
-    const preloadedMeta = __META_CACHE__[loopar.utils.urlInstance(route)] ? true : false;
+    const route =  window.location;
+    if (route.hash?.includes("#")) return Promise.resolve();
+
+    const currentFetchId = ++fetchIdRef.current;
+
+    const targetPath = route.pathname;
+    const targetSearch = route.search || '';
+    const preloadedMeta = !!__META_CACHE__[loopar.utils.urlInstance(route)];
 
     return new Promise((resolve, reject) => {
       loopar.send({
-        action: route.pathname,
-        params: `${route.search.length ? route.search + "&" : "?"}preloaded=${preloadedMeta}`,
+        action: targetPath,
+        params: `${targetSearch.length ? targetSearch + "&" : "?"}preloaded=${preloadedMeta}`,
         success: r => {
-          lastFetchedPath.current = pathname;
+          if (currentFetchId !== fetchIdRef.current) return;
+          
+          lastFetchedPath.current = { pathname: targetPath, search: targetSearch };
           setDocument(r);
           resolve();
         },
         error: e => {
-          navigate(lastFetchedPath.current.pathname);
+          if (currentFetchId !== fetchIdRef.current) return;
+          
+          if (lastFetchedPath.current) {
+            navigate(lastFetchedPath.current.pathname + lastFetchedPath.current.search, { replace: true });
+          }
           loopar.throw(e);
         }
       });
     });
-  }, [setDocument]);
+  }, [setDocument, navigate]);
 
   const refresh = useCallback(() => {
     fetchDocument(pathname).then(() => {

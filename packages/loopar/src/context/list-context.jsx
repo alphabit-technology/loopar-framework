@@ -20,6 +20,7 @@ function ListContextMildware({content, Document, docRef, hasSearchForm = true, o
    <DeskGUI
       docRef={docRef}
       viewTypeToggle={viewTypeToggle}
+      viewType={viewType}
     >
       {content}
       {(

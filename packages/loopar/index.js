@@ -3,6 +3,7 @@ import BaseDocument from "./core/document/base-document.js";
 import { loopar } from "./core/loopar.js";
 import { documentManage } from "./core/document/document-manage.js";
 import { fileManage } from "./core/file-manage.js";
+import fileManager from "./core/global/file-manager.js";
 import BaseController from "./core/controller/base-controller.js";
 import SingleController from "./core/controller/single-controller.js";
 import PageController from "./core/controller/page-controller.js";
@@ -30,6 +31,7 @@ export {
   ReportController,
   FormController,
   fileManage,
+  fileManager,
   Helpers,
   elementsNames,
   elementsNameByType,

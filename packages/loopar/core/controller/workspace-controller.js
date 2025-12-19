@@ -1,7 +1,7 @@
 'use strict'
 
 import AuthController from "./auth-controller.js";
-import { loopar } from "loopar";
+import { loopar, fileManager } from "loopar";
 import fs from 'fs';
 
 export default class WorkspaceController extends AuthController {
@@ -72,9 +72,9 @@ export default class WorkspaceController extends AuthController {
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
 
-    const faviconSrc =__META__.name == "web" ? loopar.utils.JSONparse(__META__.web_app?.favicon, [{}])[0].name : null;
+    const faviconSrc = fileManager.getMappedFiles(__META__.web_app?.favicon)[0]?.src;
 
-    html = html.replace(`<!--__favicon__-->`, `<link rel="icon" href="/assets/public/${faviconSrc || "loopar-favicon.ico"}"/>`)
+    html = html.replace(`<!--__favicon__-->`, `<link rel="icon" href="${faviconSrc || "/assets/public/loopar-favicon.ico"}"/>`)
 
     html = html.replace(`<!--__theme-definition__-->`, `
       <link rel="stylesheet" href="/assets/public/theme.css"/>

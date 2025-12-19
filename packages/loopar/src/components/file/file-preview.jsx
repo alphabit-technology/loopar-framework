@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import fileManager, {getExtention} from "./file-manager";
+import fileManager, {getExtention} from "@global/file-manager.js";
 import {cn} from "@cn/lib/utils";
 import { fileIcons } from "./defaults";
 import { FallbackFile } from "./fallback-file";

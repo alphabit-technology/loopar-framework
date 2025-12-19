@@ -1,4 +1,4 @@
-import elementManage from "@@tools/element-manage";
+import { loopar } from "loopar";
 
 export const getExtention = (file = "") => {
   const match = file.match(/\.([a-z0-9]+)$/i);
@@ -98,7 +98,7 @@ class FileManager {
   getFileType(file) {
     if (!file) return null;
     
-    if (elementManage.isJSON(file)) {
+    if (loopar.utils.isJSON(file)) {
       file = JSON.parse(file);
     }
 
@@ -160,7 +160,7 @@ class FileManager {
   }
 
   getMappedFiles(files = []) {
-    if (typeof files === "string" && !elementManage.isJSON(files)) {
+    if (typeof files === "string" && !loopar.utils.isJSON(files)) {
       if (this.isURL(files)) {
         const detectedType = this.getTypeFromURL(files) || "image";
         const ext = getExtention(files) || (detectedType === 'image' ? 'jpg' : 'file');
@@ -185,7 +185,7 @@ class FileManager {
       files = Object.values(files);
     }
 
-    if (typeof files === "string" && elementManage.isJSON(files)) {
+    if (typeof files === "string" && loopar.utils.isJSON(files)) {
       files = JSON.parse(files);
     }
 
