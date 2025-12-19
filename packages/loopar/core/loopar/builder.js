@@ -241,6 +241,7 @@ export class Builder {
   }
 
   async writeDefaultSSettings() {
+    await fileManage.makeFolder("config");
     await fileManage.makeFolder("sites", this.tenantId, "config");
 
     if (!fileManage.existFileSync(path.join('sites',this.tenantId, "config", 'db.config.json'))) {
