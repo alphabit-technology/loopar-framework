@@ -5,18 +5,17 @@ const getJWTSecret = () => loopar.jwtSecret;
 const REFRESH_THRESHOLD = 1800;
 
 export default class Auth {
-  constructor(tenantId, cookie, getUser, disabledUser) {
+  constructor(tenantId, getUser, disabledUser) {
     this.tenantId = tenantId;
     this.tokenName = `loopar_token_${tenantId}`;
     this.loggedCookieName = `logged_${tenantId}`;
-    this.cookie = cookie;
     this.getUser = getUser;
     this.disabledUser = disabledUser;
   }
 
   authUser() {
     try {
-      const token = this.cookie.get(this.tokenName);
+      const token = loopar.cookie.get(this.tokenName);
       if (!token) return null;
       
       return jwt.verify(token, getJWTSecret());
@@ -30,26 +29,26 @@ export default class Auth {
     const optsExpire = { httpOnly: true, path: '/', expires: new Date(0) };
 
     try {
-      if (this.cookie && typeof this.cookie.remove === 'function') {
-        await this.cookie.remove(this.tokenName).catch(() => {});
-        await this.cookie.remove(this.loggedCookieName).catch(() => {});
+      if (loopar.cookie && typeof loopar.cookie.remove === 'function') {
+        await loopar.cookie.remove(this.tokenName).catch(() => {});
+        await loopar.cookie.remove(this.loggedCookieName).catch(() => {});
       }
     } catch (e) {}
 
     try {
-      if (res && this.cookie && typeof this.cookie.remove === 'function') {
-        await this.cookie.remove(res, this.tokenName).catch(() => {});
-        await this.cookie.remove(res, this.loggedCookieName).catch(() => {});
+      if (res && loopar.cookie && typeof loopar.cookie.remove === 'function') {
+        await loopar.cookie.remove(res, this.tokenName).catch(() => {});
+        await loopar.cookie.remove(res, this.loggedCookieName).catch(() => {});
       }
     } catch (e) {}
 
     try {
-      if (this.cookie && typeof this.cookie.set === 'function') {
-        await this.cookie.set(this.tokenName, '', optsExpire).catch(() => {});
-        await this.cookie.set(this.loggedCookieName, '', optsExpire).catch(() => {});
+      if (loopar.cookie && typeof loopar.cookie.set === 'function') {
+        await loopar.cookie.set(this.tokenName, '', optsExpire).catch(() => {});
+        await loopar.cookie.set(this.loggedCookieName, '', optsExpire).catch(() => {});
         if (res) {
-          await this.cookie.set(res, this.tokenName, '', optsExpire).catch(() => {});
-          await this.cookie.set(res, this.loggedCookieName, '', optsExpire).catch(() => {});
+          await loopar.cookie.set(res, this.tokenName, '', optsExpire).catch(() => {});
+          await loopar.cookie.set(res, this.loggedCookieName, '', optsExpire).catch(() => {});
         }
       }
     } catch (e) {}
@@ -63,12 +62,12 @@ export default class Auth {
   }
 
   async logout() {
-    this.cookie.remove(this.loggedCookieName);
+    loopar.cookie.remove(this.loggedCookieName);
     return this.killSession();
   }
 
   async award() {
-    const token = this.cookie.get(this.tokenName);
+    const token = loopar.cookie.get(this.tokenName);
     
     if (!token) return this.killSession();
 
@@ -92,8 +91,8 @@ export default class Auth {
         };
 
         const newToken = jwt.sign(payload, getJWTSecret(), { expiresIn: '1d' });
-        await this.cookie.set(this.tokenName, newToken, { httpOnly: true, path: '/' });
-        await this.cookie.set(this.loggedCookieName, '1', { httpOnly: false, path: '/' });
+        await loopar.cookie.set(this.tokenName, newToken, { httpOnly: true, path: '/' });
+        await loopar.cookie.set(this.loggedCookieName, '1', { httpOnly: false, path: '/' });
         
         return payload;
       }
@@ -123,8 +122,8 @@ export default class Auth {
 
     const token = jwt.sign(payload, getJWTSecret(), { expiresIn: '1d' });
   
-    this.cookie.set(this.tokenName, token, { httpOnly: true, path: '/' });
-    this.cookie.set(this.loggedCookieName, '1', { httpOnly: false, path: '/' });
+    loopar.cookie.set(this.tokenName, token, { httpOnly: true, path: '/' });
+    loopar.cookie.set(this.loggedCookieName, '1', { httpOnly: false, path: '/' });
 
     return payload;
   }

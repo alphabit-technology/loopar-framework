@@ -3,11 +3,11 @@ import {FileSessionStore} from './lib/FileSessionStorage.js';
 import path from 'path';
 import {loopar} from '../loopar.js';
 
-export default function tenantSessionMiddleware(req, res, next) {
+export default function tenantContextMiddleware(req, res, next) {
   const tenantId = loopar.tenantId;
   
   if (!tenantId) {
-    return res.status(400).json({ error: 'Tenant no identificado' });
+    return res.status(400).json({ error: 'Tenant not identified' });
   }
   
   const tenantPath = path.join(loopar.pathRoot, 'sites', tenantId);

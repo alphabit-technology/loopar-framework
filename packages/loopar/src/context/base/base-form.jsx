@@ -2,7 +2,8 @@ import {loopar} from 'loopar';
 import BaseDocument from "@context/base/base-document";
 import { dataInterface } from '@global/element-definition';
 import Sanitize from "sanitize-filename";
-import _ from "lodash";
+import { cloneDeep } from 'es-toolkit/object';
+import { isEqual } from 'es-toolkit/predicate';
 
 export default class BaseForm extends BaseDocument {
   formFields = {};
@@ -10,6 +11,7 @@ export default class BaseForm extends BaseDocument {
   lastData = null;
   currentData = null;
   __FORM_REFS__ = {};
+  initialData = null;
   #Form = null;
 
   save() {
@@ -17,17 +19,20 @@ export default class BaseForm extends BaseDocument {
   }
 
   set Form(Form) {
-    this.#Form = Form;
-
-    Form.watch((value, { name, type }) => {
-      if(_.isEqual(value, this.currentData)) return;
-      this.lastData = _.cloneDeep(this.currentData);
-      this.currentData = _.cloneDeep(value);
+    !this.initialData && (this.initialData = {...Form.formState.defaultValues});
+    !this.currentData  && (this.currentData = {...Form.formState.defaultValues});
+    !this.lastData && (this.lastData = {...Form.formState.defaultValues});
+ 
+    !this.#Form && Form.watch((value, { name, type }) => {
+      this.lastData = cloneDeep(this.currentData);
+      this.currentData = cloneDeep(value);
     });
+   
+    this.#Form = Form;
   }
   
   hasChanges() {
-    return this.lastData && !_.isEqual(this.lastData, this.currentData);
+    return !isEqual(this.lastData, this.currentData) && !isEqual(this.currentData, this.initialData);
   }
 
   checkChanges() {
@@ -45,7 +50,8 @@ export default class BaseForm extends BaseDocument {
     if (!this.checkChanges()) return;
 
     const handleSuccess = (r) => {
-      this.lastData = _.cloneDeep(this.currentData);
+      this.lastData = cloneDeep(this.currentData);
+      this.initialData = cloneDeep(this.currentData);
       if (options.success) options.success(r);
     };
 
@@ -55,7 +61,11 @@ export default class BaseForm extends BaseDocument {
       body: this.#getFormData(true),
       success: handleSuccess,
       error: (r) => {
-        if (options.error) options.error(r);
+        if (options.error){
+          options.error(r);
+        }else{
+          loopar.throw(r);
+        }
       },
       freeze: true
     });

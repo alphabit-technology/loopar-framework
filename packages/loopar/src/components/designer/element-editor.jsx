@@ -9,7 +9,7 @@ import Tab from "@tab";
 import { getMetaFields } from "@@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import { FormWrapper } from "@context/form-provider";
-import _ from "lodash";
+import { isEqual } from 'es-toolkit/predicate';
 
 function mergeGroups(...arrays) {
   const groupMap = new Map();
@@ -101,7 +101,7 @@ export function ElementEditor() {
       Object.entries(elements).forEach(([field, props]) => {
         if (dontHaveMetaElements.includes(field)) return null;
         if (!props.element) return props;
-        formFields[data.key + field] = data[field];
+        formFields[data.key + field] = (data[field] || props?.data?.default_value)
       });
     });
 
@@ -110,7 +110,7 @@ export function ElementEditor() {
 
   const prevData = useRef(__FORM_FIELDS__);
   const saveData = (_data) => {
-    if(!prevData.current || _.isEqual(prevData.current, _data)) return;
+    if(!prevData.current || isEqual(prevData.current, _data)) return;
 
     prevData.current = { ..._data };
 
@@ -172,7 +172,7 @@ export function ElementEditor() {
                             data={{
                               ...props.data,
                               name: data.key + field,
-                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " "))
+                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
                             }}
                             //onChange={saveData}
                           />

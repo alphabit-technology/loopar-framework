@@ -39,8 +39,8 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
 
     style = {
       ...style || {},
-      transitionDelay: `${(data?.delay || 0) * 1000}ms`,
-      transitionDuration: `${(data?.duration || 3) * 1000}ms`,
+      transitionDelay: `${(data?.animation_delay || 0) * 1000}ms`,
+      transitionDuration: `${(data?.animation_duration || 3) * 1000}ms`,
     };
   }
   

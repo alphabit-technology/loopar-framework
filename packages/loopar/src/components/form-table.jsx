@@ -1,7 +1,7 @@
 import loopar from "loopar";
 import BaseInput from "@base-input"
 import {MetaComponent} from "@meta-component";
-import _  from "lodash";
+import { isEqual } from "es-toolkit/predicate";
 
 import { useFieldArray } from 'react-hook-form';
 import { useFormContext } from "@context/form-provider";
@@ -281,7 +281,7 @@ const FormTableMiddleware = memo(function FormTableMiddleware(props) {
     if (!newRows) return;
     newRows.rows = newRows.rows.filter(row => row.id);
 
-    if (!_.isEqual(newRows.rows, prevRows.current)) {
+    if (!isEqual(newRows.rows, prevRows.current)) {
       prevRows.current = newRows.rows;
       clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => onChange(newRows.rows), 300);

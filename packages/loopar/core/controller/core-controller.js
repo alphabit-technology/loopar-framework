@@ -4,7 +4,7 @@ import express from "express";
 import AuthController from "./auth-controller.js";
 import { loopar } from "loopar";
 import { titleize } from "inflection";
-import _ from "lodash";
+import {merge} from "es-toolkit/object";
 
 export default class CoreController extends AuthController {
   //error = {};
@@ -96,7 +96,7 @@ export default class CoreController extends AuthController {
   }
 
   /* async render(meta) {
-    return _.merge(meta, {
+    return merge(meta, {
       data: { file }
     });
   } */
@@ -119,7 +119,7 @@ export default class CoreController extends AuthController {
   }
 
   async render(meta) {
-    return _.merge(meta, {
+    return merge(meta, {
       key: this.getKey(),
       instance: this.getInstance(),
       meta: {

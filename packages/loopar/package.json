@@ -13,5 +13,14 @@
     "bin/",
     "core/",
     "src/"
-  ]
+  ],
+  "dependencies": {
+    "pm2": "6.0.13",
+    "@pm2/io": "6.1.0",
+    "cli-table3": "0.6.5",
+    "inquirer": "^9.2.0",
+    "ora": "^7.0.0",
+    "chalk": "^5.3.0",
+    "es-toolkit": "v1.43.0"
+  }
 }

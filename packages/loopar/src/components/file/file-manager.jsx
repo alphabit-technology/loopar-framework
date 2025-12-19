@@ -217,7 +217,7 @@ class FileManager {
     if (file.src && (file.src.includes("data:") || file.src.includes("http"))) {
       return encodeURI(file.src);
     }
-    return encodeURI("/assets/public/images/" + ((preview && ext !== "svg") ? "thumbnails/" : '') + file.name);
+    return encodeURI("/assets/public/images/" + ((preview && !["svg", "ico"].includes(ext)) ? "thumbnails/" : '') + file.name);
   }
 
   getImage(data = {}, field, avatar = null) {

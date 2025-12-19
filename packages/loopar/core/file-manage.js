@@ -177,7 +177,7 @@ toKebabCase(str) {
   }
 
   getConfigFile(fileName, _path = null) {
-    const pathFile = this.fileName((`./${_path || `config`}/${fileName}`), 'json');
+    const pathFile = this.fileName((`./${_path || path.join("sites", loopar.tenantId, "config")}/${fileName}`), 'json');
     try {
       const data = fs.readFileSync(path.resolve(loopar.pathRoot, pathFile), 'utf8');
       return loopar.utils.isJSON(data) ? JSON.parse(data) : {};
@@ -186,14 +186,14 @@ toKebabCase(str) {
     }
   }
 
-  getAppData(appName) {
-    return this.getConfigFile("installer", loopar.makePath('apps', appName), null);
-  }
-
-  async setConfigFile(fileName, data, path = null) {
-    const dirPath = path || `config`;
+  async setConfigFile(fileName, data, p = null) {
+    const dirPath = p || path.join("sites", loopar.tenantId, `config`);
 
     await this.makeFile(dirPath, fileName, JSON.stringify(data, null, 2), 'json');
+  }
+
+  getAppData(appName) {
+    return this.getConfigFile("installer", loopar.makePath('apps', appName), null);
   }
 }
 

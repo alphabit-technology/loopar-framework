@@ -33,7 +33,7 @@ export default class AuthController {
     if (workspace == "loopar") return true;
 
     const user = await loopar.auth.award();
-  
+
     if (user) {
       if (workspace == "auth") {
         if (action == "logout") return true;

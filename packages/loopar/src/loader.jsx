@@ -1,6 +1,6 @@
 import { WorkspaceLoader } from "@loopar/workspace-loader";
 import { MetaComponentsLoader } from "@loopar/components-loader";
-import React, { useEffect, lazy, useState, use } from "react";
+import { useEffect, lazy, useState } from "react";
 
 import { loopar } from "loopar";
 
@@ -74,7 +74,7 @@ const ErrorMessage = (props) => {
 
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
               <p className="text-xs text-blue-800 dark:text-blue-300">
-                <strong>💡 Tip:</strong> If the issue persists after checking the configuration, 
+                <strong>💡</strong> If the issue persists after checking the configuration, 
                 try clearing your cache or contact the development team for assistance.
               </p>
             </div>

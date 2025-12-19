@@ -23,13 +23,17 @@ const PAGE_SIZE = 20;
 
 export function Select({ 
   search, 
+  loadMore,
+  pagination = {},
   data, 
   onSelect, 
   options = [], 
   selected = {}, 
   field,
   isLoading = false,
-  error = null 
+  error = null,
+  isLocal = true,
+  ...props
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
@@ -40,6 +44,7 @@ export function Select({
   const containerRef = useRef(null);
   const observerRef = useRef(null);
   const sentinelRef = useRef(null);
+  const isLoadingMoreRef = useRef(false);
 
   const paginatedRows = useMemo(() => {
     const pages = {};
@@ -50,17 +55,37 @@ export function Select({
     return pages;
   }, [options]);
 
-  const totalPages = useMemo(() => {
+  const totalLocalPages = useMemo(() => {
     return Math.ceil(options.length / PAGE_SIZE);
   }, [options.length]);
 
-  const loadMoreRows = useCallback(() => {
-    if (currentPage < totalPages) {
-      startTransition(() => {
-        setCurrentPage(prev => prev + 1);
-      });
+  const hasMore = useMemo(() => {
+    if (isLocal) {
+      return currentPage < totalLocalPages;
     }
-  }, [currentPage, totalPages]);
+    return pagination.hasMore || false;
+  }, [isLocal, currentPage, totalLocalPages, pagination.hasMore]);
+
+  const loadMoreRows = useCallback(async () => {
+    if (isLoadingMoreRef.current || isLoading) return;
+    
+    if (isLocal) {
+      if (currentPage < totalLocalPages) {
+        startTransition(() => {
+          setCurrentPage(prev => prev + 1);
+        });
+      }
+    } else {
+      if (pagination.hasMore && loadMore) {
+        isLoadingMoreRef.current = true;
+        try {
+          await loadMore();
+        } finally {
+          isLoadingMoreRef.current = false;
+        }
+      }
+    }
+  }, [isLocal, currentPage, totalLocalPages, pagination.hasMore, loadMore, isLoading]);
 
   useEffect(() => {
     startTransition(() => {
@@ -70,7 +95,7 @@ export function Select({
   }, [options, paginatedRows]);
 
   useEffect(() => {
-    if (!paginatedRows[currentPage] || !open) return;
+    if (!isLocal || !paginatedRows[currentPage] || !open) return;
     
     startTransition(() => {
       setVisibleRows(prevRows => {
@@ -86,7 +111,12 @@ export function Select({
         return uniqueRows;
       });
     });
-  }, [currentPage, open, paginatedRows]);
+  }, [isLocal, currentPage, open, paginatedRows]);
+
+  useEffect(() => {
+    if (isLocal) return;
+    setVisibleRows(options);
+  }, [isLocal, options]);
 
   useEffect(() => {
     if (!open || visibleRows.length === 0) return;
@@ -97,13 +127,11 @@ export function Select({
     }
 
     const setupObserver = () => {
-      if (!sentinelRef.current) {
-        return;
-      }
+      if (!sentinelRef.current) return;
 
       const observer = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && currentPage < totalPages) {
+          if (entries[0].isIntersecting && hasMore && !isLoading) {
             loadMoreRows();
           }
         },
@@ -127,7 +155,7 @@ export function Select({
         observerRef.current = null;
       }
     };
-  }, [open, currentPage, totalPages, visibleRows.length, loadMoreRows]);
+  }, [open, hasMore, visibleRows.length, loadMoreRows, isLoading]);
 
   const openHandler = useCallback((shouldOpen) => {
     setOpen(shouldOpen);
@@ -170,6 +198,7 @@ export function Select({
 
   const renderOption = useMemo(() => {
     if (current.value) {
+      if(props.renderOption) return props.renderOption(current)
       return current.formattedValue || current.label || current.value;
     }
     return (
@@ -224,8 +253,15 @@ export function Select({
     return renderButton({ disabled: true });
   }
 
-  const showLoading = isLoading || (isPending && visibleRows.length === 0);
-  const hasMorePages = currentPage < totalPages;
+  const showLoading = isLoading && visibleRows.length === 0;
+  const showLoadingMore = isLoading && visibleRows.length > 0;
+
+  const paginationInfo = useMemo(() => {
+    if (isLocal) {
+      return { current: currentPage, total: totalLocalPages };
+    }
+    return { current: pagination.page || 1, total: pagination.pages || 1 };
+  }, [isLocal, currentPage, totalLocalPages, pagination]);
 
   return (
     <Popover open={open} onOpenChange={openHandler}>
@@ -257,13 +293,13 @@ export function Select({
             </div>
           )}
           
-          {showLoading && visibleRows.length === 0 && (
+          {showLoading && (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           )}
           
-          {!showLoading && !error && visibleRows.length === 0 && (
+          {!isLoading && !error && visibleRows.length === 0 && (
             <CommandEmpty>No results found.</CommandEmpty>
           )}
           
@@ -291,7 +327,7 @@ export function Select({
                       isSelected && "bg-accent"
                     )}
                   >
-                    <span className="flex-1 truncate">{value}</span>
+                    <span className="flex-1 truncate">{props.renderOption ? props.renderOption(option) : value}</span>
                     <CheckIcon
                       className={cn(
                         "ml-auto h-4 w-4 shrink-0",
@@ -302,16 +338,24 @@ export function Select({
                 );
               })}
               
-              {hasMorePages && (
+              {hasMore && (
                 <div 
                   ref={sentinelRef} 
                   className="w-full py-2 flex items-center justify-center"
                   style={{ minHeight: '40px' }}
                 >
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </span>
+                  {showLoadingMore ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        Loading more...
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      Page {paginationInfo.current} of {paginationInfo.total}
+                    </span>
+                  )}
                 </div>
               )}
             </CommandGroup>

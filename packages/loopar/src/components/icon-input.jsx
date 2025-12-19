@@ -1,58 +1,99 @@
-import BaseInput from "@base-input";
+import BaseInput from "./input/base-input.jsx";
 import Select from "@select";
-import * as LucideIcons from "lucide-react";
 import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
-//import { iconNames } from 'lucide-react/dynamic.mjs';
+import * as preloadedIcons from "@app/auto/preloaded-icons";
+import loopar from "loopar";
+import { useState, useEffect } from "react";
+let iconsCache = {}
 
-//import {iconNames} from "lucide-react/dynamic.js";
-
-const BaseIcons1 = {
-  XLogo: PiXLogo,
-  XLogoBold: PiXLogoBold,
-  XLogoFill: PiXLogoFill,
-  XlogoThin: PiXLogoThin,
-  ...LucideIcons
-};
-
-/* iconNames.forEach(i => {
-  BaseIcons1[i] = i
-})
-
-console.log(iconNames); */
-
-const BaseIcons = Object.keys(BaseIcons1).filter(icon => !icon.includes("Icon") && !icon.includes("Lucide"));
-
-export const BaseIcon = ({ icon, className }) => {
-  const Icon = BaseIcons1[icon] || null;
-  if(!Icon) return null;
-  return <Icon className={className} />;
+const extraIcons = {
+  PiXLogo,
+  PiXLogoBold,
+  PiXLogoFill,
+  PiXLogoThin
 }
 
-export default function IconInput(props) {
-  const { renderInput, data={ label: "Icon", name: "icon", value: ""} } = BaseInput(props);
-  
-  const options = BaseIcons.map((icon) => {
-    return {
-      value: icon,
-      formattedValue: <div className="flex align-middle"><BaseIcon icon={icon} className="w-7 h-7"/><div className="pl-2 my-1">{icon}</div></div>,
+export const DynamicIcon = ({ icon, className }) => {
+  const [svg, setSvg] = useState(iconsCache?.[icon?.value] || null);
+  const value = icon?.value;
+
+  useEffect(() => {
+    if (!value) return;
+    
+    if (preloadedIcons[value] || extraIcons[value]) return;
+    
+    if (iconsCache?.[value]) {
+      setSvg(iconsCache[value]);
+      return;
     }
-  });
+
+    if (icon.formattedValue && typeof icon.formattedValue === 'string') {
+      iconsCache = iconsCache || {};
+      iconsCache[value] = icon.formattedValue;
+      setSvg(icon.formattedValue);
+      return;
+    }
+
+    loopar.send({
+      action: '/desk/Icon Manager/getSvg',
+      params: { name: value },
+      success: (r) => {
+        if (r.svg) {
+          iconsCache = iconsCache || {};
+          iconsCache[value] = r.svg;
+          setSvg(r.svg);
+        }
+      },
+      freeze: false
+    });
+  }, [value, icon?.formattedValue]);
+
+  if (!value) return <div className={className} />;
+
+  if (preloadedIcons[value]) {
+    const PIcon = preloadedIcons[value];
+    return <PIcon className={className} />;
+  }
+
+  if (extraIcons[value]) {
+    const PIcon = extraIcons[value];
+    return <PIcon className={className} />;
+  }
+
+  if (svg) {
+    const styledSvg = svg.replace(
+      /class="[^"]*"/,
+      `class="${className || ''} lucide-icon"`
+    );
+    return <span dangerouslySetInnerHTML={{ __html: styledSvg }} />;
+  }
+
+  return <div className={className} />;
+};
+
+export default function IconInput(props) {
+  const { renderInput, data = { label: "Icon", name: "icon", value: "" } } = BaseInput(props);
 
   return renderInput(field => {
     return (
       <Select
         data={{
           ...data,
-          options: options,
+          options: "Icon Manager",
           description: <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://lucide.dev/icons/" target="_blank">Lucide React</a></label>,
         }}
         value={field.value}
-        formattedValue={<div className="flex align-middle"><BaseIcon icon={field.value} className="w-7 h-7"/><div className="pl-2 my-1">{field.value}</div></div>}
+        renderOption={(option) => (
+          <div className="flex align-middle">
+            <DynamicIcon icon={option} className="w-7 h-7" />
+            <div className="pl-2 my-1">{option.label || option.value}</div>
+          </div>
+        )}
         dontHaveLabel={props.dontHaveLabel}
         simpleInput={props.simpleInput}
       />
-    )
+    );
   });
 }
 
-IconInput.metaFields = () => {return BaseInput.metaFields()}
+IconInput.metaFields = () => BaseInput.metaFields();

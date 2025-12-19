@@ -14,6 +14,8 @@ export default function MetaSelect(props) {
   const model = useRef(null);
   const abortControllerRef = useRef(null);
   const fieldRef = useRef(null);
+  const paginationRef = useRef({ page: 1, limit: 20, total: 0, pages: 0 });
+  const currentQueryRef = useRef("");
   
   const { renderInput, data } = BaseInput(props);
 
@@ -104,7 +106,7 @@ export default function MetaSelect(props) {
     return model.current?.value;
   }, []);
 
-  const getServerData = useCallback((q) => {
+  const getServerData = useCallback((q, page = 1, append = false) => {
     if (data.disabled) return Promise.resolve();
     
     if (abortControllerRef.current) {
@@ -119,17 +121,41 @@ export default function MetaSelect(props) {
     return new Promise((resolve, reject) => {
       loopar.send({
         action: `/desk/${getModel()}/search`,
-        params: { q },
+        params: { 
+          q,
+          page,
+          limit: paginationRef.current.limit
+        },
         signal: abortControllerRef.current.signal,
         success: (r) => {
           titleFields.current = r.title_fields;
+          
+          if (r.pagination) {
+            paginationRef.current = {
+              ...paginationRef.current,
+              ...r.pagination,
+              page
+            };
+          }
+          
           const preparedRows = getPrepareOptions(
-            r.rows.map(row => ({ 
+            r.rows.map(row => ({
               value: row.name, 
+              formattedValue: row.formattedValue,
               label: row 
             }))
           );
-          setRows(preparedRows);
+          
+          setRows(prevRows => {
+            if (append && page > 1) {
+              const newRows = [...prevRows, ...preparedRows];
+              return Array.from(
+                new Map(newRows.map(item => [item?.value, item])).values()
+              ).filter(Boolean);
+            }
+            return preparedRows;
+          });
+          
           setIsLoading(false);
           resolve(preparedRows);
         },
@@ -152,6 +178,8 @@ export default function MetaSelect(props) {
     if (data.disabled) return Promise.resolve();
 
     const q = target?.target?.value || "";
+    currentQueryRef.current = q;
+    paginationRef.current.page = 1;
   
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -177,14 +205,27 @@ export default function MetaSelect(props) {
         
         if (delay) {
           searchTimeoutRef.current = setTimeout(() => {
-            getServerData(q).then(resolve).catch(() => resolve([]));
+            getServerData(q, 1, false).then(resolve).catch(() => resolve([]));
           }, 200);
         } else {
-          getServerData(q).then(resolve).catch(() => resolve([]));
+          getServerData(q, 1, false).then(resolve).catch(() => resolve([]));
         }
       }
     });
   }, [data.disabled, isLocal, builtOptions, getServerData]);
+
+  const loadMore = useCallback(() => {
+    if (isLocal || isLoading) return Promise.resolve();
+    
+    const { page, pages } = paginationRef.current;
+    
+    if (page >= pages) {
+      return Promise.resolve();
+    }
+    
+    const nextPage = page + 1;
+    return getServerData(currentQueryRef.current, nextPage, true);
+  }, [isLocal, isLoading, getServerData]);
 
   useEffect(() => {
     return () => {
@@ -206,6 +247,11 @@ export default function MetaSelect(props) {
     };
   }, [rows, data.value_descriptive, props.formattedValue, buildOption]);
 
+  const pagination = useMemo(() => ({
+    ...paginationRef.current,
+    hasMore: !isLocal && paginationRef.current.page < paginationRef.current.pages
+  }), [isLocal, rows]);
+
   return renderInput((field) => {
     fieldRef.current = field;
     
@@ -216,12 +262,15 @@ export default function MetaSelect(props) {
           field={field}
           options={rows}
           search={search}
+          loadMore={loadMore}
+          pagination={pagination}
           data={data}
           onSelect={field.onChange}
           selected={currentOption(field.value)}
           isLoading={isLoading}
           error={error}
           isLocal={isLocal}
+          renderOption={props.renderOption}
         />
         {(data.description && props.simpleInput !== true) && (
           <FormDescription>{data.description}</FormDescription>

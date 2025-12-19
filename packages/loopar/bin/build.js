@@ -48,16 +48,11 @@ const allApps = tenants.map(tenantId => {
 
   try {
     installedApps = Object.keys(JSON.parse(fs.readFileSync(installedAppsPath, 'utf8')));
-  } catch (err) {
-    /* if (err.code === 'ENOENT') {
-      console.log("Installed apps not found:", installedAppsPath);
-    } else {
-      console.error("Error reading installed apps file:", err);
-    } */
-  }
+  } catch (err) {}
 
   return {
-    name: tenantId,
+    namespace: path.basename(process.cwd()),
+    name: tenantId, 
     script: 'node_modules/loopar/bin/pm2-wrapper.js',
     env: { 
       NODE_ENV: NODE_ENV || "development",
@@ -70,7 +65,7 @@ const allApps = tenants.map(tenantId => {
     }
   };
 });
-const apps = allApps.find(app => app.name === 'core');
+const apps = allApps.find(app => app.name === 'dev');
 
 export { 
   apps,

@@ -1,7 +1,7 @@
 'use strict';
 
 import cookieParser from "cookie-parser";
-import useragent from "express-useragent";
+import { express as useragent } from "express-useragent";
 import express from "express";
 import { loopar } from "../loopar.js";
 import Router from "./router/router.js";
@@ -9,13 +9,13 @@ import path from "pathe";
 import compression from 'compression';
 import serveStatic from 'serve-static';
 import { createServer as createViteServer } from 'vite';
-import tenantSessionMiddleware from "./tenant-session.js"
+import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
+const server = new express();
 
 
 export class Server extends Router {
-  express = express;
-  server = new express();
+  server = server;
   url = null;
   isProduction = process.env.NODE_ENV == 'production';
   uploadPath = "uploads";
@@ -24,30 +24,33 @@ export class Server extends Router {
 
   async initialize() {
     if (this.isProduction) {
-      this.server.use(compression());
+      server.use(compression());
 
-      this.server.use(zstdMiddleware({
+      server.use(zstdMiddleware({
         root: 'dist/client',
-        priority: ['zst', 'br', 'gz'],
+        priority: ['zst', 'br', 'gz'], // Esto ya busca .br y .gz
       }));
+      /* server.use(zstdMiddleware({
+        root: 'dist/client',
+        priority: ['br', 'gz'],
+      })); */
     } else {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
           hmr: {
             protocol: 'ws',
-            host: 'localhost',
             port: parseInt(process.env.PORT) + 10000,
           }
         },
         appType: 'custom'
       });
 
-      this.server.use(this.vite.middlewares);
+      server.use(this.vite.middlewares);
     }
 
     await this.#exposePublicDirectories();
-    this.server.use(useragent.express());
+    server.use(useragent());
     
     this.#initializeSession();
     this.route();
@@ -55,51 +58,48 @@ export class Server extends Router {
   }
 
   #initializeSession() {
-    this.server.use(cookieParser());
-    this.server.use(this.express.json());
-    this.server.use(this.express.urlencoded({ extended: true }));
-    this.server.use(tenantSessionMiddleware);
+    server.use(cookieParser());
+    server.use(express.json());
+    server.use(express.urlencoded({ extended: true }));
+    server.use(tenantContextMiddleware);
   }
 
   async #exposePublicDirectories() {
     if (process.env.NODE_ENV == 'production') {
-      this.server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
+      server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
     }
 
-    this.server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, "public")));
-    this.server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
+    server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, "public")));
+    server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
     /* because need to define directory like images */
-    this.server.use("/assets/public/images", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
+    server.use("/assets/public/images", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
 
-    this.server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, "public")));
-    this.server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, "public")));
+    server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    server.use("/assets/public/theme.css", serveStatic(path.join(loopar.tenantPath, "theme.css")));
     /* because need to define directory like images */
-    this.server.use("/assets/public/images", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    server.use("/assets/public/images", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
 
     await this.exposeClientAppFiles();
   }
 
   async exposeClientAppFiles(appName) {
     if (loopar.__installed__) {
-      //const installedsApps = await loopar.db.getAll("App", ["name"], appName ? { "=": { name: appName } } : null);
-
       for (const app of loopar.installedApps) {
         const appPath = loopar.makePath(loopar.pathRoot, "apps", app, this.uploadPath, "public");
 
         console.log("Exposing public directory for: " + app)
-        this.server.use("/assets/public", serveStatic(appPath));
-        this.server.use("/assets/public/images", serveStatic(appPath));
+        server.use("/assets/public", serveStatic(appPath));
+        server.use("/assets/public/images", serveStatic(appPath));
       }
     }
   }
 
   #start() {
-    loopar.server = this;
     const port = process.env.PORT;
-
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
-    this.server.listen(port, () => {
+    server.listen(port, () => {
       console.log("Server is started in " + port + installMessage);
     });
   }

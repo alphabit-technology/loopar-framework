@@ -1,7 +1,7 @@
 'use strict';
 import { loopar, parseDocument } from "loopar";
 import { Sequelize, Op} from '@sequelize/core';
-import Connector from "./core/sequalize/connector.js";
+import Connector from "./core/sequelize/connector.js";
 
 function whereToSqlString(sequelize, whereObj, model = null) {
   try {

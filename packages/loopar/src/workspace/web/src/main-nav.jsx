@@ -35,6 +35,8 @@ export function MainNav() {
   }, [menuItems, activeParentMenu]);
 
   const handleSetOpenNav = (e) => {
+    e.preventDefault();
+    e.stopPropagation()
     setOpenNav(!openNav)
   }
 

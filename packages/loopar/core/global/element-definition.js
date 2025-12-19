@@ -70,6 +70,7 @@ export const elementsDefinition = {
     { element: "menu_content", icon: "PanelRight" },
     { element: "fragment", icon: "Scan" },
     { element: "container", icon: "Dock" },
+    { element: "panel", icon: "PanelBottom" },
   ],
   [DESIGN_ELEMENT]: [
     { element: "image", icon: "Image" },

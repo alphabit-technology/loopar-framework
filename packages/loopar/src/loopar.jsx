@@ -13,6 +13,7 @@ class Loopar extends Router {
   Components = {};
   #loadedMeta = {};
   generatedColors = {};
+  iconsCache={}
 
   constructor() {
     super();
@@ -76,13 +77,13 @@ class Loopar extends Router {
     this.emit('dialog', {
       type: type || "error",
       title: title,
-      content: content || message || status,
+      content: content || message || description || status,
     });
     
     if(throwError){
-      throw new Error(message);
+      throw new Error(message || description || status);
     }else{
-      console.error("LOOPAR: uncaughtException", message);
+      console.error("LOOPAR: uncaughtException", message || description || status);
     }
   }
 
@@ -112,7 +113,7 @@ class Loopar extends Router {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0; // Convierte a 32bit integer
+        hash |= 0;
       }
       return hash;
     }

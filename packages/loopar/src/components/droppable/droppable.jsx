@@ -7,8 +7,8 @@ import MetaComponent from "@meta-component";
 import { useDragAndDrop } from "./DragAndDropContext";
 import { DroppableContextProvider, useDroppable } from "./DroppableContext";
 const UP = 'up';
-import _ from "lodash";
-import memoize from 'lodash.memoize';
+import { memoize } from "es-toolkit/function"
+import { isEqual } from "es-toolkit/predicate";
 
 function DroppableContainer({ data = {}, children, className, Component = "div", ...props }) {
   const [elements, setElements] = useState(props.elements || []);
@@ -29,7 +29,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   const prevElements = useRef(props.elements);
 
   const handleSetElements = (elements) => {
-    if(_.isEqual(prevElements.current, elements)) return;
+    if(isEqual(prevElements.current, elements)) return;
     prevElements.current = elements;
     setElements(elements);
   }

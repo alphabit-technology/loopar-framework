@@ -5,20 +5,18 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
-import { Cookie, Session } from "./server/session.js";
 import jwt from 'jsonwebtoken';
 import Auth from './auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
 import { Server } from './server/server.js';
 import { fileManage } from './file-manage.js';
+import { cookieManager, sessionManager } from './server/router/request-context.js';
 
 export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
-  session = new Session();
-  #cookie = new Cookie();
   setTailwindTemp = setTailwindTemp;
   utils = Helpers;
 
@@ -37,29 +35,22 @@ export class Loopar extends Document {
   }){
     this.tenantId = tenantId;
     this.tenantPath = this.makePath(this.pathRoot, "sites", tenantId);
-    //this.tenantPath = tenantPath;
     this.pathCore = `${process.cwd()}/packages/loopar`
     this.id = "loopar-"+sha1(tenantId);
     this.installedApps = installedApps;
     this.appsBasePath = appsBasePath;
 
-    //console.log(["Loopar instance created", this.pathRoot, this.id]);
-
     this.auth = new Auth(
       this.authTokenName,
-      this.cookie, 
       this.getUser.bind(this),
       this.disabledUser.bind(this)
     );
     
     await this.initialize();
-    //this.tenantPath = t
 
     await this.server.initialize({
       tenantId,
-      //tenantPath,
       installedApps,
-      //appsBasePath
     });
   }
 
@@ -71,9 +62,9 @@ export class Loopar extends Document {
    
     await this.db.initialize();
     await this.build();
-    //await this.buildIcons();
+    await this.buildIcons();
 
-    //await tailwinInit();
+    await tailwinInit(this.tenantId);
   }
   
   get authTokenName() {
@@ -93,11 +84,11 @@ export class Loopar extends Document {
   }
 
   get cookie() {
-    return this.#cookie;
+    return cookieManager;
   }
 
-  set cookie(cookie) {
-    this.#cookie = cookie;
+  get session() {
+    return sessionManager;
   }
 
   set server(server) {
@@ -147,13 +138,14 @@ export class Loopar extends Document {
 
   getDbConfig() {
     if (this.#dbConfig) return this.#dbConfig;
-    this.#dbConfig = fileManage.getConfigFile('db.config', `sites/${this.tenantId}`);
+   
+    this.#dbConfig = fileManage.getConfigFile('db.config');
     return this.#dbConfig;
   }
 
   async setDbConfig(config) {
     this.#dbConfig = config;
-    return await fileManage.setConfigFile('db.config', config, `sites/${this.tenantId}`);
+    return await fileManage.setConfigFile('db.config', config);
   }
 
   async systemsSettings() {
@@ -182,7 +174,7 @@ export class Loopar extends Document {
   }
 
   async disabledUser(user_id) {
-    if (!this.__installed__ && this.installing && user_id === "Administrator") return false;
+    if ((!this.__installed__ || this.installing) || (user_id === "Administrator")) return false;
 
     const status = await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
       .select('disabled').first();

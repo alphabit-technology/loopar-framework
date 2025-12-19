@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState, useCallback } from 'react';
 import CookiesContext from './context';
 
 export default function useCookies(name) {
@@ -8,9 +8,22 @@ export default function useCookies(name) {
     throw new Error('Missing <CookiesProvider>');
   }
 
-  if (name) {
-    return [manager.get(name), manager.set.bind(manager, name)];
-  }
+  const [value, setValue] = useState(() => 
+    name ? manager.get(name) : manager.getAll()
+  );
 
-  return [manager.getAll(), manager.set.bind(manager)];
+  const setCookie = useCallback((newValue) => {
+    const resolvedValue = typeof newValue === 'function' 
+      ? newValue(value) 
+      : newValue;
+    
+    if (name) {
+      manager.set(name, resolvedValue);
+    } else {
+      manager.set(resolvedValue);
+    }
+    setValue(resolvedValue);
+  }, [manager, name, value]);
+
+  return [value, setCookie];
 }

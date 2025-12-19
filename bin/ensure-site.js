@@ -2,10 +2,9 @@
 import fs from 'fs/promises';
 import { existsSync, readdirSync } from 'fs';
 import path from 'path';
-import inquirer from 'inquirer';
 
-async function ensureCoreSite() {
-  const sitesDir = path.join(process.cwd(), 'sites', 'core');
+async function ensureDevSite() {
+  const sitesDir = path.join(process.cwd(), 'sites', 'dev');
   
   if (!existsSync(sitesDir)) {
     await fs.mkdir(sitesDir, { recursive: true });
@@ -13,18 +12,15 @@ async function ensureCoreSite() {
 
   const sites = readdirSync(sitesDir).filter(f => !f.startsWith('.'));
 
-  if (sites.length > 0) {
-    console.log(["Site core already exists"])
-    return;
-  }
+  if (sites.length > 0) return;
 
-  console.log('⚠️  No sites found. Creating core site...\n');
+  console.log('⚠️ Creating dev site...\n');
 
-  await createCoreSite();
+  await createDevSite();
 }
 
-async function createCoreSite() {
-  const siteName = 'core';
+async function createDevSite() {
+  const siteName = 'dev';
   const port = process.env.PORT || 3000;
   const sitePath = path.join(process.cwd(), 'sites', siteName);
 
@@ -48,27 +44,8 @@ NODE_ENV=development
     JSON.stringify(installedApps, null, 2)
   );
 
-  console.log(`✅ Default site created: sites/${siteName}`);
+  console.log(`✅ Ddev site created: sites/${siteName}`);
   console.log(`   URL: http://localhost:${port}\n`);
 }
 
-async function createSiteInteractive() {
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Site name:',
-      default: 'core'
-    },
-    {
-      type: 'number',
-      name: 'port',
-      message: 'Port:',
-      default: 3000
-    }
-  ]);
-
-  await createSite(answers.name, answers.port);
-}
-
-ensureCoreSite().catch(console.error);
+ensureDevSite().catch(console.error);

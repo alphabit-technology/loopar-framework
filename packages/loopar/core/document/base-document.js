@@ -3,7 +3,6 @@
 import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
 import {Op} from '@sequelize/core';
-import _ from 'lodash';
 
 function combineSequelizeConditions(...conditions) {
   const validConditions = conditions.filter(cond => {

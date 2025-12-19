@@ -162,8 +162,9 @@ export default class Installer extends BaseDocument {
       const [constructor, name] = e.split(':');
 
       if (!await loopar.db.count(constructor, name)) {
-        console.log([`Inserting ${constructor}:${name}`]);
+        console.log([`Inserting ${constructor}:${name}`, ent]);
         const doc = await loopar.newDocument(constructor, { ...ent, __document_status__: "Active" });
+        doc.name = name;
         await doc.save({ validate: false });
       } else if (reinstall || postInstall) {
         console.log([`Updating ${constructor}:${name}`]);

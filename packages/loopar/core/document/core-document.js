@@ -285,7 +285,7 @@ export default class CoreDocument {
       }
     }
 
-    return new Promise(async (resolve) => {
+   // return new Promise(async (resolve) => {
       this.setUniqueName();
 
       if (validate) await this.validate();
@@ -326,8 +326,8 @@ export default class CoreDocument {
         await fileManager.save();
       }
 
-      resolve();
-    });
+      //resolve();
+    //});
   }
 
   fieldsName() {
@@ -505,6 +505,7 @@ export default class CoreDocument {
         name: __ENTITY__.name,
         module: __ENTITY__.module,
         doc_structure: __ENTITY__.doc_structure,
+        ...(this.is_builder ? {is_builder: true} : {})
       },
       ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
       //data: await this.rawValues(),

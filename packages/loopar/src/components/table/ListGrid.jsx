@@ -4,7 +4,7 @@ import { useTable } from "./TableContext.jsx"
 import BaseTable from "./BaseTable.jsx"
 import {useCallback, useMemo} from "react";
 import {Trash2Icon} from "lucide-react";
-import {BaseIcon} from "@icon-input";
+import {DynamicIcon} from "@icon-input";
 
 import {
   Avatar,
@@ -95,7 +95,7 @@ export function ListGrid(props) {
             ...col,
             render: (row) => {
               return (
-                <BaseIcon className="w-7 h-7" icon={row[col.data.name]} />
+                <DynamicIcon className="w-7 h-7" icon={row[col.data.name]} />
               )
             }
           }

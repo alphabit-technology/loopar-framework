@@ -1,12 +1,15 @@
 {
-  "name": "rollup-env",
+  "name": "builder-env",
   "version": "1.0.0",
   "type": "module",
-  "devDependencies": {
+  "dependencies": {
+    "compression": "1.8.1",
     "@rollup/plugin-commonjs": "29.0.0",
     "@rollup/plugin-dynamic-import-vars": "2.1.5",
     "@rollup/plugin-image": "3.0.3",
     "rollup-plugin-critical": "1.0.15",
-    "rollup-plugin-visualizer": "^6.0.1"
+    "rollup-plugin-visualizer": "^6.0.1",
+    "cssnano": "7.1.2",
+    "terser": "5.44.1"
   }
 }

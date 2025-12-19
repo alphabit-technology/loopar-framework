@@ -7,7 +7,8 @@ import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
 import { useHidden } from "@context/@/hidden-context";
 import { useDesigner } from "@context/@/designer-context";
-import _ from "lodash";
+import { isEqual } from 'es-toolkit/predicate';
+import { debounce } from 'es-toolkit/function';
 import { useDocument } from "@context/@/document-context";
 
 const inputReducer = (state, action) => {
@@ -78,7 +79,7 @@ const BaseInput = (props) => {
     if (!designerMode) return;
 
     const newData = getInitialData();
-    if (!_.isEqual(prevData.current, newData)) {
+    if (!isEqual(prevData.current, newData)) {
       prevData.current = newData;
       dispatch({ type: 'SET_DATA', payload: newData });
     }
@@ -133,7 +134,7 @@ const BaseInput = (props) => {
   }, [state.data, state.isInvalid, parentHidden]);
 
   useEffect(() => {
-    debouncedOnChangeRef.current = _.debounce((event) => {
+    debouncedOnChangeRef.current = debounce((event) => {
       onChange?.(event);
       onChanged?.(event);
     }, 10);
@@ -178,7 +179,7 @@ const BaseInput = (props) => {
 
     const newValue = extractValue(event);
 
-    if (!_.isEqual(prevFieldValue.current, newValue)) {
+    if (!isEqual(prevFieldValue.current, newValue)) {
       dispatch({ type: 'SET_FIELD_VALUE', payload: newValue });
       prevFieldValue.current = newValue;
     }
@@ -215,7 +216,7 @@ const BaseInput = (props) => {
             
             const newValue = extractValue(e);
             
-            if (_.isEqual(prevFieldValue.current, newValue)) return;
+            if (isEqual(prevFieldValue.current, newValue)) return;
             
             if (field.onChange) {
               field.onChange(e);

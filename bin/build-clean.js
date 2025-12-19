@@ -1,5 +1,4 @@
 import { rm } from 'fs/promises';
-const framework = process.cwd();
 
 async function cleanDistFolder() {
   try {

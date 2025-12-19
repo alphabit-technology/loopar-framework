@@ -4,6 +4,7 @@ import fs from 'fs'
 import path from "pathe";
 import { fileURLToPath } from "url";
 const tailwindClasses = {};
+import { loopar } from "../loopar.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,11 +39,15 @@ export async function setTailwindTemp(toElement, classes) {
   await fileManage.makeFile('app/auto', 'tailwind', fn, 'jsx', true);
 }
 
-export async function generatedBaseCss() {
-  await fileManage.makeFile('config', 'tailwind', getCss(), 'css');
-}
+export async function generatedBaseCss(tenantId) {
+  if(fs.existsSync(path.join(loopar.pathRoot, 'sites', tenantId, 'theme.css'))) {
+    return;
+  }
 
-export async function tailwinInit() {
-  await generatedBaseCss();
+  await fileManage.makeFile(path.join('sites', tenantId), 'theme', getCss(), 'css');
+} 
+
+export async function tailwinInit(tenantId) {
+  await generatedBaseCss(tenantId);
   await setTailwindTemp();
 }

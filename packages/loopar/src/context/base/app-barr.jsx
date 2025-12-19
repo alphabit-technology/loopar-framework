@@ -108,7 +108,7 @@ export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...pro
           </div>
         </div>
         <div className="flex flex-row space-x-1 overflow-auto" style={{height: "fit-content"}}>
-          {Object.values(customActions)}
+          {...Object.values(customActions)}
           <FormPrimaryActions Document={Document}/>
           {listPrimaryActions()}
         </div>

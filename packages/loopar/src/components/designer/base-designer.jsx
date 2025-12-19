@@ -4,7 +4,6 @@ import { BaseFormContext } from "@context/form-provider";
 import { useCallback, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
-import {Tailwind} from "@app/auto/tailwind";
 import Tab from "@tab";
 import Tabs from "@tabs";
 import {useCookies} from "@services/cookie";
@@ -15,7 +14,7 @@ import elementManage from "@@tools/element-manage";
 import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx";
 import {Prompt} from "./src/prompt/Prompt.jsx";
 import MarkdownPreview from '@uiw/react-markdown-preview';
-import {elementsNames, elementsDict} from "@global/element-definition"
+import {elementsNames} from "@global/element-definition"
 
 const updateE = (structure, data, key, merge) => {
   return [...structure].map((el) => {
@@ -249,28 +248,7 @@ export const BaseDesigner = (props) => {
     });
   }
 
-  const sendPrompt = (prompt, document_type) => {
-    setCurrentPrompt(prompt);
-
-    loopar.send({
-      action: `/desk/GPT/prompt`,
-      params: { prompt, document_type },
-      body: { prompt, document_type },
-      success: (res) => {
-        setMeta(res.message);
-        setSendingPrompt(false);
-      },
-      always: () => {
-        //setSendingPrompt(false);
-      }
-    });
-  }
-
   const isDesigner = typeof designerMode != "undefined" ? !designerMode : true;
-
-  useEffect(() => {
-    //console.debug(["Designer mode", metaComponents]);
-  }, [metaComponents]);
 
   return (
     <DesignerContext.Provider
@@ -342,7 +320,6 @@ export const BaseDesigner = (props) => {
               <div
                 className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
-                <Tailwind/>
                 <DragAndDropProvider 
                   metaComponents={metaComponents} 
                   data={data}

@@ -8,7 +8,7 @@ import {
   useRef
 } from "react";
 
-import _ from "lodash";
+import { isEqual } from "es-toolkit/predicate";
 
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
@@ -101,7 +101,7 @@ export const TableProvider = ({
       return;
     }
 
-    if(_.isEqual(searchData, lastSearch.current) && !force) return;
+    if(isEqual(searchData, lastSearch.current) && !force) return;
     lastSearch.current = searchData;
 
     loopar.method(

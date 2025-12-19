@@ -2,6 +2,7 @@
 import pm2 from "pm2";
 import Table from "cli-table3";
 import chalk from "chalk";
+import path from "pathe";
 
 const colorStatus = status => {
   status = status || "";
@@ -68,6 +69,7 @@ pm2.connect(async err => {
         head: [
           chalk.cyan("id"),
           chalk.cyan("pid"),
+          chalk.cyan("namespace"),
           chalk.cyan("site"),
           chalk.cyan("port"),
           chalk.cyan("hmr"),
@@ -112,6 +114,7 @@ pm2.connect(async err => {
           table.push([
             chalk.white(proc.pm_id ?? "-"),
             chalk.white(proc.pid ?? "-"),
+            chalk.white(path.basename(process.cwd())),
             chalk.magenta(name),
             chalk.cyan(port),
             chalk.blue(hmr),

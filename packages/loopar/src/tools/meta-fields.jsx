@@ -1,134 +1,192 @@
-
 import loopar from "loopar";
+
+const normalizeOptions = (options) => {
+  if (!options) return [];
+  
+  if (!Array.isArray(options) && typeof options === 'object') {
+    return Object.entries(options).map(([key, label]) => ({
+      option: key,
+      value: label
+    }));
+  }
+  
+  return options.map(opt => {
+    if (typeof opt === 'string') {
+      return { option: opt, value: opt.charAt(0).toUpperCase() + opt.slice(1) };
+    }
+    if (opt.option !== undefined) return opt;
+    if (opt.value !== undefined) {
+      return { option: opt.value, value: opt.label || opt.value };
+    }
+    return opt;
+  });
+};
+
+const createOptions = (...values) => {
+  return values.map(v => {
+    if (typeof v === 'string') {
+      return { option: v, value: v.charAt(0).toUpperCase() + v.slice(1).replace(/-/g, ' ') };
+    }
+    if (Array.isArray(v)) {
+      return { option: v[0], value: v[1] };
+    }
+    return v;
+  });
+};
+
+const OPTIONS = {
+  alignment: createOptions("left", "center", "right"),
+  vertical_alignment: createOptions("top", "center", "bottom"),
+  size: createOptions(
+    ["xs", "Extra Small"],
+    ["sm", "Small"],
+    ["md", "Medium"],
+    ["lg", "Large"],
+    ["xl", "Extra Large"]
+  ),
+  background_size: createOptions("cover", "contain", "auto"),
+  blend_mode: createOptions(
+    "normal", "multiply", "screen", "overlay",
+    "darken", "lighten", "color-dodge", "color-burn",
+    "hard-light", "soft-light", "difference", "exclusion",
+    "hue", "saturation", "color", "luminosity"
+  ),
+};
+
+const DEFAULTS = {
+  background_size: "cover",
+  background_blend_mode: "overlay",
+  animation_duration: 1000,
+  animation_delay: 0,
+};
 
 export const getMetaFields = (data) => {
   return [
     {
-      group: 'form',
+      group: "content",
       elements: {
-        label: { element: INPUT },
-        name: { element: INPUT },
-      }
-    },
-    {
-      group: 'general',
-      elements: {
-        id: {
+        label: {
           element: INPUT,
-          data: {
-            description: "Is a unique identifier for element"
-          }
+          data: { label: "Label" },
+        },
+        name: {
+          element: INPUT,
+          data: { label: "Name" },
         },
         text: {
           element: TEXTAREA,
+          data: { label: "Text" },
+        },
+      },
+    },
+    {
+      group: "style",
+      elements: {
+        class: {
+          element: TAILWIND,
           data: {
-            description: "Is a value for inner text of element"
-          }
+            label: "Tailwind",
+            rows: 6,
+            to_element: data.key,
+          },
         },
         background_image: {
           element: IMAGE_INPUT,
-          height: 200
+          data: { label: "Background", height: 150 },
         },
-        background_color: { element: COLOR_PICKER },
+        background_color: {
+          element: COLOR_PICKER,
+          data: { label: "Color" },
+        },
         background_blend_mode: {
-          element: SELECT, data: {
-            options: [
-              { option: 'normal', value: 'Normal' },
-              { option: 'multiply', value: 'Multiply' },
-              { option: 'screen', value: 'Screen' },
-              { option: 'overlay', value: 'Overlay' },
-              { option: 'darken', value: 'Darken' },
-              { option: 'lighten', value: 'Lighten' },
-              { option: 'color-dodge', value: 'Color Dodge' },
-              { option: 'color-burn', value: 'Color Burn' },
-              { option: 'hard-light', value: 'Hard Light' },
-              { option: 'soft-light', value: 'Soft Light' },
-              { option: 'difference', value: 'Difference' },
-              { option: 'exclusion', value: 'Exclusion' },
-              { option: 'hue', value: 'Hue' },
-              { option: 'saturation', value: 'Saturation' },
-              { option: 'color', value: 'Color' },
-              { option: 'luminosity', value: 'Luminosity' },
-            ],
-            selected: 'overlay'
-          }
+          element: SELECT,
+          data: {
+            label: "Blend Mode",
+            options: OPTIONS.blend_mode,
+            selected: DEFAULTS.background_blend_mode,
+          },
         },
         background_size: {
           element: SELECT,
           data: {
-            options: [
-              { option: 'cover', value: 'Cover' },
-              { option: 'contain', value: 'Contain' },
-              { option: 'auto', value: 'Auto' },
-            ],
-            selected: 'cover'
-          }
-        },
-        align: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: 'left', value: 'Left' },
-              { option: 'center', value: 'Center' },
-              { option: 'right', value: 'Right' },
-            ],
-            selected: 'left'
-          }
-        },
-        size: {
-          element: SELECT,
-          data: {
-            options: [
-              { option: 'xs', value: 'Extra Small' },
-              { option: 'sm', value: 'Small' },
-              { option: 'md', value: 'Medium' },
-              { option: 'lg', value: 'Large' },
-              { option: 'xl', value: 'Extra Large' },
-            ],
-            selected: 'md'
-          }
-        },
-        class: {
-          element: TAILWIND,
-          data: {
-            rows: 10,
-            to_element: data.key,
-            label: "Tailwind"
-          }
+            label: "Background Size",
+            options: OPTIONS.background_size,
+            selected: DEFAULTS.background_size,
+          },
         },
         style: {
           element: TEXTAREA,
           data: {
-            description: "You can use raw css code here",
-          }
+            label: "Custom CSS",
+            rows: 3,
+          },
+        },
+        hidden: {
+          element: SWITCH,
+          data: { label: "Hidden" },
+        },
+        disabled: {
+          element: SWITCH,
+          data: { label: "Disabled" },
+        },
+      },
+    },
+    {
+      group: "animation",
+      elements: {
+        animation: {
+          element: SELECT,
+          data: {
+            label: "Effect",
+            options: [
+              { option: "", value: "None" },
+              ...normalizeOptions(loopar.animations()),
+            ],
+            selected: "",
+          },
+        },
+        animation_duration: {
+          element: INPUT,
+          data: {
+            label: "Duration (ms)",
+            format: "number",
+            default_value: DEFAULTS.animation_duration,
+          },
+        },
+        animation_delay: {
+          element: INPUT,
+          data: {
+            label: "Delay (ms)",
+            format: "number",
+            default_value: DEFAULTS.animation_delay,
+          },
+        },
+      },
+    },
+    {
+      group: "advanced",
+      elements: {
+        id: {
+          element: INPUT,
+          data: {
+            label: "ID",
+            description: "Unique identifier",
+          },
+        },
+        collapsible: {
+          element: SWITCH,
+          data: { label: "Collapsible" },
         },
         display_on: {
           element: TEXTAREA,
           data: {
-            description: "Define where the element will be displayed",
-          }
+            label: "Display Condition",
+            rows: 2,
+          },
         },
-        hidden: { element: SWITCH },
-        disabled: { element: SWITCH },
-        collapsible: { element: SWITCH }
-      }
+      },
     },
-    {
-      group: 'animation',
-      elements: {
-        info: <label
-          style={{ paddingTop: 10 }}
-          className="text-danger"
-        >Animations allowed in View only</label>,
-        animation: {
-          element: "select",
-          data: {
-            options: loopar.animations(),
-          }
-        },
-        animation_duration: { element: INPUT, data: { format: 'number' } },
-        animation_delay: { element: INPUT, data: { format: 'number' } }
-      }
-    }
-  ]
+  ];
 };
+
+export { OPTIONS, DEFAULTS, createOptions, normalizeOptions };

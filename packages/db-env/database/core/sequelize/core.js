@@ -136,7 +136,6 @@ function generateColumnSQL(field, action, dialect) {
     const data = field.data;
     const columnName = escapeId(data.name, dialect);
     
-    // Manejo especial para ID con auto-increment
     if ((data.name === 'id' || field.element === 'id') && action === 'create') {
         if (dialect.includes('mysql')) {
             return `${columnName} INT UNSIGNED AUTO_INCREMENT PRIMARY KEY`;
@@ -334,6 +333,7 @@ export default class Core {
   }
 
   async createTable(tableName, fields) {
+    console.log(["Create Table", tableName, fields])
     const columns = this.generateColumnsSQL(fields, 'create');
     const indexes = this.generateIndexes(fields);
     

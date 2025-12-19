@@ -46,11 +46,8 @@ export function generateErrorTemplate(err) {
  * @returns {boolean} True if the URL is a static asset
  */
 export function isAssetUrl(pathname) {
-  // Fast path: exclude API routes
   if (pathname.includes("/api/") || pathname.includes("/admin/")) return false;
 
-  // Fast path: find last dot
-  console.log(pathname);
   const lastDotIndex = pathname.lastIndexOf('.');
   if (lastDotIndex === -1) return false;
   
@@ -120,7 +117,6 @@ export function buildUrl(href, currentURL) {
   const urlStructure = ["workspace", "document", "action"];
   const urlArray = currentURL.split("/");
 
-  // Create URL object using reduce (functional approach)
   const urlObject = urlStructure.reduce((obj, key, index) => {
     obj[key] = urlArray[index + 1];
     return obj;
@@ -157,7 +153,6 @@ export const RouteParsing = {
   parseParams(pathname, workspaceName, loopar) {
     const routeStructure = { host: null, document: null, action: null };
     
-    // Adjust pathname based on workspace
     const adjustedPathname = ["web", "auth"].includes(workspaceName) 
       ? pathname 
       : pathname.split("/").slice(1).join("/");

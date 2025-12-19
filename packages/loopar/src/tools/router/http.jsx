@@ -106,12 +106,18 @@ export default class HTTP {
 
       return await withFreeze(fetchPromise);
     } catch (error) {
-      options.error && options.error(error);
-      
-      self.throw({
-        title: error.title || error.code || 'Undefined Error',
-        message: error.message || error.description || 'Undefined Error',
-      });
+
+      if(options.error){
+         options.error({
+          title: error.title || error.code || 'Undefined Error',
+          message: error.message || error.description || 'Undefined Error',
+        });
+      }else{
+        self.throw({
+          title: error.title || error.code || 'Undefined Error',
+          message: error.message || error.description || 'Undefined Error',
+        });
+      }
     } finally {
       options.always?.();
     }

@@ -6,7 +6,7 @@ import fileManager from "./file-manager";
 import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, Loader2Icon } from "lucide-react";
 import loopar from "loopar";
 import { validateFile } from "@@file/defaults";
-import _ from "lodash";
+import { isEqual } from 'es-toolkit/predicate';
 
 const origins = [
   { name: "Local", icon: MonitorUpIcon, color: "bg-secondary" },
@@ -83,7 +83,7 @@ export const FileDrop = (props) => {
     }));
 
     Promise.all(promises).then((newPreviews) => {
-      !_.isEqual(previews, newPreviews) && setPreviews(newPreviews);
+      !isEqual(previews, newPreviews) && setPreviews(newPreviews);
       setLoaded(true);
       setDropping(false);
     }).catch((error) => {

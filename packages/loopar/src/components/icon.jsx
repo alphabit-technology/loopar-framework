@@ -50,7 +50,6 @@ const MetaIcon = memo((props) => {
   }
   
   if (typeof window === 'undefined') {
-    // Estamos en el servidor - mostrar placeholder
     return (
       <div {...newProps} className={containerClassName}>
         <IconPlaceholder className={iconClassName} />

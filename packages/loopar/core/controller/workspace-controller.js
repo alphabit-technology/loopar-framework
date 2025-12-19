@@ -71,14 +71,20 @@ export default class WorkspaceController extends AuthController {
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
+
+    const faviconSrc =__META__.name == "web" ? loopar.utils.JSONparse(__META__.web_app?.favicon, [{}])[0].name : null;
+
+    html = html.replace(`<!--__favicon__-->`, `<link rel="icon" href="/assets/public/${faviconSrc || "loopar-favicon.ico"}"/>`)
+
+    html = html.replace(`<!--__theme-definition__-->`, `
+      <link rel="stylesheet" href="/assets/public/theme.css"/>
+    `)
+
     html = html.replace(`<!--__loopar-meta-data__-->`, `
       <script id="__loopar-meta-data__" type="application/json">
         ${JSON.stringify(__META__)}
       </script>
     `);
-
-    
-    
 
     html = html.replace(`<!--__loopar-env__-->`, `
       <script>

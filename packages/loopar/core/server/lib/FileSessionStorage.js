@@ -46,11 +46,12 @@ export class FileSessionStore extends Store {
       
       callback(null, session);
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      callback(null, null);
+      /* if (err.code === 'ENOENT') {
         callback(null, null);
       } else {
         callback(err);
-      }
+      } */
     }
   }
   

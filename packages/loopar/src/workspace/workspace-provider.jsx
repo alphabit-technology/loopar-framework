@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, useTransition } from "react"
 import { loopar } from "loopar";
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useCookies } from "@services/cookie";
 import { AppSourceLoader } from "@loopar/loader";
 
@@ -41,6 +41,7 @@ export function WorkspaceProvider({
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [isPending, startTransition] = useTransition();
   const __META_CACHE__ = {};
+  const navigate = useNavigate();
   
   const lastFetchedPath = useRef(pathname);
   const isInitialMount = useRef(true);
@@ -144,7 +145,7 @@ export function WorkspaceProvider({
   }, [loadDocument, goToErrorView]);
 
   const fetchDocument = useCallback((url) => {
-    const route = window.location;
+    const route = url || window.location;
     if (route.hash.includes("#")) return Promise.resolve();
     const preloadedMeta = __META_CACHE__[loopar.utils.urlInstance(route)] ? true : false;
 
@@ -153,12 +154,13 @@ export function WorkspaceProvider({
         action: route.pathname,
         params: `${route.search.length ? route.search + "&" : "?"}preloaded=${preloadedMeta}`,
         success: r => {
+          lastFetchedPath.current = pathname;
           setDocument(r);
           resolve();
         },
         error: e => {
-          console.error("Error on fetch document", e);
-          reject(e);
+          navigate(lastFetchedPath.current.pathname);
+          loopar.throw(e);
         }
       });
     });
@@ -208,13 +210,12 @@ export function WorkspaceProvider({
 
     if (lastFetchedPath.current === pathname) return;
     
-    lastFetchedPath.current = pathname;
     fetchDocument(pathname);
 
     if (__WORKSPACE_NAME__ === "web") {
       setOpenNav(false);
     }
-  }, [pathname, loaded, fetchDocument, __WORKSPACE_NAME__, setOpenNav]);
+  }, [pathname, loaded, fetchDocument, __WORKSPACE_NAME__]);
 
   useEffect(() => {
     const Document = getActiveDocument();

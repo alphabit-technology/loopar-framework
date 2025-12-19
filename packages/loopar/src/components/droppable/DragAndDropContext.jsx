@@ -2,7 +2,7 @@ import { useContext, createContext, useState, useEffect, useRef } from 'react';
 import { DragGhost } from "./DragGhost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
-import _ from 'lodash';
+import { isEqual } from 'es-toolkit/predicate';
 const DOWN = 'down';
 const UP = 'up';
 
@@ -87,7 +87,7 @@ export const DragAndDropProvider = (props) => {
   const containerRef = useRef(null);
 
   const handleSetElements = (elements) => {
-    if(_.isEqual(elementsRef.current, elements)) return;
+    if(isEqual(elementsRef.current, elements)) return;
 
     elementsRef.current = elements;
     setElements(elements);

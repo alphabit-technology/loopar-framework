@@ -17,7 +17,7 @@ const ComponentNamePreview = ({Component}) => {
 
   return (
     <div className="text-xs text-secondary italic text-gray-400">
-      <span className="text-blue-500 font-bold">
+      <span className="text-blue-400 font-bold">
       {"<"}
       {toComponentName(Component)}
       {"/>"}
@@ -70,7 +70,7 @@ export function ElementTitle({element, active, ...props}) {
         </> 
       )}
       <Button
-        variant="primary"
+        variant="secondary"
         size="xs"
         className="h-5 rounded-none pointer-events-none rounded-tr px-1"
       >
