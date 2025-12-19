@@ -140,5 +140,8 @@ export default defineConfig(({ command }) => {
       treeShaking: true,
       drop: isDev ? [] : ['console', 'debugger'],
     },
+    server: {
+      allowedHosts: true
+    }
   };
 });
