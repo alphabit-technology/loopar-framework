@@ -100,7 +100,7 @@ export default class BaseSlider extends Preassembled {
   }
 
   getTransition() {
-    return loopar.getAnimation(this.data.transition, "flip");
+    return loopar.(this.data.transition, "flip");
   }
 
   getSliders() {

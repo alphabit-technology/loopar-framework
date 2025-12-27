@@ -5,18 +5,18 @@ const normalizeOptions = (options) => {
   
   if (!Array.isArray(options) && typeof options === 'object') {
     return Object.entries(options).map(([key, label]) => ({
-      option: key,
-      value: label
+      value: key,
+      label: typeof value == "string" ? value : key
     }));
   }
   
   return options.map(opt => {
     if (typeof opt === 'string') {
-      return { option: opt, value: opt.charAt(0).toUpperCase() + opt.slice(1) };
+      return { value: opt, label: opt.charAt(0).toUpperCase() + opt.slice(1) };
     }
-    if (opt.option !== undefined) return opt;
+    if (opt.value !== undefined) return opt;
     if (opt.value !== undefined) {
-      return { option: opt.value, value: opt.label || opt.value };
+      return { value: opt.value, label: opt.label || opt.value };
     }
     return opt;
   });
@@ -25,10 +25,10 @@ const normalizeOptions = (options) => {
 const createOptions = (...values) => {
   return values.map(v => {
     if (typeof v === 'string') {
-      return { option: v, value: v.charAt(0).toUpperCase() + v.slice(1).replace(/-/g, ' ') };
+      return { value: v, label: v.charAt(0).toUpperCase() + v.slice(1).replace(/-/g, ' ') };
     }
     if (Array.isArray(v)) {
-      return { option: v[0], value: v[1] };
+      return { value: v[0], label: v[1] };
     }
     return v;
   });
@@ -139,7 +139,7 @@ export const getMetaFields = (data) => {
           data: {
             label: "Effect",
             options: [
-              { option: "", value: "None" },
+              { value: "", label: "None" },
               ...normalizeOptions(loopar.animations()),
             ],
             selected: "",

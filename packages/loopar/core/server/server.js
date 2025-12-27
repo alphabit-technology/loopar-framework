@@ -11,6 +11,7 @@ import serveStatic from 'serve-static';
 import { createServer as createViteServer } from 'vite';
 import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
+import { requestContext } from './router/request-context.js';
 const server = new express();
 
 
@@ -28,12 +29,8 @@ export class Server extends Router {
 
       server.use(zstdMiddleware({
         root: 'dist/client',
-        priority: ['zst', 'br', 'gz'], // Esto ya busca .br y .gz
+        priority: ['zst', 'br', 'gz'],
       }));
-      /* server.use(zstdMiddleware({
-        root: 'dist/client',
-        priority: ['br', 'gz'],
-      })); */
     } else {
       this.vite = await createViteServer({
         server: {
@@ -58,6 +55,10 @@ export class Server extends Router {
   }
 
   #initializeSession() {
+    server.use((req, res, next) => {
+      requestContext.run({ req, res }, next);
+    });
+
     server.use(cookieParser());
     server.use(express.json());
     server.use(express.urlencoded({ extended: true }));
@@ -85,7 +86,7 @@ export class Server extends Router {
 
   async exposeClientAppFiles(appName) {
     if (loopar.__installed__) {
-      for (const app of loopar.installedApps) {
+      for (const app of Object.keys(loopar.installedApps)) {
         const appPath = loopar.makePath(loopar.pathRoot, "apps", app, this.uploadPath, "public");
 
         console.log("Exposing public directory for: " + app)

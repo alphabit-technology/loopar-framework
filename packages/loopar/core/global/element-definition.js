@@ -62,6 +62,7 @@ export const elementsDefinition = {
     { element: "row", icon: "Columns2" },
     { element: "col", icon: "Columns" },
     { element: "card", icon: "PanelTop" },
+    { element: "feature_card", icon: "PanelBoottom" },
     { element: "banner", icon: "GalleryHorizontalEnd" },
     { element: "banner_image", icon: "ImagePlus" },
     { element: "tabs", icon: "AppWindow" },

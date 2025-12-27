@@ -255,35 +255,56 @@ class Loopar extends Router {
   };
 
   animations(notContains) {
-    const animations = {
-      "random": "Random",
-      "fade-up": "Fade Up",
-      "fade-down": "Fade Down",
-      "fade-left": "Fade Left",
-      "fade-right": "Fade Right",
-      "fade-up-right": "Fade Up Right",
-      "fade-up-left": "Fade Up Left",
-      "fade-down-right": "Fade Down Right",
-      "fade-down-left": "Fade Down Left",
-      "flip-up": "Flip Up",
-      "flip-down": "Flip Down",
-      "flip-left": "Flip Left",
-      "flip-right": "Flip Right",
-      "slide-up": "Slide Up",
-      "slide-down": "Slide Down",
-      "slide-left": "Slide Left",
-      "slide-right": "Slide Right",
-      "zoom-in": "Zoom In",
-      "zoom-in-up": "Zoom In Up",
-      "zoom-in-down": "Zoom In Down",
-      "zoom-in-left": "Zoom In Left",
-      "zoom-in-right": "Zoom In Right",
-      "zoom-out": "Zoom Out",
-      "zoom-out-up": "Zoom Out Up",
-      "zoom-out-down": "Zoom Out Down",
-      "zoom-out-left": "Zoom Out Left",
-      "zoom-out-right": "Zoom Out Right",
-    };
+    const animations ={
+      "fade-up": {
+        initial: "opacity-0 translate-y-10",
+        visible: "opacity-100 translate-y-0",
+      },
+      "fade-down": {
+        initial: "opacity-0 -translate-y-10",
+        visible: "opacity-100 translate-y-0",
+      },
+      "fade-left": {
+        initial: "opacity-0 translate-x-10",
+        visible: "opacity-100 translate-x-0",
+      },
+      "fade-right": {
+        initial: "opacity-0 -translate-x-10",
+        visible: "opacity-100 translate-x-0",
+      },
+      "slide-up": {
+        initial: "translate-y-10",
+        visible: "translate-y-0",
+      },
+      "slide-down": {
+        initial: "-translate-y-10",
+        visible: "translate-y-0",
+      },
+      "slide-left": {
+        initial: "translate-x-10",
+        visible: "translate-x-0",
+      },
+      "slide-right": {
+        initial: "-translate-x-10",
+        visible: "translate-x-0",
+      },
+      "zoom-in": {
+        initial: "scale-90 opacity-0",
+        visible: "scale-100 opacity-100",
+      },
+      "zoom-out": {
+        initial: "scale-110 opacity-0",
+        visible: "scale-100 opacity-100",
+      },
+      "flip-up": {
+        initial: "opacity-0 rotateX-90",
+        visible: "opacity-100 rotateX-0",
+      },
+      "flip-down": {
+        initial: "opacity-0 rotateX--90",
+        visible: "opacity-100 rotateX-0",
+      },
+    }
 
     if (notContains) {
       return Object.keys(animations)
@@ -312,9 +333,9 @@ class Loopar extends Router {
       const transitions = Object.keys(this.animations(notContains)).filter(
         (animation) => animation !== "random"
       );
-      return transitions[Math.floor(Math.random() * transitions.length)];
+      return this.animations()[transitions[Math.floor(Math.random() * transitions.length)]]
     } else {
-      return animation;
+      return this.animations()[animation];
     }
   }
 }

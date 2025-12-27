@@ -9,6 +9,5 @@ if (!tenantId) {
 }
 
 await loopar.init({
-  tenantId,
-  installedApps: JSON.parse(process.env.INSTALLED_APPS),
+  tenantId
 });

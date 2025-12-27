@@ -100,7 +100,7 @@
 }
 
 @layer utilities {
-  @media (min-width: 1280px) {
+  @media (min-width: 768px) {
     .grid-container.dynamic {
       grid-template-columns: var(--column-layout);
     }

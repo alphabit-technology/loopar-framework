@@ -42,14 +42,6 @@ const allApps = tenants.map(tenantId => {
   const domain = envData.DOMAIN || "";
   const NODE_ENV = envData.NODE_ENV || "development";
 
-  const installedAppsPath = path.join(tenantPath, 'installed-apps.json');
-
-  let installedApps = [];
-
-  try {
-    installedApps = Object.keys(JSON.parse(fs.readFileSync(installedAppsPath, 'utf8')));
-  } catch (err) {}
-
   return {
     namespace: path.basename(process.cwd()),
     name: tenantId, 
@@ -60,7 +52,6 @@ const allApps = tenants.map(tenantId => {
       TENANT_PATH: tenantPath,
       DOMAIN: domain || "",
       PORT: port || "",
-      INSTALLED_APPS: installedApps,
       IS_LOOPAR: true
     }
   };

@@ -172,9 +172,8 @@ export function ElementEditor() {
                             data={{
                               ...props.data,
                               name: data.key + field,
-                              label: props.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
+                              label: props.data?.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
                             }}
-                            //onChange={saveData}
                           />
                         )}
                       />

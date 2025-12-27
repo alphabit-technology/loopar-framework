@@ -131,7 +131,7 @@ export class Middleware {
    */
   setupControllerMiddleware() {
     return async (req, res, next) => {
-      await this.makeController(req, res);
+      await this.makeController(req, res, next);
       const response = req.__WORKSPACE__;
 
       if (response?.redirect) {

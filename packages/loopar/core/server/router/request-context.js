@@ -1,9 +1,37 @@
-import { AsyncLocalStorage } from 'async_hooks';
+class AsyncLocalStorage{
+  #req = {};
+  #res = {}
 
-/**
- * AsyncLocalStorage instance for request context
- * Allows accessing req/res from anywhere without passing explicitly
- */
+  set req(req){
+    this.#req = req;
+  }
+
+  get req(){
+    return this.#req;
+  }
+
+  set res(res){
+    this.#res = res;
+  }
+
+  get res(){
+    return this.#res
+  }
+
+  getStore(){
+    return {
+      req: this.#req,
+      res: this.#res
+    }
+  }
+
+  run({req, res}={}, next){
+    this.req = req;
+    this.res = res;
+    next();
+  }
+}
+
 export const requestContext = new AsyncLocalStorage();
 
 /**

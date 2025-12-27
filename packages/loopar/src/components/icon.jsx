@@ -1,8 +1,19 @@
-import { lazy, Suspense, memo } from "react";
+import { lazy, Suspense, memo, useState, useEffect } from "react";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
 import { cn } from "@cn/lib/utils";
+
+import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
 import * as preloadedIcons from "@app/auto/preloaded-icons";
+let iconsCache = {}
+
+const extraIcons = {
+  PiXLogo,
+  PiXLogoBold,
+  PiXLogoFill,
+  PiXLogoThin
+}
+
 
 const iconCache = new Map();
 
@@ -27,7 +38,66 @@ const IconPlaceholder = memo(({ className }) => (
 
 IconPlaceholder.displayName = 'IconPlaceholder';
 
-const MetaIcon = memo((props) => {
+
+export const DynamicIcon = ({ icon, className }) => {
+  const [svg, setSvg] = useState(iconsCache?.[icon?.value] || null);
+  const value = icon?.value;
+
+  useEffect(() => {
+    if (!value) return;
+    
+    if (preloadedIcons[value] || extraIcons[value]) return;
+    
+    if (iconsCache?.[value]) {
+      setSvg(iconsCache[value]);
+      return;
+    }
+
+    if (icon.formattedValue && typeof icon.formattedValue === 'string') {
+      iconsCache = iconsCache || {};
+      iconsCache[value] = icon.formattedValue;
+      setSvg(icon.formattedValue);
+      return;
+    }
+
+    loopar.send({
+      action: '/desk/Icon Manager/getSvg',
+      params: { name: value },
+      success: (r) => {
+        if (r.svg) {
+          iconsCache = iconsCache || {};
+          iconsCache[value] = r.svg;
+          setSvg(r.svg);
+        }
+      },
+      freeze: false
+    });
+  }, [value, icon?.formattedValue]);
+
+  if (!value) return <div className={className} />;
+
+  if (preloadedIcons[value]) {
+    const PIcon = preloadedIcons[value];
+    return <PIcon className={className} />;
+  }
+
+  if (extraIcons[value]) {
+    const PIcon = extraIcons[value];
+    return <PIcon className={className} />;
+  }
+
+  if (svg) {
+    const styledSvg = svg.replace(
+      /class="[^"]*"/,
+      `class="${className || ''} lucide-icon"`
+    );
+    return <span dangerouslySetInnerHTML={{ __html: styledSvg }} />;
+  }
+
+  return <div className={className} />;
+};
+
+const MetaIcon = (props) => {
   const newProps = loopar.utils.renderizableProps(props);
   const { getSize } = ComponentDefaults(props);
   const data = props.data || {};
@@ -38,55 +108,10 @@ const MetaIcon = memo((props) => {
   const containerClassName = cn("p-0", size, newProps.className, rounded);
   const iconClassName = "w-full h-full";
   
-  const isLoaded = iconCache.has(iconName);
-  
-  if (isLoaded) {
-    const Icon = iconCache.get(iconName);
-    return (
-      <div {...newProps} className={containerClassName}>
-        <Icon className={iconClassName} />
-      </div>
-    );
-  }
-  
-  if (typeof window === 'undefined') {
-    return (
-      <div {...newProps} className={containerClassName}>
-        <IconPlaceholder className={iconClassName} />
-      </div>
-    );
-  }
-  
-  if (!iconCache.has(`lazy:${iconName}`)) {
-    const fileName = toKebabCase(iconName);
-    
-    iconCache.set(
-      `lazy:${iconName}`,
-      lazy(async () => {
-        try {
-          const module = await import(`lucide-react/dist/esm/icons/${fileName}.js`);
-          return { default: module.default };
-        } catch (error) {
-          if (iconCache.has('HelpCircle')) {
-            return { default: iconCache.get('HelpCircle') };
-          }
-          const fallback = await import('lucide-react/dist/esm/icons/help-circle.js');
-          return { default: fallback.default };
-        }
-      })
-    );
-  }
-  
-  const LazyIcon = iconCache.get(`lazy:${iconName}`);
-  
   return (
-    <div {...newProps} className={containerClassName}>
-      <Suspense fallback={<IconPlaceholder className={iconClassName} />}>
-        <LazyIcon className={iconClassName} />
-      </Suspense>
-    </div>
-  );
-});
+    <DynamicIcon icon={{value: data.icon}} className={containerClassName}/>
+  )
+};
 
 MetaIcon.displayName = 'MetaIcon';
 

@@ -90,6 +90,7 @@ export default class Installer extends BaseDocument {
       }
     }
 
+    await loopar.unsetApp(this.name);
     await loopar.buildRefs();
     console.log(`App ${this.app_name} uninstalled successfully!`);
     return `App ${this.app_name} uninstalled successfully!`;
@@ -122,9 +123,7 @@ export default class Installer extends BaseDocument {
     await this.installData(reinstall);
 
     loopar.installingApp = null;
-    const installedApps = loopar.getInstalledApps();
-    installedApps[this.app_name] = true;
-    loopar.setInstalledApps(installedApps);
+    await loopar.setApp({[this.app_name]: true});
     
     await loopar.build();
     console.log(`App ${this.app_name} installed successfully!`);

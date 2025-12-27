@@ -140,7 +140,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   const renderizableProps = loopar.utils.renderizableProps(props);
 
   const ClassNames = cn(
-    "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2",
+    "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2 pt-4",
     dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow h-full' : "",
     className,
     renderizableProps.className
@@ -156,10 +156,10 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       className={ClassNames}
     >
       {children}
-        <MetaComponent
-          elements={elements}
-          parentKey={data.key}
-        />
+      <MetaComponent
+        elements={elements}
+        parentKey={data.key}
+      />
     </div>
   );
 }

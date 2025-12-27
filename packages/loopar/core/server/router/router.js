@@ -6,6 +6,7 @@ import BaseController from '../../controller/base-controller.js';
 import { RouterUtils } from './router-utils.js';
 import { merge } from 'es-toolkit/object';
 import { Middleware } from "./middleware.js";
+import { requestContext } from './request-context.js';
 
 export default class Router extends Middleware {
   constructor(options) {
@@ -93,7 +94,6 @@ export default class Router extends Middleware {
     this.baseUrl = null;
 
     this.server.use(
-      this.setupRequestContextMiddleware(),
       this.setupAssetMiddleware(),
       this.setupNotFoundSourceMiddleware(),
       this.setupLoadHttpMiddleware(),
@@ -112,7 +112,7 @@ export default class Router extends Middleware {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async makeController(req, res) {
+  async makeController(req, res, next) {
     const params = req.__params__;
 
     if (req.tryToServePrivateFile) {
@@ -135,12 +135,15 @@ export default class Router extends Middleware {
     const ref = loopar.getRef(loopar.utils.Capitalize(params.document), false);
 
     if (!ref) {
-      return await this.handleDocumentNotFound(req, res, params);
+      loopar.throw({
+        code: 404,
+        message: `Document ${params.document} not found.`
+      });
     }
 
     params.document = ref.__NAME__;
 
-    return await this.executeController(req, res, params, ref);
+    return await this.executeController(req, res, next, params, ref);
   }
 
   /**
@@ -157,37 +160,13 @@ export default class Router extends Middleware {
   }
 
   /**
-   * Handles document not found errors
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   * @param {Object} params - Request parameters
-   */
-  async handleDocumentNotFound(req, res, params) {
-    if (req.method === 'POST') {
-      return this.renderAjax(res, {
-        code: 404,
-        message: `Document ${params.document} not found.`
-      });
-    }
-
-    const errControlled = new BaseController({ req, res });
-    errControlled.dictUrl = req._parsedUrl;
-    const e = await errControlled.getError(404, {
-      title: "Not found",
-      message: `Document ${params.document} not found`
-    });
-    req.__WORKSPACE__.Document = e;
-    return this.render(req, res, await this.App.render(req.__WORKSPACE__, true));
-  }
-
-  /**
    * Executes controller logic
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    * @param {Object} params - Request parameters
    * @param {Object} ref - Document reference
    */
-  async executeController(req, res, params, ref) {
+  async executeController(req, res, next, params, ref) {
     const makeController = async (query, body) => {
       const C = await fileManage.importClass(
         loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`)
@@ -230,8 +209,10 @@ export default class Router extends Middleware {
     const isMultipart = RouterUtils.isMultipartFormData(contentType);
 
     if (isMultipart) {
+
       return new Promise((resolve, reject) => {
         this.uploader(req, res, async err => {
+          requestContext.run({ req, res }, next);
           if (err) {
             reject(err);
             return;

@@ -9,13 +9,12 @@ import {
 import { Textarea } from "@cn/components/ui/textarea";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import loopar from "loopar"
-//import ScriptManager from "@tools/script-manager";
 
 const TAILWIND_CDN = "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4";
 
 export default function Tailwind(props) {
   const { renderInput, data } = BaseInput(props);
-  const [scriptStatus, setScriptStatus] = useState("idle"); // idle | loading | loaded | error
+  const [scriptStatus, setScriptStatus] = useState("idle");
   const loadAttempted = useRef(false);
 
   useEffect(() => {
@@ -36,7 +35,6 @@ export default function Tailwind(props) {
 
     setScriptStatus("loading");
 
-    // Agregar configuración ANTES del script - esto deshabilita preflight
     const configStyle = document.createElement('style');
     configStyle.setAttribute('type', 'text/tailwindcss');
     configStyle.textContent = `
@@ -73,7 +71,7 @@ export default function Tailwind(props) {
             {...data}
             placeholder={data.placeholder || data.label}
             {...field}
-            className="bg-transparent border border-input rounded-xm disabled:opacity-50"
+            className="bg-transparent border border-input rounded-xm disabled:opacity-50 w-full"
             rows={6}
             disabled={!isReady}
           />
@@ -95,6 +93,7 @@ export default function Tailwind(props) {
       )}
 
       <FormDescription className="flex flex-col border border-input rounded-xm p-2 bg-muted mt-2">
+      <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://tailwindcss.com/docs/installation/using-vite" target="_blank">Tailwind</a></label>
         <span className="text-muted-foreground text-xs">
           Use Tailwind classes like <code className="bg-muted px-1 rounded">bg-red-500</code>. 
           Custom classes require your own CSS file.

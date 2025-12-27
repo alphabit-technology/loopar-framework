@@ -76,7 +76,7 @@ export class Core extends Builder {
 
   getRefs(app, alls = false, e) {
     const refs = this.__REFS__;
-    const installedApps = alls ? [] : Object.keys(this.__INSTALLED_APPS__).map(
+    const installedApps = alls ? [] : Object.keys(this.installedApps).map(
       app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
     );
 

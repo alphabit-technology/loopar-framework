@@ -19,6 +19,7 @@ export class Loopar extends Document {
   pathRoot = process.cwd();
   setTailwindTemp = setTailwindTemp;
   utils = Helpers;
+  __INSTALLED_APPS__
 
   constructor() {
     super("Loopar");
@@ -30,14 +31,12 @@ export class Loopar extends Document {
 
   async init({
     tenantId,
-    installedApps,
     appsBasePath
   }){
     this.tenantId = tenantId;
     this.tenantPath = this.makePath(this.pathRoot, "sites", tenantId);
     this.pathCore = `${process.cwd()}/packages/loopar`
     this.id = "loopar-"+sha1(tenantId);
-    this.installedApps = installedApps;
     this.appsBasePath = appsBasePath;
 
     this.auth = new Auth(
@@ -48,10 +47,7 @@ export class Loopar extends Document {
     
     await this.initialize();
 
-    await this.server.initialize({
-      tenantId,
-      installedApps,
-    });
+    await this.server.initialize();
   }
 
   async initialize() {
@@ -108,12 +104,20 @@ export class Loopar extends Document {
     return regex.test(repository);
   }
 
-  getInstalledApps() {
-    return fileManage.getConfigFile('installed-apps', 'sites/' + this.tenantId);
+  get installedApps(){
+    this.__INSTALLED_APPS__ ??= fileManage.getConfigFile("installed-apps");
+    return this.__INSTALLED_APPS__
   }
 
-  setInstalledApps(apps) {
-    return fileManage.setConfigFile('installed-apps', apps, 'sites/' + this.tenantId);
+  async setApp(app) {
+    await fileManage.setConfigFile('installed-apps', {...this.installedApps, ...app});
+    this.__INSTALLED_APPS__ = fileManage.getConfigFile("installed-apps");
+  }
+
+  async unsetApp(app){
+    const installedApps = this.installedApps;
+    delete installedApps[app];
+    await fileManage.setConfigFile('installed-apps', installedApps);
   }
 
   gitAppOptions(app) {

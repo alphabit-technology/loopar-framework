@@ -213,11 +213,16 @@ export default function MetaLink(props) {
   const { class: dataClass, ...restData } = data;
   const className = cn(props.className, dataClass);
 
+  const getVariant = () => {
+    return VARIANTS[data.variant] || VARIANTS.default;
+  }
+
   return (
-    <Link 
+    <Link
       {...props} 
       {...restData} 
-      className={className} 
+      className={className}
+      variant={getVariant()}
       key={props.key || data.key || props.to}
     >
       {data.label}
@@ -245,8 +250,8 @@ MetaLink.metaFields = () => {
         element: SELECT,
         data: {
           options: Object.keys(VARIANTS).map((button) => ({
-            option: button,
             value: VARIANTS[button],
+            label: button
           })),
         },
       },

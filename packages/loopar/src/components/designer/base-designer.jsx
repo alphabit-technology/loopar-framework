@@ -37,18 +37,21 @@ const updateE = (structure, data, key, merge) => {
 };
 
 const fixMeta = (structure) => {
-
-  return [...structure].map((el) => {
-    el.data ??= {}
-    el.data.key ??= elementManage.getUniqueKey();
-    el.data.id ??= el.data.key;
-    el.data.name ??= el.data.key;
-    el.data.label ??= loopar.utils.Capitalize((el.data.name || el.data.key).replaceAll("_", " "));
-
-    el.elements = fixMeta(el.elements || []);
-
-    return {...el};
-  });
+  try {
+    return [...structure].map((el) => {
+      el.data ??= {}
+      el.data.key ??= elementManage.getUniqueKey();
+      el.data.id ??= el.data.key;
+      el.data.name ??= el.data.key;
+      el.data.label ??= loopar.utils.Capitalize((el.data.name || el.data.key).replaceAll("_", " "));
+  
+      el.elements = fixMeta(el.elements || []);
+  
+      return {...el};
+    });
+  } catch (error) {
+    loopar.throw(error)
+  }
 }
 
 const DesignerButton = () => {

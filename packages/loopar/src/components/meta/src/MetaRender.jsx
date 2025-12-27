@@ -4,7 +4,7 @@ import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import PureHTMLBlock from "@pure-html-block";
 import {SEORender} from "@seo-render";
-import {Animations } from "./meta";
+const Animations = loopar.animations();
 
 export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,13 +34,14 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
     className = cn(
       className,
       `transform transition-all ease-in-out`,
-      isVisible ? animation.visible : animation.initial
+      isVisible ? animation.visible : animation.initial,
+      data.class
     );
 
     style = {
       ...style || {},
-      transitionDelay: `${(data?.animation_delay || 0) * 1000}ms`,
-      transitionDuration: `${(data?.animation_duration || 3) * 1000}ms`,
+      transitionDelay: `${(data?.animation_delay || 0)}ms`,
+      transitionDuration: `${(data?.animation_duration || 3000)}ms`,
     };
   }
   

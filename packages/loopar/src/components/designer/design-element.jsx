@@ -1,13 +1,11 @@
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
-import { BoxIcon } from "lucide-react";
 import { useRef } from "react";
 import { useDragAndDrop } from "../droppable/DragAndDropContext";
 import Icon from "@icon";
 
 export function DesignElement(props){
   const element = props.element;
-  //const Icon = props.icon || BoxIcon;
   const draggableRef = useRef();
   const {setCurrentDragging, setInitializedDragging} = useDragAndDrop();
   const toElement =  element.element;

@@ -64,8 +64,8 @@ export function ComponentDefaults(props) {
     }
 
     setTimeout(() => {
-      updateElement(data.key, JSON.parse(JSON.stringify(newData)))
-    }, 0);
+      updateElement(data.key, JSON.parse(JSON.stringify(newData), true, false, true))
+    }, 100);
   }
 
   const elementsDict = () => {

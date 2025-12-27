@@ -68,7 +68,6 @@ export class Builder {
 
     this.__REFS__ = refs;
     this.__TYPES__ = types;
-    this.__INSTALLED_APPS__ = this.getInstalledApps();
   }
 
   makePath(...args) {
@@ -251,16 +250,6 @@ export class Builder {
     if (!fileManage.existFileSync(path.join('sites', this.tenantId, 'config', 'loopar.config.json'))) {
       await fileManage.setConfigFile('loopar.config', {});
     }
-
-    /* if (!fileManage.existFileSync(path.join('config', 'server.config.json'))) {
-      await fileManage.setConfigFile('server.config', {
-        "session": {
-          "saveUninitialized": false,
-          "cookie": { "maxAge": 86400000 },
-          "resave": false
-        }
-      });
-    } */
   }
 
   async buildGlobalEnvironment() {

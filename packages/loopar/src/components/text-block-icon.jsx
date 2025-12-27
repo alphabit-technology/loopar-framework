@@ -35,8 +35,8 @@ export default function TextBlockIcon(props) {
         <div
           className={"flex gap-2 items-center"}
         >
-          <div className={`rounded-full ${iconSize} bg-gray-100 dark:bg-gray-800`}>
-            <Icon className={`${iconSize}`} data={{ icon: data.icon }} />
+          <div className={`rounded-full ${iconSize} bg-primary`}>
+            <Icon className={`${iconSize} p-2`} data={{ icon: data.icon }} />
           </div>
           <div className={`font-bold text-2xl mb-2 ${orientation == "Vertical" ? "text-center" : ""}`}>
             {data.title}

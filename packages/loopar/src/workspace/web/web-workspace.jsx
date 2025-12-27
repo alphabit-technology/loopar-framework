@@ -68,16 +68,18 @@ const Layout = (({ ...props }) => {
               {props.children}
             </div>
           </div>
-          <footer
-            className="row-start-2 col-start-1 col-span-full py-6 border-t w-full"
-          >
-            <div className="flex flex-col items-center justify-between gap-4 md:flex-row w-ful">
-              {webApp.has_footer ? (
-                <Markdown className="w-full text-center" content={webApp.footer}/>
-              ) : null}
-              {webApp.has_copyright ? (
-                <Markdown className="w-full text-center" content={webApp.copyright}/>
-              ) : null}
+          <footer className="row-start-2 col-start-1 col-span-full py-6 border-t w-full bg-gradient-to-t to-transparent from-secondary">
+            <div className="flex flex-col w-full gap-0">
+              {webApp.has_footer && (
+                <div className="w-full">
+                  <Markdown content={webApp.footer}/>
+                </div>
+              )}
+              {webApp.has_copyright && (
+                <div className="w-full">
+                  <Markdown content={webApp.copyright}/>
+                </div>
+              )}
             </div>
           </footer>
         </section>

@@ -26,6 +26,7 @@ async function createDevSite() {
 
   await fs.mkdir(sitePath, { recursive: true });
   await fs.mkdir(path.join(sitePath, 'sessions'), { recursive: true });
+  await fs.mkdir(path.join(sitePath, 'config'), { recursive: true });
   await fs.mkdir(path.join(sitePath, 'public', 'uploads'), { recursive: true });
 
   const envContent = `PORT=${port}
@@ -37,12 +38,6 @@ NODE_ENV=development
 
   await fs.writeFile(path.join(sitePath, '.env'), envContent);
 
-  const installedApps = {};
-
-  await fs.writeFile(
-    path.join(sitePath, 'installed-apps.json'),
-    JSON.stringify(installedApps, null, 2)
-  );
 
   console.log(`✅ Ddev site created: sites/${siteName}`);
   console.log(`   URL: http://localhost:${port}\n`);

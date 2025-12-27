@@ -1,5 +1,6 @@
 import elementManage from "@@tools/element-manage";
-import fileManager from "@@file/file-manager";
+
+import fileManager from "@global/file-manager.js";
 import {loopar} from "loopar";
 import {useMemo} from "react";
 
@@ -49,7 +50,7 @@ export function prepareMeta(metaProps) {
       }
     }
 
-    if (data.background_image && Array.isArray(data.background_image) && data.background_image.length > 0) {
+    if (data.background_image && data.background_image.length > 0) {
       const src = getSrc();
 
       if (src && src.length > 0) {
@@ -162,7 +163,7 @@ export function extractFieldNames(condition) {
   return Array.from(matches);
 }
 
-export const Animations = {
+/* export const Animations = {
   "fade-up": {
     initial: "opacity-0 translate-y-10",
     visible: "opacity-100 translate-y-0",
@@ -211,4 +212,4 @@ export const Animations = {
     initial: "opacity-0 rotateX--90",
     visible: "opacity-100 rotateX-0",
   },
-};
+}; */
