@@ -67,11 +67,13 @@ export default function BannerImage(props){
   ];
 
   return (
-    <Preassembled
-      {...props}
-      defaultDescription={defaultDescription}
-      defaultElements={defaultElements}
-    />
+    <div className="p-4 lg:p-0">
+      <Preassembled
+        {...props}
+        defaultDescription={defaultDescription}
+        defaultElements={defaultElements}
+      />
+    </div>
   );
 }
 

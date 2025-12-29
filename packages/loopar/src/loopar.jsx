@@ -255,46 +255,46 @@ class Loopar extends Router {
   };
 
   animations(notContains) {
-    const animations ={
+    const animations = {
       "fade-up": {
-        initial: "opacity-0 translate-y-10",
+        initial: "opacity-0 translate-y-4",
         visible: "opacity-100 translate-y-0",
       },
       "fade-down": {
-        initial: "opacity-0 -translate-y-10",
+        initial: "opacity-0 -translate-y-4",
         visible: "opacity-100 translate-y-0",
       },
       "fade-left": {
-        initial: "opacity-0 translate-x-10",
+        initial: "opacity-0 translate-x-4",
         visible: "opacity-100 translate-x-0",
       },
       "fade-right": {
-        initial: "opacity-0 -translate-x-10",
+        initial: "opacity-0 -translate-x-4",
         visible: "opacity-100 translate-x-0",
       },
       "slide-up": {
-        initial: "translate-y-10",
-        visible: "translate-y-0",
+        initial: "opacity-0 translate-y-4",
+        visible: "opacity-100 translate-y-0",
       },
       "slide-down": {
-        initial: "-translate-y-10",
-        visible: "translate-y-0",
+        initial: "opacity-0 -translate-y-4",
+        visible: "opacity-100 translate-y-0",
       },
       "slide-left": {
-        initial: "translate-x-10",
-        visible: "translate-x-0",
+        initial: "opacity-0 translate-x-4",
+        visible: "opacity-100 translate-x-0",
       },
       "slide-right": {
-        initial: "-translate-x-10",
-        visible: "translate-x-0",
+        initial: "opacity-0 -translate-x-4",
+        visible: "opacity-100 translate-x-0",
       },
       "zoom-in": {
-        initial: "scale-90 opacity-0",
-        visible: "scale-100 opacity-100",
+        initial: "opacity-0 scale-95",
+        visible: "opacity-100 scale-100",
       },
       "zoom-out": {
-        initial: "scale-110 opacity-0",
-        visible: "scale-100 opacity-100",
+        initial: "opacity-0 scale-105",
+        visible: "opacity-100 scale-100",
       },
       "flip-up": {
         initial: "opacity-0 rotateX-90",

@@ -87,7 +87,7 @@ export default function Section(props) {
           >
             <Droppable
               {...props}
-              className="flex flex-col w-full"
+              className="flex flex-col w-full p-4 lg:p-0"
               style={{ gap: `${gap}rem` }}
             />
           </section>

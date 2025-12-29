@@ -129,6 +129,12 @@ export const getMetaFields = (data) => {
           element: SWITCH,
           data: { label: "Disabled" },
         },
+        text_align: {
+          element: SELECT,
+          data: {
+            options: OPTIONS.alignment
+          }
+        }
       },
     },
     {

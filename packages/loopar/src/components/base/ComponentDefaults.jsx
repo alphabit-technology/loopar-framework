@@ -44,7 +44,7 @@ export function ComponentDefaults(props) {
     }[size] || "w-1/12";
   }
 
-  const getTextAlign = (align = data.align) => {
+  const getTextAlign = (align = data.text_align) => {
     return {
       left: "text-left",
       center: "text-center",
