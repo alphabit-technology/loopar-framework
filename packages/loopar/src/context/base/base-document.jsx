@@ -171,6 +171,7 @@ export default class BaseDocument extends React.Component {
   }
 
   initScroll() {
+    if(this.props.inModal ) return;
     const scrollPosition = loopar.cookie.get(this.getPageKey()) || 0;
 
     window.scrollTo(0, scrollPosition);
@@ -178,6 +179,7 @@ export default class BaseDocument extends React.Component {
   }
 
   setScrollPosition() {
+    if(this.props.inModal ) return;
     loopar.cookie.set(this.getPageKey(), window.scrollY || window.pageYOffset);
   }
 

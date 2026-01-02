@@ -32,6 +32,7 @@ const FileInput = (props) => {
                     files={files}
                     origins={props.origins}
                     onChange={handleChange}
+                    inModal={true}
                   />
                 </div>
               </div>

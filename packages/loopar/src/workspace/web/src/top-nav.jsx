@@ -15,17 +15,20 @@ export function TopNav({menuActions}) {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             {menuActions.map((action) => {
+              const classVariant = buttonVariants({
+                size: "icon",
+                variant: "ghost",
+              }).replaceAll("text-primary", "")
+
               return (
                 <a
                   href={action.action}
                   target="_blank"
                   rel="noreferrer"
+                  className="hover:text-primary"
                 >
                   <div
-                    className={buttonVariants({
-                      size: "icon",
-                      variant: "ghost",
-                    })}
+                    className={`${classVariant} hover:text-primary`}
                   >
                     <BaseIcon icon={action.icon} className="h-5 w-5" />
                     <span className="sr-only">{action.label}</span>

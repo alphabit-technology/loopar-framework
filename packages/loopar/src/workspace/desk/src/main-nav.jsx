@@ -12,9 +12,8 @@ export function MainNav() {
         onClick={()=>{
           setOpenNav(!openNav)
         }}
-        className="text-primary"
       >
-        <Icon className="h-11 w-11 fill-current" />
+        <Icon className="h-11 w-11 fill-current hover:text-primary" />
       </button>
       <DeskLogo />
     </div>

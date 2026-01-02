@@ -239,6 +239,7 @@ export const FileDrop = (props) => {
             }}
             accept={accept}
             height={512}
+            inModal={props.inModal}
           />
         )}
       </>

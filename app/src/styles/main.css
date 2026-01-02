@@ -20,9 +20,6 @@
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
 
-  --color-primeblue: hsl(var(--primeblue));
-  --color-primeblue-foreground: hsl(var(--primeblue-foreground));
-
   --color-success: hsl(var(--success));
   --color-success-foreground: hsl(var(--success-foreground));
 

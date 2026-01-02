@@ -160,11 +160,13 @@ export function Link({
     return currentPage && currentPage === to;
   }, [props.active, isHashLink, activeSection, to, currentPage]);
 
+  const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "")
   const className = cn(
-    buttonVariants({ variant, size }),
+    classVariant,
     "justify-normal cursor-pointer p-2",
+    props.className,
     activeLink(isActive, activeClassName),
-    props.className
+    //"text-muted-foreground hover:text-primary",
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);

@@ -2,9 +2,11 @@ import {ComponentDefaults, tagDontHaveChild, validTags} from "./base/ComponentDe
 import loopar from "loopar";
 import React from "react";
 import { Droppable } from "@droppable";
+import { useDesigner } from "@context/@/designer-context";
 
 export default function Generic({ ...props }) {
   const {elementsDict, data} = ComponentDefaults(props);
+  const {designing} = useDesigner();
 
   const validateTag=(tag)=>{
     return validTags.includes(tag);
@@ -35,6 +37,11 @@ export default function Generic({ ...props }) {
     return React.createElement(tagName, props);
   }
 
+  if(data.inner_text){
+    if(designing) return data.inner_text;
+    return React.createElement(tagName, props, data.inner_text)
+  }
+  
   return (
     <Droppable Component={tagName} {...props}/>
   )
@@ -47,6 +54,7 @@ Generic.metaFields = () => {
         group: "HTML",
         elements: {
           tag: { element: "input", data: { format: "text" } },
+          inner_text: {element: TEXTAREA}
         },
       }
     ]

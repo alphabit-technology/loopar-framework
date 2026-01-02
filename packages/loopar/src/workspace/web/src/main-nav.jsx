@@ -47,7 +47,7 @@ export function MainNav() {
           onClick={handleSetOpenNav}
           className="lg:hidden"
         >
-          <Icon className="h-11 w-11 fill-current text-primary/40" />
+          <Icon className="h-11 w-11 fill-current text-primary" />
         </button>
         <Logo />
       </div>

@@ -25,7 +25,7 @@ export function FileBrowser(props) {
         props.onClose && props.onClose();
       }}
     >
-      <Browser {...props} />
+      <Browser {...props} inModal={props.inModal}/>
     </Modal>
   );
 }

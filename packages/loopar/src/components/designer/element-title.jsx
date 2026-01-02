@@ -51,14 +51,14 @@ export function ElementTitle({element, active, ...props}) {
     >
       {active && (
         <>
-          <Button
+          {/* <Button
             variant="destructive"
             size="xs"
             onClick={handleEditElement}
             className="h-5 w-10 rounded-none rounded-bl"
           >
             <PencilIcon className="h-4 w-4"/>
-          </Button>
+          </Button> */}
           <Button
             variant="destructive"
             size="xs"
@@ -72,7 +72,8 @@ export function ElementTitle({element, active, ...props}) {
       <Button
         variant="secondary"
         size="xs"
-        className="h-5 rounded-none pointer-events-none rounded-tr px-1"
+        className="h-5 rounded-none rounded-tr px-1 hover:bg-secondary"
+        onClick={handleEditElement}
       >
         <ComponentNamePreview Component={element.elementTitle || element.element} />
       </Button>

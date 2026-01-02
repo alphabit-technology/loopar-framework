@@ -3,6 +3,7 @@ import { useDesigner } from "@context/@/designer-context";
 import { useEffect, useRef, forwardRef, useState } from "react";
 import { Link } from "@link"
 import { Droppable } from "./droppable/droppable";
+import { cn } from "@cn/lib/utils";
 
 const Section = forwardRef(({ element }, ref) => {
   return (
@@ -10,6 +11,7 @@ const Section = forwardRef(({ element }, ref) => {
       ref={ref}
       data-section="true"
       id={element.data.label || element.data.id || element.data.key}
+      className="w-full"
     >
       <div>
         <MetaComponent
@@ -250,10 +252,12 @@ const useActiveSection = () => {
 };
 
 export default function MenuContentMeta(props) {
-  const isDesigner = useDesigner().designerMode;
+  const { designerMode: isDesigner, designing } = useDesigner();
   const [elements, setElements] = useState(props.elements || []);
   const sectionsRefs = useRef([]);
   const { section: activeSection, subSection: activeSubSection } = useActiveSection();
+
+  const showSidebar = !designing;
 
   useEffect(() => {
     isDesigner && setElements(props.elements || []);
@@ -264,38 +268,49 @@ export default function MenuContentMeta(props) {
   }, [elements]);
 
   return (
-    <div className={`relative w-full flex flex-row ${!isDesigner && ""} h-full`}>
-      <div className={`w-full h-full py-2 px-5 ${!isDesigner ? 'xl:pr-[250px]' : 'w-0'}`}>
-        {isDesigner ? <Droppable {...props}/> : 
-          <>
+    <div className="relative w-full flex flex-row">
+      <div className="flex-1 min-w-0 h-full py-2 px-5">
+        {isDesigner ? (
+          <Droppable {...props}/>
+        ) : (
+          elements.map((element, index) => (
+            <Section 
+              element={element} 
+              key={element.data.key}
+              ref={(el) => sectionsRefs.current[index] = el}
+            />
+          ))
+        )}
+      </div>
+
+      {showSidebar && (
+        <aside
+          className={cn(
+            isDesigner 
+              ? "w-[250px]" 
+              : "hidden lg:block w-[300px]",
+            "shrink-0",
+            "sticky top-[var(--web-header-height,56px)]",
+            "h-fit max-h-[calc(100dvh-var(--web-header-height,56px)-var(--web-footer-height,0px))]",
+            "overflow-y-auto overflow-x-hidden"
+          )}
+        >
+          {!isDesigner && <h6 className="px-2 pt-2">ON THIS PAGE</h6>}
+          <div className="flex flex-col gap-2 p-2 w-full">
             {elements.map((element, index) => (
-              <Section 
-                element={element} 
-                key={element.data.key}
-                ref={(el) => sectionsRefs.current[index] = el}
+              <MenuItem
+                key={element.data.key + "-menu"}
+                element={element}
+                sectionRef={sectionsRefs.current[index]}
+                index={index}
+                visible={index === 0}
+                activeSection={activeSection}
+                activeSubSection={activeSubSection}
               />
             ))}
-          </>
-        }
-      </div>
-      <div
-        className={`${isDesigner ? 'sticky w-[250px]' : 'fixed w-0 xl:w-[250px]'} right-0 z-1 top-web-HeaderHeight h-full overflow-y-auto overflow-x-hidden transition-all duration-600 ease-in-out`}
-      >
-        {!isDesigner && <h6 className="px-2 pt-2">ON THIS PAGE</h6>}
-        <div className="flex flex-col gap-2 p-2 w-full">
-          {elements.map((element, index) => (
-            <MenuItem
-              key={element.data.key + "-menu"}
-              element={element}
-              sectionRef={sectionsRefs.current[index]}
-              index={index}
-              visible={index === 0}
-              activeSection={activeSection}
-              activeSubSection={activeSubSection}
-            />
-          ))}
-        </div>
-      </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

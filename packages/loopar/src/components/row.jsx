@@ -40,6 +40,8 @@ export default function Row(props) {
     col_margin: data.col_margin || spacing.col_margin || webApp.col_margin || DEFAULTS.col_margin,
   }), [data, spacing, webApp]);
 
+  
+
   const handleSetLayout = (layout) => {
     setLayout(layout);
     set("layout", JSON.stringify(layout));

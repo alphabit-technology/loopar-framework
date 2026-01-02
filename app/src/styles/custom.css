@@ -34,15 +34,42 @@
 .wmde-markdown{
   background-color: unset !important;
   color: unset !important;
+  font-family: unset !important;
 }
 
-.light pre {
-  background-color: hsl(var(--secondary)) !important;
+.wmde-markdown pre {
+  background-color: hsl(var(--secondary)/0.5) !important;
   color: hsl(var(--text)) !important;
 }
 
-.wmde-markdown {
-  font-family: unset !important;
+.wmde-markdown pre:hover {
+  background-color: hsl(var(--secondary)/0.4) !important;
+}
+
+.light .wmde-markdown pre {
+  background-color: hsl(var(--card)) !important;
+}
+
+.wmde-markdown img {
+  background-color: transparent !important;
+}
+
+.wmde-markdown table tr {
+  background-color: unset !important;
+  border: unset !important;
+}
+
+.wmde-markdown table tr:nth-child(2n) {
+  background-color: hsl(var(--secondary)/0.7) !important;
+  border: unset !important
+}
+
+.wmde-markdown table tr:hover {
+  background-color: hsl(var(--primary)/0.5) !important;
+}
+
+.wmde-markdown table th, td {
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .code-highlight{
@@ -74,4 +101,13 @@
 .alert-warning {
   border-color: #ffab00;
   background-color: #fff8e1;
+}
+
+a:not([class]) {
+  color: hsl(var(--primary) / 0.8);
+  text-decoration: underline;
+}
+
+a:hover{
+  color: hsl(var(--primary)) !important;
 }
