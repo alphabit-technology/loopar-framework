@@ -12,12 +12,14 @@ import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
 import { Server } from './server/server.js';
 import { fileManage } from './file-manage.js';
 import { cookieManager, sessionManager } from './server/router/request-context.js';
+import { markdownRenderer } from "markdown";
 
 export class Loopar extends Document {
   #installingApp = false;
   modulesGroup = []
   pathRoot = process.cwd();
-  setTailwindTemp = setTailwindTemp;
+  markdownRenderer = markdownRenderer;
+  renderMarkdownSSR
   utils = Helpers;
   __INSTALLED_APPS__
 

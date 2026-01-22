@@ -45,3 +45,5 @@ export default function Title(props) {
     </div>
   )
 }
+
+Title.droppable = false;

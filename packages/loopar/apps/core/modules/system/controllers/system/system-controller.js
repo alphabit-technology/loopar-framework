@@ -4,7 +4,7 @@ import { loopar, fileManage, BaseController } from "loopar";
 
 export default class SystemController extends BaseController {
   client = "form";
-  freeActions = ['connect', 'install', 'update', 'reinstall'];
+  publicActions = ['connect', 'install', 'update', 'reinstall'];
   constructor(props) {
     super(props);
   }

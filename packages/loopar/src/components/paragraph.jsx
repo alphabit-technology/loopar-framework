@@ -55,3 +55,5 @@ export default function MetaParagraph(props) {
     <Paragraph {...props}>{getText()}</Paragraph>
   )
 }
+
+MetaParagraph.droppable = false

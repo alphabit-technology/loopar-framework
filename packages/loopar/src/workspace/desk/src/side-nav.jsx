@@ -65,7 +65,7 @@ export function SideNav({ items=[] }) {
 
   return (
     <div 
-      className={`fixed inset-0 z-50 duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:top-header-height ${openNav ? 'w-sidebar-width lg:w-sidebar-width' : 'w-0 lg:w-collapse-sidebar-width'}`}
+      className={`fixed inset-0 z-50 duration-100 ease-in bg-popover/90 lg:bg-transparent border-r lg:!top-header-height ${openNav ? '!w-sidebar-width lg:!w-sidebar-width' : 'w-0 lg:!w-collapse-sidebar-width'}`}
     >
         <div 
           className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}

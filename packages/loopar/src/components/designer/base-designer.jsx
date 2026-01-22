@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon } from "lucide-react";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, HandGrab } from "lucide-react";
 import { BaseFormContext } from "@context/form-provider";
 import { useCallback, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
@@ -11,7 +11,7 @@ import {cn} from "@cn/lib/utils";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
-import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx";
+import {DragAndDropProvider, useDragAndDrop} from "../droppable/DragAndDropContext.jsx";
 import {Prompt} from "./src/prompt/Prompt.jsx";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import {elementsNames} from "@global/element-definition"
@@ -41,9 +41,12 @@ const fixMeta = (structure) => {
     return [...structure].map((el) => {
       el.data ??= {}
       el.data.key ??= elementManage.getUniqueKey();
-      el.data.id ??= el.data.key;
-      el.data.name ??= el.data.key;
-      el.data.label ??= loopar.utils.Capitalize((el.data.name || el.data.key).replaceAll("_", " "));
+      
+      if(fieldIsWritable(el)){
+        el.data.id ??= el.data.key;
+        el.data.label ??= loopar.utils.Capitalize((el.data.name || el.data.key).replaceAll("_", " "));
+        el.data.name ??= el.data.key;
+      }
   
       el.elements = fixMeta(el.elements || []);
   
@@ -80,6 +83,7 @@ export const BaseDesigner = (props) => {
   const [activeId] = useState(null);
   const {designerMode} = useDesigner();
   const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
+  const [dragEnabled, setDragEnable] = useState(true)
 
   const [updatingElementName, setUpdatingElementName] = useCookies(name + "updatingElementName");
   const [designerModeType, setDesignerModeType] = useCookies(name + "designer-mode-type");
@@ -271,6 +275,7 @@ export const BaseDesigner = (props) => {
         activeId,
         handleChangeMode,
         handleSetMode,
+        dragEnabled, setDragEnable
       }}
     >
       <BaseFormContext.Provider value={{}}>
@@ -286,6 +291,14 @@ export const BaseDesigner = (props) => {
               <h2 className="text-3xl">{data.label}</h2>
             </div>
             <div className="space-x-1">
+              <Button 
+                className={dragEnabled ? 'bg-red-500' : 'bg-secondary'}
+                onClick={() => {
+                  setDragEnable && setDragEnable(!dragEnabled);
+                }}
+              >
+                <HandGrab/>
+              </Button>
               <Button
                 variant="secondary"
                 onClick={(e) => {

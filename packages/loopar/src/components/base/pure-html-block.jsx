@@ -29,7 +29,7 @@ export function Markdown({ className, content }) {
 
   return (
     <div
-      className={className}
+      className={cn(className, "lp-markdown")}
       dangerouslySetInnerHTML={markup}
     />
   )
@@ -42,7 +42,7 @@ export default function PureHTMLBlock({ element, className = "", data, ...props 
         className="contents w-full prose dark:prose-invert"
         {...props}
       >
-        <div className={cn(className, "pb-10")} id={data.id}>
+        <div className={cn(className)} id={data.id}>
           <Markdown content={data.value} />
         </div>
       </div>

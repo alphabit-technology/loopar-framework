@@ -21,38 +21,40 @@ export default class AuthController {
   async isAuthenticated() {
     const action = this.action;
     const workspace = this.req.__WORKSPACE_NAME__;
-
+  
+    if (this.isPublicAction) return true;
+  
     const resolve = (message, url) => {
-      return loopar.throw(message, this.method != AJAX && url || "/auth/login")
+      return loopar.throw(message, this.method != AJAX && url || "/auth/login");
     }
-
-    if(this.actionsEnabled && !this.actionsEnabled.includes(action)) return resolve('Not permitted');
-
-    
+  
+    if (this.actionsEnabled && !this.actionsEnabled.includes(action)) {
+      return resolve('Not permitted');
+    }
+  
     if (workspace == "web") return true;
     if (workspace == "loopar") return true;
-
+  
     const user = await loopar.auth.award();
-
+  
     if (user) {
       if (workspace == "auth") {
         if (action == "logout") return true;
         return resolve('You are already logged in, refresh this page', "/desk/Desk/view");
       }
-
+  
       if (user.name !== 'Administrator' && user.disabled) {
         resolve('Not permitted');
       }
-
+  
       return true;
     } else {
-      if (workspace == "desk") return resolve('You must be logged in to access this page', "/auth/login");
-      
-      if (workspace == "auth") {
-        if (this.isLoginAction) return true;
-        if (this.freeActions && this.freeActions.includes(this.action)) return true;
+      if (workspace == "desk") {
+        return resolve('You must be logged in to access this page', "/auth/login");
       }
-
+      
+      if (workspace == "auth" && this.isLoginAction) return true;
+  
       resolve('You must be logged in to access this page');
     }
   }
@@ -72,6 +74,6 @@ export default class AuthController {
   }
 
   async beforeAction() {
-    return Promise.all([this.isAuthenticated(), this.isAuthorized()]);
+    return(await this.isAuthenticated() && await this.isAuthorized());
   }
 }

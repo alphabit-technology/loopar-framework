@@ -1,0 +1,438 @@
+
+  .mdxeditor {
+    --accentBase: hsl(var(--primary) / 0.05);
+    --accentBgSubtle: hsl(var(--primary) / 0.08);
+    --accentBg: hsl(var(--primary) / 0.12);
+    --accentBgHover: hsl(var(--primary) / 0.18);
+    --accentBgActive: hsl(var(--primary) / 0.24);
+    --accentLine: hsl(var(--primary) / 0.4);
+    --accentBorder: hsl(var(--primary) / 0.5);
+    --accentBorderHover: hsl(var(--primary) / 0.7);
+    --accentSolid: hsl(var(--primary));
+    --accentSolidHover: hsl(var(--primary) / 0.9);
+    --accentText: hsl(var(--primary));
+    --accentTextContrast: hsl(var(--primary-foreground));
+  
+    --baseBase: hsl(var(--background));
+    --baseBgSubtle: hsl(var(--card));
+    --baseBg: hsl(var(--secondary));
+    --baseBgHover: hsl(var(--accent));
+    --baseBgActive: hsl(var(--muted));
+    --baseLine: hsl(var(--border));
+    --baseBorder: hsl(var(--border));
+    --baseBorderHover: hsl(var(--input));
+    --baseSolid: hsl(var(--muted-foreground));
+    --baseSolidHover: hsl(var(--foreground) / 0.8);
+    --baseText: hsl(var(--foreground) / 0.7);
+    --baseTextContrast: hsl(var(--foreground));
+  
+    --basePageBg: hsl(var(--background));
+  
+    --admonitionTipBg: hsl(var(--primary) / 0.1);
+    --admonitionTipBorder: hsl(var(--primary) / 0.5);
+    --admonitionInfoBg: hsl(142 76% 36% / 0.1);
+    --admonitionInfoBorder: hsl(142 76% 36% / 0.5);
+    --admonitionCautionBg: hsl(38 92% 50% / 0.1);
+    --admonitionCautionBorder: hsl(38 92% 50% / 0.5);
+    --admonitionDangerBg: hsl(var(--destructive) / 0.1);
+    --admonitionDangerBorder: hsl(var(--destructive) / 0.5);
+    --admonitionNoteBg: hsl(var(--muted));
+    --admonitionNoteBorder: hsl(var(--border));
+  
+    font-family: inherit;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  
+    color: var(--baseTextContrast);
+    background: var(--basePageBg);
+    border-radius: var(--radius);
+  }
+
+  
+  :is(.dark, [data-theme="dark"]) .mdxeditor {
+    --accentBase: hsl(var(--primary) / 0.08);
+    --accentBgSubtle: hsl(var(--primary) / 0.12);
+    --accentBg: hsl(var(--primary) / 0.18);
+    --accentBgHover: hsl(var(--primary) / 0.25);
+    --accentBgActive: hsl(var(--primary) / 0.32);
+    --accentLine: hsl(var(--primary) / 0.5);
+    --accentBorder: hsl(var(--primary) / 0.6);
+    --accentBorderHover: hsl(var(--primary) / 0.8);
+    --accentSolid: hsl(var(--primary));
+    --accentSolidHover: hsl(var(--primary) / 0.85);
+    --accentText: hsl(var(--primary));
+    --accentTextContrast: hsl(var(--primary-foreground));
+
+    --baseBase: hsl(var(--background));
+    --baseBgSubtle: hsl(var(--card));
+    --baseBg: hsl(var(--secondary));
+    --baseBgHover: hsl(var(--accent));
+    --baseBgActive: hsl(var(--muted));
+    --baseLine: hsl(var(--border));
+    --baseBorder: hsl(var(--border));
+    --baseBorderHover: hsl(var(--input));
+    --baseSolid: hsl(var(--muted-foreground));
+    --baseSolidHover: hsl(var(--foreground) / 0.85);
+    --baseText: hsl(var(--foreground) / 0.75);
+    --baseTextContrast: hsl(var(--foreground));
+  
+    --basePageBg: hsl(var(--background));
+  }
+  
+  .mdxeditor-toolbar {
+    background-color: var(--baseBgSubtle) !important;
+    border-bottom: 1px solid var(--baseBorder) !important;
+    padding: 8px !important;
+    gap: 4px !important;
+  }
+  
+  .mdxeditor [class*="_toolbarToggleItem_"][disabled],
+  .mdxeditor [class*="_toolbarButton_"][disabled],
+  .mdxeditor [class*="_toolbarToggleItem_"]:disabled,
+  .mdxeditor [class*="_toolbarButton_"]:disabled,
+  .mdxeditor button:disabled,
+  .mdxeditor button[disabled] {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    color: var(--baseText) !important;
+  }
+  
+  .mdxeditor button:disabled svg,
+  .mdxeditor button[disabled] svg {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  .mdxeditor [class*="_selectTrigger_"][disabled],
+  .mdxeditor [class*="_selectTrigger_"]:disabled,
+  .mdxeditor select:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    color: var(--baseText) !important;
+  }
+  
+  .mdxeditor [class*="_selectTrigger_"] {
+    color: var(--baseTextContrast) !important;
+  }
+  
+  .mdxeditor [class*="_selectTrigger_"][data-placeholder] > span:first-child {
+    color: var(--baseText) !important;
+  }
+  
+  .mdxeditor-root-contenteditable {
+    background-color: var(--basePageBg) !important;
+    color: var(--baseTextContrast) !important;
+    min-height: 200px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  .mdxeditor-root-contenteditable > :first-child {
+    margin-top: 0 !important;
+  }
+  
+  .mdxeditor-root-contenteditable > :last-child {
+    margin-bottom: 0 !important;
+  }
+  
+  .mdxeditor-source-editor,
+  .mdxeditor-diff-editor {
+    background-color: var(--baseBgSubtle) !important;
+  }
+  
+  .mdxeditor-source-editor .cm-editor,
+  .mdxeditor-diff-editor .cm-editor {
+    background-color: var(--baseBgSubtle) !important;
+    min-height: 300px;
+  }
+
+  .mdxeditor [class*="_selectTrigger_"][data-placeholder] > span:first-child {
+    color: var(--color-muted-foreground) !important;
+  }
+
+  
+  .mdxeditor-select-content,
+  [class*="_selectContent_"] {
+    background-color: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 4px 20px hsl(var(--foreground) / 0.15) !important;
+    z-index: 50;
+    overflow: hidden;
+  }
+  
+  .mdxeditor-select-content [class*="_selectItem_"],
+  .mdxeditor-select-content span,
+  [class*="_selectContent_"] [class*="_selectItem_"],
+  [class*="_selectContent_"] span {
+    display: block;
+    color: hsl(var(--popover-foreground)) !important;
+    background: transparent !important;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+  
+  .mdxeditor-select-content [class*="_selectItem_"]:hover,
+  .mdxeditor-select-content span:hover,
+  .mdxeditor-select-content [data-highlighted],
+  [class*="_selectContent_"] [class*="_selectItem_"]:hover,
+  [class*="_selectContent_"] span:hover,
+  [class*="_selectContent_"] [data-highlighted] {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+  
+  .mdxeditor-select-content [data-state="checked"],
+  [class*="_selectContent_"] [data-state="checked"] {
+    background-color: hsl(var(--primary) / 0.15) !important;
+    color: hsl(var(--primary)) !important;
+  }
+  
+  .mdxeditor-select-content [class*="_selectItem_"]:focus,
+  .mdxeditor-select-content span:focus,
+  [class*="_selectContent_"] [class*="_selectItem_"]:focus {
+    outline: none !important;
+    background-color: hsl(var(--accent)) !important;
+  }
+  
+  .mdxeditor-popup-container {
+    z-index: 100 !important;
+  }
+  
+  /* ============================================
+     TYPOGRAPHY IN EDITOR
+     ============================================ */
+  
+  .mdxeditor h1 {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--baseTextContrast);
+  }
+  
+  .mdxeditor h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--baseTextContrast);
+    opacity: 0.9;
+  }
+  
+  .mdxeditor h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    color: var(--baseTextContrast);
+    opacity: 0.85;
+  }
+  
+  .mdxeditor h4, 
+  .mdxeditor h5, 
+  .mdxeditor h6 {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--baseTextContrast);
+    opacity: 0.8;
+  }
+  
+  .mdxeditor p {
+    margin: 0.4em 0;
+    color: var(--baseTextContrast);
+  }
+
+  .mdxeditor a {
+    color: var(--accentText);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  
+  .mdxeditor a:hover {
+    color: var(--accentSolidHover);
+  }
+  
+  .mdxeditor blockquote {
+    margin: 0.5em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid var(--accentSolid);
+    background-color: var(--baseBgActive);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-style: italic;
+    color: var(--baseText);
+  }
+ 
+  .mdxeditor .cm-editor {
+    background-color: var(--baseBgSubtle) !important;
+    border-radius: var(--radius);
+    font-family: var(--font-mono) !important;
+  }
+  
+  .mdxeditor .cm-editor .cm-content {
+    font-family: inherit !important;
+    font-size: 14px;
+    color: var(--baseTextContrast);
+  }
+  
+  .mdxeditor .cm-editor .cm-gutters {
+    background-color: var(--baseBgActive) !important;
+    border-right: 1px solid var(--baseBorder) !important;
+    color: var(--baseText) !important;
+  }
+  
+  .mdxeditor .cm-editor .cm-activeLineGutter,
+  .mdxeditor .cm-editor .cm-activeLine {
+    background-color: var(--baseBgHover) !important;
+  }
+  
+  .mdxeditor .cm-editor .cm-cursor {
+    border-left-color: var(--baseTextContrast) !important;
+  }
+  
+  .mdxeditor .cm-editor .cm-selectionBackground,
+  .mdxeditor .cm-editor .cm-selection {
+    background-color: var(--accentBgActive) !important;
+  }
+  
+  .mdxeditor .cm-editor .cm-selectionMatch {
+    background-color: var(--accentBgActive) !important;
+  }
+  
+  .mdxeditor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+  }
+  
+  [class*="_dialogContent_"] {
+    background-color: hsl(var(--popover)) !important;
+    color: hsl(var(--popover-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 10px 40px hsl(var(--foreground) / 0.15) !important;
+    padding: 20px !important;
+  }
+
+  [class*="_dialogOverlay"]{
+    background-color: hsl(var(--accent));
+  }
+  
+  [class*="_dialogContent_"] h2 {
+    color: hsl(var(--foreground)) !important;
+    font-weight: 600 !important;
+    margin-bottom: 16px !important;
+  }
+  
+  [class*="_dialogContent_"] label,
+  [class*="_formField_"] label {
+    color: hsl(var(--foreground)) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+  
+  [class*="_dialogContent_"] input[type="text"],
+  [class*="_dialogContent_"] input[type="url"],
+  [class*="_dialogContent_"] textarea,
+  [class*="_formField_"] input {
+    background-color: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--input)) !important;
+    border-radius: calc(var(--radius) - 2px) !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
+  
+  [class*="_dialogContent_"] input:focus {
+    border-color: hsl(var(--ring)) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
+  }
+  
+  [class*="_dialogContent_"] input[type="file"] {
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  [class*="_primaryButton_"] {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: none !important;
+    border-radius: calc(var(--radius) - 2px) !important;
+    padding: 10px 20px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+  }
+  
+  [class*="_secondaryButton_"] {
+    background-color: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: calc(var(--radius) - 2px) !important;
+    padding: 10px 20px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+  }
+  
+  [data-radix-popper-content-wrapper] > div {
+    background-color: hsl(var(--popover)) !important;
+    color: hsl(var(--popover-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: 0 4px 16px hsl(var(--foreground) / 0.15) !important;
+  }
+  
+  [data-radix-popper-content-wrapper] svg {
+    fill: hsl(var(--popover)) !important;
+  }
+  
+  [data-radix-popper-content-wrapper] button {
+    background-color: transparent !important;
+    color: hsl(var(--popover-foreground)) !important;
+    border: none !important;
+    padding: 8px !important;
+    cursor: pointer;
+  }
+  
+  [data-radix-popper-content-wrapper] button:hover {
+    background-color: hsl(var(--accent)) !important;
+  }
+  
+  [data-radix-popper-content-wrapper] button svg {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  
+  [data-radix-popper-content-wrapper] button:hover svg {
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  .mdxeditor [class*="_errorBanner_"] {
+    background-color: hsl(var(--destructive) / 0.1) !important;
+    border: 1px solid hsl(var(--destructive)) !important;
+    color: hsl(var(--destructive)) !important;
+    border-radius: var(--radius) !important;
+    padding: 12px !important;
+  }
+  
+  .mdxeditor [class*="_frontmatterEditor_"] {
+    background-color: var(--baseBgActive) !important;
+    border: 1px solid var(--baseBorder) !important;
+    border-radius: var(--radius) !important;
+    margin-bottom: 1em;
+  }
+  
+  @media (max-width: 768px) {
+    .mdxeditor-toolbar {
+      padding: 6px !important;
+    }
+    
+    .mdxeditor-root-contenteditable {
+      padding: 12px 16px !important;
+      font-size: 15px;
+    }
+  }
+  
+  @media print {
+    .mdx-editor-wrapper {
+      border: none;
+    }
+    
+    .mdxeditor-toolbar {
+      display: none !important;
+    }
+    
+    .mdx-view-mode-buttons {
+      display: none !important;
+    }
+  }

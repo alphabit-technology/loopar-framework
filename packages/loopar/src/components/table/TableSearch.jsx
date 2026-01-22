@@ -4,8 +4,7 @@ import { useTable } from "./TableContext"
 import { useMemo, useRef, useCallback } from "react";
 
 export function TableSearch(props){
-  const {meta, baseColumns} = useTable();
-  const Document = meta;
+  const {Document, baseColumns, docRef} = useTable();
   const formRef = useRef(null);
   const debounceTimer = useRef(null);
 
@@ -22,12 +21,13 @@ export function TableSearch(props){
   
   const searchFields = useMemo(() => {
     return baseColumns().filter(col => fieldIsWritable(col) &&
-        [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) &&
-        (col.data.searchable || col.data.name === "name")
+      [INPUT, TEXTAREA, SELECT, CHECKBOX, SWITCH].includes(col.element) &&
+      (col.data.searchable || col.data.name === "name")
     );
   }, [baseColumns]);
 
-  const searchData = meta && Document.q && typeof Document.q == "object" ? Document.q : {};
+  const searchData = Document && Document.q && typeof Document.q == "object" ? Document.q : {};
+  const disabledFields = docRef.disabledSearchFields || []
 
   return (
     <FormWrapper __DATA__={searchData} className="w-full" formRef={formRef}>
@@ -42,7 +42,8 @@ export function TableSearch(props){
                 },
                 ...c.data,
                 required: 0,
-                disabled: false,
+                disabled: disabledFields.includes(c.data.name)
+                //disabled: false,
               };
 
               data.name = c.data.name;

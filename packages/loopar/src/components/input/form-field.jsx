@@ -30,7 +30,7 @@ export const FormField = ({ render, onChange, ...props }) => {
   }
 
   return (
-    designerMode || dontHaveForm ? (
+    designerMode || dontHaveForm  || !register ? (
       render({
         field: field
       })

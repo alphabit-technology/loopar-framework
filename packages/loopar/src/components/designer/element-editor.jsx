@@ -147,17 +147,16 @@ export function ElementEditor() {
       >
         <div className="flex flex-col">
           <div className="p-3 pb-0">
-           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span> <span className="text-muted-foreground text-sm">{data.key}</span>
+           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span> 
+           <span className="text-muted-foreground text-sm">{data.key}</span>
           </div>
           <Tabs
             data={{ name: "element_editor_tabs" }}
-            //key={data.key + "_tabs"}
           >
             {metaFieldsData.map(({ group, elements }) => (
               <Tab
                 label={loopar.utils.Capitalize(group)}
                 name={group + "_tab"}
-                //key={data.key + group + "_tab"}
               >
                 <div className="flex flex-col gap-2">
                   {Object.entries(elements).map(([field, props]) => {

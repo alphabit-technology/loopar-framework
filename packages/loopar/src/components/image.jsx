@@ -68,8 +68,8 @@ export default function MetaImage(props) {
     <FallbackImage {...props} />
   )
 }
-
- MetaImage.metaFields = () => {
+MetaImage.droppable = false
+MetaImage.metaFields = () => {
   return [[
     {
       group: "custom",

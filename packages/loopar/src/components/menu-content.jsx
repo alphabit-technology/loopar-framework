@@ -290,8 +290,8 @@ export default function MenuContentMeta(props) {
               ? "w-[250px]" 
               : "hidden lg:block w-[300px]",
             "shrink-0",
-            "sticky top-[var(--web-header-height,56px)]",
-            "h-fit max-h-[calc(100dvh-var(--web-header-height,56px)-var(--web-footer-height,0px))]",
+            "sticky top-[var(--web-header-height,80px)]",
+            "h-fit max-h-[calc(100dvh-var(--web-header-height,80px)-var(--web-footer-height,0px))]",
             "overflow-y-auto overflow-x-hidden"
           )}
         >

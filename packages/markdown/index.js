@@ -24,4 +24,4 @@ if (!fs.existsSync(distPath)) {
 
 const { renderMarkdown } = await import(path.resolve(selfRoute, "dist/ssr/markdown-render.js"));
 
-export const renderMarkdownSSR = async (markdown) => renderMarkdown(markdown);
+export const markdownRenderer = (markdown) => renderMarkdown(markdown);

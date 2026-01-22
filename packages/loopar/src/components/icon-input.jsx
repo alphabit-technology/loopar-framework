@@ -96,4 +96,5 @@ export default function IconInput(props) {
   });
 }
 
+IconInput.droppable = false;
 IconInput.metaFields = () => BaseInput.metaFields();

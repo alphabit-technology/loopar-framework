@@ -1,87 +1,307 @@
+import { 
+  MDXEditor,
+  headingsPlugin,
+  listsPlugin,
+  quotePlugin,
+  thematicBreakPlugin,
+  markdownShortcutPlugin,
+  linkPlugin,
+  linkDialogPlugin,
+  imagePlugin,
+  tablePlugin,
+  codeBlockPlugin,
+  codeMirrorPlugin,
+  diffSourcePlugin,
+  frontmatterPlugin,
+  directivesPlugin,
+  toolbarPlugin,
+  UndoRedo,
+  BoldItalicUnderlineToggles,
+  CodeToggle,
+  BlockTypeSelect,
+  CreateLink,
+  InsertImage,
+  InsertTable,
+  InsertThematicBreak,
+  ListsToggle,
+  Separator,
+  InsertCodeBlock,
+  ChangeCodeMirrorLanguage,
+  ConditionalContents,
+  AdmonitionDirectiveDescriptor,
+  viewMode$,
+  usePublisher,
+} from '@mdxeditor/editor';
+
 import { ComponentDefaults } from "./base/ComponentDefaults";
-import { useDesigner } from "@context/@/designer-context";
-import { useCallback, useState, useMemo} from "react";
+import '@mdxeditor/editor/style.css';
+import './markdown/mdx-theme.css';
+import { useCallback, useState, useEffect } from 'react';
 import MarkdownPreview from '@uiw/react-markdown-preview';
-import MarkdownEditor from "@uiw/react-markdown-editor";
-import { EditorView } from '@codemirror/view'
-import "easymde/dist/easymde.min.css";
-import "./markdown/markdown.css"
-
-import SimpleMDE from "react-simplemde-editor";
-
+import { useDesigner } from "@context/@/designer-context";
 import { cn } from "@cn/lib/utils";
-import { useWorkspace } from "@workspace/workspace-provider";
+
+const codeBlockLanguages = {
+  js: 'JavaScript',
+  jsx: 'JavaScript (React)',
+  ts: 'TypeScript',
+  tsx: 'TypeScript (React)',
+  css: 'CSS',
+  html: 'HTML',
+  json: 'JSON',
+  md: 'Markdown',
+  sql: 'SQL',
+  bash: 'Bash',
+  python: 'Python',
+  '': 'Plain Text',
+};
+
+const VIEW_MODES = {
+  EDITOR_SOURCE: [
+    { id: 'rich-text', label: 'Editor', icon: '✏️' },
+    { id: 'source', label: 'Markdown', icon: '📝' },
+  ],
+  EDITOR_SOURCE_DIFF: [
+    { id: 'rich-text', label: 'Editor', icon: '✏️' },
+    { id: 'source', label: 'Markdown', icon: '📝' },
+    { id: 'diff', label: 'Diff', icon: '🔄' },
+  ],
+  EDITOR_ONLY: [
+    { id: 'rich-text', label: 'Editor', icon: '✏️' },
+  ],
+};
 
 export function Preview({ source }) {
   return (
-    <div
-      className="contents w-full prose dark:prose-invert"
-    >
-      <div className={cn("pb-10")}>
-        <MarkdownPreview source={source} />
-      </div>
+    <div className="lp-markdown p-2">
+      <MarkdownPreview source={source} />
     </div>
-  )
+  );
 }
 
-export function Editor({ value, onChange }) {
-  const [markdownVal, setMarkdownVal] = useState(value);
-  const { theme } = useWorkspace();
-
+function EditorTabs({ 
+  currentMode, 
+  onModeChange, 
+  modes = VIEW_MODES.EDITOR_SOURCE,
+  showIcons = true,
+  showLabels = true,
+  className = '',
+}) {
   return (
-    <div data-color-mode={theme}>
-      <MarkdownEditor
-        value={markdownVal}
-        onChange={(value) => {
-          setMarkdownVal(value);
-        }}
-        extensions={[
-          EditorView.lineWrapping
+    <div className={`
+      flex gap-0 border-b border-border bg-card 
+      rounded-t-md px-2
+      ${className}
+    `}>
+      {modes.map(({ id, label, icon }) => {
+        const isActive = currentMode === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onModeChange(id)}
+            className={`
+              relative flex items-center gap-1.5 
+              px-4 py-3 text-sm font-medium
+              border-none bg-transparent cursor-pointer
+              transition-all duration-150
+              ${isActive 
+                ? 'text-primary' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }
+            `}
+          >
+            {showIcons && <span className="text-sm">{icon}</span>}
+            {showLabels && <span className="text-[13px] hidden sm:inline">{label}</span>}
+            
+            {/* Active indicator */}
+            {isActive && (
+              <span className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary rounded-t-sm" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ToolbarContents() {
+  return (
+    <>
+      <UndoRedo />
+      <Separator />
+      
+      <BoldItalicUnderlineToggles />
+      <CodeToggle />
+      <Separator />
+      
+      <BlockTypeSelect />
+      <Separator />
+      
+      <ListsToggle />
+      <Separator />
+      
+      <CreateLink />
+      <InsertImage />
+      <Separator />
+      
+      <InsertTable />
+      <InsertThematicBreak />
+      <Separator />
+      
+      <ConditionalContents
+        options={[
+          {
+            when: (editor) => editor?.editorType === 'codeblock',
+            contents: () => <ChangeCodeMirrorLanguage />,
+          },
+          {
+            fallback: () => <InsertCodeBlock />,
+          },
         ]}
       />
-    </div>
-  )
+    </>
+  );
 }
 
-export default function MetaMarkdown (props) {
+function ViewModeSync({ externalMode }) {
+  const setInternalMode = usePublisher(viewMode$);
+
+  useEffect(() => {
+    setInternalMode(externalMode);
+  }, [externalMode, setInternalMode]);
+
+  return null;
+}
+
+export default function MDXEditorWithTabs(props) {
   const { set, data } = ComponentDefaults(props);
-  const {designing} = useDesigner();
-
-  const handleChange = (value) => {
-    data.value !== value && set("value", value);
-  }
+  const { designing, designerMode } = useDesigner();
+  const [isMounted, setIsMounted] = useState(false);
   
-  if (!designing) {
-    return <Preview source={data.value} />
-  }
+  const {
+    placeholder = 'Start writing...',
+    className="dark-theme dark-editor" ,
+    readOnly = false,
+    showDiff = false,
+    tabPosition = 'top',
+    showTabIcons = true,
+    showTabLabels = true,
+  } = props;
 
-  const onChange = useCallback((value) => {
-    handleChange(value);
-  }, []);
-
-  const options = useMemo(() => {
-    return {
-      autofocus: false,
-      spellChecker: false,
-      toolbar: [
-        "bold", "italic", "heading", "|", "quote", "code", "table", "horizontal-rule", "|", "link", "image", "side-by-side", "fullscreen", "|", "guide"
-      ]
-    };
-  }, []);
+  const initialMarkdown = data.value || '';
+  const key = `mdx_viewmode_${data.key}`;
   
+  const [currentMode, setCurrentMode] = useState('rich-text');
+
+  useEffect(() => {
+    setCurrentMode(localStorage.getItem(key) || 'rich-text')
+    setIsMounted(true);
+  }, [])
+
+  const handleChange = useCallback((value) => {
+    set("value", value);
+    setTimeout(() => {
+      props.onChange && props.onChange(value);
+    })
+  }, [set]);
+
+  const handleModeChange = (mode) => {
+    (isMounted && typeof localStorage != undefined) && localStorage.setItem(key, mode)
+    setCurrentMode(mode);
+  };
+
+  const availableModes = showDiff 
+    ? VIEW_MODES.EDITOR_SOURCE_DIFF 
+    : VIEW_MODES.EDITOR_SOURCE;
+
+  const TabsComponent = (
+    <EditorTabs
+      currentMode={currentMode}
+      onModeChange={handleModeChange}
+      modes={availableModes}
+      showIcons={showTabIcons}
+      showLabels={showTabLabels}
+    />
+  );
+
+  if(!isMounted || (designerMode && !designing)) return (
+    <Preview source={initialMarkdown}/>
+  )
+
   return (
-    <div
-      className="contents w-full prose dark:prose-invert"
-    >
-      <div id={props.id} className="mt-4" onPointerDown={(e) => {
-        e.stopPropagation();
-      }}>
-        <SimpleMDE
-          options={options}
-          value={data.value}  
-          onChange={onChange}
-        />
+    <div className={cn(
+      'no-drag',
+      designerMode && 'overflow-x-auto'
+    )}>
+      <div className={cn(
+        "mdx-editor-container",
+        designerMode && "min-w-[400px]"
+      )}>
+        {TabsComponent}
+        <div className="mdx-editor-wrapper">
+          <MDXEditor
+            key={`${key}_${currentMode}`}
+            markdown={initialMarkdown}
+            onChange={handleChange}
+            readOnly={readOnly}
+            placeholder={placeholder}
+            className={className}
+            plugins={[
+              headingsPlugin(),
+              listsPlugin(),
+              quotePlugin(),
+              thematicBreakPlugin(),
+              linkPlugin(),
+              linkDialogPlugin(),
+              tablePlugin(),
+              
+              imagePlugin({
+                imageUploadHandler: async (file) => {
+                  return URL.createObjectURL(file);
+                },
+              }),
+              
+              codeBlockPlugin({ defaultCodeBlockLanguage: 'js' }),
+              codeMirrorPlugin({ 
+                codeBlockLanguages,
+                autoLoadLanguageSupport: true,
+              }),
+              
+              diffSourcePlugin({ 
+                viewMode: currentMode,
+              }),
+              
+              frontmatterPlugin(),
+              
+              directivesPlugin({
+                directiveDescriptors: [AdmonitionDirectiveDescriptor],
+              }),
+              
+              markdownShortcutPlugin(),
+              
+              toolbarPlugin({
+                toolbarContents: () => (
+                  <>
+                    <ToolbarContents />
+                    <ViewModeSync externalMode={currentMode} />
+                  </>
+                ),
+              }),
+            ]}
+          />
+        </div>
       </div>
     </div>
   );
 }
+
+MDXEditorWithTabs.droppable = false;
+
+export { 
+  EditorTabs,
+  ToolbarContents,
+  VIEW_MODES,
+  viewMode$, 
+  usePublisher,
+};

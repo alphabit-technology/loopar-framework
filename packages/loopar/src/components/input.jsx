@@ -49,7 +49,7 @@ export default function Input(props) {
     )
   });
 }
-
+Input.droppable = false;
 Input.metaFields = () => {
   return [
     ...BaseInput.metaFields(),

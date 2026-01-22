@@ -82,7 +82,7 @@ export const DragAndDropProvider = (props) => {
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
   const [globalPosition, setGlobalPosition] = useState(null);
-
+  
   const elementsRef = useRef(elements);
   const containerRef = useRef(null);
 

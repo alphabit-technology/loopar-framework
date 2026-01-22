@@ -109,7 +109,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
         <div
           key={currentDragging.key}
           style={{ maxHeight: height }}
-          className={`${currentDragging.className} pointer-events-none opacity-60 transition-all duration-200 ease-in border-2 border-dashed border-primary/70`}
+          className={`${currentDragging.className} pointer-events-none opacity-60 border-2 border-dashed border-primary/70`}
           dangerouslySetInnerHTML={{ __html: currentDragging.ref?.innerHTML }}
         />,
         position
@@ -140,8 +140,9 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   const renderizableProps = loopar.utils.renderizableProps(props);
 
   const ClassNames = cn(
-    "rounded bg-secondary/50 pt-4 h-full min-h-20 w-full p-2 pt-4",
-    dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow h-full' : "",
+    "rounded",
+    "bg-card h-full min-h-20 w-full p-2 space-y-3 py-3 pt-4",
+    dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow' : "",
     className,
     renderizableProps.className
   );
@@ -171,7 +172,7 @@ export function Droppable(props) {
   const renderizableProps = loopar.utils.renderizableProps(props);
   const C = (designerMode && hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
 
-  if(designerMode && designerModeType != "preview" && !hidden) return (
+  if(designerMode && designerModeType != "preview" && !hidden && !fieldIsWritable(props)) return (
     <DroppableContextProvider {...props}>
       <DroppableContainer {...props} />
     </DroppableContextProvider>

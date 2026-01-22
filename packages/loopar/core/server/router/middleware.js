@@ -236,6 +236,7 @@ export class Middleware {
 
         return this.render(req, res, await this.App.render(req.__WORKSPACE__, true));
       } catch (renderErr) {
+        console.log(["Internal Server Error", renderErr])
         return this.throw(renderErr, res);
       }
     };

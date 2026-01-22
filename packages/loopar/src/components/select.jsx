@@ -280,6 +280,8 @@ export default function MetaSelect(props) {
   });
 }
 
+MetaSelect.droppable=false;
+
 MetaSelect.metaFields = () => {
   return [
     ...BaseInput.metaFields(),

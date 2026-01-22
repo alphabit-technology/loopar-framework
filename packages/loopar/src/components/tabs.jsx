@@ -5,7 +5,7 @@ import { useDesigner } from "@context/@/designer-context";
 import { useEffect, useMemo } from "react";
 import {useCookies} from "@services/cookie";
 import { Droppable } from "@droppable";
-import { Trash2Icon } from "lucide-react";
+import { Trash2Icon, PlusIcon } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
 
 const TabContent = ({element, parent, onDrop}) => {
@@ -73,12 +73,6 @@ function TabFn(props){
     !checkIfTabExists(currentTab) && selectFirstTab();
   }, []);
 
-  /*useEffect(() => {
-    if(currentTab && designerMode) {
-      handleEditElement(data.key);
-    }
-  }, [currentTab, designerMode, data.key]);*/
-
   const isCustomizable = useMemo(() => {
     return (typeof canCustomize == "undefined" ? true : canCustomize) && designerMode;
   }, [canCustomize, designerMode]);
@@ -89,57 +83,59 @@ function TabFn(props){
       value={currentTab}
       className="w-full"
     >
-      <TabsList className="inline-table align-middle">
-        {
-          elementsDict.map(({data={}}) => (
+      <div className="flex items-center justify-between overflow-x-auto overflow-y-hidden">
+        <TabsList className="inline-flex items-center gap-3 no-drag bg-transparent">
+          {elementsDict.map(({data = {}}) => (
             <TabsTrigger
+              key={getKey(data)}
               value={getKey(data)}
+              className="flex items-center gap-2 !px-4 !min-h-[44px]"
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setCurrentTab(getKey(data));
-                if(designerMode) {
+                if (designerMode) {
                   handleEditElement(data.key);
                 }
               }}
             >
-              {data.label}
-              {isCustomizable ? (
-                <Button variant="ghost" size="sm" className="ml-4 color-red" onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleDeleteElement(data.key);
-                }}>
-                  <Trash2Icon size={20} className="text-red-500"/>
-                </Button>
-              ) : ""}
+              <span>{data.label}</span>
+              {isCustomizable && (
+                <Trash2Icon 
+                  size={16} 
+                  className="text-red-500 hover:text-red-400 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDeleteElement(data.key);
+                  }}
+                />
+              )}
             </TabsTrigger>
-          ))
-        }
-        {isCustomizable ? (
-          <TabsTrigger
+          ))}
+        </TabsList>
+        
+        {isCustomizable && (
+          <Button
+            variant="default"
+            size="icon"
+            className="bg-primary !min-h-[44px] !min-w-[44px]"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               addTab(getIdentifier(id));
             }}
-            className="bg-red-500 mx-2 text-primary"
           >
-            +
-          </TabsTrigger>
-        ) : null}
-      </TabsList>
-      {
-        elementsDict.map((element, index) => {
-          return (
-            <TabsContent
-              value={getKey(element.data)}
-            >
-              <TabContent element={element} parent={parent + index}/>
-            </TabsContent>
-          )
-        })
-      }
+            <PlusIcon size={16}/>
+          </Button>
+        )}
+      </div>
+      
+      {elementsDict.map((element, index) => (
+        <TabsContent key={getKey(element.data)} value={getKey(element.data)}>
+          <TabContent element={element} parent={parent + index}/>
+        </TabsContent>
+      ))}
     </BaseTabs>
   )
 }

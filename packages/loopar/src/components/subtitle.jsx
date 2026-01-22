@@ -35,3 +35,5 @@ export default function SubTitle(props) {
     </div>
   );
 }
+
+SubTitle.droppable = false;

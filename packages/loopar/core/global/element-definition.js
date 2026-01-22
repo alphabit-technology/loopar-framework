@@ -83,7 +83,7 @@ export const elementsDefinition = {
     { element: "button", icon: "MousePointer" },
     { element: "link", icon: "MousePointerClick" },
     { element: "icon", icon: "Boxes" },
-    { element: "markdown", icon: "BookOpenCheck", designerOnly: true },
+    { element: "markdown", icon: "BookOpenCheck", designerOnly: true  },
     { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
     { element: "title", icon: "Heading1" },
     { element: "subtitle", icon: "Heading2" },
@@ -95,6 +95,7 @@ export const elementsDefinition = {
     { element: "seo", icon: "Globe", designerOnly: true },
     { element: 'particles', icon: 'DotsHorizontal' },
     { element: 'particles_settings', icon: 'DotsHorizontal' },
+    { element: 'example_viewer', icon: 'Scan' },
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },

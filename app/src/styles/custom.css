@@ -22,58 +22,9 @@
 
 /***Custom Scrollbar***/
 
-.prose {
-  max-width: unset !important;
-}
-
 .-switch-:hover span {
   background: hsl(var(--secondary)) !important;
   opacity: 0.8 !important;
-}
-
-.wmde-markdown{
-  background-color: unset !important;
-  color: unset !important;
-  font-family: unset !important;
-}
-
-.wmde-markdown pre {
-  background-color: hsl(var(--secondary)/0.5) !important;
-  color: hsl(var(--text)) !important;
-}
-
-.wmde-markdown pre:hover {
-  background-color: hsl(var(--secondary)/0.4) !important;
-}
-
-.light .wmde-markdown pre {
-  background-color: hsl(var(--card)) !important;
-}
-
-.wmde-markdown img {
-  background-color: transparent !important;
-}
-
-.wmde-markdown table tr {
-  background-color: unset !important;
-  border: unset !important;
-}
-
-.wmde-markdown table tr:nth-child(2n) {
-  background-color: hsl(var(--secondary)/0.7) !important;
-  border: unset !important
-}
-
-.wmde-markdown table tr:hover {
-  background-color: hsl(var(--primary)/0.5) !important;
-}
-
-.wmde-markdown table th, td {
-  border: 1px solid hsl(var(--border)) !important;
-}
-
-.code-highlight{
-  padding: unset !important;
 }
 
 [data-radix-popper-content-wrapper] {
@@ -104,7 +55,7 @@
 }
 
 a:not([class]) {
-  color: hsl(var(--primary) / 0.8);
+  color: hsl(var(--primary) / 0.8) !important;
   text-decoration: underline;
 }
 

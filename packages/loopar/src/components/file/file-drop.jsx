@@ -7,6 +7,7 @@ import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, L
 import loopar from "loopar";
 import { validateFile } from "@@file/defaults";
 import { isEqual } from 'es-toolkit/predicate';
+import { useDesigner } from "@context/@/designer-context";
 
 const origins = [
   { name: "Local", icon: MonitorUpIcon, color: "bg-secondary" },
@@ -24,6 +25,7 @@ export const FileDrop = (props) => {
   const [loaded, setLoaded] = useState(false);
   const inputRef = useRef(null);
   const [files, setFiles] = useState(fileManager.getMappedFiles(props.files));
+  const {designerMode} = useDesigner();
 
   const accept = data.accept || "/*";
   
@@ -136,6 +138,38 @@ export const FileDrop = (props) => {
   
   const hasFiles = previews.length > 0;
 
+  const handleAction = (e, origin) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(designerMode) return;
+
+    if (origin.name === "Local") return inputRef.current.click();
+    if (origin.name === "Server") return setBrowsing(true);
+    if (origin.name === "Web") {
+      loopar.prompt({
+        title: "Web file",
+        label: "Enter the URL of the file",
+        placeholder: "https://",
+        validate: (url) => {
+          if (!url) loopar.throw("URL is required");
+          if (!url.match(/^https?:\/\/.+/)) loopar.throw("Invalid URL");
+          return true;
+        },
+        ok: (url) => {
+          const file = {
+            name: url.split("/").pop(),
+            src: url,
+          };
+          setFile(file);
+        },
+      });
+    }
+
+    if (origin.name === "Trash") {
+      handleClearFiles();
+    }
+  }
+
   return (
     <div
       className={`h-full bg-background/50 flex ${!hasFiles ? "flex-col" : "flex-row"} items-center justify-center ${dropping ? "drag-over" : ""}`}
@@ -176,35 +210,7 @@ export const FileDrop = (props) => {
                   <button
                     key={origin.name}
                     className={`flex ${size} flex-col items-center rounded border bg-card p-2 shadow cursor-pointer transition-colors hover:bg-muted/50`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (origin.name === "Local") return inputRef.current.click();
-                      if (origin.name === "Server") return setBrowsing(true);
-                      if (origin.name === "Web") {
-                        loopar.prompt({
-                          title: "Web file",
-                          label: "Enter the URL of the file",
-                          placeholder: "https://",
-                          validate: (url) => {
-                            if (!url) loopar.throw("URL is required");
-                            if (!url.match(/^https?:\/\/.+/)) loopar.throw("Invalid URL");
-                            return true;
-                          },
-                          ok: (url) => {
-                            const file = {
-                              name: url.split("/").pop(),
-                              src: url,
-                            };
-                            setFile(file);
-                          },
-                        });
-                      }
-
-                      if (origin.name === "Trash") {
-                        handleClearFiles();
-                      }
-                    }}
+                    onClick={(e) => handleAction(e, origin)}
                   >
                     <Icon />
                     {!hasFiles && origin.name}

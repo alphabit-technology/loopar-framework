@@ -14,7 +14,6 @@ const extraIcons = {
   PiXLogoThin
 }
 
-
 const iconCache = new Map();
 
 Object.entries(preloadedIcons).forEach(([name, IconComponent]) => {

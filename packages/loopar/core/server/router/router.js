@@ -39,10 +39,6 @@ export default class Router extends Middleware {
       return;
     }
 
-    if (response.redirect) {
-      return this.redirect(req, res, response.redirect);
-    }
-
     res
       .status(response.status || 200)
       .set('Content-Type', response.contentType || 'text/html')

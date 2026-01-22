@@ -18,11 +18,16 @@ const Alias = (dir, dirOnly = false) => {
   return readdirSync(dir).reduce((acc, name) => {
     const fullPath = resolve(dir, name);
     const baseName = name.split(".")[0];
+    const ext = name.split(".").pop()?.toLowerCase();
 
     if (lstatSync(fullPath).isDirectory()) {
       acc[`@@${baseName}`] = fullPath;
       !dirOnly && Object.assign(acc, Alias(fullPath));
-    } else if (baseName.length > 0 && baseName !== 'index') {
+    } else if (
+      baseName.length > 0 && 
+      baseName !== 'index' &&
+      ['js', 'jsx', 'ts', 'tsx'].includes(ext)
+    ) {
       acc[`@${baseName}`] = fullPath;
     }
     return acc;
@@ -60,9 +65,9 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       react({ 
         devTarget: "esnext",
-        babel: {
+        /* babel: {
           plugins: ['babel-plugin-react-compiler']
-        }
+        } */
       }),
 
       !isDev && compression({
@@ -94,9 +99,17 @@ export default defineConfig(({ command }) => {
         "lucide-react",
         "react-icons/pi",
       ],
+      exclude: [
+        '@uiw/react-codemirror',
+        '@uiw/codemirror-extensions-basic-setup'
+      ]
     },
-
+    
     ssr: {
+      external: [
+        /^@uiw\/.*/,
+        /^@codemirror\/.*/,
+      ],
       noExternal: ['lucide-react', 'react-icons/pi'],
     },
 

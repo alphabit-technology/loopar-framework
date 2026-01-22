@@ -101,7 +101,7 @@ export default class Installer extends BaseDocument {
       console.log(["Cloning", repo]);
 
       loopar.git().clone(repo, async (err, update) => {
-        err && loopar.throw(err);
+        if(err) return reject(err);
         await loopar.rebuildVite();
         resolve(true);
       });
