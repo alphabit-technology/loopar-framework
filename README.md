@@ -10,7 +10,7 @@
 ## Automatic Installation
 ### With NPX
 ```shell
-sudo npx loopar-env project-name --port 8080
+sudo npx loopar-install project-name --port 8080
 ````
 > Your server will start automatically in the dev environment.
 
