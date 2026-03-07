@@ -275,8 +275,15 @@ function formatDateTime(date, format = "YYYY-MM-DD HH:mm:ss") {
 }
 
 function compare(a, b) {
-  //replace - and _ with space and convert to lowercase
-  return a.replace(/[-_]/g, ' ').toLowerCase() === b.replace(/[-_]/g, ' ').toLowerCase();
+  const normalize = (str) => str
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  
+  return normalize(a) === normalize(b);
 }
 
 function getArrayMax(array, col) {

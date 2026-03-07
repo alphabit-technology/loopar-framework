@@ -14,10 +14,10 @@ if (!fs.existsSync(distPath)) {
     build: {
       ssr: true,
       outDir: path.resolve(selfRoute, "dist/ssr"),
-      rollupOptions: {
+      rolldownOptions: {
         input: path.resolve(selfRoute, "src/markdown-render.js"),
       },
-      minify: 'terser'
+      minify: true,
     },
   });
 }

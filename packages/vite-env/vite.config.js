@@ -4,7 +4,6 @@ import { readdirSync, lstatSync } from 'fs';
 import { resolve } from 'pathe';
 import { compression, defineAlgorithm } from 'vite-plugin-compression2';
 import { constants } from 'zlib';
-import { visualizer } from 'rollup-plugin-visualizer';
 import tailwindcss from '@tailwindcss/vite';
 import svgr from 'vite-plugin-svgr';
 
@@ -51,7 +50,6 @@ export default defineConfig(({ command }) => {
         '@loopar': resLoopar('src/'),
         '@global': resLoopar('core/global'),
         '@workspace': resLoopar('src/workspace'),
-        '@publicSRC': resRoot('public/src'),
         '@context': resLoopar('src/context'),
         '@services': resLoopar('services'),
         '/app': resRoot('app'),
@@ -65,10 +63,8 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       react({ 
         devTarget: "esnext",
-        /* babel: {
-          plugins: ['babel-plugin-react-compiler']
-        } */
       }),
+      svgr(),
 
       !isDev && compression({
         algorithms: [
@@ -82,13 +78,6 @@ export default defineConfig(({ command }) => {
         threshold: 512,
         include: /\.(js|mjs|css|html|json|svg)$/,
         exclude: [/\.map$/, /stats\.html$/],
-      }),
-
-      process.env.ANALYZE && visualizer({
-        open: true,
-        gzipSize: true,
-        brotliSize: true,
-        filename: 'stats.html'
       })
     ].filter(Boolean),
 
@@ -106,10 +95,7 @@ export default defineConfig(({ command }) => {
     },
     
     ssr: {
-      external: [
-        /^@uiw\/.*/,
-        /^@codemirror\/.*/,
-      ],
+      external: true,
       noExternal: ['lucide-react', 'react-icons/pi'],
     },
 
@@ -118,41 +104,22 @@ export default defineConfig(({ command }) => {
       ssr: isServerBuild,
       manifest: true,
       target: 'esnext',
-      minify: isDev ? false : 'terser',
-      terserOptions: !isDev ? {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.debug'],
-        },
-      } : undefined,
+      
+      minify: !isDev,
+      
       cssCodeSplit: true,
       sourcemap: false,
-      rollupOptions: {
+      
+      rolldownOptions: {
         input: resRoot(isServerBuild ? 'app/entry-server.jsx' : 'main.html'),
         output: !isServerBuild ? {
           chunkFileNames: 'assets/[hash].js',
           assetFileNames: 'assets/[hash].[ext]',
-          manualChunks(id) {
-            if (!id.includes('node_modules')) return; 
-
-            if (id.includes('react-dom') || id.includes('/react@')) {
-              return 'react-vendor';
-            }
-            
-            if (id.includes('lucide-react') || id.includes('react-icons')) {
-              return 'icons';
-            }
-          }
         } : undefined,
       },
       chunkSizeWarningLimit: 1000,
     },
 
-    esbuild: {
-      treeShaking: true,
-      drop: isDev ? [] : ['console', 'debugger'],
-    },
     server: {
       allowedHosts: true,
       hmr: true,

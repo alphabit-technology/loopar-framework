@@ -187,11 +187,13 @@ export default class Installer extends BaseDocument {
       for(const e of Object.keys(appData.postInstaller)){
         let ent = appData.postInstaller[e];
         if(ent == 'link') ent = appData.documents[e];
-        
-        if(ent.root){
-          await installEntity(e, ent, true);
-        }else{
-          await installDocument(e, ent, true);
+
+        if(ent){
+          if(ent.root){
+            await installEntity(e, ent, true);
+          }else{
+            await installDocument(e, ent, true);
+          }
         }
       }
     }
