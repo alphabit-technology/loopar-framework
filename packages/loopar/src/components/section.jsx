@@ -22,7 +22,6 @@ export default function Section(props) {
   const [collapsed, setCollapsed] = useCookies(data.key, false);
   const { spacing: docSpacing = {} } = useDocument();
 
-  // Merge con defaults
   const config = useMemo(() => ({
     ...DEFAULTS,
     ...data,

@@ -269,7 +269,7 @@ export default function MenuContentMeta(props) {
 
   return (
     <div className="relative w-full flex flex-row">
-      <div className="flex-1 min-w-0 h-full py-2 px-5">
+      <div className="flex-1 min-w-0 h-full py-2 px-5 space-y-10">
         {isDesigner ? (
           <Droppable {...props}/>
         ) : (

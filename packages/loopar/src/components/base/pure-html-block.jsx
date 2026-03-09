@@ -1,7 +1,7 @@
 import { cn } from "@cn/lib/utils";
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 
-export function Markdown({ className, content }) {
+export const Markdown = memo(({ className, content }) => {
   const markup = { __html: content };
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export function Markdown({ className, content }) {
         try {
           await navigator.clipboard.writeText(code);
           copyButton.classList.add("active");
-          setTimeout(() => (copyButton.classList.remove("active")), 2000);
+          setTimeout(() => copyButton.classList.remove("active"), 2000);
         } catch (err) {
           console.error("❌ Error on copy code:", err);
           copyButton.classList.remove("active");
@@ -21,10 +21,7 @@ export function Markdown({ className, content }) {
     };
 
     document.addEventListener("click", handleCopyClick);
-
-    return () => {
-      document.removeEventListener("click", handleCopyClick);
-    };
+    return () => document.removeEventListener("click", handleCopyClick);
   }, []);
 
   return (
@@ -32,8 +29,8 @@ export function Markdown({ className, content }) {
       className={cn(className, "lp-markdown")}
       dangerouslySetInnerHTML={markup}
     />
-  )
-}
+  );
+});
 
 export default function PureHTMLBlock({ element, className = "", data, ...props }) {
   if (element.element == MARKDOWN) {
