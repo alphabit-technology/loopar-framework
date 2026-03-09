@@ -433,7 +433,8 @@ export class SequelizeORM extends Connector {
       const ref = loopar.getRef(document);
       constructor = ref?.__REF__?.name || "Entity";
     }
-    return await this.count(constructor, { name: document }) > 0;
+
+    return await this.count(constructor, { name: document }) > 0 && await this.hasTable(document);
   }
 
   async count(document, condition) {

@@ -123,10 +123,12 @@ export class Builder {
     const iconImports = new Set();
     for (const [entity, ent] of Object.entries(refIcons)) {
       if(!ent.isSingle){
-        for (const res of await this.db.getAll(entity, ent.fields)) {
-          for(const field of ent.fields) {
-            const icon = (res[field] || "").replaceAll(/[- ]/g, '');
-            lucideIcons[icon] && iconImports.add(res[field].replaceAll(/[- ]/g, ''));
+        if(await this.db.hasEntity(null, entity)){
+          for (const res of await this.db.getAll(entity, ent.fields)) {
+            for(const field of ent.fields) {
+              const icon = (res[field] || "").replaceAll(/[- ]/g, '');
+              lucideIcons[icon] && iconImports.add(res[field].replaceAll(/[- ]/g, ''));
+            }
           }
         }
       }else{

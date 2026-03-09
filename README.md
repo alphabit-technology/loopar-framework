@@ -10,23 +10,32 @@
 # Installation
 ## Automatic Installation
 ### With NPX
-````shell
-sudo npx loopar-install project-name --port 8080
-````
+
+```shell
+npx loopar-install project-name --port 8080
+```
+
+> [!NOTE]
+> **Permissions:** Loopar needs to create files and folders during installation.
+> - **macOS/Linux:** If you get a permissions error, re-run with `sudo`.
+> - **Windows:** If you get a permissions error, run PowerShell or Command Prompt as Administrator.
+
 > Your server will start automatically in the dev environment.
 
 ## Manual Installation
 ### Clone from Git
-````shell
+```shell
 git clone https://github.com/alphabit-technology/loopar-framework.git project-name
 cd project-name
-````
+```
+
 ##### Install with yarn
-````shell
+```shell
 yarn install
 yarn run dev
-````
->[!IMPORTANT]
+```
+
+> [!IMPORTANT]
 > Loopar uses a workspace-based monorepo structure. **Yarn 4+ is required** for installation — other package managers (npm, pnpm) are not supported and may cause dependency resolution errors.
 
 > If you don't have Yarn 4, enable it via Corepack (included with Node.js 16.9+):
