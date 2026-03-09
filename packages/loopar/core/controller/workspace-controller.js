@@ -2,6 +2,7 @@
 
 import AuthController from "./auth-controller.js";
 import { loopar, fileManager } from "loopar";
+import { pathToFileURL } from 'url';
 import fs from 'fs';
 
 export default class WorkspaceController extends AuthController {
@@ -42,7 +43,7 @@ export default class WorkspaceController extends AuthController {
     if (checkAuth) {
       await this.beforeAction();
     }
-    
+
     global.File = class SimulatedFile {
       constructor(buffer, fileName, options = {}) {
         this.buffer = Buffer.from(buffer);
@@ -57,9 +58,9 @@ export default class WorkspaceController extends AuthController {
     let HTML, template;
 
     const _p = (path) => loopar.makePath(loopar.pathRoot, path);
-    
+
     if(isProduction) {
-      const { render } = await import(_p("dist/server/entry-server.js"));
+      const { render } = await import(pathToFileURL(_p("dist/server/entry-server.js")).href);
       HTML = await render(url, __META__, this.req, this.res);
       template = fs.readFileSync("dist/client/main.html", 'utf-8');
     }else{
@@ -68,7 +69,7 @@ export default class WorkspaceController extends AuthController {
       HTML = await render(url, __META__, this.req, this.res);
       template = await vite.transformIndexHtml(url, fs.readFileSync(_p("main.html"), 'utf-8'));
     }
-    
+
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
 

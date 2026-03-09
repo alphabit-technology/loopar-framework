@@ -1,4 +1,5 @@
 import path from 'pathe';
+import { pathToFileURL } from 'url';
 import fs from 'fs';
 import { build } from 'vite';
 
@@ -22,6 +23,6 @@ if (!fs.existsSync(distPath)) {
   });
 }
 
-const { renderMarkdown } = await import(path.resolve(selfRoute, "dist/ssr/markdown-render.js"));
+const { renderMarkdown } = await import(pathToFileURL(path.resolve(selfRoute, "dist/ssr/markdown-render.js")).href);
 
 export const markdownRenderer = (markdown) => renderMarkdown(markdown);
