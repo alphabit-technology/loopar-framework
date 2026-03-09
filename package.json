@@ -13,19 +13,18 @@
   "scripts": {
     "preinstall": "node bin/installer-clean.js",
     "postinstall": "node bin/ensure-site.js",
-    
     "dev": "node bin/loopar-cli.js dev && pm2 logs",
     "start": "node bin/loopar-cli.js start",
     "stop": "node bin/loopar-cli.js stop",
     "restart": "node bin/loopar-cli.js restart",
     "logs": "node bin/loopar-cli.js logs",
     "list": "node bin/loopar-cli.js list",
-    
     "build": "node bin/build-clean.js && npm-run-all build:client build:server",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr app/entry-server.jsx"
   },
   "bin": {
     "loopar": "./bin/loopar-cli.js"
-  }
+  },
+  "packageManager": "yarn@4.13.0"
 }

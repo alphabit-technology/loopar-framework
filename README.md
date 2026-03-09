@@ -5,11 +5,12 @@
 
 # Prerequisites
 > 1. Node JS 22+
+> 2. Yarn 4+ (required)
 
 # Installation
 ## Automatic Installation
 ### With NPX
-```shell
+````shell
 sudo npx loopar-install project-name --port 8080
 ````
 > Your server will start automatically in the dev environment.
@@ -20,21 +21,18 @@ sudo npx loopar-install project-name --port 8080
 git clone https://github.com/alphabit-technology/loopar-framework.git project-name
 cd project-name
 ````
-##### Install with pnpm
-````shell
-pnpm install
-pnpm run dev
-````
-
 ##### Install with yarn
 ````shell
 yarn install
 yarn run dev
 ````
 >[!IMPORTANT]
-> The base configuration of the project has been created based on workspaces for easy maintenance of the integrated technologies, hence the exclusive use of pnpm or yarn for its installation is recommended..
+> Loopar uses a workspace-based monorepo structure. **Yarn 4+ is required** for installation — other package managers (npm, pnpm) are not supported and may cause dependency resolution errors.
 
-When any last proccess is completed, you can navigate in your browser, next the system show for you a wizard installation when you can define your DataBase type and conecction data, next you need define your project data, then your installation is completed.
+> If you don't have Yarn 4, enable it via Corepack (included with Node.js 16.9+):
+> ```shell
+> corepack enable
+> yarn set version stable
+> ```
 
-Now you can to start a design your projects
-
+When the process is completed, navigate to your browser. The system will show a wizard installation where you can define your database type and connection data, then your project data. Once completed, you can start designing your projects.

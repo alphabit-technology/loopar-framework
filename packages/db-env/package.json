@@ -2,6 +2,7 @@
   "name": "db-env",
   "version": "1.0.0",
   "type": "module",
+  "exports": "./index.js",
   "dependencies": {
     "@sequelize/core": "7.0.0-alpha.47",
     "@sequelize/mariadb": "7.0.0-alpha.47",

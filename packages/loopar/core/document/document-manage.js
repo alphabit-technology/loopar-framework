@@ -53,6 +53,7 @@ class DocumentManage {
     }
 
     let ENTITY = null;
+    
     const ref = loopar.getRef(document);
     if (!ref) return throwError();
 
