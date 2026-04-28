@@ -3,6 +3,13 @@ import { loopar } from '../loopar.js';
 import { Console } from './console.js';
 
 export class Document extends Console {
+  async getEntity(entity, data = null, { ifNotFound = 'throw', parse = false } = {}) {
+    const ref = this.getRef(entity);
+
+    console.log(["On get Entity", ref]);
+    return await documentManage.getDocument(ref.__ENTITY__, ref.__NAME__, data, { ifNotFound, parse });
+  }
+
   /**
    * 
    * @param {*} document DocumentType name

@@ -1,5 +1,5 @@
 import { useTable } from './TableContext';
-
+import { useWorkspace } from "@workspace/workspace-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@cn/components/ui/dropdown-menu";
 
-
 import { Checkbox } from "@cn/components/ui/checkbox";
 import { ChevronDownIcon } from "lucide-react";
 
 export function DropdownListGridActions(props) {
   const {bulkRemove, selectAllVisibleRows, selectedCount, rowsCount, selectorAllStatus} = useTable();
+  const {award, __META__} = useWorkspace();
+  const entity = __META__.Document?.Entity?.name
 
   return (
     <DropdownMenu>
@@ -56,14 +57,14 @@ export function DropdownListGridActions(props) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem
+          {!!award(entity, "bulkDelete") && <DropdownMenuItem
             disabled={selectedCount <= 0}
             onClick={() => {
               bulkRemove(props.deleteOnServer);
             }}
           >
             Bulk Remove
-          </DropdownMenuItem>
+          </DropdownMenuItem>}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

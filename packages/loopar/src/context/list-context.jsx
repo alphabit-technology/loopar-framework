@@ -31,10 +31,10 @@ function ListContextMildware({content, Document, docRef, hasSearchForm = true, o
               docRef={docRef}
             />
           ) : (
-            <GridView
+            [<GridView
               hasSearchForm={hasSearchForm}
               docRef={docRef}
-            />
+            />]
           )}
         </TableProvider>
       )}
@@ -51,7 +51,7 @@ export default class ListContext extends BaseDocument {
   hasSelectAll = true;
   hasSelectRow = true;
 
-  render(content) {
+  render(content, slots) {
     return super.render(
       <ListContextMildware
         content={content}
@@ -61,7 +61,8 @@ export default class ListContext extends BaseDocument {
         docRef={this}
         onlyGrid={this.onlyGrid}
         onlyList={this.onlyList}
-      />
+      />,
+      slots
     )
   }
 

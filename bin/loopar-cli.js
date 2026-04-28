@@ -31,7 +31,7 @@ function pm2Command(cmd, silent = false) {
 
 const commands = {
   dev() {
-    console.log(chalk.cyan(`Starting ${namespace}core site. `));
+    console.log(chalk.cyan(`Starting ${namespace}dev site. `));
     pm2Command(`node bin/ensure-site.js && pm2 start bin/loopar.ecosystem.config.mjs --namespace ${namespace} --silent && node bin/loopar-status.js --env development`);
   },
   start(siteName) {

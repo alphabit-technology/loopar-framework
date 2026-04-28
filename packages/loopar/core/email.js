@@ -1,14 +1,25 @@
 import nodemailer from 'nodemailer';
-import { loopar } from '../loopar.js';
+import { loopar } from './loopar.js';
 
-class EmailService {
+export class EmailService {
   transporter = null;
   settings = null;
   templateCache = new Map();
+  isProcessing = false;
+  processorInterval = null;
+
+  priorityWeight = {
+    'Urgent': 0,
+    'High': 1,
+    'Normal': 2,
+    'Low': 3
+  };
+
+  retryDelays = [1, 5, 15, 30, 60];
 
   async getSettings() {
     if (!this.settings) {
-      this.settings = await loopar.getDocument('Email Settings', 'Email Settings');
+      this.settings = await loopar.getDocument('Email Settings');
     }
     return this.settings;
   }
@@ -38,12 +49,10 @@ class EmailService {
     return this.transporter;
   }
 
-  // Reemplaza variables {{variable}} en el texto
   parseTemplate(text, variables = {}) {
     if (!text) return '';
     
     return text.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, key) => {
-      // Soporta variables anidadas: {{user.name}}
       const value = key.split('.').reduce((obj, k) => obj?.[k], variables);
       return value !== undefined ? value : match;
     });
@@ -68,6 +77,9 @@ class EmailService {
     }
   }
 
+  /**
+   * Sends one email immediately (no queue).
+   */
   async send({ to, subject, html, text, attachments = [], cc, bcc, replyTo }) {
     const settings = await this.getSettings();
     const transporter = await this.getTransporter();
@@ -84,16 +96,10 @@ class EmailService {
       attachments
     };
 
-    try {
-      const result = await transporter.sendMail(mailOptions);
-      return { success: true, messageId: result.messageId };
-    } catch (error) {
-      console.error('Email send error:', error);
-      return { success: false, error: error.message };
-    }
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: result.messageId };
   }
 
-  // Enviar usando plantilla
   async sendTemplate({ template, to, variables = {}, attachments = [], cc, bcc, replyTo }) {
     try {
       const tpl = await this.getTemplate(template);
@@ -115,14 +121,280 @@ class EmailService {
     }
   }
 
-  // Previsualizar plantilla sin enviar
-  async previewTemplate(templateName, variables = {}) {
-    const template = await this.getTemplate(templateName);
+  generateQueueId() {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    return `EQ-${timestamp}-${random}`.toUpperCase();
+  }
+
+  async queue({
+    to,
+    subject,
+    html,
+    template,
+    variables = {},
+    attachments = [],
+    cc,
+    bcc,
+    priority = 'Normal',
+    scheduledAt = null,
+    maxAttempts = 3
+  }) {
+    try {
+      let finalSubject = subject;
+      let finalHtml = html;
+
+      if (template) {
+        const tpl = await this.getTemplate(template);
+        finalSubject = this.parseTemplate(tpl.subject, variables);
+        finalHtml = this.parseTemplate(tpl.body, variables);
+      }
+
+      const queueEntry = await loopar.newDocument('Email Queue');
+      
+      queueEntry.name = this.generateQueueId();
+      queueEntry.to = Array.isArray(to) ? to.join(', ') : to;
+      queueEntry.subject = finalSubject;
+      queueEntry.html = finalHtml;
+      queueEntry.template = template || '';
+      queueEntry.variables = Object.keys(variables).length ? JSON.stringify(variables) : '';
+      queueEntry.attachments = attachments.length ? JSON.stringify(attachments) : '';
+      queueEntry.cc = cc || '';
+      queueEntry.bcc = bcc || '';
+      queueEntry.priority = priority;
+      queueEntry.status = 'Pending';
+      queueEntry.attempts = 0;
+      queueEntry.max_attempts = maxAttempts;
+      queueEntry.scheduled_at = scheduledAt;
+
+      await queueEntry.save();
+
+      return { success: true, queueId: queueEntry.name };
+    } catch (error) {
+      console.error('Queue error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async queueBulk(emails, defaultOptions = {}) {
+    const results = [];
     
+    for (const email of emails) {
+      const result = await this.queue({
+        ...defaultOptions,
+        ...email
+      });
+      results.push(result);
+    }
+
     return {
-      subject: this.parseTemplate(template.subject, variables),
-      html: this.parseTemplate(template.body, variables)
+      success: true,
+      total: emails.length,
+      queued: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      results
     };
+  }
+
+  async processQueueItem(item) {
+    try {
+      item.status = 'Processing';
+      item.attempts = (parseInt(item.attempts) || 0) + 1;
+      await item.save();
+
+      const attachments = item.attachments ? JSON.parse(item.attachments) : [];
+
+      const result = await this.send({
+        to: item.to,
+        subject: item.subject,
+        html: item.html,
+        cc: item.cc || undefined,
+        bcc: item.bcc || undefined,
+        attachments
+      });
+
+      if (result.success) {
+        item.status = 'Sent';
+        item.sent_at = new Date().toISOString();
+        item.message_id = result.messageId;
+        item.error_log = '';
+      } else {
+        throw new Error(result.error);
+      }
+
+      await item.save();
+      return { success: true, id: item.name };
+
+    } catch (error) {
+      const attempts = parseInt(item.attempts) || 0;
+      const maxAttempts = parseInt(item.max_attempts) || 3;
+
+      const errorLog = item.error_log || '';
+      const timestamp = new Date().toISOString();
+      item.error_log = `${errorLog}[${timestamp}] Attempt ${attempts}: ${error.message}\n`;
+
+      if (attempts >= maxAttempts) {
+        item.status = 'Failed';
+      } else {
+        item.status = 'Pending';
+        const delayMinutes = this.retryDelays[Math.min(attempts - 1, this.retryDelays.length - 1)];
+        const nextRetry = new Date(Date.now() + delayMinutes * 60 * 1000);
+        item.next_retry_at = nextRetry.toISOString();
+      }
+
+      await item.save();
+      return { success: false, id: item.name, error: error.message };
+    }
+  }
+
+  async processQueue(limit = 10) {
+    if (this.isProcessing) {
+      return { success: false, message: 'Queue is already being processed' };
+    }
+
+    this.isProcessing = true;
+    const results = [];
+
+    try {
+      const now = new Date().toISOString();
+
+      const pendingEmails = await loopar.db.getAll('Email Queue', 
+        ['name'],
+        {
+          '=': { status: 'Pending' },
+          'OR': [
+            { 'IS NULL': { scheduled_at: true } },
+            { '<=': { scheduled_at: now } }
+          ],
+          'AND': {
+            'OR': [
+              { 'IS NULL': { next_retry_at: true } },
+              { '<=': { next_retry_at: now } }
+            ]
+          }
+        },
+        limit
+      );
+
+      const sortedIds = pendingEmails.sort((a, b) => {
+        return (this.priorityWeight[a.priority] || 2) - (this.priorityWeight[b.priority] || 2);
+      });
+
+      for (const { name } of sortedIds) {
+        const item = await loopar.getDocument('Email Queue', name);
+        const result = await this.processQueueItem(item);
+        results.push(result);
+      }
+
+      return {
+        success: true,
+        processed: results.length,
+        sent: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results
+      };
+
+    } catch (error) {
+      console.error('Process queue error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  startQueueProcessor(intervalMs = 60000) {
+    if (this.processorInterval) {
+      console.log('Queue processor already running');
+      return;
+    }
+
+    console.log(`📧 Email queue processor started (interval: ${intervalMs}ms)`);
+    
+    this.processorInterval = setInterval(async () => {
+      const result = await this.processQueue();
+      if (result.processed > 0) {
+        console.log(`📧 Processed ${result.processed} emails (${result.sent} sent, ${result.failed} failed)`);
+      }
+    }, intervalMs);
+
+    this.processQueue();
+  }
+
+  stopQueueProcessor() {
+    if (this.processorInterval) {
+      clearInterval(this.processorInterval);
+      this.processorInterval = null;
+      console.log('📧 Email queue processor stopped');
+    }
+  }
+
+  async getQueueStats() {
+    const stats = {};
+    
+    for (const status of ['Pending', 'Processing', 'Sent', 'Failed', 'Cancelled']) {
+      stats[status.toLowerCase()] = await loopar.db.count('Email Queue', { status });
+    }
+
+    stats.total = Object.values(stats).reduce((a, b) => a + b, 0);
+    
+    return stats;
+  }
+
+  async retryFailed(ids = null) {
+    const filter = { '=': { status: 'Failed' } };
+    
+    if (ids && ids.length) {
+      filter['IN'] = { name: ids };
+    }
+
+    const failed = await loopar.db.getAll('Email Queue', ['name'], filter);
+    let updated = 0;
+
+    for (const { name } of failed) {
+      const item = await loopar.getDocument('Email Queue', name);
+      item.status = 'Pending';
+      item.attempts = 0;
+      item.next_retry_at = null;
+      await item.save();
+      updated++;
+    }
+
+    return { success: true, updated };
+  }
+
+  async cancelPending(ids) {
+    let cancelled = 0;
+
+    for (const id of ids) {
+      try {
+        const item = await loopar.getDocument('Email Queue', id);
+        if (item.status === 'Pending') {
+          item.status = 'Cancelled';
+          await item.save();
+          cancelled++;
+        }
+      } catch (e) {
+      }
+    }
+
+    return { success: true, cancelled };
+  }
+
+  async cleanOldEmails(daysOld = 30) {
+    const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString();
+    
+    const oldEmails = await loopar.db.getAll('Email Queue', ['name'], {
+      '<=': { creation: cutoffDate },
+      'IN': { status: ['Sent', 'Failed', 'Cancelled'] }
+    });
+
+    let deleted = 0;
+    for (const { name } of oldEmails) {
+      await loopar.deleteDocument('Email Queue', name);
+      deleted++;
+    }
+
+    return { success: true, deleted };
   }
 
   async testConnection() {
@@ -135,11 +407,18 @@ class EmailService {
     }
   }
 
+  async previewTemplate(templateName, variables = {}) {
+    const template = await this.getTemplate(templateName);
+    
+    return {
+      subject: this.parseTemplate(template.subject, variables),
+      html: this.parseTemplate(template.body, variables)
+    };
+  }
+
   reset() {
     this.transporter = null;
     this.settings = null;
     this.templateCache.clear();
   }
 }
-
-export const emailService = new EmailService();

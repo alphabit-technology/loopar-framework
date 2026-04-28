@@ -282,7 +282,7 @@ export function Select({
       >
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder={`Search ${data.label}...`}
+            placeholder={`Search ${data.label || props.model}...`}
             className="h-9"
             onKeyUp={searchHandler}
           />

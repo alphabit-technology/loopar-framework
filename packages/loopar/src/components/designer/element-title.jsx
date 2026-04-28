@@ -1,7 +1,5 @@
-// element-title.jsx
 import { memo, useCallback } from "react";
-import { Button } from "@cn/components/ui/button";
-import { GripVertical, PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@cn/lib/utils";
 import { useDesigner } from "@context/@/designer-context";
 
@@ -53,7 +51,6 @@ export const ElementTitle = memo(function ElementTitle({
       )}
       {...props}
     >
-      {/* Acciones */}
       <div
         className={cn(
           "flex items-center transition-opacity duration-150 no-drag pr-1",
@@ -74,7 +71,6 @@ export const ElementTitle = memo(function ElementTitle({
         </div>
       </div>
 
-      {/* Tag - sin Button */}
       <span
         className="text-primary font-semibold italic cursor-pointer leading-none"
         onClick={handleEditElement}

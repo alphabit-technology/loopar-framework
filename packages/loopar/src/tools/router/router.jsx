@@ -1,5 +1,4 @@
 import HTTP from '@@tools/router/http';
-//import {makeUrl} from "@link"
 
 export default class Router extends HTTP {
   #route = global.location;
@@ -57,7 +56,7 @@ export default class Router extends HTTP {
 
   stripPrefix(route) {
     if (route.startsWith('desk')) route = route.substr(5);
-    if (["/", "#", "!"].includes(route.substr(0, 1) === '/')) route = route.substr(1);
+    if (["/", "#", "!"].includes(route.substr(0, 1))) route = route.substr(1);
 
     return route;
   }
@@ -95,8 +94,9 @@ export default class Router extends HTTP {
 
     const ROUTE = isAuthRoute ? route : route.split('/')[0] === '' ? workspace + route : route;
 
-    if (isAuthRoute && isLoggedIn) return;
+    //if (isAuthRoute && isLoggedIn) return;
 
+    console.log(["ROUTE", ROUTE])
     this.setRoute(ROUTE);
   }
 

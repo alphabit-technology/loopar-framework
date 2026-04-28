@@ -102,7 +102,7 @@ export default class Installer extends BaseDocument {
 
       loopar.git().clone(repo, async (err, update) => {
         if(err) return reject(err);
-        await loopar.rebuildVite();
+        //await loopar.rebuildVite();
         resolve(true);
       });
     });
@@ -140,7 +140,6 @@ export default class Installer extends BaseDocument {
 
     const installEntity = async (e, ent) => {
       const [constructor, name] = e.split(':');
-
       const exist = await loopar.db.hasEntity(constructor, name);
 
       if(!ent.app || ent.app == this.app_name){
@@ -148,7 +147,7 @@ export default class Installer extends BaseDocument {
         if(entityData){
           const doc = exist ? await loopar.getDocument(constructor, name, entityData) : await loopar.newDocument(constructor, entityData);
           console.log([exist ? "Updating......." : "Installing.......", constructor, name]);
-          (!exist || reinstall) && await doc.save({ validate: false });
+          (!exist || reinstall) && await doc.save({ validate: false, reload: false });
         }else{
           console.log([`No data found for ${constructor}:${name}, skipping...`]);
         }
@@ -181,8 +180,7 @@ export default class Installer extends BaseDocument {
         await installDocument(e, ent);
       }
     }
-  
-    loopar.installingApp = null;
+
     if(appData.postInstaller){
       for(const e of Object.keys(appData.postInstaller)){
         let ent = appData.postInstaller[e];
@@ -218,6 +216,7 @@ export default class Installer extends BaseDocument {
 
         if (update && update.summary.changes) {
           await this.installData();
+          await loopar.build();
           resolve(true);
         } else {
           loopar.throw(`App ${this.app_name} is already updated`);

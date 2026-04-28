@@ -76,7 +76,8 @@ export function ListGrid(props) {
           return (
             <Link
               to={`update?name=${row.name}`}
-              className="justify-left flex gap-3 align-middle"
+              renderOnRestrict={true}
+              className="justify-left flex gap-3 align-middle justify-start"
             >
               <Avatar className={`rounded-3 h-11 w-11`} style={{ backgroundColor: color }}>
                 <AvatarFallback className={`bg-transparent text-xl font-bold`}>{loopar.utils.avatar(row.name)}</AvatarFallback>

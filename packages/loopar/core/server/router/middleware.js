@@ -5,6 +5,8 @@ import { getHttpError } from '../../global/http-errors.js';
 import BaseController from '../../controller/base-controller.js';
 import { merge } from 'es-toolkit/object';
 import { requestContext } from './request-context.js';
+import rateLimit from 'express-rate-limit';
+
 
 export class Middleware {
   constructor(options) {
@@ -239,6 +241,30 @@ export class Middleware {
         console.log(["Internal Server Error", renderErr])
         return this.throw(renderErr, res);
       }
+    };
+  }
+
+  setupRateLimitMiddleware() {
+    const minutes = 15;
+    const loginLimiter = rateLimit({
+      windowMs: minutes * 60 * 1000,
+      max: 15,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req, res) => {
+        res.status(429).json({
+          error: `Too many login attempts, try again in ${minutes} minutes`
+        });
+      },
+    });
+  
+    return (req, res, next) => {
+      const isLoginPost = req.method === 'POST' 
+        && req.__WORKSPACE_NAME__ === 'auth'
+        && req._parsedUrl.pathname.toLowerCase().includes('login');
+  
+      if (!isLoginPost) return next();
+      return loginLimiter(req, res, next);
     };
   }
 

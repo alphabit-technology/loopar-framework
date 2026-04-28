@@ -20,6 +20,8 @@ export default class ClientManager {
       return false;
     }
 
+    if(value === 'null') return null
+
     return value;
   }
 

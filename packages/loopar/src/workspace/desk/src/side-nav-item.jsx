@@ -21,7 +21,9 @@ export const SideNavItem = (props) => {
   } = props;
 
   const linkProps = path ? external : {};
-  const { collapseSidebarWidth, activeModule } = useWorkspace();
+  const { collapseSidebarWidth, activeModule, award } = useWorkspace();
+  if(!award(`Module.${path}`, "view")) return null;
+  
   const [active, setActive] = useCookies(path);
 
   const pathname = usePathname();
@@ -31,15 +33,17 @@ export const SideNavItem = (props) => {
     setActive(moduleName === path || path == activeModule);
   }, [pathname, activeModule]);
 
+
   const link = compact ? (
     <Link
+      award={false}
       to={`/desk/${path}`}
-      className={`transition-duration-100 h-18 flex w-full flex-col justify-start space-y-0 rounded-full text-left align-middle transition-all ${props.className || ''}`}
+      className={`transition-duration-100 h-18 flex w-full flex-col justify-start space-y-0 rounded-full text-left align-middle transition-all h-auto ${props.className || ''}`}
       active={active}
       //activeClassName="bg-red-500 font-medium text-primary-foreground hover:bg-primary"
     >
-      <Icon data={{icon}} className="h-6 w-6"/>
-      { title && title.split(' ').map((word, index) => (
+      <Icon data={{icon}} className="h-6 w-8"/>
+      { title && (title.replace(" ", "-")).split('-').map((word, index) => (
         <small 
           key={path + index} 
           className="truncate text-center h-auto" 
@@ -54,6 +58,7 @@ export const SideNavItem = (props) => {
 
   return compact ? link : (
     <Link
+      award={false}
       className={`flex w-full justify-start rounded py-1 text-left align-middle ${props.className || ''}`}
       {...linkProps}
       to={`/desk/${path}`}

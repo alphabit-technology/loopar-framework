@@ -152,6 +152,7 @@ export function ElementEditor() {
           </div>
           <Tabs
             data={{ name: "element_editor_tabs" }}
+            tabsClassName="flex flex-wrap justify-start border"
           >
             {metaFieldsData.map(({ group, elements }) => (
               <Tab

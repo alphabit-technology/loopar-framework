@@ -14,12 +14,13 @@ export default class WebContext extends BaseDocument {
     super(props);
   }
 
-  render(content = []) {
+  render(content = [], slots) {
     return super.render(
       <>
       <MetaComponent elements={JSON.parse(this.Document.__ENTITY__.doc_structure)} parent={this}/>
       {content}
-      </>
+      </>,
+      slots
     );
   }
 

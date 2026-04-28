@@ -57,7 +57,7 @@ const FormPrimaryActions = ({Document}) => {
 export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...props}) {
   const {docRef} = useDocument();
   const {data, meta, Entity} = Document;
-
+  
   const contextName = ["create", "update"].includes(meta.action) ? "form" : meta.action;
 
   const title = ((meta.title || context === 'module') ? meta.module_group :
@@ -94,7 +94,6 @@ export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...pro
   }
 
   const customActions = docRef?.customActions || {};
-
   return (
     <>
       <div
@@ -102,7 +101,9 @@ export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...pro
         style={{paddingRight: sidebarOpen ? "0" : "2rem"}}
       >
         <div className="gap-1">
-          <h1 className="text-4xl font-bold">{title}</h1>
+          <h1 className="text-4xl font-bold flex flex-row inline-block align-baseline">
+            {title}{Document?.name ? <span className="text-[1.52rem] text-muted-foreground"> {Document.name}</span> : null}
+          </h1>
           <div className="flex flex-row items-center gap-1">
             {props.hasBreadcrumb ? <Breadcrumbs Document={Document}/> : <div className="py-2"/>}
           </div>

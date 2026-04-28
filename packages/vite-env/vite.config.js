@@ -123,7 +123,12 @@ export default defineConfig(({ command }) => {
     server: {
       allowedHosts: true,
       hmr: true,
-      watch: { usePolling: true },
+      watch: {
+        usePolling: process.env.VITE_USE_POLLING === 'true',
+        ignored: [
+          '**/sites/**/config/**',
+        ],
+      },
       fs: {
         allow: ['..'],
       }

@@ -4,6 +4,22 @@ import * as dateUtils from "@global/date-utils";
 import scriptManager from "@@tools/script-manager";
 import { elementsDict, AIPrompt } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
+import { LoopSocket } from "@services/realtime/LoopSocket";
+import { useEffect } from "react";
+
+class ClientDatabase{
+  constructor(loopar){
+    this.loopar = loopar
+  }
+
+  async getList(document, options){
+    return await this.loopar.method("Db", "getList", {document, ...options})
+  }
+
+  async getAll(document, options){
+    return await this.loopar.method("Db", "getAll", {document, ...options, all: true})
+  }
+}
 
 class Loopar extends Router {
   scriptManager = scriptManager;
@@ -20,6 +36,7 @@ class Loopar extends Router {
     this.utils = Helpers;
     this.cookie = Helpers.cookie;
     this.dateUtils = dateUtils;
+    this.db = new ClientDatabase(this);
   }
 
   dialog(dialog) {
@@ -39,10 +56,12 @@ class Loopar extends Router {
 
   confirm(message, callback) {
     this.emit('dialog', {
+      icon: null,
       type: "confirm",
       title: "Confirm",
       content: message,
       ok: callback,
+      ...(typeof message == 'object' ? message : {})
     });
   }
 
@@ -174,26 +193,33 @@ class Loopar extends Router {
     Emitter.emit('freeze', freeze);
   }
 
-  method(Document, method, params = {}, options = {}) {
-    const curUrl = window.location.href;
-    const curParams = new URLSearchParams(curUrl.split('?')[1]);
-
-    const curParamsObject = {};
-    curParams.forEach((value, key) => {
-      curParamsObject[key] = value;
-    });
-
-    const url = `/desk/${Document}/${method}`;
-    params = typeof params === "string" ? { name: params } : params;
-    
-    return this.post(url, {...params, ...curParamsObject }, { freeze: true, ...options });
+  method(Document, method, query = {}, options = {}) {
+    const queryParamsObject = {};
+  
+    const url = `/api/${Document}/${method}`;
+    query = typeof query === "string" ? { name: query } : query;
+  
+    const hasCallback = options.success || options.error || options.always;
+  
+    if (hasCallback) {
+      return this.post(url, { ...query, ...queryParamsObject }, { freeze: true, ...options });
+    } else {
+      return new Promise((resolve, reject) => {
+        this.post(url, { ...query, ...queryParamsObject }, {
+          freeze: true,
+          ...options,
+          success: resolve,
+          error: reject,
+        });
+      });
+    }
   }
 
-  async getMeta(Document, action, params = {}) {
+  async getMeta(Document, action, query = {}) {
     if (!this.#loadedMeta[Document + action]) {
       const loadMeta = async () => {
         return new Promise((resolve) => {
-          this.method(Document, action, params, {
+          this.method(Document, action, query, {
             success: (data) => {
               this.#loadedMeta[Document + action] = data;
               resolve();
@@ -209,12 +235,8 @@ class Loopar extends Router {
   }
 
   require(src, callback, options = { async: true }) {
-    const loadScript = (src, callback, options) => {
-      return new Promise((resolve) => {
-        window.loadScript(src, callback, options);
-        resolve();
-      });
-    };
+    const loadScript = (currentSrc, currentCallback, currentOptions) =>
+      this.scriptManager.loadScript(currentSrc, currentCallback, currentOptions);
 
     if (Array.isArray(src)) {
       return Promise.all(src.map((s) => loadScript(s, callback, options)));
@@ -229,18 +251,7 @@ class Loopar extends Router {
   }
 
   includeCSS(src, callback) {
-    return new Promise((resolve) => {
-      window.loadStylesheet(src).then(() => {
-        //callback && callback();
-        resolve();
-      });
-
-      /*this.scriptManager.loadStylesheet(src, () => {
-            callback && callback();
-            resolve();
-         });*/
-    });
-    //this.scriptManager.loadStylesheet(src, callback);
+    return this.scriptManager.loadStylesheet(src, { callback });
   }
 
   #reverses = {
@@ -343,3 +354,38 @@ class Loopar extends Router {
 const loopar = new Loopar();
 export default loopar;
 export { loopar, elementsDict, AIPrompt };
+
+export function useRealtime(event, handler, { ignoreSelf = false } = {}) {
+  useEffect(() => {
+    if (!event || !handler) return;
+
+    const [room, action] = event.includes(":")
+      ? event.split(":")
+      : ["__global__", event];
+
+    let socket = null;
+    let listener = null;
+    let released = false;
+
+    LoopSocket.onReady((s) => {
+      if (released) return;
+      socket = s;
+      LoopSocket.join(room);
+
+      listener = (payload) => {
+        if (ignoreSelf && payload?.user === window.__user__) return;
+        handler(payload);
+      };
+
+      s.on(action, listener);
+    });
+
+    return () => {
+      released = true;
+      if (socket) {
+        if (listener) socket.off(action, listener);
+        LoopSocket.leave(room);
+      }
+    };
+  }, [event, handler, ignoreSelf]);
+}

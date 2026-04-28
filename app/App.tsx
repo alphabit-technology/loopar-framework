@@ -1,8 +1,10 @@
 import { cn } from "@cn/lib/utils";
-import React, {useEffect} from "react";
+import React, {useEffect, createContext} from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { useNavigate } from 'react-router';
+import { RealtimeProvider } from "@services/realtime/RealtimeContext";
+import { AuthProvider} from "@context/AuthContext"
 
 type ViewType = "module" | "app" | "page" | "list" | "view" | "form";
 type Environment = "development" | "staging" | "production";
@@ -24,6 +26,7 @@ interface DocumentInterface {
   data: Record<string, unknown>;
   Entity: EntityInterface;
   spacing: Record<string, unknown>;
+  pathname: string
 }
 
 interface CookieOptions {
@@ -53,14 +56,19 @@ interface RootLayoutProps {
     };
     Document: DocumentInterface;
     menu_data?: Record<string, unknown>;
+    site: string,
+    userId: string
   };
+  pathname: string;
+  permissions: ()=>{}
 }
 
-const Main = ({ __META__ }: RootLayoutProps) => {
+const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
   const { components, Document } = __META__;
   const { Workspace, View } = components;
 
   const navigate = useNavigate();
+  
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
@@ -73,36 +81,44 @@ const Main = ({ __META__ }: RootLayoutProps) => {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, [navigate]);
-
+  
   return (
-    <main
-      className={cn(
-        "h-full font-sans antialiased"
-      )}
-    >
-      <div className="relative flex flex-col">
-        <div className="flex-1" translate="yes">
-          <WorkspaceProvider
-            __META__={__META__}
-            Documents={{
-              [Document.name]: {
-                ...__META__,
-                View,
-                active: true,
-              }
-            }}
-          >
-            <Workspace
-              menuData={__META__.menu_data}
-            />
-          </WorkspaceProvider>
+    <RealtimeProvider siteName={__META__.site} userId={__META__.userId}>
+      <main
+        className={cn(
+          "h-full font-sans antialiased"
+        )}
+      >
+        <div className="relative flex flex-col">
+          <div className="flex-1" translate="yes">
+            <AuthProvider
+              permissions={permissions}
+              userId={__META__.userId}
+            >
+              <WorkspaceProvider
+                __META__={__META__}
+                Documents={{
+                  [Document.name]: {
+                    ...__META__,
+                    View,
+                    active: true
+                  }
+                }}
+                pathname={pathname}
+              >
+                <Workspace
+                  menuData={__META__.menu_data}
+                />
+              </WorkspaceProvider>
+            </AuthProvider>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </RealtimeProvider>
   );
 }
 
-const App = ({ __META__, }: RootLayoutProps) => {
+const App = ({ __META__, permissions, pathname}: RootLayoutProps) => {
   const [, setUpdate] = React.useState(false);
   const { cookieManager } = __META__.services;
 
@@ -111,6 +127,8 @@ const App = ({ __META__, }: RootLayoutProps) => {
       <CookiesProvider manager={cookieManager} updater={setUpdate}>
         <Main
           __META__={__META__}
+          permissions={permissions}
+          pathname={pathname}
         />
       </CookiesProvider>
     </>

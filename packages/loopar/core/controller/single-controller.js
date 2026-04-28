@@ -4,6 +4,8 @@ import BaseController from './base-controller.js';
 import { loopar } from "loopar";
 
 export default class SingleController extends BaseController {
+  static inheritedActions = ['view', 'update', 'print'];
+  
   constructor(props) {
     super(props);
 
@@ -16,9 +18,11 @@ export default class SingleController extends BaseController {
 
   async sendAction(action) {
     await this.beforeAction();
-    const selfAction = `action${loopar.utils.Capitalize(action)}`;
-    if (typeof this[selfAction] == 'function') {
-      return await this[selfAction]();
+    const selfAction = `${loopar.utils.Capitalize(action)}`;
+    if (typeof this[`publicAction${selfAction}`] == 'function') {
+      return await this[`publicAction${selfAction}`]();
+    }else if(typeof this[`action${selfAction}`] == 'function'){
+      return await this[`action${selfAction}`]();
     }else{
       return await this.sendDocument(action);
     }
@@ -28,21 +32,13 @@ export default class SingleController extends BaseController {
     return await this.sendDocument();
   }
   
-  async sendDocument(action=this.document) {
+  async sendDocument(action=this.document, data={}) {
     const webApp = loopar.webApp || { menu_items: [] };
     const menu = webApp.menu_items.find(item => [item.page, item.link].includes(action));
 
     const document = await loopar.getDocument(menu?.page || action);
-    /* document.__ENTITY__ = {
-      name: document.__ENTITY__?.name,
-      doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
-    } */
-    //const parent = await this.getParent();
-    //document.activeParentMenu = parent;
-    //document.__DOCUMENT_TITLE__ = menu?.link || this.document;
 
     return await this.render({
-      //...await document.__meta__(),
       Entity: {
         name: document.__ENTITY__?.name,
         background_image: document.__ENTITY__?.background_image,
@@ -50,6 +46,7 @@ export default class SingleController extends BaseController {
       },
       activeParentMenu: await this.getParent(),
       __DOCUMENT_TITLE__: menu?.link || this.document,
+      ...data,
     });
   }
 }

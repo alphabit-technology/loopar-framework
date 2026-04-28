@@ -1,6 +1,7 @@
 import {Button} from "@cn/components/ui/button";
 import {useDocument} from "@context/@/document-context";
 import loopar from "loopar";
+import { VARIANTS } from "./base/ComponentDefaults";
 
 const buttons = {
   primary: "primary",
@@ -53,12 +54,7 @@ MetaButton.metaFields =()=>{
       variant: {
         element: SELECT,
         data: {
-          options: Object.keys(buttons).map((button) => {
-            return {
-              option: button,
-              value: buttons[button],
-            };
-          }),
+          options: Object.keys(VARIANTS).map(k => ({ value: VARIANTS[k], label: k })),
         },
       },
     },

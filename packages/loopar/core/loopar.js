@@ -6,13 +6,19 @@ import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
 import jwt from 'jsonwebtoken';
-import Auth from './auth.js';
+import Auth from './auth/Auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
 import { Server } from './server/server.js';
 import { fileManage } from './file-manage.js';
 import { cookieManager, sessionManager } from './server/router/request-context.js';
 import { markdownRenderer } from "markdown";
+import {EmailService} from "./email.js"
+import { cacheManager } from './cache/cache-manager.js';
+import { RealtimeManager } from './realtime/RealtimeManager.js';
+import { HookManager } from "./HookManager.js";
+import argon2 from 'argon2';
+
 
 export class Loopar extends Document {
   #installingApp = false;
@@ -22,6 +28,7 @@ export class Loopar extends Document {
   renderMarkdownSSR
   utils = Helpers;
   __INSTALLED_APPS__
+  hookManager = new HookManager();
 
   constructor() {
     super("Loopar");
@@ -31,10 +38,36 @@ export class Loopar extends Document {
     this.db = new SequelizeORM();
   }
 
+  hook(document, event, callback) {
+    this.hookManager.register(document, event, callback);
+  }
+
+  /* emit(event, payload = null) {
+    const [room, action] = event.includes(":")
+      ? event.split(":")
+      : ["__global__", event];
+  
+    RealtimeManager.emit(this.tenantId, room, action, payload);
+  } */
+
+    emit(event, payload = null) {
+      const [room, action] = event.includes(":")
+        ? event.split(":")
+        : ["__global__", event];
+    
+      const data = {
+        ...(payload && typeof payload === 'object' ? payload : { data: payload }),
+        user: this.auth?.user() ?? null,
+      };
+    
+      RealtimeManager.emit(this.tenantId, room, action, data);
+    }
+
   async init({
     tenantId,
     appsBasePath
   }){
+    this.hookManager.attach(SequelizeORM);
     this.tenantId = tenantId;
     this.tenantPath = this.makePath(this.pathRoot, "sites", tenantId);
     this.pathCore = `${process.cwd()}/packages/loopar`
@@ -57,10 +90,17 @@ export class Loopar extends Document {
     
     await this.buildGlobalEnvironment();
     await this.loadConfig();
-   
+    await cacheManager.initialize(this);
     await this.db.initialize();
     await this.build();
-    await this.buildIcons();
+    try {
+      await this.buildIcons();
+    } catch (error) {
+      console.log(["Err on build Icons", error])
+      //this.throw(["Err On Build Icons"])
+    }
+    
+    this.mail = new EmailService()
 
     await tailwinInit(this.tenantId);
   }
@@ -136,9 +176,25 @@ export class Loopar extends Document {
     return simpleGit(this.gitAppOptions(app));
   }
 
-  hash(value) {
-    return sha1(value);
-  }
+  async hash (plain){
+    if (!plain) return null;
+    return argon2.hash(plain, { type: argon2.argon2id });
+  };
+
+  async verifyHash(plain, stored){
+    if (!plain || !stored) return false;
+  
+    try {
+      if (stored.startsWith('$argon2')) {
+        return await argon2.verify(stored, plain);
+      }
+
+      return sha1(plain) === stored;
+    } catch (e) {
+      console.error('[verifyHash] Error:', e.message);
+      return false;
+    }
+  };
 
   #dbConfig = null;
 
@@ -204,6 +260,73 @@ export class Loopar extends Document {
   async getSettings() {
     this.systemSettings ??= await this.db.getDoc("System Settings", null, ["*"], { isSingle: 1 });
     return this.systemSettings;
+  }
+
+  /**
+   * Extracts method names that start with "action" from a class,
+   * walking up the prototype chain but stopping at BaseController
+   * to avoid including framework-level actions.
+   *
+   * Returns names without the "action" prefix, lowercased first char.
+   * e.g. "actionCreate" → "create"
+   *
+   * @param {Function} ControllerClass
+   * @returns {string[]}
+   */
+  extractControllerMethods(ControllerClass, diff) {
+    const actions = new Set();
+    let proto = ControllerClass.prototype;
+    let isOwner = true;
+    // currentFilter: restriction accumulated along the chain
+    // null = no restriction yet
+    // string[] = the most restrictive intersection so far
+    let currentFilter = null;
+  
+    while (
+      proto &&
+      (!diff || proto.constructor?.name !== diff) &&
+      proto !== Object.prototype
+    ) {
+      for (const key of Object.getOwnPropertyNames(proto)) {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, key);
+
+        if (!descriptor || descriptor.get || descriptor.set) continue;
+        if (typeof descriptor.value !== 'function') continue;
+  
+        if (key.startsWith('publicAction') && key.length > 12) {
+          actions.add(key);
+        } else if (key.startsWith('privateAction') && key.length > 13) {
+          if (isOwner) actions.add(key);
+        } else if (key.startsWith('action') && key.length > 6) {
+          const name = key.charAt(6).toLowerCase() + key.slice(7);
+          if (isOwner) {
+            actions.add(key);
+          } else if (currentFilter === null || currentFilter.includes(name)) {
+            actions.add(key);
+          }
+        }
+      }
+  
+      // Update accumulated filter:
+      // intersect current filter with this level's inheritedActions
+      const thisInherited = proto.constructor?.inheritedActions ?? null;
+  
+      if (isOwner) {
+        // First parent level — seed the filter from the owner's declaration
+        currentFilter = thisInherited;
+      } else if (thisInherited !== null) {
+        // Intersect — most restrictive wins
+        currentFilter = currentFilter === null
+          ? thisInherited
+          : currentFilter.filter(a => thisInherited.includes(a));
+      }
+      // If thisInherited === null → keep currentFilter as is (no new restriction)
+  
+      proto   = Object.getPrototypeOf(proto);
+      isOwner = false;
+    }
+  
+    return [...actions];
   }
 }
 

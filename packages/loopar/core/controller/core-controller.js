@@ -1,15 +1,15 @@
 'use strict'
 
 import express from "express";
-import AuthController from "./auth-controller.js";
+import AuthController from "../auth/AuthController.js";
 import { loopar } from "loopar";
 import { titleize } from "inflection";
 import {merge} from "es-toolkit/object";
 
 export default class CoreController extends AuthController {
-  //error = {};
   defaultImporterFiles = ['index', 'form'];
   response = {};
+
   hasData() {
     return Object.keys(this.data || {}).length > 0;
   }
@@ -19,7 +19,8 @@ export default class CoreController extends AuthController {
   }
 
   async sendAction(action) {
-    action = `action${loopar.utils.Capitalize(action)}`;
+    action = this[`publicAction${loopar.utils.Capitalize(action)}`] ? `publicAction${loopar.utils.Capitalize(action)}` : `action${loopar.utils.Capitalize(action)}`;
+    
     if (typeof this[action] !== 'function') {
       return await this.notFound({
         code: 404,
@@ -95,12 +96,6 @@ export default class CoreController extends AuthController {
     return { redirect: url };
   }
 
-  /* async render(meta) {
-    return merge(meta, {
-      data: { file }
-    });
-  } */
-
   redirect(url = null) {
     return { redirect: url };
   }
@@ -118,7 +113,20 @@ export default class CoreController extends AuthController {
     });
   }
 
-  async render(meta) {
+  async render(meta, options={}) {
+    if(meta.__meta__){
+      meta = {
+        //...meta,
+        ...await meta.__meta__(),
+        ...options,
+      }
+    }else{
+      meta = {
+        ...meta,
+        ...options
+      }
+    }
+    
     return merge(meta, {
       key: this.getKey(),
       instance: this.getInstance(),
@@ -134,10 +142,9 @@ export default class CoreController extends AuthController {
     if (!Document) return null;
 
     const getClient = () => {
-      if(["Page", "View"].includes(Document.Entity.type)) return "view";
       if (this.client) return this.client;
+      if(["Page", "View"].includes(Document.Entity.type)) return "view";
       
-
       const action = this.action;
       if (['create', 'update'].includes(action)) {
         return "form";
@@ -161,10 +168,6 @@ export default class CoreController extends AuthController {
     return loopar.utils.urlInstance(route);
   }
 
-  static async sidebarData() {
-    return loopar.modulesGroup;
-  }
-
   async actionSearch() {
     const document = await loopar.newDocument(this.document, { module: this.module });
     return await document.getListToSelectElement(this.q);
@@ -186,19 +189,16 @@ export default class CoreController extends AuthController {
   }
 
   async error(message, options, status){
+    const notify = options?.notify || {}
     return { 
       status: status || 500, 
       success: false, 
       message: message || "Error", 
       ...options, 
       notify: {
-        ...options.notify,
-        type: options.notify.type || "error",
-        message: options.notify.message || message || "Error"
+        ...notify,
+        type: notify.type || "error",
+        message: notify.message || message || "Error"
       } };
-  }
-
-  async actionSidebar() {
-    return { sidebarData: await CoreController.sidebarData() }
   }
 }

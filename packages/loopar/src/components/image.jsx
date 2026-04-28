@@ -68,6 +68,7 @@ export default function MetaImage(props) {
     <FallbackImage {...props} />
   )
 }
+
 MetaImage.droppable = false
 MetaImage.metaFields = () => {
   return [[

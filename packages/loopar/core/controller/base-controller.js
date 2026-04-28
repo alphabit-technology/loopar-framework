@@ -6,15 +6,12 @@ import CoreController from './core-controller.js';
 export default class BaseController extends CoreController {
   defaultAction = 'list';
   hasSidebar = true;
-
-  constructor(props) {
-    super(props);
-  }
+  static enabledActions = []
 
   async actionList() {
     if (this.hasData()) {
-      await loopar.session.set(this.document + '_q', this.data.q || {});
-      await loopar.session.set(this.document + '_page', this.data.page || 1);
+      loopar.session.set(this.document + '_q', this.data.q || {});
+      loopar.session.set(this.document + '_page', this.data.page || 1);
     }
 
     const data = Object.entries({ ...loopar.session.get(this.document + '_q') || {} }).reduce((acc, [key, value]) => {
@@ -61,7 +58,7 @@ export default class BaseController extends CoreController {
   }
 
   async actionUpdate(document) {
-    document ??= await loopar.getDocument(this.document, this.name, this.hasData() ? this.data : null);
+    document ??= await loopar.getDocument(this.document, this.query.name, this.hasData() ? this.data : null);
 
     if (this.hasData()) {
       const Entity = document.__ENTITY__;

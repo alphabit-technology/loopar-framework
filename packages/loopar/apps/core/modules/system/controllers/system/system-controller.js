@@ -4,12 +4,13 @@ import { loopar, fileManage, BaseController } from "loopar";
 
 export default class SystemController extends BaseController {
   client = "form";
-  publicActions = ['connect', 'install', 'update', 'reinstall'];
+  static publicActions = ['connect', 'install', 'update', 'reinstall'];
+  
   constructor(props) {
     super(props);
   }
 
-  async actionConnect() {
+  async publicActionConnect() {
     const model = await loopar.newDocument("Connector", this.data);
 
     if (this.hasData()) {
@@ -43,7 +44,7 @@ export default class SystemController extends BaseController {
     return await loopar.newDocument("Installer", { ...this.data, app_name: this.app_name });
   }
 
-  async actionInstall(reinstall = false) {
+  async publicActionInstall(reinstall = false) {
     if (this.hasData()) {
       const model = await this.getInstallerModel();
       model.app_name ??= this.getAppName();
@@ -66,7 +67,7 @@ export default class SystemController extends BaseController {
     }
   }
 
-  async actionUpdate() {
+  async publicActionUpdate() {
     if (this.app_name) {
       const model = await this.getInstallerModel();
       model.app_name ??= this.getAppName();
@@ -87,7 +88,7 @@ export default class SystemController extends BaseController {
   }
 
   async actionReinstall() {
-    return await this.actionInstall(true);
+    return await this.publicActionInstall(true);
   }
 
   async actionPull() {

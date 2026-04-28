@@ -72,6 +72,8 @@ export const elementsDefinition = {
     { element: "fragment", icon: "Scan" },
     { element: "container", icon: "Dock" },
     { element: "panel", icon: "PanelBottom" },
+    { element: "contact_form", icon: "Phone"},
+    { element: "form", icon: "Form"}
   ],
   [DESIGN_ELEMENT]: [
     { element: "image", icon: "Image" },
@@ -96,6 +98,7 @@ export const elementsDefinition = {
     { element: 'particles', icon: 'DotsHorizontal' },
     { element: 'particles_settings', icon: 'DotsHorizontal' },
     { element: 'example_viewer', icon: 'Scan' },
+    { element: 'review', icon: "Pencil"}
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },
@@ -125,7 +128,7 @@ export const elementsDefinition = {
     { element: "icon_input", icon: "Boxes", type: TYPES.text },
     { element: "radio_group", icon: "Circle", type: TYPES.text },
     { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
-    { element: "theme", icon: "Brush", type: TYPES.text },
+    { element: "slot", icon: "Plug"}
   ]
 }
 

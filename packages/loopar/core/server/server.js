@@ -12,8 +12,10 @@ import { createServer as createViteServer } from 'vite';
 import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
 import { requestContext } from './router/request-context.js';
-const server = new express();
+import http from "http";
+import { RealtimeManager } from "../realtime/RealtimeManager.js";
 
+const server = new express();
 
 export class Server extends Router {
   server = server;
@@ -26,7 +28,6 @@ export class Server extends Router {
   async initialize() {
     if (this.isProduction) {
       server.use(compression());
-
       server.use(zstdMiddleware({
         root: 'dist/client',
         priority: ['zst', 'br', 'gz'],
@@ -42,13 +43,11 @@ export class Server extends Router {
         },
         appType: 'custom'
       });
-
       server.use(this.vite.middlewares);
     }
 
     await this.#exposePublicDirectories();
     server.use(useragent());
-    
     this.#initializeSession();
     this.route();
     this.#start();
@@ -58,7 +57,6 @@ export class Server extends Router {
     server.use((req, res, next) => {
       requestContext.run({ req, res }, next);
     });
-
     server.use(cookieParser());
     server.use(express.json());
     server.use(express.urlencoded({ extended: true }));
@@ -72,26 +70,23 @@ export class Server extends Router {
 
     server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, "public")));
     server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
-    /* because need to define directory like images */
-    server.use("/assets/public/images", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
-
     server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, "public")));
     server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
-    server.use("/assets/public/theme.css", serveStatic(path.join(loopar.tenantPath, "theme.css")));
-    /* because need to define directory like images */
-    server.use("/assets/public/images", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    server.get("/assets/public/theme.css", (_req, res, next) => {
+      res.sendFile(path.join(loopar.tenantPath, "theme.css"), (err) => {
+        if (err) next();
+      });
+    });
 
     await this.exposeClientAppFiles();
   }
 
-  async exposeClientAppFiles(appName) {
+  async exposeClientAppFiles() {
     if (loopar.__installed__) {
       for (const app of Object.keys(loopar.installedApps)) {
         const appPath = loopar.makePath(loopar.pathRoot, "apps", app, this.uploadPath, "public");
-
-        console.log("Exposing public directory for: " + app)
+        console.log("Exposing public directory for: " + app);
         server.use("/assets/public", serveStatic(appPath));
-        server.use("/assets/public/images", serveStatic(appPath));
       }
     }
   }
@@ -100,7 +95,11 @@ export class Server extends Router {
     const port = process.env.PORT;
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
-    server.listen(port, () => {
+    const httpServer = http.createServer(server);
+    RealtimeManager.attach(httpServer);
+    //RealtimeManager.namespace(loopar.tenantId);
+
+    httpServer.listen(port, () => {
       console.log("Server is started in " + port + installMessage);
     });
   }

@@ -7,11 +7,11 @@ export default class FormController extends BaseController {
    constructor(props) {
       super(props);
 
-      this.action !== 'view' && this.redirect('view');
+      this.action !== 'update' && this.redirect('update');
    }
 
-  async actionView() {
+  /* async actionUpdate() {
     const document = await loopar.getDocument(this.document, this.name);
     return await this.render(document);
-  }
+  } */
 }

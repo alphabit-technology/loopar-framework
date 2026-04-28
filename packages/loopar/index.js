@@ -18,6 +18,9 @@ import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
 export {generateThemeCSS} from "./core/global/theme-generator.js";
 import { parseDocument } from './core/document/tools.js';
+import {PermissionManager} from './core/auth/PermissionManager.js'
+import {tenant} from './bin/tenant/tenant-builder.js';
+import { ActionScanner } from "./core/auth/ActionScanner.js";
 
 export {
   loopar,
@@ -39,5 +42,8 @@ export {
   MetaComponents,
   CoreInstaller,
   AIPrompt,
-  parseDocument, TYPES
+  parseDocument, TYPES,
+  PermissionManager,
+  tenant,
+  ActionScanner
 };

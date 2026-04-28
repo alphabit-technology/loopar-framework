@@ -12,7 +12,7 @@ export default class ReportContext extends BaseDocument {
     super(props);
   }
 
-  render(content) {
+  render(content, slots) {
     return super.render(
       <FormWrapper>
         <DeskGUI
@@ -23,7 +23,8 @@ export default class ReportContext extends BaseDocument {
           {content}
           </>
         </DeskGUI>
-      </FormWrapper>
+      </FormWrapper>,
+      slots
     );
   }
 }

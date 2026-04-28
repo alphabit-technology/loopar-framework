@@ -90,21 +90,17 @@ export default function FeatureCard(props) {
         )}
         style={hasImage ? props.style : undefined}
       >
-        {/* Icon Background */}
         {hasIcon && <IconBackground />}
         
-        {/* Image Overlay */}
         {hasImage && (
           <div className={cn("absolute inset-0", overlayMap[overlay_intensity])} />
         )}
         
-        {/* Gradient fade to content */}
         <div className={cn(
           "absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t to-transparent",
           content_position === "outside" ? "from-card" : "from-black/80"
         )} />
         
-        {/* Overlay content */}
         {content_position === "overlay" && (
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <Content />
@@ -112,7 +108,6 @@ export default function FeatureCard(props) {
         )}
       </div>
       
-      {/* Outside content */}
       {content_position === "outside" && (
         <div className="p-6 bg-card">
           <Content />
@@ -127,7 +122,7 @@ FeatureCard.metaFields = () => {
     group: "custom",
     elements: {
       icon: {
-        element: ICON_INPUT, // O TEXT si no tienes selector de iconos
+        element: ICON_INPUT,
         data: {
           label: "Icon",
           description: "Lucide icon name (e.g., Network, Database, Zap)"

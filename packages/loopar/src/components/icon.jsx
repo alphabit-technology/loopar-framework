@@ -1,33 +1,12 @@
-import { lazy, Suspense, memo, useState, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
 import { cn } from "@cn/lib/utils";
-
-import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
 import * as preloadedIcons from "@app/auto/preloaded-icons";
+
 let iconsCache = {}
 
-const extraIcons = {
-  PiXLogo,
-  PiXLogoBold,
-  PiXLogoFill,
-  PiXLogoThin
-}
-
-const iconCache = new Map();
-
-Object.entries(preloadedIcons).forEach(([name, IconComponent]) => {
-  //if (IconComponent && typeof IconComponent === 'function') {
-    iconCache.set(name, IconComponent);
-  //}
-});
-
-const toKebabCase = (str) => {
-  return str
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase();
-};
+const isSimpleIcon = (name) => /^Si[A-Z]/.test(name ?? '');
 
 const IconPlaceholder = memo(({ className }) => (
   <div className={cn(className, "opacity-0")} aria-hidden="true">
@@ -37,39 +16,33 @@ const IconPlaceholder = memo(({ className }) => (
 
 IconPlaceholder.displayName = 'IconPlaceholder';
 
-
-export const DynamicIcon = ({ icon, className }) => {
-  const [svg, setSvg] = useState(iconsCache?.[icon?.value] || null);
+export const DynamicIcon = ({ icon, className, useBrandColor = false }) => {
+  const [svgData, setSvgData] = useState(() => iconsCache[icon?.value] ?? null);
   const value = icon?.value;
 
   useEffect(() => {
     if (!value) return;
-    
-    if (preloadedIcons[value] || extraIcons[value]) return;
-    
-    if (iconsCache?.[value]) {
-      setSvg(iconsCache[value]);
-      return;
-    }
+    if (preloadedIcons[value]) return;
+    if (iconsCache[value]) { setSvgData(iconsCache[value]); return; }
 
     if (icon.formattedValue && typeof icon.formattedValue === 'string') {
-      iconsCache = iconsCache || {};
-      iconsCache[value] = icon.formattedValue;
-      setSvg(icon.formattedValue);
+      const entry = { svg: icon.formattedValue, source: icon.source ?? null, hex: icon.hex ?? null };
+      iconsCache[value] = entry;
+      setSvgData(entry);
       return;
     }
 
     loopar.send({
       action: '/desk/Icon Manager/getSvg',
-      params: { name: value },
+      query: { name: value },
       success: (r) => {
         if (r.svg) {
-          iconsCache = iconsCache || {};
-          iconsCache[value] = r.svg;
-          setSvg(r.svg);
+          const entry = { svg: r.svg, source: r.source ?? null, hex: r.hex ?? null };
+          iconsCache[value] = entry;
+          setSvgData(entry);
         }
       },
-      freeze: false
+      freeze: false,
     });
   }, [value, icon?.formattedValue]);
 
@@ -80,17 +53,15 @@ export const DynamicIcon = ({ icon, className }) => {
     return <PIcon className={className} />;
   }
 
-  if (extraIcons[value]) {
-    const PIcon = extraIcons[value];
-    return <PIcon className={className} />;
-  }
-
-  if (svg) {
-    const styledSvg = svg.replace(
-      /class="[^"]*"/,
-      `class="${className || ''} lucide-icon"`
-    );
-    return <span dangerouslySetInnerHTML={{ __html: styledSvg }} />;
+  if (svgData?.svg) {
+    const isSimple = svgData.source === 'simple-icons' || isSimpleIcon(value);
+    if (isSimple) {
+      const fill = useBrandColor && svgData.hex ? `#${svgData.hex}` : 'currentColor';
+      const processed = svgData.svg.replace('<svg ', `<svg class="${className || ''} simple-icon" style="fill:${fill};" `);
+      return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+    }
+    const processed = svgData.svg.replace(/class="[^"]*"/, `class="${className || ''} lucide-icon"`);
+    return <span dangerouslySetInnerHTML={{ __html: processed }} />;
   }
 
   return <div className={className} />;
@@ -108,7 +79,11 @@ const MetaIcon = (props) => {
   const iconClassName = "w-full h-full";
   
   return (
-    <DynamicIcon icon={{value: data.icon}} className={containerClassName}/>
+    <DynamicIcon
+      icon={{value: data.icon}}
+      className={containerClassName}
+      useBrandColor={data.useBrandColor ?? false}
+    />
   )
 };
 
@@ -118,12 +93,9 @@ MetaIcon.metaFields = () => {
   return [{
     group: "form",
     elements: {
-      icon: {
-        element: ICON_INPUT,
-      },
-      rounded: {
-        element: SWITCH,
-      },
+      icon: { element: ICON_INPUT },
+      rounded: { element: SWITCH },
+      useBrandColor: { element: SWITCH },
     }
   }];
 };

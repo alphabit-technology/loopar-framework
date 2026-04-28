@@ -70,30 +70,31 @@ export class Core extends Builder {
     return (["Page", "Form", "Report", "View", "Controller"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
   }
 
-  getRef(entity, alls=true) {
-    return this.getRefs(null, alls, entity)[this.utils.toEntityKey(entity)] || null;
+  getRef(entity) {
+    return this.__REFS__[this.utils.toEntityKey(entity)] || null;
   }
-
-  getRefs(app, alls = false, e) {
-    const refs = this.__REFS__;
-    const installedApps = alls ? [] : Object.keys(this.installedApps).map(
-      app => inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase()
-    );
-
+  
+  getRefs(app, alls = false) {
+    if (app) {
+      const appKey = inflection.transform(app, ['capitalize', 'dasherize']).toLowerCase();
+      return this.__REFS_BY_APP__[appKey] || {};
+    }
+  
+    if (alls) return this.__REFS__;
+  
+    const installedSet = new Set([
+      'loopar', 'core',
+      ...Object.keys(this.installedApps).map(
+        a => inflection.transform(a, ['capitalize', 'dasherize']).toLowerCase()
+      )
+    ]);
+  
     const result = {};
-    for (const key in refs) {
-      if (Object.hasOwn(refs, key)) {
-        const ref = refs[key];
-
-        if (app && ref.__APP__ !== app) continue;
-
-        const selfApp = inflection.transform(ref.__APP__, ['capitalize', 'dasherize']).toLowerCase();
-        if (alls || installedApps.includes(selfApp) || ['loopar', 'core'].includes(selfApp)) {
-          result[this.utils.toEntityKey(ref.__NAME__)] = ref;
-        }
+    for (const key in this.__REFS__) {
+      if (installedSet.has(this.__REFS__[key].__APP_KEY__)) {
+        result[key] = this.__REFS__[key];
       }
     }
-
     return result;
   }
 

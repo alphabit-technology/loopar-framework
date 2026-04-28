@@ -1,25 +1,7 @@
 import DeskGUI from "@context/base/desk-gui";
 import BaseForm from "@context/base/base-form";
 import MetaComponent from "@meta-component";
-import { FormWrapper } from "./form-provider";
-
-interface DataInterface {
-  id: String,
-  name: String,
-  type: String,
-  label: String,
-  description: String,
-  placeholder: String,
-  required: Boolean,
-  value: String,
-  hidden: Number
-}
-
-interface Element {
-  element: String,
-  data: DataInterface,
-  docRef: FormContext
-}
+import { FormWrapper, type FormStructureElement } from "./form-provider";
 
 export default class FormContext extends BaseForm {
   canUpdate = true;
@@ -29,7 +11,7 @@ export default class FormContext extends BaseForm {
   donHaveContainer = true;
   formFields: { [key: string]: any } = {};
 
-  render(content: React.ReactNode) {
+  render(content: React.ReactNode, slots: {}) {
     if (content) return content;
     const STRUCTURE = this.__STRUCTURE__;
     
@@ -37,9 +19,9 @@ export default class FormContext extends BaseForm {
       <FormWrapper __DATA__={this.Document.data} STRUCTURE={STRUCTURE} docRef={this}>
         <DeskGUI docRef={this}>
           {[
-            ...STRUCTURE.map((el: Element) => {
+            ...STRUCTURE.map((el: FormStructureElement) => {
               const e = el.element
-              if (el.data.hidden) return null;
+              if (!e || !el.data || el.data?.hidden) return null;
 
               return (
                 <MetaComponent
@@ -54,7 +36,8 @@ export default class FormContext extends BaseForm {
             })
           ]}
         </DeskGUI>
-      </FormWrapper>
+      </FormWrapper>,
+      slots
     );
   }
 }

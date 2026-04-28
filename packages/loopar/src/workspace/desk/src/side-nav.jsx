@@ -24,7 +24,6 @@ export function SideNav({ items=[] }) {
             <ul className="flex flex-col gap-1 px-1">
               {...modules.map((module, key) => {
                 const active = module.link ? true : false;
-
                 return (
                   <SideNavItem
                     active={active}

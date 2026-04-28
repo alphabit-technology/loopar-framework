@@ -106,3 +106,5 @@ export default function DateTime(props) {
     )
   })
 }
+
+DateTime.metaFields = BaseInput.metaFields;

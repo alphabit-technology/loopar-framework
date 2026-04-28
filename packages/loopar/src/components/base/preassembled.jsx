@@ -3,8 +3,6 @@ import {Droppable} from "@droppable";
 import {useDesigner} from "@context/@/designer-context";
 import { useEffect, useId, createContext, useContext} from "react";
 
-import MetaComponent from "@meta-component";
-
 const PreassembledContext = createContext({
   props: {},
   elements: []

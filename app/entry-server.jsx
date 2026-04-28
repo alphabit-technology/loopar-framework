@@ -6,28 +6,30 @@ import { Loader } from "@loopar/loader";
 import {ServerCookiesManager} from '@services/cookie';
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 
-const Main = ({ __META__, url, context, req, res }) => {
+const Main = ({ __META__, pathname, context, req, res, permissions }) => {
   const cookieManager = new ServerCookiesManager(req, res);
 
   return (
     <React.StrictMode>
       <StaticRouter
-        location={url}
+        location={pathname}
         context={context}
       >
         <App
           __META__={{
             ...__META__,
             services: { cookieManager },
-            environment: "server",
+            environment: "server"
           }}
+          permissions={permissions}
+          pathname={pathname}
         />
       </StaticRouter>
     </React.StrictMode>
   );
 };
 
-export async function render(url, __META__, req, res) {
+export async function render(pathname, __META__, req, res, permissions) {
   const { Workspace, View } = await Loader(__META__, "server");
   global.__REQUIRE_COMPONENTS__ = [];
   global.ENVIRONMENT = "server";
@@ -35,13 +37,14 @@ export async function render(url, __META__, req, res) {
   const context = {};
   const HTML = renderToString(
     <Main
-      location={url}
+      pathname={pathname}
       __META__={{
         ...__META__,
         components: { Workspace, View }
       }}
       req={req}
       res={res}
+      permissions={permissions}
     />,
     context
   );

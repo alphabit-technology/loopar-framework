@@ -121,7 +121,7 @@ export default function MetaSelect(props) {
     return new Promise((resolve, reject) => {
       loopar.send({
         action: `/desk/${getModel()}/search`,
-        params: { 
+        query: { 
           q,
           page,
           limit: paginationRef.current.limit
@@ -271,6 +271,7 @@ export default function MetaSelect(props) {
           error={error}
           isLocal={isLocal}
           renderOption={props.renderOption}
+          model={getModel()}
         />
         {(data.description && props.simpleInput !== true) && (
           <FormDescription>{data.description}</FormDescription>

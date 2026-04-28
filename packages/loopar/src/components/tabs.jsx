@@ -2,7 +2,7 @@ import { ComponentDefaults } from "./base/ComponentDefaults";
 import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useId } from "react";
 import {useCookies} from "@services/cookie";
 import { Droppable } from "@droppable";
 import { Trash2Icon, PlusIcon } from "lucide-react";
@@ -84,7 +84,7 @@ function TabFn(props){
       className="w-full"
     >
       <div className="flex items-center justify-between overflow-x-auto overflow-y-hidden">
-        <TabsList className="inline-flex items-center gap-3 no-drag bg-transparent">
+        <TabsList className={`inline-flex items-center gap-1 no-drag bg-transparent ${props.tabsClassName || ""}`}>
           {elementsDict.map(({data = {}}) => (
             <TabsTrigger
               key={getKey(data)}
@@ -142,16 +142,17 @@ function TabFn(props){
 
 export default function MetaTabs(props){
   const {data, setElements} = ComponentDefaults(props);
+  const key = useId();
   
   const elementsDict=useMemo(()=>{
     const elements = props.children || props.elements || [];
 
-    return elements.map((element) => {
+    return elements.map((element, index) => {
       if (element.$$typeof === Symbol.for("react.element") || element.$$typeof === Symbol.for("react.fragment") || element.$$typeof === Symbol.for("react.transitional.element")) {
         return {
           element: "tab",
           type: "react.element",
-          key: element.key,
+          key: element.key || `${key}-index`,
           data: {
             name: element.props.name,
             label: element.props.label,
@@ -174,7 +175,7 @@ export default function MetaTabs(props){
   const parentKey = data.key || data.id || data.name;
 
   return (
-    <div className="p-2 my-3 border border-separate" id={data.id}>
+    <div className={`p-2 my-3 pt-0 mt-0 border border-separate ${props.className} ${data.class}`}id={data.id}>
       {data.label && <h4 className="p-2">{data.label}</h4>}
       <TabFn
         id={data.id || data.name || data.key}
@@ -184,6 +185,7 @@ export default function MetaTabs(props){
         setElements={setElements}
         canCustomize={props.canCustomize}
         parent={parentKey}
+        tabsClassName={props.tabsClassName}
       />
     </div>
   )

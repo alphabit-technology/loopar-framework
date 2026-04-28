@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, HandGrab } from "lucide-react";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, HandGrab, BrushCleaning } from "lucide-react";
 import { BaseFormContext } from "@context/form-provider";
 import { useCallback, useEffect, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
@@ -14,7 +14,8 @@ import elementManage from "@@tools/element-manage";
 import {DragAndDropProvider, useDragAndDrop} from "../droppable/DragAndDropContext.jsx";
 import {Prompt} from "./src/prompt/Prompt.jsx";
 import MarkdownPreview from '@uiw/react-markdown-preview';
-import {elementsNames} from "@global/element-definition"
+import {elementsNames} from "@global/element-definition";
+import {OrphanColumnsManager} from "./src/OrphanColumnsManager.jsx"
 
 const updateE = (structure, data, key, merge) => {
   return [...structure].map((el) => {
@@ -59,7 +60,7 @@ const fixMeta = (structure) => {
 
 const DesignerButton = () => {
   const { designerMode, designerModeType } = useDesigner();
-  const { sidebarOpen } = useDocument();
+  const { sidebarOpen, name } = useDocument();
 
   if (!designerMode || designerModeType == "preview") {
     return <><BrushIcon className="mr-2" /> Design</>
@@ -355,6 +356,23 @@ export const BaseDesigner = (props) => {
                   className="contents w-full prose dark:prose-invert"
                 >
                   <MarkdownPreview source={`\`\`\`jsx\n${JSON.stringify(metaComponents, null, 2)}\n\`\`\``} />
+                </div>
+              </div>
+            </Tab>
+            <Tab
+              label={<div className="flex"><BrushCleaning className="h-6 w-6 pr-2" /> Clean</div>}
+              name={`${selfKey}-clean_tab`}
+              key={`${selfKey}-clean_tab`}
+            >
+              <div className="max-h-[720px] overflow-x-auto">
+                <div
+                  className="contents w-full prose dark:prose-invert"
+                >
+                  {!!name &&
+                    <OrphanColumnsManager
+                      document={name}
+                    />
+                  }
                 </div>
               </div>
             </Tab>

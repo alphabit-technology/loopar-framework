@@ -19,6 +19,8 @@ export default class ServerManager {
       return false;
     }
 
+    if(value === 'null') return null
+    
     return value;
   }
 

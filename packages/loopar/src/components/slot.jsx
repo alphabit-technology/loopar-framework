@@ -1,0 +1,39 @@
+import { useDocument } from "@context/@/document-context";
+import { useDesigner } from "@context/@/designer-context";
+import { Plug } from "lucide-react";
+
+export default function MetaSlot(props) {
+  const data = props.data || {};
+  const ref = data?.name;
+  const { slots } = useDocument();
+  const { designerMode: isDesigner } = useDesigner();
+
+  if (isDesigner) {
+    return (
+      <div style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 12px",
+        border: "1.5px dashed var(--color-border-secondary)",
+        borderRadius: "var(--border-radius-md)",
+        background: "var(--color-background-secondary)",
+        width: "100%",
+        boxSizing: "border-box"
+      }}>
+        <Plug size={14} style={{ flexShrink: 0, color: "var(--color-text-secondary)" }} />
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)" }}>
+          slot: <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>{ref}</strong>
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--color-text-tertiary)", whiteSpace: "nowrap" }}>
+          runtime only
+        </span>
+      </div>
+    );
+  }
+
+  const Comp = slots?.[ref];
+  if (!Comp) return null;
+
+  return <Comp {...props} />;
+}

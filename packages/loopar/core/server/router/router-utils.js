@@ -11,7 +11,7 @@ export const ASSET_EXTENSIONS = new Set([
   'json', 'xml', 'txt', 'yaml' // Data files
 ]);
 
-export const VALID_WORKSPACES = ['desk', 'auth', 'loopar'];
+export const VALID_WORKSPACES = ['desk', 'auth', 'loopar', 'api'];
 
 export const SYSTEM_PATHS = {
   CONNECT: '/loopar/system/connect',
@@ -98,10 +98,21 @@ export function setDefaultParams(params, workspaceName) {
     params.action = "view";
   }
 
+  const defaultDocument = {
+    desk: "Module",
+    auth: "Auth",
+    web: "Home"
+  }
+
+  const defaultAction = {
+    desk: "view",
+    auth: "login",
+    web: "view"
+  }
   if (!params.action || !params.document) {
     params.name = params.document;
-    params.document = 'Module';
-    params.action ??= 'view';
+    params.document = defaultDocument[workspaceName];
+    params.action ??= defaultAction[workspaceName];
   }
 }
 
@@ -225,6 +236,21 @@ export const SystemValidation = {
   }
 };
 
+function parseQueryValue(value) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value === 'null') return null;
+  if (value === 'undefined') return undefined;
+  if (value !== '' && !isNaN(Number(value))) return Number(value);
+  return value;
+}
+
+function parseQuery(query = {}) {
+  return Object.fromEntries(
+    Object.entries(query).map(([k, v]) => [k, parseQueryValue(v)])
+  );
+}
+
 export const RouterUtils = {
   ASSET_EXTENSIONS,
   VALID_WORKSPACES,
@@ -239,5 +265,6 @@ export const RouterUtils = {
   buildUrl,
   
   RouteParsing,
-  SystemValidation
+  SystemValidation,
+  parseQuery
 };

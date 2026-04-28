@@ -8,14 +8,15 @@ export default class InstallerContext extends BaseForm {
     super(options);
   }
 
-  render(content = []) {
+  render(content = [], slots) {
     const Document = this.Document;
 
     return super.render([
       <FormWrapper Document={Document} docRef={this}>
         <MetaComponent elements={JSON.parse(Document.Entity.doc_structure)} parent={this} />
         {content}
-      </FormWrapper>
+      </FormWrapper>,
+      slots
     ]);
   }
 

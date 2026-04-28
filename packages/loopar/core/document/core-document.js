@@ -2,7 +2,6 @@
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
-//import { renderMarkdownSSR } from "markdown";
 import { parseDocStructure } from './tools.js';
 
 import { Sequelize } from 'sequelize';
@@ -67,7 +66,7 @@ export default class CoreDocument {
   }
 
   async __init__() {
-    await this.#makeFields(JSON.parse(this.__ENTITY__.doc_structure));
+    await this.#makeFields(loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []));
 
     if (this.__DATA__ && this.__DATA__.doc_structure) {
       this.__DATA__.doc_structure = JSON.stringify(
@@ -204,7 +203,8 @@ export default class CoreDocument {
 
     await Promise.all(fields.map(async (field) => {
       if ((fieldIsWritable(field) || field.element === FORM_TABLE) && entityFields.includes(field.data.name)) {
-        await this.#makeField({ field });
+        if(field.element !== SLOT || field.data.writable)
+          await this.#makeField({ field });
       }
 
       await this.#makeFields(field.elements || []);
@@ -231,36 +231,30 @@ export default class CoreDocument {
 
     if (Object.keys(childValuesReq).length === 0) return;
     
-    //try {
-      for (const [key, value] of Object.entries(childValuesReq)) {
-        if(key == this.name) continue;
-        if(!await loopar.db.hasTable(key)) continue;
-        
-        const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
-
-        if (values || force) {
-          await loopar.db.sequelize.query(
-            `DELETE FROM ${loopar.db.tableName(key)} WHERE parent_id = ?`,
-            {
-              replacements: [ID],
-              type: Sequelize.QueryTypes.DELETE,
-              transaction: loopar.db.transaction
-            }
-          );
-        }
-      }
+    for (const [key, value] of Object.entries(childValuesReq)) {
+      if(key == this.name) continue;
+      if(!await loopar.db.hasTable(key)) continue;
       
-    /* } catch (error) {
-      await loopar.db.transaction.rollback();
-      throw error;
-    } */
+      const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
+
+      if (values || force) {
+        await loopar.db.sequelize.query(
+          `DELETE FROM ${loopar.db.tableName(key)} WHERE parent_id = ?`,
+          {
+            replacements: [ID],
+            type: Sequelize.QueryTypes.DELETE,
+            transaction: loopar.db.transaction
+          }
+        );
+      }
+    }
   }
 
   async save() {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
 
-   const updateRows = async (Ent, rows, parentType, parentId) => {
+    const updateRows = async (Ent, rows, parentType, parentId) => {
       const nextId = await loopar.db.nextId(Ent);
       for (const [index, row] of rows/*.sort((a, b) => a.id - b.id)*/.entries()) {
         row.id = nextId + index;
@@ -285,49 +279,47 @@ export default class CoreDocument {
       }
     }
 
-   // return new Promise(async (resolve) => {
-      this.setUniqueName();
+    this.setUniqueName();
+    this.beforeSave && await this.beforeSave();
+    if (validate) await this.validate();
 
-      if (validate) await this.validate();
+    if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
+      await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
+      this.__DOCUMENT_NAME__ = this.name;
+    } else {
+      const data = this.valuesToSetDataBase;
 
-      if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
-        await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
-        this.__DOCUMENT_NAME__ = this.name;
-      } else {
-        const data = this.valuesToSetDataBase;
-
-        if (Object.keys(data).length) {
-          await loopar.db.updateRow(
-            this.__ENTITY__.name,
-            data,
-            this.__DOCUMENT_NAME__,
-            this.__ENTITY__.is_single
-          );
-        }
+      if (Object.keys(data).length) {
+        await loopar.db.updateRow(
+          this.__ENTITY__.name,
+          this.__DOCUMENT_NAME__,
+          data,
+          this.__ENTITY__.is_single
+        );
       }
+    }
 
-      if (!loopar.installing) {
-        const childValuesReq = this.childValuesReq;
+    if (!loopar.installing) {
+      const childValuesReq = this.childValuesReq;
 
-        if (Object.keys(childValuesReq).length) {
-          await this.deleteChildRecords();
-          await updateChildRecords(childValuesReq, this.__ENTITY__.name, await this.__ID__());
-        }
+      if (Object.keys(childValuesReq).length) {
+        await this.deleteChildRecords();
+        await updateChildRecords(childValuesReq, this.__ENTITY__.name, await this.__ID__());
       }
+    }
 
-      await this.updateHistory();
-      const files = this.__DATA__.__REQ_FILES__ || [];
+    await this.updateHistory();
+    const files = this.__DATA__.__REQ_FILES__ || [];
 
-      for (const file of files) {
-        const fileManager = await loopar.newDocument("File Manager");
-        fileManager.reqUploadFile = file;
-        fileManager.app = this.__APP__;
+    for (const file of files) {
+      const fileManager = await loopar.newDocument("File Manager");
+      fileManager.reqUploadFile = file;
+      fileManager.app = this.__APP__;
 
-        await fileManager.save();
-      }
+      await fileManager.save();
+    }
 
-      //resolve();
-    //});
+    this.afterSave && await this.afterSave();
   }
 
   fieldsName() {
@@ -436,19 +428,6 @@ export default class CoreDocument {
 
   async __meta__(withData = true) {
     const entity = this.__ENTITY__;
-
-   /*  const isDesigner = (elements) => {
-      for (const element of elements) {
-        if (element.element == DESIGNER) return true;
-
-        if (element.elements) {
-          return isDesigner(element.elements);
-        }
-      }
-    } */
-
-    //if (!isDesigner(JSON.parse(entity.doc_structure))) entity.doc_structure = JSON.stringify(documentManage.parseDocStructure(JSON.parse(entity.doc_structure)));
-
     const __DATA__ = await this.values();
       
     if (!this.__IS_NEW__) {
@@ -487,7 +466,7 @@ export default class CoreDocument {
   
       const updateDocStructure = async () => {
         entity.doc_structure = JSON.stringify(await updateValue(
-          JSON.parse(entity.doc_structure)
+          loopar.utils.JSONparse(entity.doc_structure, [])
         ));
       };
 
@@ -505,7 +484,8 @@ export default class CoreDocument {
         name: __ENTITY__.name,
         module: __ENTITY__.module,
         doc_structure: __ENTITY__.doc_structure,
-        ...(this.is_builder ? {is_builder: true} : {})
+        ...(this.is_builder ? {is_builder: true} : {}),
+        is_single: __ENTITY__.is_single
       },
       ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
       //data: await this.rawValues(),
@@ -517,7 +497,7 @@ export default class CoreDocument {
     const value = async (field) => {
       if (field.element === DESIGNER) {
         return field.value ? JSON.stringify(await parseDocStructure(field.value, false))/*JSON.stringify(field.value.filter(field => (field.data || []).name !== ID))*/ : "[]";
-      } else if (field.element === FORM_TABLE) {
+      } else if (field.element === FORM_TABLE || field.element == REVIEW) {
         return await this.getChildValues(field.options);
       }
       

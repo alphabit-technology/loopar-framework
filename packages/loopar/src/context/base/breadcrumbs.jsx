@@ -5,6 +5,7 @@ import { HomeIcon, ChevronRight } from "lucide-react";
 export function Breadcrumbs({ Document }) {
   let context = null;
   const {Entity} = Document;
+  
   const makeLinks = () => {
     const dataLinks = [];
 
@@ -49,6 +50,7 @@ export function Breadcrumbs({ Document }) {
         variant="link"
         className="px-0"
         {...(link.link ? {to:`/desk${link.link}`} : {})}
+        {...(index == 2 ? {to: "#"} : {})}
       >
         {index === 0 ? <HomeIcon className="h-4"/> : <ChevronRight/> }
         {index === 0 ? loopar.utils.UPPERCASE(link.text) : link.text}

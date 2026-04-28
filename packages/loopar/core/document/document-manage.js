@@ -70,7 +70,7 @@ class DocumentManage {
       }
 
       ENTITY.doc_structure = JSON.stringify(
-        await parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure))
+        await parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure), true, document)
       );
     }
 

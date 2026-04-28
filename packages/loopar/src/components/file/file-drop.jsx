@@ -51,14 +51,15 @@ export const FileDrop = (props) => {
   const makePreviews = (files) => {
     const promises = files.map((file) => new Promise((resolve, reject) => {
       const getSrc = (f) => {
-        if (f.type.match("video.*")) return URL.createObjectURL(f);
-        if (f.type.match("audio.*")) return URL.createObjectURL(f);
-        if(f.type.match("image.*")) return URL.createObjectURL(f);
+        const fileType = f?.type || "";
+        if (fileType.match("video.*")) return URL.createObjectURL(f);
+        if (fileType.match("audio.*")) return URL.createObjectURL(f);
+        if(fileType.match("image.*")) return URL.createObjectURL(f);
         return null;
       };
 
       if (file instanceof File) {
-        if (file.type.match("image.*")) {
+        if ((file.type || "").match("image.*")) {
           const reader = new FileReader();
           reader.onload = (e) => {
             resolve({
@@ -75,12 +76,14 @@ export const FileDrop = (props) => {
           resolve({
             name: file.name,
             src: getSrc(file),
+            previewSrc: getSrc(file),
             type: "file",
             rawFile: file,
           });
         }
       } else {
-        resolve(file);
+        const mappedFile = fileManager.getMappedFiles([file])[0] || file;
+        resolve(mappedFile);
       }
     }));
 
@@ -125,8 +128,13 @@ export const FileDrop = (props) => {
         return;
       }
 
-      validateFile(file, accept);
-      setFiles(prevFiles => mergeFiles([...prevFiles], [file]));
+      let normalizedFile = file;
+      if (!(file instanceof File) && typeof file === "object") {
+        normalizedFile = fileManager.getMappedFiles([file])[0] || file;
+      }
+
+      validateFile(normalizedFile, accept);
+      setFiles(prevFiles => mergeFiles([...prevFiles], [normalizedFile]));
     }
   }
 

@@ -1,31 +1,40 @@
 import { fileManage } from "../file-manage.js";
 import { loopar } from "../loopar.js";
 
-export const parseDocStructure = (doc_structure, renderMarkdown = true) => {
-  return doc_structure.map((field) => {
-    field.data = {
-      ...field.data,
-      key: field.data.key || loopar.getUniqueKey(),
-    };
+export const parseDocStructure = async (doc_structure, renderMarkdown = true, document_name) => {
+  return Promise.all(
+    doc_structure.map(async (field) => {
+      field.data = {
+        ...field.data,
+        key: field.data.key || loopar.getUniqueKey(),
+      };
 
-    if (field.element === MARKDOWN && renderMarkdown) {
-      field.data.value = loopar.markdownRenderer(field.data.value);
-    }
+      if (field.element === MARKDOWN && renderMarkdown) {
+        field.data.value = loopar.markdownRenderer(field.data.value);
+      }
 
-    if (field.element === EXAMPLE_VIEWER && renderMarkdown) {
-      field.data.rendered_value = loopar.markdownRenderer(
-        loopar.utils.isJSON(field.data.value) 
-          ? JSON.stringify(JSON.parse(field.data.value), null, 3) 
-          : ""
-      );
-    }
+      if (field.element === REVIEW) {
+        field.data.reviews = await loopar.db.getAll("Review", ["*"], { 
+          parent_id: document_name,
+          approved: 1
+        });
+      }
 
-    if (field.elements) {
-      field.elements = parseDocStructure(field.elements, renderMarkdown);
-    }
+      if (field.element === EXAMPLE_VIEWER && renderMarkdown) {
+        field.data.rendered_value = loopar.markdownRenderer(
+          loopar.utils.isJSON(field.data.value)
+            ? JSON.stringify(JSON.parse(field.data.value), null, 3)
+            : ""
+        );
+      }
 
-    return field;
-  });
+      if (field.elements) {
+        field.elements = await parseDocStructure(field.elements, renderMarkdown, document_name);
+      }
+
+      return field;
+    })
+  );
 };
 
 export const parseDocument = (entity, doc) => {

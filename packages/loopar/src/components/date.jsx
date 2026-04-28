@@ -81,3 +81,5 @@ export default function DatePicker(props) {
     )
   });
 }
+
+DatePicker.metaFields = BaseInput.metaFields;

@@ -1,5 +1,3 @@
-//import Cookies from 'universal-cookie';
-//const cookies = new Cookies(null, { path: '/' });
 import Cookies from 'js-cookie';
 
 export const set = (name, value, options = {}) => {

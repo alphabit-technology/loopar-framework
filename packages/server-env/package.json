@@ -6,10 +6,13 @@
     "compression": "1.8.1",
     "cookie-parser": "1.4.7",
     "express": "5.2.1",
+    "express-rate-limit": "8.3.1",
     "express-session": "1.19.0",
     "express-useragent": "2.0.2",
     "js-cookie": "3.0.5",
     "multer": "2.0.2",
+    "socket.io": "4.8.3",
+    "socket.io-client": "4.8.3",
     "universal-cookie": "8.0.1"
   },
   "devDependencies": {

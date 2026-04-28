@@ -44,7 +44,7 @@ export default class BaseForm extends BaseDocument {
     return true;
   }
 
-  send({ action, params={}, ...options } = {}) {
+  send({ action, query={}, ...options } = {}) {
     this.validate();
 
     if (!this.checkChanges()) return;
@@ -57,7 +57,7 @@ export default class BaseForm extends BaseDocument {
 
     loopar.send({
       action: action,
-      params: { ...this.params, ...params },
+      query: { ...this.queryParams, ...query },
       body: this.#getFormData(true),
       success: handleSuccess,
       error: (r) => {
@@ -71,7 +71,7 @@ export default class BaseForm extends BaseDocument {
     });
   }
 
-  get params() {
+  get queryParams() {
     const searchParams = new URLSearchParams(window.location.search);
     return {
       name: this.__DOCUMENT_NAME__,

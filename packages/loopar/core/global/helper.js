@@ -221,7 +221,7 @@ function rgba(hex, alpha = 1) {
   try {
     const hexRegex = /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
     if (!hexRegex.test(hex)) {
-      throw new Error("Formato hexadecimal de color incorrecto");
+      throw new Error("Incorrect color hexadecimal format");
     }
     hex = hex.replace(/^#/, '');
 
@@ -364,6 +364,7 @@ const urlHash = (route) => {
 const urlInstance = (route) => {
   return hash(`${route.pathname}`.toLowerCase());
 }
+
 export {
   Capitalize,
   UPPERCASE,

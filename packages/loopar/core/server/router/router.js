@@ -7,6 +7,7 @@ import { RouterUtils } from './router-utils.js';
 import { merge } from 'es-toolkit/object';
 import { Middleware } from "./middleware.js";
 import { requestContext } from './request-context.js';
+import {trackVisit} from "./track/track-visit.js"
 
 export default class Router extends Middleware {
   constructor(options) {
@@ -95,6 +96,7 @@ export default class Router extends Middleware {
       this.setupLoadHttpMiddleware(),
       this.setupSystemMiddleware(),
       this.setupBuildParamsMiddleware(),
+      this.setupRateLimitMiddleware(),
       this.setupWorkspaceMiddleware(),
       this.setupControllerMiddleware(),
       this.setupFinalMiddleware()
@@ -139,6 +141,10 @@ export default class Router extends Middleware {
 
     params.document = ref.__NAME__;
 
+    void trackVisit(req, params).catch((error) => {
+      console.warn(["Can not updated Analytics", error]);
+    });
+    
     return await this.executeController(req, res, next, params, ref);
   }
 
@@ -164,15 +170,21 @@ export default class Router extends Middleware {
    */
   async executeController(req, res, next, params, ref) {
     const makeController = async (query, body) => {
+      const parsedQuery = RouterUtils.parseQuery(query);
+
       const C = await fileManage.importClass(
         loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`)
       );
-
+      
       const Controller = new C({
         ...params,
-        ...query,
+        ...parsedQuery,
+        query: parsedQuery,
         data: RouterUtils.prepareFileData(body, req.files),
+        body: RouterUtils.prepareFileData(body, req.files),
         __REQ_FILES__: req.files,
+        enabledActions: C.enabledActions,
+        freeActions: C.freeActions
       });
 
       const action = params.action?.length > 0 ? params.action : Controller.defaultAction;
@@ -180,8 +192,8 @@ export default class Router extends Middleware {
 
       const result = await Controller.sendAction(action) || {};
 
-      if (result && typeof result === "object") {
-        if (req.method === 'POST' || result.redirect) {
+      if (result) {
+        if (req.method === 'POST' || (typeof result == "object" && result.redirect)) {
           req.__WORKSPACE__ = result;
         } else {
           req.__WORKSPACE__ = merge(
@@ -205,17 +217,21 @@ export default class Router extends Middleware {
     const isMultipart = RouterUtils.isMultipartFormData(contentType);
 
     if (isMultipart) {
-
       return new Promise((resolve, reject) => {
         this.uploader(req, res, async err => {
-          requestContext.run({ req, res }, next);
           if (err) {
             reject(err);
             return;
           }
 
           try {
-            resolve(await makeController(req.query, req.body));
+            requestContext.run({ req, res }, async () => {
+              try {
+                resolve(await makeController(req.query, req.body));
+              } catch (controllerErr) {
+                reject(controllerErr);
+              }
+            });
           } catch (controllerErr) {
             reject(controllerErr);
           }

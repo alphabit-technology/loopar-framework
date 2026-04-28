@@ -11,7 +11,7 @@ import {
 import { isEqual } from "es-toolkit/predicate";
 
 import elementManage from "@@tools/element-manage";
-import loopar from "loopar";
+import loopar, {useRealtime} from "loopar";
 import { DropdownListGridActions } from "./DropdownListGridActions";
 import { Checkbox } from "@cn/components/ui/checkbox";
 import Emitter from '@services/emitter/emitter';
@@ -48,6 +48,10 @@ export const TableProvider = ({
   useEffect(() => {
     setRows(props.rows || []);
   }, [props.rows]);
+
+  useRealtime(`${Document.Entity?.name}.changed`, () => {
+    search(lastSearch.current, true)
+  });
 
   useEffect(() => {
     setDocument(initialDocument || {});

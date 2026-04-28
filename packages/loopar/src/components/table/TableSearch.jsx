@@ -2,9 +2,11 @@ import { MetaComponent } from "@meta-component";
 import { FormWrapper } from "@context/form-provider";
 import { useTable } from "./TableContext"
 import { useMemo, useRef, useCallback } from "react";
+import { useWorkspace } from "@workspace/workspace-provider";
 
 export function TableSearch(props){
   const {Document, baseColumns, docRef} = useTable();
+  const {award} = useWorkspace()
   const formRef = useRef(null);
   const debounceTimer = useRef(null);
 
@@ -25,6 +27,8 @@ export function TableSearch(props){
       (col.data.searchable || col.data.name === "name")
     );
   }, [baseColumns]);
+
+  if(!award(Document?.Entity?.name, "search")) return false;
 
   const searchData = Document && Document.q && typeof Document.q == "object" ? Document.q : {};
   const disabledFields = docRef.disabledSearchFields || []

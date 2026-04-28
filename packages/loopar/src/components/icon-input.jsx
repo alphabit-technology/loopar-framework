@@ -1,47 +1,37 @@
 import BaseInput from "./input/base-input.jsx";
 import Select from "@select";
-import { PiXLogo, PiXLogoBold, PiXLogoFill, PiXLogoThin } from "react-icons/pi";
 import * as preloadedIcons from "@app/auto/preloaded-icons";
 import loopar from "loopar";
 import { useState, useEffect } from "react";
+
 let iconsCache = {}
 
-const extraIcons = {
-  PiXLogo,
-  PiXLogoBold,
-  PiXLogoFill,
-  PiXLogoThin
-}
+const isSimpleIcon = (name) => /^Si[A-Z]/.test(name ?? '');
 
-export const DynamicIcon = ({ icon, className }) => {
-  const [svg, setSvg] = useState(iconsCache?.[icon?.value] || null);
+export const DynamicIcon = ({ icon, className, brandColor }) => {
+  const [svgData, setSvgData] = useState(() => iconsCache[icon?.value] ?? null);
   const value = icon?.value;
 
   useEffect(() => {
     if (!value) return;
-    
-    if (preloadedIcons[value] || extraIcons[value]) return;
-    
-    if (iconsCache?.[value]) {
-      setSvg(iconsCache[value]);
-      return;
-    }
+    if (preloadedIcons[value]) return;
+    if (iconsCache[value]) { setSvgData(iconsCache[value]); return; }
 
     if (icon.formattedValue && typeof icon.formattedValue === 'string') {
-      iconsCache = iconsCache || {};
-      iconsCache[value] = icon.formattedValue;
-      setSvg(icon.formattedValue);
+      const entry = { svg: icon.formattedValue, source: icon.source ?? null, hex: icon.hex ?? null };
+      iconsCache[value] = entry;
+      setSvgData(entry);
       return;
     }
 
     loopar.send({
       action: '/desk/Icon Manager/getSvg',
-      params: { name: value },
+      query: { name: value },
       success: (r) => {
         if (r.svg) {
-          iconsCache = iconsCache || {};
-          iconsCache[value] = r.svg;
-          setSvg(r.svg);
+          const entry = { svg: r.svg, source: r.source ?? null, hex: r.hex ?? null };
+          iconsCache[value] = entry;
+          setSvgData(entry);
         }
       },
       freeze: false
@@ -55,17 +45,15 @@ export const DynamicIcon = ({ icon, className }) => {
     return <PIcon className={className} />;
   }
 
-  if (extraIcons[value]) {
-    const PIcon = extraIcons[value];
-    return <PIcon className={className} />;
-  }
-
-  if (svg) {
-    const styledSvg = svg.replace(
-      /class="[^"]*"/,
-      `class="${className || ''} lucide-icon"`
-    );
-    return <span dangerouslySetInnerHTML={{ __html: styledSvg }} />;
+  if (svgData?.svg) {
+    const isSimple = svgData.source === 'simple-icons' || isSimpleIcon(value);
+    if (isSimple) {
+      const fill = brandColor ?? 'currentColor';
+      const processed = svgData.svg.replace('<svg ', `<svg class="${className || ''} simple-icon" style="fill:${fill};" `);
+      return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+    }
+    const processed = svgData.svg.replace(/class="[^"]*"/, `class="${className || ''} lucide-icon"`);
+    return <span dangerouslySetInnerHTML={{ __html: processed }} />;
   }
 
   return <div className={className} />;
@@ -80,7 +68,7 @@ export default function IconInput(props) {
         data={{
           ...data,
           options: "Icon Manager",
-          description: <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://lucide.dev/icons/" target="_blank">Lucide React</a></label>,
+          description: <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://lucide.dev/icons/" target="_blank">Lucide</a> & <a className="text-blue-600 visited:text-purple-600" href="https://simpleicons.org/" target="_blank">Simple Icons</a></label>,
         }}
         value={field.value}
         renderOption={(option) => (

@@ -159,7 +159,46 @@ class FileManager {
     return regex.test(str);
   }
 
+  parseSerializedFiles(value) {
+    let parsed = value;
+    for (let i = 0; i < 3; i++) {
+      if (typeof parsed === "string" && loopar.utils.isJSON(parsed)) {
+        parsed = JSON.parse(parsed);
+        continue;
+      }
+      break;
+    }
+    return parsed;
+  }
+
+  decodeFileName(name = "") {
+    if (typeof name !== "string") return name;
+    try {
+      return decodeURIComponent(name)
+        .normalize("NFKC")
+        .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    } catch (_) {
+      return name
+        .normalize("NFKC")
+        .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+  }
+
+  encodePath(path = "") {
+    if (typeof path !== "string") return "";
+    return path
+      .split("/")
+      .map((part) => encodeURIComponent(this.decodeFileName(part)))
+      .join("/");
+  }
+
   getMappedFiles(files = []) {
+    files = this.parseSerializedFiles(files);
+
     if (typeof files === "string" && !loopar.utils.isJSON(files)) {
       if (this.isURL(files)) {
         const detectedType = this.getTypeFromURL(files) || "image";
@@ -181,12 +220,12 @@ class FileManager {
       files = FileList(files);
     }
 
-    if (files && typeof files == "object") {
-      files = Object.values(files);
+    if (typeof files === "string" && loopar.utils.isJSON(files)) {
+      files = this.parseSerializedFiles(files);
     }
 
-    if (typeof files === "string" && loopar.utils.isJSON(files)) {
-      files = JSON.parse(files);
+    if (files && typeof files == "object") {
+      files = Object.values(files);
     }
 
     if (typeof files == "object" && !Array.isArray(files)) {
@@ -194,11 +233,13 @@ class FileManager {
     }
 
     return (files || []).filter(file => (typeof file == "object" && file.name) && !Array.isArray(file)).map(file => {
+      const normalizedName = this.decodeFileName(file.name);
       const ext = getExtention(file.name);
       const fileType = this.getFileType(file);
       
       return file instanceof File ? file : {
         ...file,
+        name: normalizedName,
         type: fileType,
         src: this.getSrc(file),
         extention: ext || (fileType === 'image' ? 'jpg' : 'file'),
@@ -211,7 +252,16 @@ class FileManager {
     if (file.src && (file.src.includes("data:") || file.src.includes("http"))) {
       return encodeURI(file.src);
     }
-    return encodeURI("/assets/public/images/" + ((preview && !["svg", "ico"].includes(ext)) ? "thumbnails/" : '') + file.name);
+
+    if (typeof file?.src === "string" && file.src.startsWith("/")) {
+      const normalizedSrc = file.src.startsWith("/uploads/")
+        ? file.src.replace("/uploads/", "/assets/")
+        : file.src;
+      return this.encodePath(normalizedSrc);
+    }
+
+    const encodedName = encodeURIComponent(this.decodeFileName(file.name || ""));
+    return "/assets/public/" + ((preview && !["svg", "ico"].includes(ext)) ? "thumbnails/" : "") + encodedName;
   }
 
   getImage(data = {}, field, avatar = null) {

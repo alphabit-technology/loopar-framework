@@ -1,11 +1,12 @@
 import loopar from "loopar";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link as ReactLink, useLocation } from 'react-router';
+import { Link as ReactLink } from 'react-router';
 import { cn } from "@cn/lib/utils";
 import { buttonVariants } from "@cn/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { activeLink } from "@workspace/defaults";
 import { useDesigner } from "@context/@/designer-context";
+import { VARIANTS } from "./base/ComponentDefaults";
 
 const URL_STRUCTURE = ["workspace", "document", "action"];
 const HEADER_OFFSET = 15;
@@ -13,9 +14,10 @@ const HEADER_OFFSET = 15;
 const buildUrl = (href, currentURL) => {
   if (!href || href.startsWith("http") || href.startsWith("/")) return href;
 
-  const urlArray = currentURL.split("/");
+  const [cleanCurrentURL] = (currentURL ?? "").split("?");
+  const urlArray = cleanCurrentURL.split("/");
   const urlObject = {};
-  
+
   URL_STRUCTURE.forEach((key, index) => {
     urlObject[key] = urlArray[index + 1];
   });
@@ -31,18 +33,51 @@ const buildUrl = (href, currentURL) => {
   return `/${path}${queryString ? `?${queryString}` : ""}`;
 };
 
+function parseParams(pathname, workspaceName = 'desk') {
+  pathname = pathname.split("?")[0];
+  const routeStructure = { host: null, document: null, action: null };
+
+  const adjustedPathname = ["web", "auth"].includes(workspaceName)
+    ? pathname
+    : pathname.split("/").slice(1).join("/");
+
+  const segments = adjustedPathname.split("/");
+  const keys = Object.keys(routeStructure);
+
+  for (let i = 0; i < segments.length && i < keys.length; i++) {
+    if (segments[i]?.length > 0) {
+      routeStructure[keys[i]] = decodeURIComponent(segments[i]);
+    }
+  }
+
+  return routeStructure;
+}
+
+function setDefaultParams(params, workspaceName = 'desk') {
+  if (!params.document && !params.action && workspaceName === 'desk') {
+    params.document = "Desk";
+    params.action = "view";
+  }
+
+  if (!params.action || !params.document) {
+    params.name = params.document;
+    params.document = 'Module';
+    params.action ??= 'view';
+  }
+
+  return params;
+}
+
 export const useMakeUrl = (href) => {
-  const location = useLocation();
-  
+  const { pathname } = useWorkspace();
+
   return useMemo(() => {
-    const currentURL = global.url || location.pathname;
-    return buildUrl(href, currentURL);
-  }, [href, location.pathname]);
+    return buildUrl(href, pathname);
+  }, [href, pathname]);
 };
 
 export const makeUrl = (href) => {
   if (!href || href.startsWith("http") || href.startsWith("/")) return href;
-  
   const currentURL = global.url || (typeof window !== 'undefined' ? window.location.pathname : '');
   return buildUrl(href, currentURL);
 };
@@ -56,28 +91,19 @@ const useHeaderHeight = () => {
 
 const useScrollToSection = (to) => {
   const getHeaderHeight = useHeaderHeight();
-
   return useCallback(() => {
     if (!to.startsWith("#")) return;
-    
-    const targetId = to.substring(1);
-    const target = document.getElementById(targetId);
-
+    const target = document.getElementById(to.substring(1));
     if (!target) return;
-
     const offsetTop = target.getBoundingClientRect().top + window.scrollY - getHeaderHeight();
-
-    window.scrollTo({
-      top: offsetTop - HEADER_OFFSET,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: offsetTop - HEADER_OFFSET, behavior: 'smooth' });
   }, [to, getHeaderHeight]);
 };
 
 const useActiveSection = (to, enabled) => {
   const [active, setActive] = useState(null);
   const getHeaderHeight = useHeaderHeight();
-  const location = useLocation();
+  const { pathname } = useWorkspace();
 
   const detectActiveSection = useCallback(() => {
     const scroll = window.scrollY + getHeaderHeight();
@@ -85,96 +111,109 @@ const useActiveSection = (to, enabled) => {
     let minDistance = Infinity;
 
     document.querySelectorAll('[id][data-section]').forEach(section => {
-      const sectionTop = section.offsetTop;
-      const sectionHeight = section.offsetHeight;
-      const distance = Math.abs(sectionTop - scroll);
+      const top = section.offsetTop;
+      const height = section.offsetHeight;
+      const distance = Math.abs(top - scroll);
 
       if (
-        distance <= minDistance && 
-        ((sectionTop <= scroll && sectionTop + sectionHeight > scroll) ||
-         (sectionTop + sectionHeight <= scroll + window.innerHeight && sectionTop >= scroll) ||
-         (scroll >= sectionTop && scroll < sectionTop + sectionHeight))
+        distance <= minDistance &&
+        ((top <= scroll && top + height > scroll) ||
+         (top + height <= scroll + window.innerHeight && top >= scroll) ||
+         (scroll >= top && scroll < top + height))
       ) {
         minDistance = distance;
         activeSection = section.id;
       }
     });
 
-    //setActive(activeSection);
+    setActive(activeSection);
   }, [getHeaderHeight]);
 
   useEffect(() => {
     if (!enabled) return;
-
-    const timeoutId = setTimeout(detectActiveSection, 100);
+    const id = setTimeout(detectActiveSection, 100);
     window.addEventListener("scroll", detectActiveSection, { passive: true });
-    
     return () => {
       window.removeEventListener("scroll", detectActiveSection);
-      clearTimeout(timeoutId);
+      clearTimeout(id);
     };
-  }, [enabled, detectActiveSection, location.pathname]);
+  }, [enabled, detectActiveSection, pathname]);
 
   return active;
 };
 
-export function Link({ 
-  to = "", 
-  variant = "link", 
-  size, 
-  children, 
-  notControlled, 
+export function Link({
+  to = "",
+  variant = "link",
+  size,
+  children,
+  notControlled,
   activeClassName,
   onClick,
-  ...props 
+  ...props
 }) {
-  const location = useLocation();
-  const { setOpenNav, currentPage, workspace } = useWorkspace();
+  const { setOpenNav, currentPage, workspace, award } = useWorkspace();
   const { designing } = useDesigner();
-  
+
   const url = useMakeUrl(to);
+
   const isAbsolute = url?.includes("http");
   const isHashLink = to.startsWith("#");
 
   const scrollToSection = useScrollToSection(to);
   const activeSection = useActiveSection(to, isHashLink);
 
+  const params = useMemo(() => {
+    if (!url) return { document: '', action: 'view' };
+    return setDefaultParams(parseParams(url, workspace), workspace);
+  }, [url, workspace]);
+
+  const canRender = useMemo(() => {
+    if (props.award === false || workspace != "desk" || isAbsolute) return true;
+    
+    const doc = params.document?.toLowerCase().replaceAll(" ", "") ?? '';
+    const action = params.action ?? 'view';
+
+    return award(doc, action, false);
+  }, [params, award, props.award, workspace, url, to]);
+
   const handleClick = useCallback((e) => {
     if (isHashLink) {
       e.preventDefault();
       scrollToSection();
+      return;
     }
-    
     onClick?.(e);
-    
-    if (workspace === "web") {
-      setOpenNav(false);
-    }
+    if (workspace === "web") setOpenNav(false);
   }, [isHashLink, scrollToSection, onClick, workspace, setOpenNav]);
 
   const isActive = useMemo(() => {
     if (props.active) return true;
-    /* if (isHashLink && activeSection) {
-      return activeSection === to.substring(1);
-    } */
     return currentPage && currentPage === to;
-  }, [props.active, isHashLink, activeSection, to, currentPage]);
+  }, [props.active, to, currentPage]);
 
-  const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "")
+  if (!canRender && !props.renderOnRestrict) return null;
+
+  const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "");
+  
   const className = cn(
-    classVariant,
     "justify-normal cursor-pointer p-2",
+    canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
+    classVariant,
+    "justify-start",
     props.className,
-    activeLink(isActive, activeClassName),
-    //"text-muted-foreground hover:text-primary",
   );
 
   const renderizableProps = loopar.utils.renderizableProps(props);
   const commonProps = {
     ...renderizableProps,
     className,
-    ...(designing && { draggable: false })
+    ...(designing && { draggable: false }),
   };
+
+  if(props.disabled || onClick){
+    return <button {...commonProps} onClick={handleClick} className={className} disabled={props.disabled}>{children}</button>
+  }
 
   if (isAbsolute || notControlled) {
     return (
@@ -182,12 +221,17 @@ export function Link({
         {...commonProps}
         href={to}
         _target={props._target}
-        onClick={handleClick}
         key={renderizableProps.key || to}
       >
         {children}
       </a>
     );
+  }
+
+  if(!canRender && props.renderOnRestrict){
+    return <div {...commonProps} disabled={true}>
+      {children}
+    </div>
   }
 
   return (
@@ -202,61 +246,42 @@ export function Link({
   );
 }
 
-const VARIANTS = {
-  primary: "primary",
-  secondary: "secondary",
-  default: "default",
-  ghost: "ghost",
-  destructive: "destructive",
-};
-
-export default function MetaLink(props) {
+export default function MetaLink({...props}) {
   const data = props.data || {};
   const { class: dataClass, ...restData } = data;
-  const className = cn(props.className, dataClass);
-
-  const getVariant = () => {
-    return VARIANTS[data.variant] || VARIANTS.default;
-  }
 
   return (
     <Link
-      {...props} 
-      {...restData} 
-      className={className}
-      variant={getVariant()}
+      {...props}
+      {...restData}
+      className={cn(props.className, dataClass)}
+      variant={VARIANTS[data.variant] || VARIANTS.default}
       key={props.key || data.key || props.to}
     >
-      {data.label}
+      {data.label || props.children}
     </Link>
   );
 }
+
 MetaLink.droppable = false;
-MetaLink.metaFields = () => {
-  return [{
-    group: "form",
-    elements: {
-      to: {
-        element: INPUT,
-      },
-      _target: {
-        element: SELECT,
-        data: {
-          options: [
-            { option: "self", value: "_self" },
-            { option: "blank", value: "_blank" },
-          ],
-        },
-      },
-      variant: {
-        element: SELECT,
-        data: {
-          options: Object.keys(VARIANTS).map((button) => ({
-            value: VARIANTS[button],
-            label: button
-          })),
-        },
+MetaLink.metaFields = () => [{
+  group: "form",
+  elements: {
+    to: { element: INPUT },
+    _target: {
+      element: SELECT,
+      data: {
+        options: [
+          { option: "self",  value: "_self"  },
+          { option: "blank", value: "_blank" },
+        ],
       },
     },
-  }];
-};
+    variant: {
+      element: SELECT,
+      data: {
+        options: Object.keys(VARIANTS).map(k => ({ value: VARIANTS[k], label: k })),
+      },
+    },
+  },
+}];

@@ -139,7 +139,7 @@ const MetaDialog = (props) => {
         <DialogContent className={`sm:max-w-md ${sizes[props.size || "sm"]} flex flex-col`}>
           <DialogHeader>
             <DialogTitle className="flex space-x-2">
-              {props.type && <Icon type={props.type} size={48} className="-mt-3 -ml-3 opacity-50"/>}
+              {props.icon ? props.icon : (props.type && <Icon type={props.type} size={36} className=" opacity-50"/>)}
               <h2 className="text-2xl">{props.title}</h2>
             </DialogTitle>
           </DialogHeader>

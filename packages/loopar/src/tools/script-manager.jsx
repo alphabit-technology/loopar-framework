@@ -86,7 +86,6 @@ class ScriptManager {
         reject(e);
       };
 
-      // Insertar según la posición especificada
       const { position = "append", target } = options;
       
       if (target) {
@@ -106,7 +105,6 @@ class ScriptManager {
           document.head.appendChild(script);
         }
       } else {
-        // Sin target específico
         if (position === "prepend") {
           document.head.insertBefore(script, document.head.firstChild);
         } else if (position === "first-script") {

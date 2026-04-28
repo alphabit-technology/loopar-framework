@@ -12,7 +12,6 @@ import {
 } from "@cn/components/ui/card";
 
 import { Avatar, AvatarFallback } from "@cn/components/ui/avatar";
-import { Button } from "@cn/components/ui/button";
 import { Badge } from "@cn/components/ui/badge";
 import { useTable } from "./TableContext"
 import { TableSearch } from "./TableSearch";
@@ -96,8 +95,9 @@ export function GridView(props) {
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <Button
+                    <Link
                       variant="outline"
+                      to="delete"
                       onClick={(e) => {
                         e.preventDefault();
                         deleteRow(row, true);
@@ -105,7 +105,7 @@ export function GridView(props) {
                     >
                       <Trash2Icon className="mr-2" />
                       Delete
-                    </Button>
+                    </Link>
                     <Link variant="outline" to={`update?name=${row.name}`}>
                       <PencilIcon className="mr-2" />
                       Update

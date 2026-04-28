@@ -1,0 +1,43 @@
+import DeskGUI from "@context/base/desk-gui";
+import BaseForm from "@context/base/base-form";
+import MetaComponent from "@meta-component";
+import { FormWrapper, type FormStructureElement } from "./form-provider";
+
+export default class ViewContext extends BaseForm {
+  canUpdate = false;
+  hasSidebar = true;
+  hasHeader = true;
+  hasHistory = true;
+  donHaveContainer = true;
+  formFields: { [key: string]: any } = {};
+
+  render(content: React.ReactNode, slots: {}) {
+    if (content) return content;
+    const STRUCTURE = this.__STRUCTURE__;
+    
+    return super.render(
+      <FormWrapper __DATA__={this.Document.data} STRUCTURE={STRUCTURE} docRef={this}>
+        <DeskGUI docRef={this}>
+          {[
+            ...STRUCTURE.map((el: FormStructureElement) => {
+              const e = el.element
+              if (el.data.hidden) return null;
+
+              return (
+                <MetaComponent
+                  elements={[
+                    {
+                      element: e,
+                      ...el
+                    },
+                  ]}
+                />
+              );
+            })
+          ]}
+        </DeskGUI>
+      </FormWrapper>,
+      slots
+    );
+  }
+}

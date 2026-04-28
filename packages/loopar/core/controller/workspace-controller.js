@@ -1,14 +1,13 @@
 'use strict'
 
-import AuthController from "./auth-controller.js";
-import { loopar, fileManager } from "loopar";
+import AuthController from "../auth/AuthController.js";
+import { loopar, fileManager, PermissionManager } from "loopar";
 import fs from 'fs';
 
 export default class WorkspaceController extends AuthController {
-  #engineTemplate = 'pug';
-
-  get engineTemplate() {
-    return "." + this.#engineTemplate;
+  constructor(props) {
+    super(props);
+    Object.assign(this, props);
   }
 
   async getWorkspace(workspace = this.workspace) {
@@ -38,9 +37,13 @@ export default class WorkspaceController extends AuthController {
     }
   }
 
+  hasPermission(document, action){
+    return true
+  }
+
   async render(__META__, checkAuth = false) {
     if (checkAuth) {
-      await this.beforeAction();
+      ///await this.beforeAction();
     }
     
     global.File = class SimulatedFile {
@@ -54,20 +57,33 @@ export default class WorkspaceController extends AuthController {
 
     const url = this.req.originalUrl;
     const isProduction = process.env.NODE_ENV == 'production';
-    let HTML, template;
+    let HTML;
 
     const _p = (path) => loopar.makePath(loopar.pathRoot, path);
     
-    if(isProduction) {
-      const { render } = await import(_p("dist/server/entry-server.js"));
-      HTML = await render(url, __META__, this.req, this.res);
-      template = fs.readFileSync("dist/client/main.html", 'utf-8');
-    }else{
-      const vite = loopar.server.vite;
-      const { render } = await vite.ssrLoadModule(_p("app/entry-server.jsx"));
-      HTML = await render(url, __META__, this.req, this.res);
-      template = await vite.transformIndexHtml(url, fs.readFileSync(_p("main.html"), 'utf-8'));
-    }
+    const [{ render }, template] = await Promise.all([
+      isProduction
+        ? import(_p("dist/server/entry-server.js"))
+        : loopar.server.vite.ssrLoadModule(_p("app/entry-server.jsx")),
+    
+      isProduction
+        ? fs.readFileSync("dist/client/main.html", "utf-8")
+        : loopar.server.vite.transformIndexHtml(
+            url,
+            fs.readFileSync(_p("main.html"), "utf-8")
+          ),
+    ]);
+    const userData = await loopar.auth.award(false);
+    const username = userData?.name || "Guest";
+
+    const permissions = PermissionManager.getPermissions(username);
+
+    HTML = await render(url, __META__, this.req, this.res, permissions);
+    
+    __META__.site = loopar.tenantId;
+    __META__.userId = userData?.name;
+    __META__.csrfToken = userData?.csrfToken ?? null;
+    __META__.permissions = permissions
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
     html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
@@ -115,9 +131,5 @@ export default class WorkspaceController extends AuthController {
 
   static async sidebarData() {
     return loopar.modulesGroup;
-  }
-
-  async actionSidebar() {
-    return { sidebarData: await WorkspaceController.sidebarData() }
   }
 }

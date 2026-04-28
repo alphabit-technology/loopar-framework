@@ -40,7 +40,7 @@ export default class BaseDocument extends React.Component {
     return typeof this.props.hasBreadcrumb !== "undefined" ? this.props.hasBreadcrumb : this.hasBreadcrumb;
   }
   
-  render(content) {
+  render(content, slots) {
     const Document = this.state.Document;
     return (
       <DocumentProvider
@@ -50,6 +50,7 @@ export default class BaseDocument extends React.Component {
         title={Document.meta.title}
         spacing={Document.spacing}
         Document={this.Document}
+        slots={slots}
       >
         <>
           <title>{Document.meta.title}</title>

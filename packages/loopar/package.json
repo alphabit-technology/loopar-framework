@@ -13,12 +13,21 @@
     "src/"
   ],
   "dependencies": {
+    "@icons-pack/react-simple-icons": "13.13.0",
     "@pm2/io": "6.1.0",
-    "chalk": "^5.3.0",
+    "argon2": "0.44.0",
+    "chalk": "^5.6.2",
     "cli-table3": "0.6.5",
-    "es-toolkit": "v1.43.0",
+    "es-toolkit": "1.45.1",
     "inquirer": "^9.2.0",
+    "ioredis": "5.10.1",
+    "mailchecker": "6.0.20",
+    "nodemailer": "8.0.5",
     "ora": "^7.0.0",
-    "pm2": "6.0.13"
+    "pm2": "6.0.14",
+    "recharts": "3.8.1",
+    "simple-icons": "16.17.0",
+    "spamscanner": "6.1.5",
+    "ua-parser-js": "2.0.9"
   }
 }

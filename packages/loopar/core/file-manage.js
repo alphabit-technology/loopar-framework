@@ -6,16 +6,24 @@ import { pathToFileURL } from 'url';
 class FileManage {
   async makeFile(destiny, name, content, ext = 'js', replace = false) {
     const filePath = loopar.makePath(loopar.pathRoot, destiny, this.fileName(name, ext));
+    const folderPath = path.dirname(filePath);
 
     try {
       if (existsSync(filePath) && ['jsx', 'tsx', 'js', 'sqlite'].includes(ext) && !replace) return;
     } catch (e) {
       return;
     }
+
+    await new Promise((resolve, reject) => {
+      fs.mkdir(folderPath, { recursive: true }, (err) => {
+        if (err) return reject(new Error(err));
+        resolve();
+      });
+    });
     
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       fs.writeFile(filePath, content, (err) => {
-        if (err) throw new Error(err);
+        if (err) return reject(new Error(err));
         resolve();
       });
     });
@@ -152,12 +160,7 @@ export default class ${name}${_EXTENDS} {
 
     return await this.makeFile(destiny, name, classContent, ext);
   }
-
-  /**
- * Convierte nombre de entidad a formato de archivo
- * "AI Model" -> "ai-model"
- * "CustomerOrder" -> "customer-order"
- */
+  
 toKebabCase(str) {
   return inflection.dasherize(
     inflection.underscore(str.replace(/\s+/g, ''))

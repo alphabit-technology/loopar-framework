@@ -1,46 +1,21 @@
-// bin/ensure-site.js
-import fs from 'fs/promises';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync } from 'fs';
 import path from 'path';
+import { tenant } from "loopar";
+
+const DEV_SITE = path.join(process.cwd(), 'sites', 'dev');
 
 async function ensureDevSite() {
-  const sitesDir = path.join(process.cwd(), 'sites', 'dev');
-  
-  if (!existsSync(sitesDir)) {
-    await fs.mkdir(sitesDir, { recursive: true });
-  }
+  if (existsSync(path.join(DEV_SITE, '.env'))) return;
 
-  const sites = readdirSync(sitesDir).filter(f => !f.startsWith('.'));
+  console.log('⚠️  Creating dev site...\n');
 
-  if (sites.length > 0) return;
+  await tenant.saveTenant({
+    NAME: 'dev',
+    PORT: process.env.PORT || 3000,
+    NODE_ENV: 'development',
+  });
 
-  console.log('⚠️ Creating dev site...\n');
-
-  await createDevSite();
-}
-
-async function createDevSite() {
-  const siteName = 'dev';
-  const port = process.env.PORT || 3000;
-  const sitePath = path.join(process.cwd(), 'sites', siteName);
-
-  await fs.mkdir(sitePath, { recursive: true });
-  await fs.mkdir(path.join(sitePath, 'sessions'), { recursive: true });
-  await fs.mkdir(path.join(sitePath, 'config'), { recursive: true });
-  await fs.mkdir(path.join(sitePath, 'public', 'uploads'), { recursive: true });
-
-  const envContent = `PORT=${port}
-NAME=${siteName}
-PORT=${port}
-TENANT_ID=${siteName}
-NODE_ENV=development
-`;
-
-  await fs.writeFile(path.join(sitePath, '.env'), envContent);
-
-
-  console.log(`✅ Ddev site created: sites/${siteName}`);
-  console.log(`   URL: http://localhost:${port}\n`);
+  console.log('✅ Dev site created: sites/dev\n');
 }
 
 ensureDevSite().catch(console.error);

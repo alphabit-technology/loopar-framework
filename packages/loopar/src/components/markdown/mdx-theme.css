@@ -365,13 +365,13 @@
     cursor: pointer;
   }
   
-  [data-radix-popper-content-wrapper] > div {
+  /* [data-radix-popper-content-wrapper] > div {
     background-color: hsl(var(--popover)) !important;
     color: hsl(var(--popover-foreground)) !important;
     border: 1px solid hsl(var(--border)) !important;
     border-radius: var(--radius) !important;
     box-shadow: 0 4px 16px hsl(var(--foreground) / 0.15) !important;
-  }
+  } */
   
   [data-radix-popper-content-wrapper] svg {
     fill: hsl(var(--popover)) !important;

@@ -2,36 +2,74 @@ import { GlobalEnvironment } from '../global/element-definition.js';
 import path from "pathe";
 import dayjs from "dayjs";
 import crypto from "crypto-js";
-import { getHttpError } from '../global/http-errors.js';
-import * as lucideIcons from 'lucide-react'
+import * as lucideIcons from 'lucide-react';
+import * as simpleIcons from 'simple-icons';
+
 import { fileManage } from "../file-manage.js";
 import { elementsDict, elementsDefinition } from "../global/element-definition.js";
+import {PermissionManager} from "../auth/PermissionManager.js"
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+
+
+import inflection, { titleize, singularize } from "inflection";
+
+const toLooparKey = (name) => name.charAt(0).toLowerCase() + name.slice(1);
 
 export class Builder {
   async buildRefs() {
     let types = {};
     const docs = this.getEntities();
-
+  
     const getEntityFields = (fields) => {
-      const getFields = fields => fields.reduce((acc, field) => acc.concat(field, ...getFields(field.elements || [])), []);
-
+      const getFields = fields => fields.reduce((acc, field) => 
+        acc.concat(field, ...getFields(field.elements || [])), []);
       return getFields(fields).filter(field => {
         const def = elementsDict[field.element]?.def || {};
-        return def.isWritable && !!field.data.name// && !field.element.includes(FORM_TABLE);
-      }).map(field => field.data.name)
+        return def.isWritable && !!field.data.name;
+      }).map(field => field.data.name);
     }
-
-    const refs = Object.values(docs).reduce((acc, doc) => {
-      if (doc.__document_status__ == "Deleted") return acc;
-      
+  
+    const refs = {};
+    const types_ = {};
+    const refsByApp = {};
+  
+    for (const doc of Object.values(docs)) {
+      if (doc.__document_status__ === "Deleted") continue;
+  
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
       const isChild = doc.is_child ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
-      const fields = typeof doc.doc_structure == "object" ? doc.doc_structure : JSON.parse(doc.doc_structure || "[]");
+      const fields = typeof doc.doc_structure === "object" 
+        ? doc.doc_structure 
+        : JSON.parse(doc.doc_structure || "[]");
       const id = parseInt(doc.id) || 0;
+  
+      const appKey = inflection.transform(doc.__APP__, ['capitalize', 'dasherize']).toLowerCase();
+  
+      const ref = {
+        id,
+        __NAME__: doc.name,
+        __APP__: doc.__APP__,
+        __APP_KEY__: appKey,
+        __ENTITY__: doc.__ENTITY__ || "Entity",
+        __ROOT__: doc.entityRoot,
+        is_single: isSingle,
+        is_builder: isBuilder,
+        is_child: isChild,
+        __MODULE__: doc.__MODULE__,
+        __TYPE__: doc.type,
+        __FIELDS__: getEntityFields(fields)
+      };
+  
+      const key = this.utils.toEntityKey(doc.name);
+      refs[key] = ref;
+  
+      if (!refsByApp[appKey]) refsByApp[appKey] = {};
+      refsByApp[appKey][key] = ref;
+  
       if (isBuilder) {
-        types[doc.name] = {
-          id: id,
+        types_[doc.name] = {
+          id,
           __ROOT__: doc.entityRoot,
           __NAME__: doc.name,
           __ENTITY__: doc.__ENTITY__ || "Entity",
@@ -41,33 +79,13 @@ export class Builder {
           __TYPE__: doc.type,
           __MODULE__: doc.__MODULE__,
           __FIELDS__: getEntityFields(fields)
-        }
+        };
       }
-
-      acc[doc.name] = {
-        id: id,
-        __NAME__: doc.name,
-        __APP__: doc.__APP__,
-        __ENTITY__: doc.__ENTITY__ || "Entity",
-        __ROOT__: doc.entityRoot,
-        is_single: isSingle,
-        is_builder: isBuilder,
-        is_child: isChild,
-        __MODULE__: doc.__MODULE__,
-        __TYPE__: doc.type,
-        __FIELDS__: getEntityFields(fields)
-      }
-
-      return acc;
-    }, {});
-
-    await fileManage.setConfigFile('refs', {
-      types,
-      refs
-    }, "config");
-
+    }
+  
     this.__REFS__ = refs;
-    this.__TYPES__ = types;
+    this.__TYPES__ = types_;
+    this.__REFS_BY_APP__ = refsByApp;
   }
 
   makePath(...args) {
@@ -83,70 +101,113 @@ export class Builder {
   }
 
   async buildIcons() {
-    if(!this.__installed__) return;
+    if (!this.__installed__) return;
     const refs = this.getRefs();
-
-    const directIcons = []
+  
+    const directIcons = [];
+  
     const evalFields = (fields) => {
       fields = Array.isArray(fields) ? fields : [];
       return fields.reduce((acc, field) => {
-        if (field.element == ICON_INPUT) {
+        if (field.element === ICON_INPUT) {
           acc.push(field.data.name);
         }
-
-        if (field.element == ICON || field.element == TEXT_BLOCK_ICON) {
+        if (field.element === ICON || field.element === TEXT_BLOCK_ICON) {
           directIcons.push(field.data.icon);
-          //acc.push(field.data.icon);
         }
-
-
         if (field.elements) {
           acc.push(...evalFields(field.elements));
         }
-
         return acc;
       }, []);
-    }
-
+    };
+  
     const refIcons = {};
-
     Object.values(refs).forEach(ref => {
-      const docJson = fileManage.getConfigFile(ref.__NAME__.replaceAll(" ", "-").toLowerCase(), ref.__ROOT__);
-      
-      if (docJson && docJson.doc_structure) {
-        const fields = evalFields(this.utils.JSONparse(docJson.doc_structure, docJson.doc_structure));
-        fields.length && (refIcons[ref.__NAME__] = {fields, isSingle: ref.is_single});
+      const docJson = fileManage.getConfigFile(
+        ref.__NAME__.replaceAll(' ', '-').toLowerCase(),
+        ref.__ROOT__
+      );
+      if (docJson?.doc_structure) {
+        const fields = evalFields(
+          this.utils.JSONparse(docJson.doc_structure, docJson.doc_structure)
+        );
+        if (fields.length) refIcons[ref.__NAME__] = { fields, isSingle: ref.is_single };
       }
     });
-
-    let JSXImports = "";
+  
     const iconImports = new Set();
     for (const [entity, ent] of Object.entries(refIcons)) {
-      if(!ent.isSingle){
-        if(await this.db.hasEntity(null, entity)){
+      if (!ent.isSingle) {
+        if (
+          (await this.db.hasEntity(null, entity)) &&
+          (await this.db.hasTable(entity))
+        ) {
           for (const res of await this.db.getAll(entity, ent.fields)) {
-            for(const field of ent.fields) {
-              const icon = (res[field] || "").replaceAll(/[- ]/g, '');
-              lucideIcons[icon] && iconImports.add(res[field].replaceAll(/[- ]/g, ''));
+            for (const field of ent.fields) {
+              const icon = (res[field] || '').replaceAll(/[- ]/g, '');
+              if (icon) iconImports.add(icon);
             }
           }
         }
-      }else{
-        //iconImports.add()
       }
     }
-
+  
     Object.values(elementsDefinition).forEach(ed => {
-      ed.forEach(d => {
-        directIcons.push(d.icon)
-      })
-      //directIcons.push()
+      ed.forEach(d => directIcons.push(d.icon));
     });
-
-    const icons = Array.from(new Set([...iconImports, ...directIcons]));
-    JSXImports += `//this file is autogenerated\n export {${[...icons].filter(icon => icon && lucideIcons[icon]).join(',')}} from "lucide-react";`;
-
-    await fileManage.makeFile('app/auto', 'preloaded-icons', JSXImports, 'jsx', true);
+  
+    const tenantIcons = Array.from(new Set([...iconImports, ...directIcons])).filter(Boolean);
+  
+    await fileManage.makeFile(
+      'app/auto/icon-segments',
+      this.tenantId,
+      JSON.stringify(tenantIcons),
+      'json',
+      true
+    );
+  
+    const segmentsDir = path.join(this.pathRoot, 'app/auto/icon-segments');
+    const segmentFiles = existsSync(segmentsDir)
+      ? readdirSync(segmentsDir).filter(f => f.endsWith('.json'))
+      : [];
+  
+    const allIcons = Array.from(new Set(
+      segmentFiles.flatMap(file => {
+        try {
+          return JSON.parse(readFileSync(path.join(segmentsDir, file), 'utf-8'));
+        } catch {
+          return [];
+        }
+      })
+    )).filter(Boolean);
+  
+    const toSimpleKey  = (name) => name.charAt(0).toLowerCase() + name.slice(1);
+    const isSimpleIcon = (name) => /^Si[A-Z]/.test(name);
+  
+    const lucideIconNames = allIcons
+      .filter(name => !isSimpleIcon(name) && lucideIcons[name]);
+  
+    const simpleIconNames = allIcons
+      .filter(name => isSimpleIcon(name) && simpleIcons[toSimpleKey(name)]);
+  
+    const lines = ['// this file is autogenerated — do not edit by hand'];
+  
+    if (lucideIconNames.length) {
+      lines.push(`export { ${lucideIconNames.join(', ')} } from "lucide-react";`);
+    }
+  
+    if (simpleIconNames.length) {
+      lines.push(`export { ${simpleIconNames.join(', ')} } from "@icons-pack/react-simple-icons";`);
+    }
+  
+    await fileManage.makeFile(
+      'app/auto',
+      'preloaded-icons',
+      lines.join('\n'),
+      'jsx',
+      true
+    );
   }
 
   async build() {
@@ -221,6 +282,8 @@ export class Builder {
       }
 
       await writeModules(data);
+
+      await PermissionManager.boot();
     } else {
       await writeFile(data);
     }
@@ -237,7 +300,8 @@ export class Builder {
     if (data) {
       Object.assign(this, data);
     } else {
-      await this.loadConfig(fileManage.getConfigFile('loopar.config', null, {}));
+      const globalConfig = fileManage.getConfigFile("redis.config", "config", {})
+      await this.loadConfig({...fileManage.getConfigFile('loopar.config', null, {}), ...globalConfig});
     }
   }
 
