@@ -1,4 +1,4 @@
-import {createContext, useContext, useState, useCallback, useMemo, useEffect} from "react";
+import {createContext, useContext, useCallback, useMemo, useRef} from "react";
 import { useDragAndDrop } from "./DragAndDropContext";
 
 export const DroppableContext = createContext({});
@@ -6,16 +6,13 @@ export const DroppableContext = createContext({});
 export const useDroppable = () => useContext(DroppableContext);
 
 export const DroppableContextProvider = ({data, children, ...props }) => {
-  const __REFS__ = {};
+  const __REFS__ = useRef({}).current;
   const { 
     dropZone, setDropZone, 
     currentDragging, 
-    movement,
     handleDrop,
     dragging
   } = useDragAndDrop();
-  
-  const droppableEvents = {};
 
   const handleSetDropZone = useCallback((e) => {
     e.preventDefault();
@@ -23,26 +20,31 @@ export const DroppableContextProvider = ({data, children, ...props }) => {
     if(props.element == ROW && currentDragging.el.element != COL) return;
 
     setDropZone(data.key);
-  }, [currentDragging, data.key, props.element, movement]);
+  }, [currentDragging, data.key, props.element, setDropZone]);
 
-  if (currentDragging) {
-    droppableEvents.onPointerEnter = handleSetDropZone;
-    droppableEvents.onPointerOver = handleSetDropZone;
-    droppableEvents.onPointerUp = handleDrop
-  }
+  const droppableEvents = useMemo(() => {
+    if (!currentDragging) return {};
+    return {
+      onPointerEnter: handleSetDropZone,
+      onPointerOver: handleSetDropZone,
+      onPointerUp: handleDrop,
+    };
+  }, [currentDragging, handleSetDropZone, handleDrop]);
 
   const dragOver = useMemo(() => {
     return dragging && dropZone && dropZone === data.key &&
       (currentDragging && data.key !== currentDragging?.key)
   }, [dropZone, currentDragging, data.key, dragging]);
 
+  const contextValue = useMemo(() => ({
+    droppableEvents,
+    droppable: true,
+    dragOver,
+    __REFS__,
+  }), [droppableEvents, dragOver]);
+
   return (
-    <DroppableContext.Provider value={{
-      droppableEvents,
-      droppable: true,
-      dragOver,
-      __REFS__
-    }}>
+    <DroppableContext.Provider value={contextValue}>
       {children}
     </DroppableContext.Provider>
   );

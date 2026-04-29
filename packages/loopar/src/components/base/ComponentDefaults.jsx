@@ -4,7 +4,7 @@ import {useDesigner} from "@context/@/designer-context";
 
 export function ComponentDefaults(props) {
   const data = props.data || {};
-  const {updateElement, updateElements, designerMode} = useDesigner();
+  const {updateElement, updateElements, designerMode, updatingFromEditor} = useDesigner();
 
   const getSrc = () => {
     if (data) {
@@ -54,6 +54,8 @@ export function ComponentDefaults(props) {
 
   const set = (key, value) => {
     if (!designerMode) return;
+    if (updatingFromEditor === data.key) return;
+
     const newData = {...data};
     if (typeof key == "object") {
       Object.keys(key).forEach((k) => {

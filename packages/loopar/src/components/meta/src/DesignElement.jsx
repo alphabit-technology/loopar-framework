@@ -43,7 +43,7 @@ export const DesignElement = memo(function DesignElement(props) {
         delete __REFS__[key];
       };
     }
-  }, [elementProps.data?.key, __REFS__]);
+  }, [elementProps.data?.key]);
 
   if (parentHidden) {
     return <Comp {...elementProps} />;
@@ -116,7 +116,15 @@ export const DesignElement = memo(function DesignElement(props) {
       },
       className,
     });
-  }, [elementProps, parentKey, setDropZone, setCurrentDragging, className]);
+  }, [
+    elementProps.data,
+    elementProps.element,
+    elementProps.elements,
+    parentKey,
+    setDropZone,
+    setCurrentDragging,
+    className,
+  ]);
 
   const handleDragStart = useCallback((e) => {
     if (!dragEnabled || e.button !== 0 || designerModeType === "preview") return;

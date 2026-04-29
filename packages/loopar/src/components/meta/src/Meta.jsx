@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 import { useDesigner } from "@context/@/designer-context";
@@ -8,18 +8,25 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { extractFieldNames, evaluateCondition, useBuildMetaProps } from "./meta";
 import { MetaRender } from "./MetaRender";
 import { DesignElement } from "./DesignElement";
+import { useElementData } from "../../designer/element-store.js";
 
-export const Meta = (props) => {
+export const Meta = memo(function Meta(props) {
   const { meta, parent, parentKey, className } = props;
 
   if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
     return meta;
   }
 
+  const liveData = useElementData(meta?.data?.key, meta?.data);
+  const liveMeta = useMemo(
+    () => (liveData && liveData !== meta?.data ? { ...meta, data: liveData } : meta),
+    [meta, liveData]
+  );
+
   const designer = useDesigner();
   const { docRef, formValues } = useDocument();
   const isDesigner = designer.designerMode// && designer.designerModeType != "preview";
-  const metaProps = useBuildMetaProps({ meta, parent, isDesigner });
+  const metaProps = useBuildMetaProps({ meta: liveMeta, parent, isDesigner });
   
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
@@ -27,20 +34,17 @@ export const Meta = (props) => {
   const def = baseElementsDict[meta.element]?.def || {};
   const { ENVIRONMENT } = useWorkspace();
 
-  const isDisplay = () => {
-    if (metaProps.data?.display_on){
-      const fields = extractFieldNames(metaProps.data?.display_on);
-
+  const display = useMemo(() => {
+    if (metaProps.data?.display_on) {
+      const fields = extractFieldNames(metaProps.data.display_on);
       const values = fields.reduce((acc, field) => {
         acc[field] = formValues[field];
         return acc;
       }, {});
-
-      return evaluateCondition(metaProps.data?.display_on, values);
-    }else{
-      return ![true, "true", "1", 1].includes(metaProps.data?.hidden);
+      return evaluateCondition(metaProps.data.display_on, values);
     }
-  }
+    return ![true, "true", "1", 1].includes(metaProps.data?.hidden);
+  }, [metaProps.data?.display_on, metaProps.data?.hidden, formValues]);
 
   /*const [display, setDisplay] = useState(isDisplay());
 
@@ -56,8 +60,6 @@ export const Meta = (props) => {
   if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
     global.__REQUIRE_COMPONENTS__.push(meta.element);
   }
-
-  const display = isDisplay();
   useEffect(() => {
     if (!Comp && (isDesigner || def.designerOnly !== true)) {
       ComponentsLoader([meta.element], () => {
@@ -113,4 +115,4 @@ export const Meta = (props) => {
   } else {
     return null;
   }
-};
+});

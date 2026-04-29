@@ -3,14 +3,14 @@ import { LoopSocket } from "./LoopSocket.js";
 
 const RealtimeContext = createContext(null);
 
-export function RealtimeProvider({ siteName, userId, children }) {
+export function RealtimeProvider({ siteName, children }) {
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
 
   useEffect(() => {
     if (!siteName) return;
 
-    const socket = LoopSocket.connect(siteName, { userId });
+    const socket = LoopSocket.connect(siteName);
     socketRef.current = socket;
 
     socket.on("connect",    () => setConnected(true));
@@ -22,7 +22,7 @@ export function RealtimeProvider({ siteName, userId, children }) {
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [siteName, userId]);
+  }, [siteName]);
 
   return (
     <RealtimeContext.Provider value={{ connected, socket: socketRef }}>

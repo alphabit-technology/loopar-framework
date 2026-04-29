@@ -1,4 +1,4 @@
-import { useContext, createContext, useState, useEffect, useRef } from 'react';
+import { useContext, createContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { DragGhost } from "./DragGhost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
@@ -69,11 +69,14 @@ export const DragAndDropContext = createContext({
   dropZone: null,
   setDropZone: () => { },
   baseElements: [],
-  setGlobalPosition: () => { }
+  setGlobalPosition: () => { },
+  verticalDirectionRef: { current: DOWN },
+  ghostDomRef: { current: null },
+  draggingEventRef: { current: null },
 });
 
 export const DragAndDropProvider = (props) => {
-  const { metaComponents, data } = props;
+  const { metaComponents, data, onDrop } = props;
   const [dropZone, setDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
@@ -82,38 +85,44 @@ export const DragAndDropProvider = (props) => {
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
   const [globalPosition, setGlobalPosition] = useState(null);
-  
+  const [, setPortalHost] = useState(0);
+
   const elementsRef = useRef(elements);
   const containerRef = useRef(null);
+  const verticalDirectionRef = useRef(DOWN);
+  const movementRef = useRef(movement);
+  const draggingRef = useRef(dragging);
+  const draggingEventRef = useRef(draggingEvent);
+  const initializedDraggingRef = useRef(initializedDragging);
+  const currentDraggingRef = useRef(currentDragging);
+  const dropZoneRef = useRef(dropZone);
+  const globalPositionRef = useRef(globalPosition);
+  const pointerFlushRafRef = useRef(0);
+  const pendingPointerRef = useRef(null);
+  const ghostDomRef = useRef(null);
 
-  const handleSetElements = (elements) => {
-    if(isEqual(elementsRef.current, elements)) return;
+  elementsRef.current = elements;
+  movementRef.current = movement;
+  draggingRef.current = dragging;
+  draggingEventRef.current = draggingEvent;
+  initializedDraggingRef.current = initializedDragging;
+  currentDraggingRef.current = currentDragging;
+  dropZoneRef.current = dropZone;
+  globalPositionRef.current = globalPosition;
 
-    elementsRef.current = elements;
-    setElements(elements);
-  }
+  const handleSetElements = useCallback((next) => {
+    if(isEqual(elementsRef.current, next)) return;
+
+    elementsRef.current = next;
+    setElements(next);
+  }, []);
 
   useEffect(() => {
     handleSetElements(metaComponents);
-  }, [metaComponents]);
+  }, [metaComponents, handleSetElements]);
 
-  useEffect(() => {
-    if (draggingEvent && movement && currentDragging) {
-      const scrollSpeed = 10;
-      const scrollBuffer = 50;
-
-      const draggedTop = movement.y - currentDragging.offset.y;
-      const draggedBottom = draggedTop + currentDragging.size.height;
-
-      if (global.verticalDirection === UP && draggedTop <= scrollBuffer) {
-        window.scrollTo(0, window.scrollY - scrollSpeed);
-      } else if (global.verticalDirection === DOWN && draggedBottom > window.innerHeight - scrollBuffer) {
-        window.scrollBy(0, scrollSpeed);
-      }
-    }
-  }, [draggingEvent, global.verticalDirection]);
-
-  const handleCompleteDrop = (target, dropped) => {
+  const handleCompleteDrop = useCallback((target, dropped) => {
+    const gp = globalPositionRef.current;
     const newElements = completeDrop({
       elements: [{
         data,
@@ -121,63 +130,161 @@ export const DragAndDropProvider = (props) => {
       }],
       targetKey: target,
       dropped,
-      globalPosition,
+      globalPosition: gp,
     })[0].elements || [];
 
     setDragging(false);
-    props.onDrop?.(JSON.stringify(newElements));
+    onDrop?.(JSON.stringify(newElements));
     handleSetElements(newElements);
-  };
+  }, [data, onDrop, handleSetElements]);
 
-  const handleDrop = (e) => {
+  const flushPendingPointerSync = useCallback(() => {
+    if (pointerFlushRafRef.current) {
+      cancelAnimationFrame(pointerFlushRafRef.current);
+      pointerFlushRafRef.current = 0;
+    }
+    const p = pendingPointerRef.current;
+    pendingPointerRef.current = null;
+    if (!p || !containerRef.current) return;
+    const cd = currentDraggingRef.current;
+    if (!cd) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const isNew = cd.isNew;
+    const nextEvent = {
+      x: p.clientX - (!isNew ? rect.left : 0),
+      y: p.clientY - (!isNew ? rect.top : 0),
+    };
+    const mv = movementRef.current;
+    const crossed =
+      Math.abs(p.clientY - (mv?.y || 0)) > 30 || Math.abs(p.clientX - (mv?.x || 0)) > 30;
+    setDraggingEvent(nextEvent);
+    draggingEventRef.current = nextEvent;
+    const host = ghostDomRef.current;
+    if (host) {
+      host.style.left = `${nextEvent.x}px`;
+      host.style.top = `${nextEvent.y}px`;
+    }
+    if (crossed) {
+      if (!draggingRef.current) setDragging(true);
+      const nextMovement = { x: p.clientX, y: p.clientY };
+      setMovement(nextMovement);
+      movementRef.current = nextMovement;
+    }
+  }, []);
+
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    flushPendingPointerSync();
+
+    const mv = movementRef.current;
+    const dz = dropZoneRef.current;
+    const cd = currentDraggingRef.current;
 
     setInitializedDragging(false);
     setDropZone(null);
     setCurrentDragging(null);
 
-    movement && handleCompleteDrop(dropZone, currentDragging);
+    mv && handleCompleteDrop(dz, cd);
     setMovement(null);
-  }
+  }, [handleCompleteDrop, flushPendingPointerSync]);
 
   useEffect(() => {
     if(!currentDragging) return;
-    
+
+    const applyGhostPosition = (clientX, clientY) => {
+      const cd = currentDraggingRef.current;
+      if (!cd || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const isNew = cd.isNew;
+      const nextEvent = {
+        x: clientX - (!isNew ? rect.left : 0),
+        y: clientY - (!isNew ? rect.top : 0),
+      };
+      draggingEventRef.current = nextEvent;
+      const host = ghostDomRef.current;
+      if (host) {
+        host.style.left = `${nextEvent.x}px`;
+        host.style.top = `${nextEvent.y}px`;
+      }
+    };
+
+    /** preventDefault on pointermove blocks native scrolling; scroll window explicitly from raw clientY */
+    const autoScrollFromPointer = (clientY) => {
+      const cd = currentDraggingRef.current;
+      if (!cd) return;
+      const scrollSpeed = 10;
+      const scrollBuffer = 50;
+      const draggedTop = clientY - cd.offset.y;
+      const draggedBottom = draggedTop + cd.size.height;
+      const dir = verticalDirectionRef.current;
+
+      if (dir === UP && draggedTop <= scrollBuffer) {
+        window.scrollTo(0, window.scrollY - scrollSpeed);
+      } else if (dir === DOWN && draggedBottom > window.innerHeight - scrollBuffer) {
+        window.scrollBy(0, scrollSpeed);
+      }
+    };
+
+    const flushPointerFrame = () => {
+      pointerFlushRafRef.current = 0;
+      const p = pendingPointerRef.current;
+      if (!p || !containerRef.current) return;
+      const cd = currentDraggingRef.current;
+      if (!cd) return;
+
+      applyGhostPosition(p.clientX, p.clientY);
+      autoScrollFromPointer(p.clientY);
+
+      const mv = movementRef.current;
+      const enough =
+        Math.abs(p.clientY - (mv?.y || 0)) > 30 || Math.abs(p.clientX - (mv?.x || 0)) > 30;
+
+      if (enough) {
+        if (!draggingRef.current) setDragging(true);
+        const nextMovement = { x: p.clientX, y: p.clientY };
+        const prev = movementRef.current;
+        if (!prev || prev.x !== nextMovement.x || prev.y !== nextMovement.y) {
+          setMovement(nextMovement);
+          movementRef.current = nextMovement;
+        }
+      }
+    };
+
     const handleDragOver = (e) => {
       e.stopPropagation();
       e.preventDefault();
 
-      if (!currentDragging || !initializedDragging) return;
+      const cd = currentDraggingRef.current;
+      const init = initializedDraggingRef.current;
 
-      const rect = containerRef.current.getBoundingClientRect();
+      if (!cd || !init) return;
 
-      const enoughMovement = (pixels = 30) => {
-        return Math.abs(e.clientY - (movement?.y || 0)) > pixels || Math.abs(e.clientX - (movement?.x || 0)) > pixels;
-      }
+      pendingPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
 
-      const isNew = currentDragging.isNew;
-
-      setDraggingEvent({
-        x: e.clientX - (!isNew ? rect.left : 0),
-        y: e.clientY - (!isNew ? rect.top : 0)
-      });
-
-      global.verticalDirection = e.clientY >= window.lastY ? 'down' : 'up';
+      const prevLastY = window.lastY;
       window.lastY = e.clientY;
+      const dir =
+        typeof prevLastY === 'number' && !Number.isNaN(prevLastY) && e.clientY < prevLastY
+          ? UP
+          : DOWN;
+      verticalDirectionRef.current = dir;
+      global.verticalDirection = dir;
 
-      if (enoughMovement()) {
-        !dragging && setDragging(true);
-        
-        setMovement({
-          x: e.clientX,
-          y: e.clientY,
-        });
+      applyGhostPosition(e.clientX, e.clientY);
+      // autoScrollFromPointer is intentionally NOT called here — it's invoked
+      // once per frame inside flushPointerFrame. Calling it both sync and in
+      // rAF doubled the scroll speed, which made the brothers' rects drift
+      // between getIndex calls and the placeholder ended up one slot ahead.
+
+      if (!pointerFlushRafRef.current) {
+        pointerFlushRafRef.current = requestAnimationFrame(flushPointerFrame);
       }
     }
 
     const protectTouchEvent = (e) => {
-      if (!draggingEvent) return;
+      if (!draggingEventRef.current) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -187,11 +294,18 @@ export const DragAndDropProvider = (props) => {
     window.addEventListener('pointerup', handleDrop, { passive: false });
 
     return () => {
+      if (pointerFlushRafRef.current) {
+        cancelAnimationFrame(pointerFlushRafRef.current);
+        pointerFlushRafRef.current = 0;
+      }
+      pendingPointerRef.current = null;
+      window.lastY = undefined;
+      verticalDirectionRef.current = DOWN;
       window.removeEventListener('touchstart', protectTouchEvent);
       window.removeEventListener('pointermove', handleDragOver);
       window.removeEventListener('pointerup', handleDrop);
     }
-  }, [currentDragging, dropZone, initializedDragging, dragging]);
+  }, [currentDragging, handleDrop]);
 
   useEffect(() => {
     document.body.style.userSelect = currentDragging ? 'none' : 'auto';
@@ -202,27 +316,45 @@ export const DragAndDropProvider = (props) => {
     };
   }, [currentDragging]);
 
+  const setContainerRef = useCallback((node) => {
+    containerRef.current = node;
+    setPortalHost((n) => (node ? n + 1 : n));
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    metaComponents,
+    dropZone,
+    setDropZone,
+    currentDragging,
+    setCurrentDragging,
+    draggingEvent,
+    movement,
+    setMovement,
+    handleDrop,
+    dragging,
+    setDragging,
+    setInitializedDragging,
+    baseElements: elements,
+    setGlobalPosition,
+    containerRef,
+    verticalDirectionRef,
+    ghostDomRef,
+    draggingEventRef,
+  }), [
+    metaComponents,
+    dropZone,
+    currentDragging,
+    draggingEvent,
+    movement,
+    dragging,
+    elements,
+    handleDrop,
+  ]);
+
   return (
-    <DragAndDropContext.Provider
-      value={{
-        metaComponents,
-        dropZone,
-        setDropZone,
-        currentDragging,
-        setCurrentDragging,
-        draggingEvent,
-        movement,
-        setMovement,
-        handleDrop,
-        dragging, setDragging,
-        setInitializedDragging,
-        baseElements: elements,
-        setGlobalPosition,
-        containerRef
-      }}
-    >
+    <DragAndDropContext.Provider value={contextValue}>
       <div
-        ref={containerRef}
+        ref={setContainerRef}
         className="relative overflow-hidden"
       >
         {containerRef.current && createPortal(<DragGhost/>, containerRef.current)}

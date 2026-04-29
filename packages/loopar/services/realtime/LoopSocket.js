@@ -19,12 +19,12 @@ class _LoopSocket {
 
   /**
    * Connects to the given site (or returns an existing connection).
+   * Identity is derived server-side from the JWT cookie — the client does
+   * not pass userId here.
    * @param {string} siteName  Site name (namespace)
-   * @param {object} options
-   * @param {string} options.userId  Current user id for auth
    * @returns {import("socket.io-client").Socket}
    */
-  connect(siteName, { userId } = {}) {
+  connect(siteName) {
     if (this._socket && this._siteName === siteName) {
       return this._socket;
     }
@@ -41,9 +41,7 @@ class _LoopSocket {
     this._socket = io(`${url}/${siteName}`, {
       path: "/ws/socket.io",
       transports: ["websocket", "polling"],
-      auth: {
-        userId,
-      },
+      withCredentials: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,

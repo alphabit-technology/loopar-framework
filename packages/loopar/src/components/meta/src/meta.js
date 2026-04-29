@@ -115,21 +115,20 @@ export function prepareMeta(metaProps) {
 }
 
 export const useBuildMetaProps = (props) => {
-  const { isDesigner } = useDesigner();
+  const { designerMode } = useDesigner();
 
-  const metaProps = useMemo(() => {
-    return prepareMeta(props.meta);
-  }, [props.meta.data]);
-
-  if (isDesigner) return designElementProps(metaProps);
-
-  const data = metaProps.data;
-
-  return {
-    element: metaProps.element,
-    ...metaProps,
-    key: metaProps.key || "element" + data.key,
-  };
+  return useMemo(() => {
+    const mp = prepareMeta(props.meta);
+    if (designerMode) {
+      return designElementProps(mp);
+    }
+    const data = mp.data;
+    return {
+      element: mp.element,
+      ...mp,
+      key: mp.key || "element" + data.key,
+    };
+  }, [designerMode, props.meta]);
 };
 
 export function evaluateCondition(condition, values) {

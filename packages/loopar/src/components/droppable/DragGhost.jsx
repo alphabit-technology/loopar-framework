@@ -1,10 +1,19 @@
 import { useDragAndDrop } from "./DragAndDropContext";
-import { memo } from 'react';
+import { memo, useLayoutEffect } from 'react';
 
 export const DragGhost = memo(function DragGhost() {
-  const { draggingEvent, movement, currentDragging, dragging } = useDragAndDrop();
+  const { ghostDomRef, draggingEventRef, movement, currentDragging, dragging } = useDragAndDrop();
 
-  if (!(draggingEvent && dragging && movement && currentDragging)) return null;
+  useLayoutEffect(() => {
+    const el = ghostDomRef?.current;
+    const ev = draggingEventRef?.current;
+    if (el && ev) {
+      el.style.left = `${ev.x}px`;
+      el.style.top = `${ev.y}px`;
+    }
+  }, [dragging, movement, currentDragging?.key, ghostDomRef, draggingEventRef]);
+
+  if (!(dragging && movement && currentDragging)) return null;
 
   const { size, offset } = currentDragging;
 
@@ -12,20 +21,19 @@ export const DragGhost = memo(function DragGhost() {
 
   return (
     <div
+      ref={ghostDomRef}
       className={`pointer-events-none ${isNew ? 'fixed' : 'absolute'}`}
       style={{
-        top: draggingEvent.y,
-        left: draggingEvent.x,
         ...size,
         transform: `translate(-${offset.x}px, -${offset.y}px)`,
         transition: "none",
         zIndex: 9999,
       }}
     >
-      <div 
-        className={currentDragging.className} 
+      <div
+        className={currentDragging.className}
         dangerouslySetInnerHTML={{ __html: currentDragging?.ref?.innerHTML }}
-      /> 
+      />
     </div>
   );
 });

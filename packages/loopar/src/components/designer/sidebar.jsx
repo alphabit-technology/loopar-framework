@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { BrushIcon, EyeIcon, XIcon, SaveIcon, HandGrab } from "lucide-react";
 import { useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
@@ -6,7 +7,7 @@ import {ElementEditor} from "./element-editor";
 import {Separator} from "@cn/components/ui/separator";
 import {useDocument} from "@context/@/document-context";
 
-export const Sidebar = () => {
+export const Sidebar = memo(() => {
   const { handleSetSidebarOpen, sidebarOpen, docRef } = useDocument();
   const { handleChangeMode, designerModeType, updatingElement, dragEnabled, setDragEnable } = useDesigner();
   
@@ -71,4 +72,4 @@ export const Sidebar = () => {
       </div>
     </div>
   );
-}
+});

@@ -96,7 +96,10 @@ export class Server extends Router {
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
     const httpServer = http.createServer(server);
-    RealtimeManager.attach(httpServer);
+    RealtimeManager.attach(httpServer, {
+      tenantId: loopar.tenantId,
+      getJwtSecret: () => loopar.jwtSecret,
+    });
     //RealtimeManager.namespace(loopar.tenantId);
 
     httpServer.listen(port, () => {

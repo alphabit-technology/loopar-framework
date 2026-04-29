@@ -18,15 +18,27 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     dropZone, 
     currentDragging, 
     movement,
-    draggingEvent,
     dragging,
     setGlobalPosition,
+    verticalDirectionRef,
   } = useDragAndDrop();
 
   const {droppableEvents, dragOver, __REFS__} = useDroppable();
 
   const dropZoneRef = useRef();
   const prevElements = useRef(props.elements);
+  const dragSyncRef = useRef({
+    dragging,
+    movement,
+    currentDragging,
+    elements: props.elements || [],
+  });
+  dragSyncRef.current = {
+    dragging,
+    movement,
+    currentDragging,
+    elements,
+  };
 
   const handleSetElements = (elements) => {
     if(isEqual(prevElements.current, elements)) return;
@@ -53,12 +65,20 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   useEffect(() => {
     if(dropZone == null) return;
-    handleSetElements(clearDragged());
+    const { dragging: d, movement: m, currentDragging: cd, elements: els } = dragSyncRef.current;
+    const cleared = (() => {
+      if (!d || !m) return els;
+      return els.filter(el =>
+        el.$$typeof !== Symbol.for('react.transitional.element') &&
+        (cd ? el.data?.key !== cd.key : true)
+      );
+    })();
+    handleSetElements(cleared);
 
     if(dropZone === data.key) {
       setGlobalPosition(position);
     }
-  }, [dropZone, position]);
+  }, [dropZone, position, data.key, setGlobalPosition]);
 
   const getBrothers = useMemo(() => {
     return memoize(current => {
@@ -76,11 +96,12 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
     const draggedTop = movement.y - currentDragging.offset.y;
     const draggedBottom = draggedTop + currentDragging.size.height;
+    const verticalDirection = verticalDirectionRef?.current ?? global.verticalDirection;
 
     for (let i = 0; i < brothers.length; i++) {
       const rect = brothers[i];
 
-      if (global.verticalDirection === UP) {
+      if (verticalDirection === UP) {
         if (draggedTop < (rect.y + (rect.height * 0.75))) return i;
       } else {
         if ((rect.y + (rect.height * 0.25)) > draggedBottom) return i;
@@ -91,31 +112,28 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   }, [
     getBrothers,
     currentDragging,
-    global.verticalDirection
+    movement,
+    verticalDirectionRef,
   ]);
 
   useEffect(() => {
-    if(!dragging || !draggingEvent || !movement) return
+    if(!dragging || !movement) return
     if(!dropZone || dropZone !== data.key || position == null) return;
     if (!currentDragging || currentDragging.key == data?.key) return;
-
-    const rect = draggingEvent;
 
     const { size } = currentDragging;
     const { height } = size;
 
-    if (rect) {
-      setElement(
-        <div
-          key={currentDragging.key}
-          style={{ maxHeight: height }}
-          className={`${currentDragging.className} pointer-events-none opacity-60 border-2 border-dashed border-primary/70`}
-          dangerouslySetInnerHTML={{ __html: currentDragging.ref?.innerHTML }}
-        />,
-        position
-      );
-    }
-  }, [position, dropZone, data, currentDragging, dragging]);
+    setElement(
+      <div
+        key={currentDragging.key}
+        style={{ maxHeight: height }}
+        className={`${currentDragging.className} pointer-events-none opacity-60 border-2 border-dashed border-primary/70`}
+        dangerouslySetInnerHTML={{ __html: currentDragging.ref?.innerHTML }}
+      />,
+      position
+    );
+  }, [position, dropZone, data.key, currentDragging, dragging]);
 
   useEffect(() => {
     if(!dragging) return;
@@ -126,16 +144,7 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       const i = getIndex(currentDragging.key);
       position !== i && setPosition(i);
     }
-  }, [movement, dropZone, currentDragging]);
-
-  const clearDragged = useCallback(() => {
-    if(!dragging || !movement) return elements;
-    
-    return elements.filter(el =>
-      el.$$typeof !== Symbol.for('react.transitional.element') &&
-      (currentDragging ? el.data?.key !== currentDragging.key : true)
-    );
-  }, [elements, currentDragging, dragging, data.key]);
+  }, [movement, dropZone, currentDragging, dragging, data.key]);
 
   const renderizableProps = loopar.utils.renderizableProps(props);
 

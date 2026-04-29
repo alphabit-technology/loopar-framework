@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect } from "react";
 import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 import { useDesigner } from "@context/@/designer-context";
 import { DesignElement } from "./src/DesignElement.jsx";
@@ -15,7 +15,10 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
       return meta;
     }
     
-    const key = (meta.data?.key || parentKey) + (isDesigner ? 'd' : '') + index;
+    const hasKey = meta.data?.key != null && String(meta.data.key).length > 0;
+    const key = hasKey
+      ? `${String(meta.data.key)}${isDesigner ? "-d" : ""}`
+      : `${String(parentKey ?? "root")}${isDesigner ? "d" : ""}-${index}`;
 
     return (
       <Meta
