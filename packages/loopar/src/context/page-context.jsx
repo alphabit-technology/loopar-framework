@@ -3,12 +3,11 @@ import MetaComponent from "@meta-component";
 
 export default class PageContext extends BaseDocument {
   render(content = [], slots) {
-    return super.render([
+    return super.render(
       <>
-        <MetaComponent elements={JSON.parse(this.Document.Entity.doc_structure)} parent={this}/>
+        <MetaComponent elements={this.__STRUCTURE__} parent={this}/>
         {content}
-      </>
-    ],
+      </>,
       slots
     );
   }

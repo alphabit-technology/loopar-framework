@@ -373,9 +373,9 @@
     box-shadow: 0 4px 16px hsl(var(--foreground) / 0.15) !important;
   } */
   
-  [data-radix-popper-content-wrapper] svg {
+  /* [data-radix-popper-content-wrapper] svg {
     fill: hsl(var(--popover)) !important;
-  }
+  } */
   
   [data-radix-popper-content-wrapper] button {
     background-color: transparent !important;

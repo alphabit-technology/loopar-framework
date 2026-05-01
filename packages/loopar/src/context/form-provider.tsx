@@ -99,7 +99,7 @@ const buildFormFields = (
 
     if (typeof name === "string" && name && fieldIsWritable(el)) {
       if (el.element === FORM_TABLE) {
-        // fuera del schema
+        // FORM_TABLE is handled outside the zod schema.
       } else if (FILE_ELEMENTS.has(el.element)) {
         acc[name] = z.array(
           z.object({ rawFile: z.instanceof(File).optional() }).passthrough()
@@ -152,6 +152,14 @@ export const FormProvider = ({
     onChange?.(watchedValues);
   }, [watchedValues, onChange]);
 
+  /**
+   * Assigning `docRef.Form` is an intentional synchronous side-effect during render.
+   * `BaseForm.componentDidMount()` calls `buildSettersAndGetters()`, which expects
+   * `this.#Form` to already be set. Moving this to `useEffect` / `useLayoutEffect`
+   * would mount the parent with `this.#Form === null` and break the setters.
+   * The operation is idempotent (no re-renders triggered) and cheap — the setter
+   * in `BaseForm` only stores the reference without cloning.
+   */
   if (docRef) {
     docRef.Form = form;
     docRef.formFields = form.formState;
@@ -176,7 +184,7 @@ export const FormProvider = ({
     const fields = mapStructureToFields(STRUCTURE ?? []);
     const errors: { field: string; message: string }[] = [];
 
-    for (const [key, value] of Object.entries(form.watch())) {
+    for (const [key, value] of Object.entries(form.getValues())) {
       const field = fields.find((f) => f.data?.name === key);
       if (!field) continue;
 
@@ -199,7 +207,7 @@ export const FormProvider = ({
       loopar.throw({
         type: "error",
         title: "Validation error",
-        message: errors.map((e) => e.message).join("<br/>"),
+        message: errors.map((e) => e.message).join("\n"),
       });
     }
   }, [STRUCTURE, form, mapStructureToFields]);
@@ -245,9 +253,14 @@ export const FormProvider = ({
     [form, watchedValues, docRef],
   );
 
+  const handleFormSubmit = useMemo(
+    () => form.handleSubmit(onSubmit),
+    [form, onSubmit],
+  );
+
   return (
     <BaseFormContext.Provider value={contextValue}>
-      <Form {...form} noValidate onSubmit={form.handleSubmit(onSubmit)}>
+      <Form {...form} noValidate onSubmit={handleFormSubmit}>
         {children}
       </Form>
     </BaseFormContext.Provider>

@@ -87,7 +87,14 @@ spaces
 # 🧩 APPLICATION FILES
 # -----------------------------------
 /app/auto
-/apps/
+# Apps installed at runtime live in /apps/{name}/ and are user content.
+# The core "loopar" app ships with the framework, so we whitelist it.
+/apps/*
+!/apps/loopar
+# Runtime artifacts inside the bundled core app are still ignored.
+/apps/loopar/.git/
+/apps/loopar/uploads/
+/apps/loopar/node_modules/
 /path/
 .temp
 

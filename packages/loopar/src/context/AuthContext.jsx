@@ -16,7 +16,6 @@ function initSets({ private: priv, public: pub, denied = [] } = {}) {
 function checkPermission(document, action) {
   const key = `${document}:${action}`.toLowerCase().replaceAll(" ", "");
 
-  //console.log(["Check Permission",key, _publicSet])
   if (_publicSet.has(key)) return true;
   if (_permSet === null) return true;
 
@@ -41,10 +40,10 @@ export function AuthProvider({ permissions: initialPermissions, userId, children
 
   const refreshPermissions = useCallback(async () => {
     try {
-      const data = await loopar.method(
+      const data = await loopar.api.get(
         "Role Permission Manager",
         "getOwnPermissions",
-        { user: userId }
+        { query: { user: userId } }
       );
       initSets(data);
     } catch (err) {

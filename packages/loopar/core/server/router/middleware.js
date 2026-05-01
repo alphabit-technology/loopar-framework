@@ -45,13 +45,19 @@ export class Middleware {
       const currentUrl = req._parsedUrl.pathname;
       const status = RouterUtils.SystemValidation.getStatus(loopar);
 
-      if (status.needsConnect && currentUrl !== status.connectPath) {
+      // /api/System/* is the AJAX counterpart of the bootstrap pages under
+      // /loopar/system/* — the form submits its payload there. Never redirect
+      // those, otherwise fetch follows the 302 and the browser navigates,
+      // killing the POST and producing a stray GET on the original page.
+      const isApiToSystem = currentUrl.startsWith('/api/System/');
+
+      if (status.needsConnect && currentUrl !== status.connectPath && !isApiToSystem) {
         return this.redirect(req, res, status.connectPath);
       }
 
       if (status.needsInstallOrUpdate) {
         const redirectPath = status.needsUpdate ? status.updatePath : status.installPath;
-        if (currentUrl !== redirectPath) {
+        if (currentUrl !== redirectPath && !isApiToSystem) {
           return this.redirect(req, res, redirectPath);
         }
       }
@@ -72,7 +78,8 @@ export class Middleware {
    */
   setupWorkspaceMiddleware() {
     return async (req, res, next) => {
-      if (req.method === 'POST') return next();
+      // No HTML workspace UI for AJAX channels (POST or /api/* of any verb).
+      if (RouterUtils.isAjaxRequest(req)) return next();
 
       const Controller = new WorkspaceController({
         req,
@@ -136,12 +143,15 @@ export class Middleware {
       await this.makeController(req, res, next);
       const response = req.__WORKSPACE__;
 
-      if (response?.redirect) {
-        return this.redirect(req, res, response.redirect);
+      // AJAX channel (POST or /api/*) NEVER emits a 302 — would make fetch
+      // follow it and the client end up navigating to the wrong place. The
+      // redirect URL travels inside the JSON; the client decides.
+      if (RouterUtils.isAjaxRequest(req)) {
+        return this.renderAjax(res, response);
       }
 
-      if (req.method === 'POST') {
-        return this.renderAjax(res, response);
+      if (response?.redirect) {
+        return this.redirect(req, res, response.redirect);
       }
 
       next();
@@ -211,8 +221,10 @@ export class Middleware {
       err = getHttpError(err);
 
       try {
-        if (req.method === 'POST') {
-          return this.renderAjax(res, err);
+        if (RouterUtils.isAjaxRequest(req)) {
+          // Surface redirect (if any) inside the JSON so the client can
+          // navigate after handling the error UX.
+          return this.renderAjax(res, redirect ? { ...err, redirect } : err);
         }
 
         if (redirect && req._parsedUrl.pathname !== redirect) {
@@ -253,7 +265,10 @@ export class Middleware {
       legacyHeaders: false,
       handler: (req, res) => {
         res.status(429).json({
-          error: `Too many login attempts, try again in ${minutes} minutes`
+          status: 429,
+          code: 'RATE_LIMITED',
+          title: 'Too Many Requests',
+          message: `Too many login attempts, try again in ${minutes} minutes`
         });
       },
     });

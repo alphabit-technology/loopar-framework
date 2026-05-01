@@ -4,7 +4,7 @@ import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import PureHTMLBlock from "@pure-html-block";
 import {SEORender} from "@seo-render";
-const Animations = loopar.animations();
+const Animations = loopar.animation.animations();
 
 export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, threshold = 0.1 }) => {
   const [isVisible, setIsVisible] = useState(false);

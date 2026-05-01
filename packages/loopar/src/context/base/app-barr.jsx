@@ -60,8 +60,8 @@ export function AppBarr({Document, sidebarOpen, viewTypeToggle, viewType, ...pro
   
   const contextName = ["create", "update"].includes(meta.action) ? "form" : meta.action;
 
-  const title = ((meta.title || context === 'module') ? meta.module_group :
-      (['list', 'view'].includes(context) || meta.action === 'create' || Entity.is_single) ? Entity.name : data.name) || Entity.name;
+  const title = ((meta.title || contextName === 'module') ? meta.module_group :
+      (['list', 'view'].includes(contextName) || meta.action === 'create' || Entity.is_single) ? Entity.name : data.name) || Entity.name;
 
   const listPrimaryActions = () => {
     return (

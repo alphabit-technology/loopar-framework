@@ -16,14 +16,14 @@ import {
 } from "lucide-react";
 
 const COLUMN_STATES = {
-  ORPHAN:   "orphan",
+  ORPHAN: "orphan",
   RELEASED: "released",
   RESTORED: "restored",
 };
 
 const ACTIONS = {
   RELEASE: "release",
-  DROP:    "drop",
+  DROP: "drop",
   RESTORE: "restore",
 };
 
@@ -275,9 +275,12 @@ export function OrphanColumnsManager({
   const [working, setWorking] = useState(false);
 
   const loadColumns = () => {
-    loopar.method("Entity", "orphanColumns", doc, {success: (c) => {
-      setCols(c.map((c, i) => ({ ...c, _id: i })));
-    }})
+    loopar.api.get("Entity", "orphanColumns", {
+      query: { name: doc },
+      success: (c) => {
+        setCols(c.map((c, i) => ({ ...c, _id: i })));
+      }
+    })
   }
   useEffect(() => {
     loadColumns()
@@ -295,9 +298,8 @@ export function OrphanColumnsManager({
 
     try {
       if (action === ACTIONS.RELEASE) {
-        loopar.method("Entity", "releaseColumn", {
-          name: document, column: col.name
-        }, {
+        loopar.api.post("Entity", "releaseColumn", {
+          query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`Constraints released on "${col.name}"`, "warn")
             loadColumns()
@@ -310,9 +312,8 @@ export function OrphanColumnsManager({
         loopar.notify(`Constraints released on "${col.name}"`, "warn") */
 
       } else if (action === ACTIONS.DROP) {
-        loopar.method("Entity", "dropColumn", {
-          name: document, column: col.name
-        }, {
+        loopar.api.delete("Entity", "dropColumn", {
+          query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`Column "${col.name}" dropped permanently`)
             loadColumns()
@@ -323,9 +324,8 @@ export function OrphanColumnsManager({
         loopar.notify(`Column "${col.name}" dropped permanently`) */
 
       } else if (action === ACTIONS.RESTORE) {
-        loopar.method("Entity", "restoreColumn", {
-          name: document, column: col.name
-        }, {
+        loopar.api.post("Entity", "restoreColumn", {
+          query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`"${col.name}" queued for restore`)
             loadColumns()

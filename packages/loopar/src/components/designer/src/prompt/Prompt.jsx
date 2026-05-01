@@ -39,7 +39,8 @@ export const Prompt = ({
   const sendPrompt = (prompt, document_type) => {
     setCurrentPrompt(prompt);
     
-    loopar.method("GPT", "prompt", { prompt, document_type }, {
+    loopar.api.post("GPT", "prompt", {
+      body: { prompt, document_type },
       success: (res) => {
         onComplete && onComplete(res.message);
         onClose && onClose();

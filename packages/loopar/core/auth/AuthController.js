@@ -4,8 +4,11 @@ import { validateCsrfToken } from './csrf.js';
 export default class AuthController {
   async validateCsrf() {
     if (this.method === 'GET') return true;
+
     if (this.#isPublicAction(this.req.__WORKSPACE_NAME__)) return true;
-    if (this.req.__WORKSPACE_NAME__ !== 'desk') return true;
+
+    const workspace = this.req.__WORKSPACE_NAME__;
+    if (workspace !== 'desk' && workspace !== 'api') return true;
 
     if (!validateCsrfToken(this.req)) {
       loopar.throw('Invalid CSRF token');
@@ -20,10 +23,6 @@ export default class AuthController {
     if(method && typeof method == "function") return true;
 
     return false;
-  }
-
-  get #actionEnabled(){
-    return !this.actionsEnabled || this.actionsEnabled.includes(this.action);
   }
 
   #document = null;
@@ -59,7 +58,7 @@ export default class AuthController {
     if (user.name === 'Administrator') return true;
     const workspace = this.req.__WORKSPACE_NAME__;
 
-    if (this.#isPublicAction(workspace) || workspace == "web") return true;
+    if (this.#isPublicAction(workspace)) return true;
 
     if ((this.freeActions || []).includes(this.action)) return true;
   
@@ -93,37 +92,40 @@ export default class AuthController {
   async #award() {
     const action = this.action;
     const workspace = this.req.__WORKSPACE_NAME__;
-  
-    const resolve = (message, url) => {
-      return loopar.throw(message, this.method != AJAX && url || "/auth/login");
-    }
-  
+
+    const isAjax = this.method === 'POST' || workspace === 'api';
+    const resolve = (message, url) => loopar.throw(
+      message,
+      isAjax ? null : (url || '/auth/login')
+    );
+
+    if (workspace === 'web' || workspace === 'loopar') return true;
+
+    if (this.#isPublicAction(workspace)) return true;
+
     const user = await loopar.auth.award();
-  
+
     if (user) {
-      if (workspace == "auth") {
-        if (action == "logout") return true;
-        return resolve('You are already logged in, refresh this page', "/desk/Desk/view");
+      if (workspace === 'auth' && action !== 'logout') {
+        return resolve('You are already logged in, refresh this page', '/desk/Desk/view');
       }
-  
+
       if (user.name !== 'Administrator' && user.disabled) {
-        resolve('Not permitted');
+        return resolve('Not permitted');
       }
 
       return await this.isAuthorized(user);
-    } else {
-      console.log(["Action not authorized", workspace, action]);
-      if (workspace == "desk") {
-        return resolve('You must be logged in to access this page...', "/auth/login");
-      }
-      
-      if (workspace == "auth") return true;
-  
-      resolve('You must be logged in to access this page');
     }
+
+    if (workspace === 'auth') return true;
+    if (workspace === 'desk') {
+      return resolve('You must be logged in to access this page', '/auth/login');
+    }
+
+    return resolve('You must be logged in to access this page');
   }
 
   async beforeAction() {
-    return await this.#award() && await this.validateCsrf();;
+    return await this.#award() && await this.validateCsrf();
   }
 }

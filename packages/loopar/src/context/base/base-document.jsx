@@ -1,7 +1,6 @@
 import loopar from "loopar";
 import {DocumentProvider} from "@context/@/document-context";
 import React from "react";
-import { useWorkspace } from "@workspace/workspace-provider";
 
 export default class BaseDocument extends React.Component {
   dontHaveContainer = true;
@@ -9,11 +8,19 @@ export default class BaseDocument extends React.Component {
   __REFS__ = {};
   __META_DEFS__ = {};
   hasBreadcrumb = true;
-  static contextType = useWorkspace;
+
+  /**
+   * Internal caches. Invalidated when the underlying source changes
+   * (`Document.STRUCTURE` or `Document.Entity.doc_structure`) — see `__STRUCTURE__`.
+   */
+  _cachedStructureSrc = undefined;
+  _cachedStructure = undefined;
+  _cachedFields = undefined;
+  _cachedFieldByName = undefined;
 
   constructor(props) {
     super(props);
-  
+
     this.state = {
       ...this.state,
       Document: props.Document,
@@ -39,7 +46,7 @@ export default class BaseDocument extends React.Component {
   get __hasBreadcrumb__() {
     return typeof this.props.hasBreadcrumb !== "undefined" ? this.props.hasBreadcrumb : this.hasBreadcrumb;
   }
-  
+
   render(content, slots) {
     const Document = this.state.Document;
     return (
@@ -87,39 +94,65 @@ export default class BaseDocument extends React.Component {
   setFieldDf(fieldName, attr, value) {
     this.__META_DEFS__[fieldName] = {...this.__META_DEFS__[fieldName] || {}, ...{data: {[attr]: value}}};
 
+    // `Meta.jsx` reads `__META_DEFS__` during render, so re-render to reflect the new value.
     this.setState({});
   }
 
+  /**
+   * Registers a callback against a field event. Does NOT trigger a re-render —
+   * the caller (e.g. `initActions`, `setCustomActions`) is responsible for
+   * batching a single `setState` after registering all callbacks.
+   */
   on(fieldName, event, callback) {
     this.__META_DEFS__[fieldName] = {...this.__META_DEFS__[fieldName], ["on" + loopar.utils.Capitalize(event)]: callback};
-    this.setState({});
   }
 
   get __ENTITY__() {
     return this.__META__.Entity || {};
   }
 
+  /**
+   * Memoized parse + lookup of the document structure. Invalidates derived
+   * caches whenever the underlying source string changes.
+   */
   get __STRUCTURE__() {
-    return this.Document.STRUCTURE || JSON.parse(this.Document.Entity.doc_structure || "[]");
+    const explicit = this.Document.STRUCTURE;
+    const docStructure = this.Document.Entity?.doc_structure ?? "[]";
+    const src = explicit ?? docStructure;
+
+    if (this._cachedStructureSrc === src && this._cachedStructure !== undefined) {
+      return this._cachedStructure;
+    }
+
+    this._cachedStructureSrc = src;
+    this._cachedStructure = explicit ?? JSON.parse(docStructure);
+    // Invalidate derived caches.
+    this._cachedFields = undefined;
+    this._cachedFieldByName = undefined;
+    return this._cachedStructure;
   }
 
+  /** Flattened, memoized list of fields. Rebuilt only when `__STRUCTURE__` changes. */
   get __FIELDS__() {
+    if (this._cachedFields !== undefined) return this._cachedFields;
+
     const mapFields = (fields) => {
-      return fields.reduce((fields, field) => {
-        fields.push({
+      return fields.reduce((acc, field) => {
+        acc.push({
           data: field.data,
           def: ELEMENT_DEFINITION(field.element)
         });
 
         if (field.elements) {
-          return fields.concat(mapFields(field.elements));
+          return acc.concat(mapFields(field.elements));
         }
 
-        return fields;
+        return acc;
       }, []);
     }
 
-    return mapFields(this.__STRUCTURE__);
+    this._cachedFields = mapFields(this.__STRUCTURE__);
+    return this._cachedFields;
   }
 
   get __WRITABLE_FIELDS__() {
@@ -131,23 +164,44 @@ export default class BaseDocument extends React.Component {
   }
 
 
+  /**
+   * O(1) field lookup by name, backed by a memoized `Map`. Built lazily on first
+   * call and invalidated together with `__FIELDS__` when `__STRUCTURE__` changes.
+   */
   __FIELD__(fieldName) {
-    return this.__FIELDS__.find(field => field.data.name === fieldName);
+    if (this._cachedFieldByName === undefined) {
+      this._cachedFieldByName = new Map();
+      for (const field of this.__FIELDS__) {
+        if (field.data?.name) this._cachedFieldByName.set(field.data.name, field);
+      }
+    }
+    return this._cachedFieldByName.get(fieldName);
   }
 
   setCustomAction(name, action) {
     this.customActions[name] = action;
+    // `app-barr.jsx` reads `customActions` during render, so a re-render is required.
     this.setState({});
   }
 
   setCustomActions() { }
 
+  /**
+   * Registers a "changed" handler on every writable field. Callbacks are
+   * registered silently via `on()` and a single `setState` is dispatched at the
+   * end so `Meta.jsx` picks up the updated handlers in one re-render.
+   */
   initActions() {
+    let changed = false;
     this.__WRITABLE_FIELDS__.forEach(field => {
-      this.on(field.data.name, "changed", (e) => {
-        this.setState({})
+      this.on(field.data.name, "changed", () => {
+        // Per-field user changes still need an individual re-render because they
+        // can affect derived values / visibility.
+        this.setState({});
       });
+      changed = true;
     });
+    if (changed) this.setState({});
   }
 
   componentDidMount() {

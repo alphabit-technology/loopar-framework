@@ -4,20 +4,20 @@ import BaseForm from "@context/base/base-form";
 
 export default class InstallerContext extends BaseForm {
   notRequireChanges = true;
+  controller = "System";
+
   constructor(options) {
     super(options);
   }
 
   render(content = [], slots) {
-    const Document = this.Document;
-
-    return super.render([
-      <FormWrapper Document={Document} docRef={this}>
-        <MetaComponent elements={JSON.parse(Document.Entity.doc_structure)} parent={this} />
+    return super.render(
+      <FormWrapper Document={this.Document} docRef={this}>
+        <MetaComponent elements={this.__STRUCTURE__} parent={this} />
         {content}
       </FormWrapper>,
       slots
-    ]);
+    );
   }
 
   async install() {

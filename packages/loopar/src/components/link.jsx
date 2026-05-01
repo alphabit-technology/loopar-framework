@@ -7,66 +7,12 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { activeLink } from "@workspace/defaults";
 import { useDesigner } from "@context/@/designer-context";
 import { VARIANTS } from "./base/ComponentDefaults";
+import { RouteParsing, setDefaultParams, buildUrl } from "@global/router-utils";
 
-const URL_STRUCTURE = ["workspace", "document", "action"];
 const HEADER_OFFSET = 15;
 
-const buildUrl = (href, currentURL) => {
-  if (!href || href.startsWith("http") || href.startsWith("/")) return href;
-
-  const [cleanCurrentURL] = (currentURL ?? "").split("?");
-  const urlArray = cleanCurrentURL.split("/");
-  const urlObject = {};
-
-  URL_STRUCTURE.forEach((key, index) => {
-    urlObject[key] = urlArray[index + 1];
-  });
-
-  const [baseUrl, queryString] = href.split("?");
-  const baseUrlSegments = baseUrl.split("/").reverse();
-
-  URL_STRUCTURE.slice().reverse().forEach((key, index) => {
-    urlObject[key] = baseUrlSegments[index] || urlObject[key];
-  });
-
-  const path = Object.values(urlObject).filter(Boolean).join("/");
-  return `/${path}${queryString ? `?${queryString}` : ""}`;
-};
-
-function parseParams(pathname, workspaceName = 'desk') {
-  pathname = pathname.split("?")[0];
-  const routeStructure = { host: null, document: null, action: null };
-
-  const adjustedPathname = ["web", "auth"].includes(workspaceName)
-    ? pathname
-    : pathname.split("/").slice(1).join("/");
-
-  const segments = adjustedPathname.split("/");
-  const keys = Object.keys(routeStructure);
-
-  for (let i = 0; i < segments.length && i < keys.length; i++) {
-    if (segments[i]?.length > 0) {
-      routeStructure[keys[i]] = decodeURIComponent(segments[i]);
-    }
-  }
-
-  return routeStructure;
-}
-
-function setDefaultParams(params, workspaceName = 'desk') {
-  if (!params.document && !params.action && workspaceName === 'desk') {
-    params.document = "Desk";
-    params.action = "view";
-  }
-
-  if (!params.action || !params.document) {
-    params.name = params.document;
-    params.document = 'Module';
-    params.action ??= 'view';
-  }
-
-  return params;
-}
+const parseParams = (pathname, workspaceName = 'desk') =>
+  RouteParsing.parseParams(pathname, workspaceName);
 
 export const useMakeUrl = (href) => {
   const { pathname } = useWorkspace();

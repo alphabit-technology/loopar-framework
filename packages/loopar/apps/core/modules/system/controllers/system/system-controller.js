@@ -5,9 +5,13 @@ import { loopar, fileManage, BaseController } from "loopar";
 export default class SystemController extends BaseController {
   client = "form";
   static publicActions = ['connect', 'install', 'update', 'reinstall'];
-  
+
   constructor(props) {
     super(props);
+  }
+
+  redirect(route = '/auth/login') {
+    return super.redirect(route);
   }
 
   async publicActionConnect() {
@@ -56,9 +60,12 @@ export default class SystemController extends BaseController {
       await model.install(reinstall);
       return new Promise(resolve => {
         setTimeout(() => {
-          resolve(this.redirect('view'));
+          // Use the controller's own default — SystemController → /auth/login
+          // after first install; AppManagerController → /desk/App Manager/view
+          // after a re-install.
+          resolve(this.redirect());
         }, 1000);
-      });  
+      });
     } else {
       const model = await loopar.newDocument("Installer", this.data)
       const response = await model.__meta__();
@@ -76,9 +83,9 @@ export default class SystemController extends BaseController {
 
       return new Promise(resolve => {
         setTimeout(() => {
-          resolve(this.redirect('view'));
+          resolve(this.redirect());
         }, 1000);
-      });  
+      });
     } else {
       const model = await loopar.newDocument("Update", this.data)
       const response = await model.__meta__();

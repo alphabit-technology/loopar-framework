@@ -4,22 +4,10 @@ import * as dateUtils from "@global/date-utils";
 import scriptManager from "@@tools/script-manager";
 import { elementsDict, AIPrompt } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
-import { LoopSocket } from "@services/realtime/LoopSocket";
-import { useEffect } from "react";
+import animation from "./loopar/animation.js";
+import { ClientDatabase } from "./loopar/ClientDatabase.js";
+export { useRealtime } from "./loopar/useRealtime.js";
 
-class ClientDatabase{
-  constructor(loopar){
-    this.loopar = loopar
-  }
-
-  async getList(document, options){
-    return await this.loopar.method("Db", "getList", {document, ...options})
-  }
-
-  async getAll(document, options){
-    return await this.loopar.method("Db", "getAll", {document, ...options, all: true})
-  }
-}
 
 class Loopar extends Router {
   scriptManager = scriptManager;
@@ -29,7 +17,6 @@ class Loopar extends Router {
   Components = {};
   #loadedMeta = {};
   generatedColors = {};
-  iconsCache={}
 
   constructor() {
     super();
@@ -37,6 +24,99 @@ class Loopar extends Router {
     this.cookie = Helpers.cookie;
     this.dateUtils = dateUtils;
     this.db = new ClientDatabase(this);
+    this.animation = animation;
+    // Public RPC API. Verb is informative on the wire — the server router
+    // dispatches by URL (/api/{Document}/{action}) regardless of method.
+    // All helpers share the same options shape:
+    //   { query, body, success, error, always, freeze }
+    const dispatch = (method) => (Document, action, options = {}) =>
+      this.#apiCall(Document, action, { ...options, method });
+
+    this.api = {
+      call: (Document, action, options = {}) => this.#apiCall(Document, action, options),
+      get: dispatch("GET"),
+      post: dispatch("POST"),
+      put: dispatch("PUT"),
+      patch: dispatch("PATCH"),
+      delete: dispatch("DELETE"),
+    };
+  }
+
+  /**
+   * High-level RPC sugar. Posts a payload to a controller action.
+   *
+   * Mirrors the everyday case of "call Document.action with these params":
+   *
+   *   loopar.call("Db", "count", { filter: { relation: "Role" } })
+   *   loopar.call("App", "increment", null, { query: { name: "myapp" } })
+   *
+   * Always POST to /api/{Document}/{action}. If you need a different verb,
+   * use loopar.api.{get|put|patch|delete}(...) directly.
+   *
+   * @param {string} Document - Document/entity name (controller key).
+   * @param {string} action   - Controller action name.
+   * @param {Object|null} [params] - Sent as JSON body. Pass null for none.
+   * @param {Object} [options] - { query, success, error, always, freeze }.
+   * @returns {Promise} Resolves with the controller response.
+   */
+  call(Document, action, params = null, options = {}) {
+    return this.api.post(Document, action, {
+      ...options,
+      ...(params !== null && params !== undefined ? { body: params } : {}),
+    });
+  }
+
+  /**
+   * RPC call to a controller action.
+   *
+   * @param {string} Document - Document/entity name
+   * @param {string} action - Controller action (becomes URL path)
+   * @param {Object} [options]
+   * @param {"GET"|"POST"|"PUT"|"PATCH"|"DELETE"} [options.method="POST"]
+   * @param {Object} [options.query={}] - URL query string params
+   * @param {Object|FormData} [options.body=null] - Request body
+   * @param {Function} [options.success] - Success callback (callback mode)
+   * @param {Function} [options.error] - Error callback (callback mode)
+   * @param {Function} [options.always] - Always callback (callback mode)
+   * @param {boolean}  [options.freeze] - Freeze UI during request
+   * @returns {Promise|undefined} Promise when no callbacks are passed.
+   */
+  #apiCall(Document, action, options = {}) {
+    const {
+      method = "POST",
+      query = {},
+      body,
+      success,
+      error,
+      always,
+      freeze,
+    } = options;
+
+    const url = `/api/${Document}/${action}`;
+    const sendArgs = {
+      method,
+      action: url,
+      query,
+      ...(body !== undefined ? { body } : {}),
+      freeze: freeze !== false,
+      success,
+      error,
+      always,
+    };
+
+    const hasCallback = !!(success || error || always);
+
+    if (hasCallback) {
+      return this.send(sendArgs);
+    }
+
+    return new Promise((resolve, reject) => {
+      this.send({
+        ...sendArgs,
+        success: resolve,
+        error: reject,
+      });
+    });
   }
 
   dialog(dialog) {
@@ -87,22 +167,42 @@ class Loopar extends Router {
     this.emit('handle-open-close-dialog', id, open);
   }
 
+  /**
+   * Display an error and (optionally) re-throw it.
+   *
+   * Accepts:
+   *   - an object: { code?, title?, message, type? }
+   *   - one string: the message (title defaults to "Error")
+   *   - two strings: first is title, second is message
+   *
+   * The dialog event always carries the standard shape { type, title, message, code }.
+   */
   throw(error, m, throwError = true) {
     console.log(["Loopar.throw", error])
     this.emit('freeze', false);
-    const { type, title, content, message, description, status } = typeof error === "object" ? error
-        : { title: "Error", content: error, message: m };
+
+    let normalized;
+    if (typeof error === "object" && error !== null) {
+      normalized = error;
+    } else if (typeof m === "string") {
+      normalized = { title: error, message: m };
+    } else {
+      normalized = { title: "Error", message: error };
+    }
+
+    const { type = "error", title = "Error", message } = normalized;
 
     this.emit('dialog', {
-      type: type || "error",
-      title: title,
-      content: content || message || description || status,
+      ...normalized,
+      type,
+      title,
+      message,
     });
-    
-    if(throwError){
-      throw new Error(message || description || status);
-    }else{
-      console.error("LOOPAR: uncaughtException", message || description || status);
+
+    if (throwError) {
+      throw new Error(message);
+    } else {
+      console.error("LOOPAR: uncaughtException", message);
     }
   }
 
@@ -193,33 +293,12 @@ class Loopar extends Router {
     Emitter.emit('freeze', freeze);
   }
 
-  method(Document, method, query = {}, options = {}) {
-    const queryParamsObject = {};
-  
-    const url = `/api/${Document}/${method}`;
-    query = typeof query === "string" ? { name: query } : query;
-  
-    const hasCallback = options.success || options.error || options.always;
-  
-    if (hasCallback) {
-      return this.post(url, { ...query, ...queryParamsObject }, { freeze: true, ...options });
-    } else {
-      return new Promise((resolve, reject) => {
-        this.post(url, { ...query, ...queryParamsObject }, {
-          freeze: true,
-          ...options,
-          success: resolve,
-          error: reject,
-        });
-      });
-    }
-  }
-
   async getMeta(Document, action, query = {}) {
     if (!this.#loadedMeta[Document + action]) {
       const loadMeta = async () => {
         return new Promise((resolve) => {
-          this.method(Document, action, query, {
+          this.api.get(Document, action, {
+            query,
             success: (data) => {
               this.#loadedMeta[Document + action] = data;
               resolve();
@@ -253,139 +332,8 @@ class Loopar extends Router {
   includeCSS(src, callback) {
     return this.scriptManager.loadStylesheet(src, { callback });
   }
-
-  #reverses = {
-    top: "bottom",
-    bottom: "top",
-    left: "right",
-    right: "left",
-    up: "down",
-    down: "up",
-    in: "out",
-    out: "in",
-  };
-
-  animations(notContains) {
-    const animations = {
-      "fade-up": {
-        initial: "opacity-0 translate-y-4",
-        visible: "opacity-100 translate-y-0",
-      },
-      "fade-down": {
-        initial: "opacity-0 -translate-y-4",
-        visible: "opacity-100 translate-y-0",
-      },
-      "fade-left": {
-        initial: "opacity-0 translate-x-4",
-        visible: "opacity-100 translate-x-0",
-      },
-      "fade-right": {
-        initial: "opacity-0 -translate-x-4",
-        visible: "opacity-100 translate-x-0",
-      },
-      "slide-up": {
-        initial: "opacity-0 translate-y-4",
-        visible: "opacity-100 translate-y-0",
-      },
-      "slide-down": {
-        initial: "opacity-0 -translate-y-4",
-        visible: "opacity-100 translate-y-0",
-      },
-      "slide-left": {
-        initial: "opacity-0 translate-x-4",
-        visible: "opacity-100 translate-x-0",
-      },
-      "slide-right": {
-        initial: "opacity-0 -translate-x-4",
-        visible: "opacity-100 translate-x-0",
-      },
-      "zoom-in": {
-        initial: "opacity-0 scale-95",
-        visible: "opacity-100 scale-100",
-      },
-      "zoom-out": {
-        initial: "opacity-0 scale-105",
-        visible: "opacity-100 scale-100",
-      },
-      "flip-up": {
-        initial: "opacity-0 rotateX-90",
-        visible: "opacity-100 rotateX-0",
-      },
-      "flip-down": {
-        initial: "opacity-0 rotateX--90",
-        visible: "opacity-100 rotateX-0",
-      },
-    }
-
-    if (notContains) {
-      return Object.keys(animations)
-        .filter((a) => !a.includes(notContains))
-        .reduce((obj, key) => {
-          obj[key] = animations[key];
-          return obj;
-        }, {}); //.map(a => ({value: a, label: animations[a]}));
-    }
-
-    return animations;
-  }
-
-  reverseAnimation(animation) {
-    return !animation
-      ? null
-      : animation
-          .split("-")
-          .map((a) => this.#reverses[a] || a)
-          .join("-");
-  }
-
-  getAnimation(animation, notContains) {
-    if (!animation) return null;
-    if (animation === "random") {
-      const transitions = Object.keys(this.animations(notContains)).filter(
-        (animation) => animation !== "random"
-      );
-      return this.animations()[transitions[Math.floor(Math.random() * transitions.length)]]
-    } else {
-      return this.animations()[animation];
-    }
-  }
 }
 
 const loopar = new Loopar();
 export default loopar;
 export { loopar, elementsDict, AIPrompt };
-
-export function useRealtime(event, handler, { ignoreSelf = false } = {}) {
-  useEffect(() => {
-    if (!event || !handler) return;
-
-    const [room, action] = event.includes(":")
-      ? event.split(":")
-      : ["__global__", event];
-
-    let socket = null;
-    let listener = null;
-    let released = false;
-
-    LoopSocket.onReady((s) => {
-      if (released) return;
-      socket = s;
-      LoopSocket.join(room);
-
-      listener = (payload) => {
-        if (ignoreSelf && payload?.user === window.__user__) return;
-        handler(payload);
-      };
-
-      s.on(action, listener);
-    });
-
-    return () => {
-      released = true;
-      if (socket) {
-        if (listener) socket.off(action, listener);
-        LoopSocket.leave(room);
-      }
-    };
-  }, [event, handler, ignoreSelf]);
-}

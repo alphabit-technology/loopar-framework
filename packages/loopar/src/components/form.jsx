@@ -5,6 +5,7 @@ import { loopar } from "loopar";
 import { Button } from "@cn/components/ui/button";
 import { cn } from "@cn/lib/utils";
 import {useDocument} from "@context/@/document-context";
+import { buildFormData } from "@@tools/build-form-data";
 
 export default function MetaForm(props) {
   const formRef = useRef(null);
@@ -19,10 +20,9 @@ export default function MetaForm(props) {
     const submited = await api.submit();
 
     if (!submited) return;
-    const res = await loopar.method(document, action, {
 
-    }, {
-      body: submited
+    const res = await loopar.api.post(document, action, {
+      body: buildFormData(submited)
     });
 
     setSavedMessage(res)

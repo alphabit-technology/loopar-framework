@@ -497,7 +497,7 @@ BaseCarrusel.metaFields = () => {
           element: SELECT,
           data: {
             label: "Transition Effect",
-            options: Object.keys(loopar.animations()),
+            options: Object.keys(loopar.animation.animations()),
             selected: "",
           },
         },

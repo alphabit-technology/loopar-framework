@@ -1,41 +1,50 @@
 'use strict';
 
+/**
+ * Isomorphic routing utilities — shared by client and server.
+ *
+ * Anything that depends on `req`/`res`, multer, or the loopar singleton
+ * lives in `core/server/router/router-utils.js` instead. That file
+ * re-exports everything from here and adds the server-only pieces, so
+ * any code that already imports `RouterUtils` from there keeps working.
+ */
+
 // ========================================
 // SHARED CONSTANTS
 // ========================================
+
 export const ASSET_EXTENSIONS = new Set([
-  'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', // Images
-  'mp4', 'webm', 'ogg', 'mp3', 'wav', 'flac', 'aac', // Multimedia
-  'woff', 'woff2', 'ttf', 'eot', 'otf', // Fonts
-  'js', 'mjs', 'jsx', 'css', 'html', 'htm', 'xhtml', // Web files
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', // Documents
-  'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'gzip', 'br', // Compressed files
-  'json', 'xml', 'txt', 'yaml' // Data files
+  'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico',           // Images
+  'mp4', 'webm', 'ogg', 'mp3', 'wav', 'flac', 'aac',           // Multimedia
+  'woff', 'woff2', 'ttf', 'eot', 'otf',                        // Fonts
+  'js', 'mjs', 'jsx', 'css', 'html', 'htm', 'xhtml',           // Web files
+  'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'gzip', 'br',        // Compressed
+  'json', 'xml', 'txt', 'yaml',                                // Data
 ]);
 
-export const VALID_WORKSPACES = new Set(['desk', 'auth', 'loopar']);
+export const VALID_WORKSPACES = ['desk', 'auth', 'loopar', 'api'];
 
 export const SYSTEM_PATHS = {
   CONNECT: '/loopar/system/connect',
   UPDATE: '/loopar/system/update',
-  INSTALL: '/loopar/system/install'
+  INSTALL: '/loopar/system/install',
 };
 
 // ========================================
-// PURE UTILITY FUNCTIONS
+// PURE FUNCTIONS
 // ========================================
 
 /**
- * Generates HTML error template
- * @param {Object} err - Error object containing code, title, and description
- * @returns {string} HTML error template
+ * Generates a minimal HTML error template. Used by the server when the
+ * page renderer is unavailable, but lives here because it has no side
+ * effects and may also be useful in client-only error states.
  */
 export function generateErrorTemplate(err) {
   return `
     <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; background-color: #0b0b0f; color: #95b3d6;">
       <h1 style="font-size: 100px; margin: 0;">${err.code}</h1>
       <h3 style="font-size: 30px; margin: 0;">${err.title}</h3>
-      <span style="font-size: 20px; margin: 0;">${err.description}</span>
+      <span style="font-size: 20px; margin: 0;">${err.message}</span>
       <hr style="width: 50%; margin: 20px 0;"/>
       <span style="font-size: 20px; margin: 0;">Loopar</span>
     </div>
@@ -43,114 +52,124 @@ export function generateErrorTemplate(err) {
 }
 
 /**
- * Checks if a URL corresponds to a static asset
- * @param {string} pathname - The URL pathname to check
- * @returns {boolean} True if the URL is a static asset
+ * Returns true when the URL points to a static asset (image, font, css,
+ * etc.) that should bypass the controller pipeline. Routes under /api/
+ * and /admin/ are explicitly excluded so dynamic endpoints whose URL
+ * happens to end in a known extension still get routed.
  */
 export function isAssetUrl(pathname) {
-  // Fast path: exclude API routes
-  if (pathname.includes("/api/") || pathname.includes("/admin/")) return false;
+  if (pathname.includes('/api/') || pathname.includes('/admin/')) return false;
 
-  // Fast path: find last dot
   const lastDotIndex = pathname.lastIndexOf('.');
   if (lastDotIndex === -1) return false;
-  
+
   const extension = pathname.substring(lastDotIndex + 1).toLowerCase();
   return ASSET_EXTENSIONS.has(extension);
 }
 
 /**
- * Gets the workspace name from a URL pathname
- * @param {string} pathname - The URL pathname
- * @returns {string} The workspace name ('desk', 'auth', 'loopar', or 'web')
+ * Resolves the workspace name from a URL pathname. Falls back to "web"
+ * when the first segment isn't one of the known workspaces (or when the
+ * URL is empty).
  */
 export function getWorkspaceName(pathname) {
-  const context = pathname.split("/")[1];
-  return VALID_WORKSPACES.has(context.toLowerCase()) ? context.toLowerCase() : 'web'
+  const context = pathname.split('/')[1] || 'web';
+  return VALID_WORKSPACES.includes(context.toLowerCase())
+    ? context.toLowerCase()
+    : 'web';
 }
 
 /**
- * Sets default parameters for routing
- * @param {Object} params - The parameters object to modify
- * @param {string} workspaceName - The workspace name
+ * Mutates `params` in place with workspace-aware defaults. When the caller
+ * provides only one segment (e.g. `/desk/auth`) the original document name
+ * is preserved as `params.name` so subsequent middlewares can disambiguate.
  */
 export function setDefaultParams(params, workspaceName) {
   if (!params.document && !params.action && workspaceName === 'desk') {
-    params.document = "Desk";
-    params.action = "view";
+    params.document = 'Desk';
+    params.action = 'view';
   }
+
+  const defaultDocument = {
+    desk: 'Module',
+    auth: 'Auth',
+    web: 'Home',
+  };
+
+  const defaultAction = {
+    desk: 'view',
+    auth: 'login',
+    web: 'view',
+  };
 
   if (!params.action || !params.document) {
     params.name = params.document;
-    params.document = 'Module';
-    params.action ??= 'view';
+    params.document = defaultDocument[workspaceName];
+    params.action ??= defaultAction[workspaceName];
   }
+
+  return params;
 }
 
 /**
- * Builds URL from href and current URL
- * @param {string} href - The href to process
- * @param {string} currentURL - The current URL
- * @returns {string} The built URL
+ * Resolves a relative `href` (e.g. "view", "edit?name=Joe") against the
+ * current URL by aligning the trailing segments with the conventional
+ * `workspace / document / action` structure. Absolute (`/foo`) and
+ * external (`http(s)://...`) URLs are returned unchanged.
+ *
+ * Strips the query string from `currentURL` before parsing so that a
+ * trailing `?page=2` doesn't corrupt the segment alignment.
  */
 export function buildUrl(href, currentURL) {
-  if (href.startsWith("http") || href.startsWith("/")) return href;
+  if (!href || href.startsWith('http') || href.startsWith('/')) return href;
 
-  const urlStructure = ["workspace", "document", "action"];
-  const urlArray = currentURL.split("/");
+  const [cleanCurrentURL] = (currentURL ?? '').split('?');
+  const urlArray = cleanCurrentURL.split('/');
 
-  // Create URL object using reduce (functional approach)
+  const urlStructure = ['workspace', 'document', 'action'];
   const urlObject = urlStructure.reduce((obj, key, index) => {
     obj[key] = urlArray[index + 1];
     return obj;
   }, {});
 
-  const [baseUrl, queryString] = href.split("?");
-  const baseUrlSegments = baseUrl.split("/").reverse();
+  const [baseUrl, queryString] = href.split('?');
+  const baseUrlSegments = baseUrl.split('/').reverse();
 
-  // Update URL object with new segments
   for (let i = 0; i < urlStructure.length; i++) {
     const key = urlStructure[urlStructure.length - 1 - i];
     urlObject[key] = baseUrlSegments[i] || urlObject[key];
   }
 
-  const pathParts = Object.values(urlObject).filter(e => e && e !== "");
-  return `/${pathParts.join("/")}${queryString ? "?" + queryString : ""}`;
+  const pathParts = Object.values(urlObject).filter((e) => e && e !== '');
+  return `/${pathParts.join('/')}${queryString ? '?' + queryString : ''}`;
 }
 
 // ========================================
 // GROUPED OPERATIONS
 // ========================================
 
-/**
- * Router parsing utilities - grouped for related operations
- */
 export const RouteParsing = {
   /**
-   * Parses route parameters from URL pathname
-   * @param {string} pathname - The URL pathname
-   * @param {string} workspaceName - The workspace name
-   * @param {Object} loopar - Loopar instance for utilities
-   * @returns {Object} Parsed route structure with host, document, and action
+   * Splits a pathname into the canonical `{ host, document, action }`
+   * shape. The first segment is treated as the workspace prefix and
+   * dropped, except for `web` and `auth` where the convention is to
+   * keep all segments.
    */
-  parseParams(pathname, workspaceName, loopar) {
+  parseParams(pathname, workspaceName) {
+    const cleanPathname = (pathname ?? '').split('?')[0];
     const routeStructure = { host: null, document: null, action: null };
-    
-    // Adjust pathname based on workspace
-    const adjustedPathname = ["web", "auth"].includes(workspaceName) 
-      ? pathname 
-      : pathname.split("/").slice(1).join("/");
 
-    const segments = adjustedPathname.split("/");
-    const structureKeys = Object.keys(routeStructure);
-    
-    for (let i = 0; i < segments.length && i < structureKeys.length; i++) {
+    const adjustedPathname = ['web', 'auth'].includes(workspaceName)
+      ? cleanPathname
+      : cleanPathname.split('/').slice(1).join('/');
+
+    const segments = adjustedPathname.split('/');
+    const keys = Object.keys(routeStructure);
+
+    for (let i = 0; i < segments.length && i < keys.length; i++) {
       const seg = segments[i];
-      const key = structureKeys[i];
       if (seg && seg.length > 0) {
-        routeStructure[key] = key === 'document' 
-          ? decodeURIComponent(seg)
-          : decodeURIComponent(seg);
+        routeStructure[keys[i]] = decodeURIComponent(seg);
       }
     }
 
@@ -158,27 +177,33 @@ export const RouteParsing = {
   },
 
   /**
-   * Finds web app menu item by document name
-   * @param {string} document - The document name to search for
-   * @param {Object} loopar - Loopar instance
-   * @returns {Object|undefined} The menu item if found
+   * Looks up a web-app menu item by its (case/whitespace-insensitive)
+   * document key. Takes the loopar instance explicitly so the function
+   * stays pure with respect to module imports.
    */
   findWebAppMenu(document, loopar) {
     const webApp = loopar.webApp || { menu_items: [] };
-    return webApp.menu_items?.find(item => loopar.utils.toEntityKey(item.link) === loopar.utils.toEntityKey(document));
-  }
+    return webApp.menu_items?.find(
+      (item) => loopar.utils.toEntityKey(item.link) === loopar.utils.toEntityKey(document)
+    );
+  },
 };
 
+/**
+ * Aggregate object — kept for callers that prefer `RouterUtils.X` access.
+ * The server-side `core/server/router/router-utils.js` extends this with
+ * its server-only members.
+ */
 export const RouterUtils = {
   ASSET_EXTENSIONS,
   VALID_WORKSPACES,
   SYSTEM_PATHS,
-  
+
   generateErrorTemplate,
   isAssetUrl,
   getWorkspaceName,
   setDefaultParams,
   buildUrl,
-  
+
   RouteParsing,
 };

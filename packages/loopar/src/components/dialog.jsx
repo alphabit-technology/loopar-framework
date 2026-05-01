@@ -147,10 +147,7 @@ const MetaDialog = (props) => {
             <>
             {
               contentType === "text" ? (
-                  <div
-                    className="h-full"
-                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
-                />
+                <p className="h-full whitespace-pre-line">{content}</p>
               ) : (
                 <div className="h-full">{content}</div>
               )

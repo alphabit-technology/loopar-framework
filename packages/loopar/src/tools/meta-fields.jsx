@@ -146,9 +146,9 @@ export const getMetaFields = (data) => {
             label: "Effect",
             options: [
               { value: "", label: "None" },
-              ...normalizeOptions(loopar.animations()),
+              ...normalizeOptions(loopar.animation.animations()),
             ],
-            selected: "",
+            selected: "", 
           },
         },
         animation_duration: {

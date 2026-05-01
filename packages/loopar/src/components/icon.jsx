@@ -1,10 +1,9 @@
-import { memo, useState, useEffect } from "react";
+import { memo } from "react";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
 import { cn } from "@cn/lib/utils";
 import * as preloadedIcons from "@app/auto/preloaded-icons";
-
-let iconsCache = {}
+import iconManager, { useDynamicIcon } from "@services/icon-manager";
 
 const isSimpleIcon = (name) => /^Si[A-Z]/.test(name ?? '');
 
@@ -16,39 +15,24 @@ const IconPlaceholder = memo(({ className }) => (
 
 IconPlaceholder.displayName = 'IconPlaceholder';
 
-export const DynamicIcon = ({ icon, className, useBrandColor = false }) => {
-  const [svgData, setSvgData] = useState(() => iconsCache[icon?.value] ?? null);
+/**
+ * Renders an icon by name. Resolution order:
+ *   1. Preloaded React component (no network).
+ *   2. Cached SVG from IconManager (shared across the whole app).
+ *   3. Network fetch via IconManager (deduped).
+ *
+ * Color props (mutually compatible):
+ *   - useBrandColor: boolean. If true and the icon has a brand hex
+ *     (simple-icons), fill with `#<hex>`.
+ *   - brandColor: string. Explicit color override; wins over useBrandColor.
+ */
+export const DynamicIcon = ({ icon, className, useBrandColor = false, brandColor }) => {
+  const svgData = useDynamicIcon(icon);
   const value = icon?.value;
-
-  useEffect(() => {
-    if (!value) return;
-    if (preloadedIcons[value]) return;
-    if (iconsCache[value]) { setSvgData(iconsCache[value]); return; }
-
-    if (icon.formattedValue && typeof icon.formattedValue === 'string') {
-      const entry = { svg: icon.formattedValue, source: icon.source ?? null, hex: icon.hex ?? null };
-      iconsCache[value] = entry;
-      setSvgData(entry);
-      return;
-    }
-
-    loopar.send({
-      action: '/desk/Icon Manager/getSvg',
-      query: { name: value },
-      success: (r) => {
-        if (r.svg) {
-          const entry = { svg: r.svg, source: r.source ?? null, hex: r.hex ?? null };
-          iconsCache[value] = entry;
-          setSvgData(entry);
-        }
-      },
-      freeze: false,
-    });
-  }, [value, icon?.formattedValue]);
 
   if (!value) return <div className={className} />;
 
-  if (preloadedIcons[value]) {
+  if (iconManager.isPreloaded(value)) {
     const PIcon = preloadedIcons[value];
     return <PIcon className={className} />;
   }
@@ -56,11 +40,18 @@ export const DynamicIcon = ({ icon, className, useBrandColor = false }) => {
   if (svgData?.svg) {
     const isSimple = svgData.source === 'simple-icons' || isSimpleIcon(value);
     if (isSimple) {
-      const fill = useBrandColor && svgData.hex ? `#${svgData.hex}` : 'currentColor';
-      const processed = svgData.svg.replace('<svg ', `<svg class="${className || ''} simple-icon" style="fill:${fill};" `);
+      const fill = brandColor
+        ?? (useBrandColor && svgData.hex ? `#${svgData.hex}` : 'currentColor');
+      const processed = svgData.svg.replace(
+        '<svg ',
+        `<svg class="${className || ''} simple-icon" style="fill:${fill};" `
+      );
       return <span dangerouslySetInnerHTML={{ __html: processed }} />;
     }
-    const processed = svgData.svg.replace(/class="[^"]*"/, `class="${className || ''} lucide-icon"`);
+    const processed = svgData.svg.replace(
+      /class="[^"]*"/,
+      `class="${className || ''} lucide-icon"`
+    );
     return <span dangerouslySetInnerHTML={{ __html: processed }} />;
   }
 
@@ -74,10 +65,10 @@ const MetaIcon = (props) => {
   const iconName = data?.icon || 'HelpCircle';
   const rounded = data?.rounded ? "rounded-full" : "rounded-md";
   const size = getSize();
-  
+
   const containerClassName = cn("p-0", size, newProps.className, rounded);
   const iconClassName = "w-full h-full";
-  
+
   return (
     <DynamicIcon
       icon={{value: data.icon}}

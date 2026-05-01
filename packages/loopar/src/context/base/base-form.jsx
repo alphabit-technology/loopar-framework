@@ -2,16 +2,12 @@ import {loopar} from 'loopar';
 import BaseDocument from "@context/base/base-document";
 import { dataInterface } from '@global/element-definition';
 import Sanitize from "sanitize-filename";
-import { cloneDeep } from 'es-toolkit/object';
-import { isEqual } from 'es-toolkit/predicate';
+import { buildFormData } from "@@tools/build-form-data";
 
 export default class BaseForm extends BaseDocument {
   formFields = {};
   hasSidebar = true;
-  lastData = null;
-  currentData = null;
   __FORM_REFS__ = {};
-  initialData = null;
   #Form = null;
 
   save() {
@@ -19,20 +15,16 @@ export default class BaseForm extends BaseDocument {
   }
 
   set Form(Form) {
-    !this.initialData && (this.initialData = {...Form.formState.defaultValues});
-    !this.currentData  && (this.currentData = {...Form.formState.defaultValues});
-    !this.lastData && (this.lastData = {...Form.formState.defaultValues});
- 
-    !this.#Form && Form.watch((value, { name, type }) => {
-      this.lastData = cloneDeep(this.currentData);
-      this.currentData = cloneDeep(value);
-    });
-   
     this.#Form = Form;
   }
-  
+
+  /**
+   * Returns `true` when at least one field has been modified relative to the
+   * form's `defaultValues`. Backed by react-hook-form's `formState.dirtyFields`.
+   */
   hasChanges() {
-    return !isEqual(this.lastData, this.currentData) && !isEqual(this.currentData, this.initialData);
+    const dirty = this.#Form?.formState?.dirtyFields;
+    return !!dirty && Object.keys(dirty).length > 0;
   }
 
   checkChanges() {
@@ -40,34 +32,78 @@ export default class BaseForm extends BaseDocument {
       loopar.notify("No changes to save", "warning");
       return false;
     }
-    
+
     return true;
   }
 
-  send({ action, query={}, ...options } = {}) {
+  /**
+   * Static class field — subclasses can override to declare which controller
+   * receives this form's submissions. `BaseForm.send` will use it implicitly
+   * so subclass action methods can call `this.send({ action: "..." })` without
+   * repeating the controller name.
+   *
+   * Resolution order (first non-null wins):
+   *   1. `opts.document` passed to `send()` (caller wins)
+   *   2. `this.controller` (subclass declaration)
+   *   3. `this.Document.Entity.name` (regular Document forms)
+   *   4. legacy fallback to `loopar.send` with the relative URL
+   */
+  controller = null;
+
+  /**
+   * Submit the form to a controller action.
+   *
+   * @param {Object} opts
+   * @param {string} [opts.document] - Target controller name (overrides
+   *   `this.controller` and the implicit `Document.Entity.name`).
+   * @param {string} opts.action - Controller action to invoke.
+   * @param {Object} [opts.query] - Extra URL query params (merged with
+   *   `this.queryParams`).
+   * @param {Function} [opts.success]
+   * @param {Function} [opts.error]
+   */
+  send({ document, action, query={}, ...options } = {}) {
     this.validate();
 
     if (!this.checkChanges()) return;
 
     const handleSuccess = (r) => {
-      this.lastData = cloneDeep(this.currentData);
-      this.initialData = cloneDeep(this.currentData);
+      if (this.#Form) {
+        this.#Form.reset(this.#Form.getValues(), { keepValues: true });
+      }
       if (options.success) options.success(r);
     };
 
+    const handleError = (r) => {
+      if (options.error) options.error(r);
+      else loopar.throw(r);
+    };
+
+    const mergedQuery = { ...this.queryParams, ...query };
+    const body = this.#getFormData(true);
+
+    // Resolve target controller (see `controller` field above for resolution
+    // order). If none is known we keep the old "URL is the router" pattern.
+    const targetDocument = document || this.controller || this.Document?.Entity?.name;
+
+    if (targetDocument) {
+      return loopar.call(targetDocument, action, body, {
+        query: mergedQuery,
+        success: handleSuccess,
+        error: handleError,
+        freeze: true,
+      });
+    }
+
+    // Legacy fallback — form-on-page pattern (login, install, etc. when the
+    // subclass hasn't declared its target document yet).
     loopar.send({
-      action: action,
-      query: { ...this.queryParams, ...query },
-      body: this.#getFormData(true),
+      action,
+      query: mergedQuery,
+      body,
       success: handleSuccess,
-      error: (r) => {
-        if (options.error){
-          options.error(r);
-        }else{
-          loopar.throw(r);
-        }
-      },
-      freeze: true
+      error: handleError,
+      freeze: true,
     });
   }
 
@@ -80,13 +116,13 @@ export default class BaseForm extends BaseDocument {
   }
 
   validate() {
-    const fields = this.__FIELDS__;
     const errors = [];
-    Object.entries(this.Form.watch()).reduce((obj, [key, value]) => {
-      const field = fields.find(f => f.data?.name === key);
-      if (!field || !this.get(key)) return obj;
+    const values = this.Form ? this.Form.getValues() : {};
+    Object.entries(values).forEach(([key, value]) => {
+      const field = this.__FIELD__(key);
+      if (!field || !this.get(key)) return;
       field.value = value;
-      
+
       if([FORM_TABLE].includes(field.def.element)) {
         /*const TableInput = this.get(key);
 
@@ -106,14 +142,14 @@ export default class BaseForm extends BaseDocument {
           });
         }
       }
-    }, {});
+    });
 
     if(errors.length > 0) {
       errors.forEach(e => this.setError(e.field, { message: e.message}));
       loopar.throw({
         type: 'error',
         title: 'Validation error',
-        message: errors.map(e => e.message).join('<br/>')
+        message: errors.map(e => e.message).join('\n')
       });
     }
   }
@@ -123,7 +159,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   getValue(name) {
-    return this.#getFormValues()[name];
+    return this.#Form ? this.#Form.getValues(name) : undefined;
   }
 
   getFormValues(toSave = false) {
@@ -186,7 +222,7 @@ export default class BaseForm extends BaseDocument {
 
         /*if(["background_color", "color_overlay"].includes(key) && value) {
           const defaultColors = [{color: "", alpha: 0.5}, {r:0, g:0, b:0, a:0}];
-          
+
           defaultColors.forEach((defaultColor) => {
             if(_.isEqual(loopar.utils.JSONparse(value, defaultColor), defaultColor)) {
               delete updatedData[key];
@@ -217,19 +253,20 @@ export default class BaseForm extends BaseDocument {
 
   #getFormValues(toSave = false) {
     if(!this.Form)  return this.Document.data || {};
-    
-    const fields = this.__FIELDS__;
+
     let __FILES__ = [];
 
-    return Object.entries(this.Form.watch()).reduce((obj, [name, value]) => {
-      const field = fields.find(f => f.data?.name === name);
+    const values = this.Form.getValues();
+
+    return Object.entries(values).reduce((obj, [name, value]) => {
+      const field = this.__FIELD__(name);
 
       if (!field) return obj;
       if(toSave) {
         if ([FILE_INPUT, IMAGE_INPUT].includes(field.def.element)) {
           const files = Array.isArray(value) ? value : [];
           const metaFiles = [];
-         
+
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (file.rawFile && file.rawFile instanceof File) {
@@ -248,7 +285,7 @@ export default class BaseForm extends BaseDocument {
               });
             }
           }
-        
+
           obj[name] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
           return obj
         }
@@ -280,21 +317,7 @@ export default class BaseForm extends BaseDocument {
   }
 
   #getFormData(toSave) {
-    const [data, formData] = [this.getFormValues(toSave), new FormData()];
-
-    for (const key in data) {
-      if(key === '__FILES__'){
-        data[key].forEach((rawFile) => {
-          if (rawFile instanceof File) {
-            formData.append("files[]", rawFile);
-          }
-        });
-      }else{
-        formData.append(key, data[key]);
-      }
-    }
-
-    return formData;
+    return buildFormData(this.getFormValues(toSave));
   }
 
   get Form() {
@@ -323,7 +346,7 @@ export default class BaseForm extends BaseDocument {
 
       Object.defineProperty(this, fieldName, {
         get: () => {
-          return this.getValue(fieldName);
+          return this.#Form ? this.#Form.getValues(fieldName) : undefined;
         },
         set: (value) => {
           if (this.Form) {

@@ -1,14 +1,6 @@
 import BaseDocument from "@context/base/base-document";
 import MetaComponent from "@meta-component";
 
-const WebContextLayout = ({children}) => {
-  return (
-    <div>
-      {children}
-    </div>
-  );
-}
-
 export default class WebContext extends BaseDocument {
   constructor(props) {
     super(props);
@@ -17,7 +9,7 @@ export default class WebContext extends BaseDocument {
   render(content = [], slots) {
     return super.render(
       <>
-      <MetaComponent elements={JSON.parse(this.Document.__ENTITY__.doc_structure)} parent={this}/>
+      <MetaComponent elements={this.__STRUCTURE__} parent={this}/>
       {content}
       </>,
       slots
@@ -26,6 +18,5 @@ export default class WebContext extends BaseDocument {
 
   componentDidMount() {
     super.componentDidMount();
-    //this.initScroll();
   }
 }

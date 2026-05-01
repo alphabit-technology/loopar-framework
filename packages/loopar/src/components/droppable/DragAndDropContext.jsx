@@ -5,12 +5,23 @@ import { createPortal } from 'react-dom';
 import { isEqual } from 'es-toolkit/predicate';
 const DOWN = 'down';
 const UP = 'up';
+// Pixels the cursor must travel before we publish a new `movement` value.
+// Each publish triggers a context-level re-render across every droppable, so
+// raising this dramatically reduces React work on large pages. The ghost
+// itself moves smoothly via direct DOM writes, so a coarser movement state
+// is invisible to the user. Tune with care: too high and the placeholder
+// feels draggy.
+const MOVEMENT_THRESHOLD = 30;
 
 export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
-  const cloned = JSON.parse(JSON.stringify(elements));
-
+  // Both `insert` and `remove` are pure (no input mutation: only `splice`
+  // runs on a fresh array from .filter()). They also preserve structural
+  // sharing — branches that don't contain the changed node return their
+  // original reference. This is critical for React reconciliation: only
+  // components on the path from root to the modified parent will re-render.
   function insert(nodes) {
-    return nodes.map(node => {
+    let changed = false;
+    const result = nodes.map(node => {
       if (!node.data) return node;
 
       if (node.data.key === targetKey) {
@@ -18,47 +29,55 @@ export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
           child => child.data.key !== dropped.el.data.key
         );
         filtered.splice(globalPosition, 0, dropped.el);
+        changed = true;
         return { ...node, elements: filtered };
       }
 
-      return {
-        ...node,
-        elements: insert(node.elements || [])
-      };
+      const children = node.elements;
+      if (!children || children.length === 0) return node;
+
+      const newChildren = insert(children);
+      if (newChildren === children) return node;
+
+      changed = true;
+      return { ...node, elements: newChildren };
     });
+    return changed ? result : nodes;
   }
 
   function remove(nodes) {
-    return nodes.reduce((acc, node) => {
-      if (!node.data) {
-        acc.push(node);
-        return acc;
-      }
+    let changed = false;
+    const result = nodes.map(node => {
+      if (!node.data) return node;
 
       if (node.data.key === dropped.parentKey && dropped.parentKey !== targetKey) {
         const filtered = (node.elements || []).filter(
           child => child.data.key !== dropped.key
         );
-        acc.push({ ...node, elements: filtered });
-      } else {
-        acc.push({
-          ...node,
-          elements: remove(node.elements || [])
-        });
+        changed = true;
+        return { ...node, elements: filtered };
       }
 
-      return acc;
-    }, []);
+      const children = node.elements;
+      if (!children || children.length === 0) return node;
+
+      const newChildren = remove(children);
+      if (newChildren === children) return node;
+
+      changed = true;
+      return { ...node, elements: newChildren };
+    });
+    return changed ? result : nodes;
   }
 
-  return remove(insert(cloned));
+  return remove(insert(elements));
 }
 
 export const DragAndDropContext = createContext({
   currentDragging: null,
   setCurrentDragging: () => { },
-  movement: null,
-  setMovement: () => { },
+  movementRef: { current: null },
+  subscribeToMovement: () => () => { },
   draggingEvent: null,
   setDraggingEvent: () => { },
   handleDrop: () => { },
@@ -80,7 +99,6 @@ export const DragAndDropProvider = (props) => {
   const [dropZone, setDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
-  const [movement, setMovement] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
@@ -90,7 +108,12 @@ export const DragAndDropProvider = (props) => {
   const elementsRef = useRef(elements);
   const containerRef = useRef(null);
   const verticalDirectionRef = useRef(DOWN);
-  const movementRef = useRef(movement);
+  // movement is held in a ref + pub/sub instead of React state. Publishing it
+  // through context state caused every droppable on the page to re-render on
+  // every cursor movement, blowing up the main thread on large pages. Now
+  // only the active droppable subscribes and reacts.
+  const movementRef = useRef(null);
+  const movementSubscribersRef = useRef(new Set());
   const draggingRef = useRef(dragging);
   const draggingEventRef = useRef(draggingEvent);
   const initializedDraggingRef = useRef(initializedDragging);
@@ -102,13 +125,26 @@ export const DragAndDropProvider = (props) => {
   const ghostDomRef = useRef(null);
 
   elementsRef.current = elements;
-  movementRef.current = movement;
   draggingRef.current = dragging;
   draggingEventRef.current = draggingEvent;
   initializedDraggingRef.current = initializedDragging;
   currentDraggingRef.current = currentDragging;
   dropZoneRef.current = dropZone;
   globalPositionRef.current = globalPosition;
+
+  const subscribeToMovement = useCallback((cb) => {
+    movementSubscribersRef.current.add(cb);
+    return () => {
+      movementSubscribersRef.current.delete(cb);
+    };
+  }, []);
+
+  const publishMovement = useCallback((next) => {
+    movementRef.current = next;
+    const subs = movementSubscribersRef.current;
+    if (subs.size === 0) return;
+    subs.forEach(cb => cb(next));
+  }, []);
 
   const handleSetElements = useCallback((next) => {
     if(isEqual(elementsRef.current, next)) return;
@@ -134,7 +170,9 @@ export const DragAndDropProvider = (props) => {
     })[0].elements || [];
 
     setDragging(false);
-    onDrop?.(JSON.stringify(newElements));
+    // Pass the object directly. Stringify+parse round-trip on the whole
+    // tree was a measurable contributor to drop latency on large pages.
+    onDrop?.(newElements);
     handleSetElements(newElements);
   }, [data, onDrop, handleSetElements]);
 
@@ -156,7 +194,8 @@ export const DragAndDropProvider = (props) => {
     };
     const mv = movementRef.current;
     const crossed =
-      Math.abs(p.clientY - (mv?.y || 0)) > 30 || Math.abs(p.clientX - (mv?.x || 0)) > 30;
+      Math.abs(p.clientY - (mv?.y || 0)) > MOVEMENT_THRESHOLD ||
+      Math.abs(p.clientX - (mv?.x || 0)) > MOVEMENT_THRESHOLD;
     setDraggingEvent(nextEvent);
     draggingEventRef.current = nextEvent;
     const host = ghostDomRef.current;
@@ -166,11 +205,9 @@ export const DragAndDropProvider = (props) => {
     }
     if (crossed) {
       if (!draggingRef.current) setDragging(true);
-      const nextMovement = { x: p.clientX, y: p.clientY };
-      setMovement(nextMovement);
-      movementRef.current = nextMovement;
+      publishMovement({ x: p.clientX, y: p.clientY });
     }
-  }, []);
+  }, [publishMovement]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -187,8 +224,8 @@ export const DragAndDropProvider = (props) => {
     setCurrentDragging(null);
 
     mv && handleCompleteDrop(dz, cd);
-    setMovement(null);
-  }, [handleCompleteDrop, flushPendingPointerSync]);
+    publishMovement(null);
+  }, [handleCompleteDrop, flushPendingPointerSync, publishMovement]);
 
   useEffect(() => {
     if(!currentDragging) return;
@@ -239,15 +276,15 @@ export const DragAndDropProvider = (props) => {
 
       const mv = movementRef.current;
       const enough =
-        Math.abs(p.clientY - (mv?.y || 0)) > 30 || Math.abs(p.clientX - (mv?.x || 0)) > 30;
+        Math.abs(p.clientY - (mv?.y || 0)) > MOVEMENT_THRESHOLD ||
+        Math.abs(p.clientX - (mv?.x || 0)) > MOVEMENT_THRESHOLD;
 
       if (enough) {
         if (!draggingRef.current) setDragging(true);
         const nextMovement = { x: p.clientX, y: p.clientY };
         const prev = movementRef.current;
         if (!prev || prev.x !== nextMovement.x || prev.y !== nextMovement.y) {
-          setMovement(nextMovement);
-          movementRef.current = nextMovement;
+          publishMovement(nextMovement);
         }
       }
     };
@@ -263,14 +300,29 @@ export const DragAndDropProvider = (props) => {
 
       pendingPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
 
-      const prevLastY = window.lastY;
-      window.lastY = e.clientY;
-      const dir =
-        typeof prevLastY === 'number' && !Number.isNaN(prevLastY) && e.clientY < prevLastY
-          ? UP
-          : DOWN;
-      verticalDirectionRef.current = dir;
-      global.verticalDirection = dir;
+      // Hysteresis on vertical direction: only update when Y has moved more
+      // than DIRECTION_HYSTERESIS_PX since the last anchor. Without this, the
+      // 1-3px Y jitter that happens during horizontal motion (e.g. dragging
+      // col → col) flips direction on every pointermove, which in turn flips
+      // the asymmetric thresholds in getIndex and makes the placeholder
+      // oscillate between two slots ("fight for a position").
+      const DIRECTION_HYSTERESIS_PX = 4;
+      const prevAnchorY = window.lastY;
+      if (typeof prevAnchorY !== 'number' || Number.isNaN(prevAnchorY)) {
+        // First sample of this drag — anchor without flipping direction.
+        window.lastY = e.clientY;
+      } else {
+        const yDelta = e.clientY - prevAnchorY;
+        if (Math.abs(yDelta) > DIRECTION_HYSTERESIS_PX) {
+          const dir = yDelta < 0 ? UP : DOWN;
+          verticalDirectionRef.current = dir;
+          global.verticalDirection = dir;
+          window.lastY = e.clientY;
+        }
+        // Below threshold: keep previous direction, don't move the anchor —
+        // that way successive sub-threshold moves accumulate into a real
+        // delta instead of getting absorbed.
+      }
 
       applyGhostPosition(e.clientX, e.clientY);
       // autoScrollFromPointer is intentionally NOT called here — it's invoked
@@ -328,8 +380,8 @@ export const DragAndDropProvider = (props) => {
     currentDragging,
     setCurrentDragging,
     draggingEvent,
-    movement,
-    setMovement,
+    movementRef,
+    subscribeToMovement,
     handleDrop,
     dragging,
     setDragging,
@@ -345,10 +397,10 @@ export const DragAndDropProvider = (props) => {
     dropZone,
     currentDragging,
     draggingEvent,
-    movement,
     dragging,
     elements,
     handleDrop,
+    subscribeToMovement,
   ]);
 
   return (

@@ -50,7 +50,9 @@ export default class CoreController extends AuthController {
       description: description || "The document you are looking for does not exist",
     };
 
-    if(this.method === "POST") {
+    // Return raw data for AJAX channels (POST or any /api/* verb).
+    const isAjax = this.method === "POST" || this.req?.__WORKSPACE_NAME__ === "api";
+    if (isAjax) {
       return document.data;
     }
     return await this.render(document);
@@ -96,19 +98,15 @@ export default class CoreController extends AuthController {
     return { redirect: url };
   }
 
-  redirect(url = null) {
-    return { redirect: url };
-  }
-
-  async getError(code, { title = "Error", description = "An error occurred.." } = {}) {
+  async getError(code, { title = "Error", message = "An error occurred.." } = {}) {
     const document = await loopar.newDocument("Error");
 
     return await this.render({
       ...await document.__meta__(),
       data: {
-        code: code,
-        title: title,
-        description: description,
+        code,
+        title,
+        message,
       }
     });
   }
@@ -173,32 +171,54 @@ export default class CoreController extends AuthController {
     return await document.getListToSelectElement(this.q);
   }
 
+  /**
+   * Build a standard success response.
+   * Always emits a `notify` (toast) by default; pass `notify: false` to suppress.
+   */
   async success(message, options = {}) {
-    const notify = options.notify || {};
-    return {
-      status: 200, 
-      success: true, 
-      message: message || "Success", 
-      ...options, 
-      notify: {
-        ...notify,
-        type: notify.type || (options.success === false ? "error" : "success"),
-        message: notify.message || message || (options.success === false ? "Error" : "Success")
-      } 
+    const { notify, ...rest } = options;
+    const text = message || "Success";
+
+    const response = {
+      status: 200,
+      success: true,
+      message: text,
+      ...rest,
     };
+
+    if (notify !== false) {
+      response.notify = {
+        type: notify?.type || "success",
+        message: notify?.message || text,
+      };
+    }
+
+    return response;
   }
 
-  async error(message, options, status){
-    const notify = options?.notify || {}
-    return { 
-      status: status || 500, 
-      success: false, 
-      message: message || "Error", 
-      ...options, 
-      notify: {
-        ...notify,
-        type: notify.type || "error",
-        message: notify.message || message || "Error"
-      } };
+  /**
+   * Build a standard error response.
+   * Always emits a `notify` (toast) by default; pass `notify: false` to suppress.
+   */
+  async error(message, options = {}, status) {
+    const { notify, ...rest } = options;
+    const text = message || "Error";
+
+    const response = {
+      status: status || 500,
+      code: rest.code || 'INTERNAL_ERROR',
+      title: rest.title || 'Error',
+      message: text,
+      ...rest,
+    };
+
+    if (notify !== false) {
+      response.notify = {
+        type: notify?.type || "error",
+        message: notify?.message || text,
+      };
+    }
+
+    return response;
   }
 }

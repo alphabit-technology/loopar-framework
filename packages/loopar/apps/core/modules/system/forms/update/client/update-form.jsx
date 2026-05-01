@@ -6,6 +6,6 @@ export default class InstallerForm extends InstallerContext {
    }
 
    async update() {
-      this.send({action: "update", query: {app_name: "loopar"}});
+      this.send({ action: "update", query: { app_name: "loopar" } });
    }
 }

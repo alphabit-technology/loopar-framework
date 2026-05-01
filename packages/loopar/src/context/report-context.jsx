@@ -1,7 +1,7 @@
 import BaseDocument from "@context/base/base-document";
 import MetaComponent from "@meta-component";
 import DeskGUI from "@context/base/desk-gui";
-import { FormWrapper } from "@context/form";
+import { FormWrapper } from "@context/form-provider";
 
 export default class ReportContext extends BaseDocument {
   hasSidebar = true;
@@ -14,12 +14,12 @@ export default class ReportContext extends BaseDocument {
 
   render(content, slots) {
     return super.render(
-      <FormWrapper>
+      <FormWrapper __DATA__={this.Document.data} STRUCTURE={this.__STRUCTURE__} docRef={this}>
         <DeskGUI
           docRef={this}
         >
           <>
-          <MetaComponent elements={JSON.parse(this.Document.Entity.doc_structure)} parent={this}/>
+          <MetaComponent elements={this.__STRUCTURE__} parent={this}/>
           {content}
           </>
         </DeskGUI>

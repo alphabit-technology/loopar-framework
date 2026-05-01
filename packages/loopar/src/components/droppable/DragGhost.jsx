@@ -2,8 +2,11 @@ import { useDragAndDrop } from "./DragAndDropContext";
 import { memo, useLayoutEffect } from 'react';
 
 export const DragGhost = memo(function DragGhost() {
-  const { ghostDomRef, draggingEventRef, movement, currentDragging, dragging } = useDragAndDrop();
+  const { ghostDomRef, draggingEventRef, currentDragging, dragging } = useDragAndDrop();
 
+  // Position is updated continuously via direct DOM writes from
+  // DragAndDropContext (no React state involved). This effect just
+  // anchors the ghost on mount and when a new drag starts.
   useLayoutEffect(() => {
     const el = ghostDomRef?.current;
     const ev = draggingEventRef?.current;
@@ -11,9 +14,12 @@ export const DragGhost = memo(function DragGhost() {
       el.style.left = `${ev.x}px`;
       el.style.top = `${ev.y}px`;
     }
-  }, [dragging, movement, currentDragging?.key, ghostDomRef, draggingEventRef]);
+  }, [dragging, currentDragging?.key, ghostDomRef, draggingEventRef]);
 
-  if (!(dragging && movement && currentDragging)) return null;
+  // `dragging` flips to true only after movement has been published at
+  // least once, so the additional movement check the previous gate had is
+  // redundant.
+  if (!(dragging && currentDragging)) return null;
 
   const { size, offset } = currentDragging;
 

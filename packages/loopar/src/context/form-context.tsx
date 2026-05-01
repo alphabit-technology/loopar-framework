@@ -14,27 +14,26 @@ export default class FormContext extends BaseForm {
   render(content: React.ReactNode, slots: {}) {
     if (content) return content;
     const STRUCTURE = this.__STRUCTURE__;
-    
+
     return super.render(
       <FormWrapper __DATA__={this.Document.data} STRUCTURE={STRUCTURE} docRef={this}>
         <DeskGUI docRef={this}>
-          {[
-            ...STRUCTURE.map((el: FormStructureElement) => {
-              const e = el.element
-              if (!e || !el.data || el.data?.hidden) return null;
+          {STRUCTURE.map((el: FormStructureElement, idx: number) => {
+            const e = el.element;
+            if (!e || !el.data || el.data?.hidden) return null;
 
-              return (
-                <MetaComponent
-                  elements={[
-                    {
-                      element: e,
-                      ...el
-                    },
-                  ]}
-                />
-              );
-            })
-          ]}
+            return (
+              <MetaComponent
+                key={el.data?.name ?? idx}
+                elements={[
+                  {
+                    element: e,
+                    ...el
+                  },
+                ]}
+              />
+            );
+          })}
         </DeskGUI>
       </FormWrapper>,
       slots

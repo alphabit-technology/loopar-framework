@@ -62,8 +62,7 @@ export function DialogContextProvider() {
 
   const Dialog = (_dialog) => {
     const dialog = { ..._dialog };
-    const content = dialog.content || dialog.message;
-    dialog.id ??= typeof content === "string" ? content : dialog.title;
+    dialog.id ??= typeof dialog.message === "string" ? dialog.message : dialog.title;
     dialog.open = dialog.open !== false;
 
     setDialog(dialog);

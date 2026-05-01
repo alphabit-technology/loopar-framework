@@ -113,7 +113,7 @@ export const elementsDefinition = {
     { element: "padding", icon: "Shrink", type: TYPES.text },
     { element: "margin", icon: "Expand", type: TYPES.text },
     { element: "textarea", icon: "FileText", type: TYPES.longtext },
-    { element: "tailwind", icon: "PaintRoler", type: TYPES.longtext },
+    { element: "tailwind", icon: "SiTailwindcss", type: TYPES.longtext },
     { element: "text_editor", icon: "TextCursorInput", type: TYPES.longtext, clientOnly: true },
     { element: "checkbox", icon: "CheckSquare", type: TYPES.integer },
     { element: "switch", icon: "ToggleLeft", type: TYPES.integer },

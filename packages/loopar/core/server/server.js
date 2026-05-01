@@ -58,8 +58,8 @@ export class Server extends Router {
       requestContext.run({ req, res }, next);
     });
     server.use(cookieParser());
-    server.use(express.json());
-    server.use(express.urlencoded({ extended: true }));
+    server.use(express.json({ limit: '50mb' }));
+    server.use(express.urlencoded({ extended: true, limit: '50mb' }));
     server.use(tenantContextMiddleware);
   }
 

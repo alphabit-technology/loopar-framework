@@ -108,10 +108,9 @@ export const TableProvider = ({
     if(isEqual(searchData, lastSearch.current) && !force) return;
     lastSearch.current = searchData;
 
-    loopar.method(
+    loopar.api.post(
       Document.Entity.name,
       docRef.action || Document.meta.action,
-      {},
       {
         body: {
           q: searchData,
@@ -143,8 +142,8 @@ export const TableProvider = ({
       title: "Confirm",
       message: `Are you sure you want to delete ${row.name}?`,
       ok: async () => {
-        await loopar.method(Document.Entity.name, "delete", {
-          name: row.name,
+        await loopar.api.delete(Document.Entity.name, "delete", {
+          query: { name: row.name },
         });
       },
     });
@@ -184,8 +183,8 @@ export const TableProvider = ({
       title: "Confirm",
       message: `Are you sure you want to delete [${selectedRows.join(", ")}] ${Document.Entity?.name || "documents"}?`,
       ok: async () => {
-        await loopar.method(Document.Entity.name, "bulkDelete", {
-          names: JSON.stringify(selectedRows),
+        await loopar.api.delete(Document.Entity.name, "bulkDelete", {
+          body: { names: selectedRows },
         });
       },
     });

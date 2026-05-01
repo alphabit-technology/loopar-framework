@@ -47,9 +47,13 @@ export default class Router extends Middleware {
   }
 
   /**
-   * Renders AJAX/JSON response
-   * @param {Object} res - Express response object
-   * @param {*} response - Response data
+   * Renders AJAX/JSON response with a single, stable wire shape.
+   *
+   * Error responses (status >= 400):  { status, code, title, message }
+   * Success responses:                { status, success: true, message?, notify?, ...payload }
+   *
+   * Anything else passed in (raw Error, string, object) is normalized here so
+   * downstream code never has to think about the shape.
    */
   renderAjax(res, response) {
     if (res.headersSent) return;
@@ -59,31 +63,30 @@ export default class Router extends Middleware {
       return;
     }
 
+    const headers = {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    };
+
     if (response instanceof Error) {
-      res
-        .status(500)
-        .set({
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        })
-        .json({ error: response.message });
+      res.status(500).set(headers).json({
+        status: 500,
+        code: response.code || 'INTERNAL_ERROR',
+        title: response.title || 'Internal Server Error',
+        message: response.message || 'An unexpected error occurred'
+      });
+      return;
+    }
+
+    if (typeof response === 'string') {
+      res.status(200).set(headers).json({ status: 200, success: true, message: response });
       return;
     }
 
     const status = Number(response.status) || Number(response.code) || 200;
-    const responseData = typeof response === 'string' ? { message: response } : response;
-
-    res
-      .status(status)
-      .set({
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      })
-      .json(responseData);
+    res.status(status).set(headers).json(response);
   }
 
   route() {
@@ -193,7 +196,7 @@ export default class Router extends Middleware {
       const result = await Controller.sendAction(action) || {};
 
       if (result) {
-        if (req.method === 'POST' || (typeof result == "object" && result.redirect)) {
+        if (RouterUtils.isAjaxRequest(req) || (typeof result == "object" && result.redirect)) {
           req.__WORKSPACE__ = result;
         } else {
           req.__WORKSPACE__ = merge(

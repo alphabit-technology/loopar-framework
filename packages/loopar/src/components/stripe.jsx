@@ -205,7 +205,7 @@ export default class StripeClass extends Component {
     this.form.node.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      const { message: stripeData } = await loopar.method(
+      const { message: stripeData } = await loopar.api.post(
         "Stripe",
         "clientSecret"
       );

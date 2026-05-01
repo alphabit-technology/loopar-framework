@@ -9,7 +9,7 @@ const Cover = (props) => {
   const {designing} = useDesigner()
   const [isVisible, setIsVisible] = useState(designing || false);
   const elementRef = useRef(null);
-  const animation = loopar.getAnimation(props.animation) || {}
+  const animation = loopar.animation.getAnimation(props.animation) || {}
 
   useEffect(() => {
     if(designing) return;

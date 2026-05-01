@@ -119,9 +119,8 @@ export default function MetaSelect(props) {
     setError(null);
     
     return new Promise((resolve, reject) => {
-      loopar.send({
-        action: `/desk/${getModel()}/search`,
-        query: { 
+      loopar.api.get(getModel(), "search", {
+        query: {
           q,
           page,
           limit: paginationRef.current.limit

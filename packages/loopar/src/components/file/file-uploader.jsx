@@ -19,7 +19,7 @@ export default function FileUploader(props) {
       }
     });
 
-    loopar.method("File Manager", "upload", {}, {
+    loopar.api.post("File Manager", "upload", {
       body: formData,
       success: (r) => {
         props.onUpload && props.onUpload();

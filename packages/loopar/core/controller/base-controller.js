@@ -92,7 +92,10 @@ export default class BaseController extends CoreController {
   }
 
   async actionBulkDelete() {
-    const names = loopar.utils.isJSON(this.names) ? JSON.parse(this.names) : [];
+    const raw = this.body?.names;
+    const names = Array.isArray(raw)
+      ? raw
+      : (loopar.utils.isJSON(raw) ? JSON.parse(raw) : []);
 
     if (Array.isArray(names)) {
       for (const name of names) {

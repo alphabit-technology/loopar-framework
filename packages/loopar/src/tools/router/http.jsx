@@ -2,6 +2,30 @@ export default class HTTP {
   #jsonQuery = {};
   #options = {};
 
+  /**
+   * Low-level transport. Sends an HTTP request to a literal URL.
+   *
+   * Most app code SHOULD NOT call this directly. Prefer:
+   *   - loopar.call(Doc, action, params)        ← high-level RPC sugar
+   *   - loopar.api.{get|post|put|patch|delete}  ← verb-explicit RPC
+   *
+   * Both of those build the URL as /api/{Document}/{action} automatically
+   * and run through send() under the hood. Use send() directly only when:
+   *   1. The URL cannot be expressed as /api/{Doc}/{action} — e.g. SPA
+   *      page-meta bootstrap (workspace-provider) or external endpoints.
+   *   2. A form posts to its own page URL (login, install, connect) and
+   *      depends on the workspace-as-router pattern.
+   *
+   * @param {Object} options
+   * @param {string} options.action - Literal URL (relative or absolute).
+   * @param {string} [options.method="POST"]
+   * @param {Object|FormData} [options.body]
+   * @param {Object|string} [options.query]
+   * @param {Function} [options.success]
+   * @param {Function} [options.error]
+   * @param {Function} [options.always]
+   * @param {boolean}  [options.freeze]
+   */
   send(options) {
     this.#options = options;
     return this.#sendPetition(options);
@@ -109,19 +133,23 @@ export default class HTTP {
           const data = isJson ? await response.json() : null;
 
           if (!response.ok || (response.status && response.status !== 200)) {
-            throw (data || { error: response.status, message: response.statusText });
-            //throw error;
+            throw (data || {
+              status: response.status,
+              code: response.status,
+              title: response.statusText || 'Request Error',
+              message: response.statusText || `Request failed with status ${response.status}`
+            });
           }
 
-          if(options.success) {
-             options.success?.(data?.message || data);
+          if (options.success) {
+            options.success?.(data?.message || data);
           }
 
-          if(response.redirected) {
+          if (data?.redirect) {
             setTimeout(() => {
-              window.location.href = response.url;
+              window.location.href = data.redirect;
             }, 0);
-            return;
+            return data;
           }
 
           data?.notify && self.notify(data.notify);
@@ -131,16 +159,24 @@ export default class HTTP {
 
       return await withFreeze(fetchPromise);
     } catch (error) {
-      if(options.error){
+      if (error?.redirect) {
+        setTimeout(() => {
+          window.location.href = error.redirect;
+        }, 0);
+        return;
+      }
+
+      if (options.error) {
         self.notify(error.notify || {
-          message: error.message || error.description || error.title,
+          message: error.message,
           type: "error"
         });
         options.error(error);
-      }else{
+      } else {
         self.throw({
-          title: error.title || error.code || 'Undefined Error',
-          message: error.message || error.description || 'Undefined Error',
+          code: error.code,
+          title: error.title || 'Error',
+          message: error.message || 'An unexpected error occurred',
         });
       }
     } finally {

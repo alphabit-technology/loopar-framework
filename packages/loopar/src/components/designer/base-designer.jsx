@@ -41,25 +41,48 @@ const updateE = (structure, data, key, merge) => {
   });
 };
 
+// Walks the meta tree and fills in missing data fields (key/id/label/name).
+// Preserves structural sharing: if a node and its descendants don't need any
+// changes, the same reference is returned. This keeps React from re-rendering
+// the entire designer on every drop — only the path from root to the touched
+// nodes gets new identities.
 const fixMeta = (structure) => {
   try {
-    return structure.map((el) => {
-      const newEl = {...el, data: {...(el.data || {})}};
+    let arrChanged = false;
+    const result = structure.map((el) => {
+      const data = el.data || {};
+      const writable = fieldIsWritable(el);
 
-      newEl.data.key ??= elementManage.getUniqueKey();
+      const needsKey = data.key == null;
+      const needsId = writable && data.id == null;
+      const needsLabel = writable && data.label == null;
+      const needsName = writable && data.name == null;
+      const dataChanged = needsKey || needsId || needsLabel || needsName || el.data == null;
 
-      if (fieldIsWritable(newEl)) {
-        newEl.data.id ??= newEl.data.key;
-        newEl.data.label ??= loopar.utils.Capitalize((newEl.data.name || newEl.data.key).replaceAll("_", " "));
-        newEl.data.name ??= newEl.data.key;
+      const sourceChildren = el.elements || [];
+      const newChildren = fixMeta(sourceChildren);
+      const childrenChanged = newChildren !== sourceChildren || el.elements == null;
+
+      if (!dataChanged && !childrenChanged) return el;
+
+      arrChanged = true;
+
+      let newData = data;
+      if (dataChanged) {
+        newData = { ...data };
+        if (needsKey) newData.key = elementManage.getUniqueKey();
+        if (writable) {
+          newData.id ??= newData.key;
+          newData.label ??= loopar.utils.Capitalize((newData.name || newData.key).replaceAll("_", " "));
+          newData.name ??= newData.key;
+        }
       }
 
-      newEl.elements = fixMeta(el.elements || []);
-
-      return newEl;
+      return { ...el, data: newData, elements: newChildren };
     });
+    return arrChanged ? result : structure;
   } catch (error) {
-    loopar.throw(error)
+    loopar.throw(error);
   }
 }
 
@@ -178,22 +201,30 @@ export const BaseDesigner = (props) => {
   // Writes the new tree to local state AND repopulates the store, then
   // notifies the parent immediately. Cancels any pending editor commit
   // since whatever was pending is now superseded by the new tree.
+  // Accepts either a tree (Array) — the fast path used by the drop pipeline
+  // — or a JSON string for backwards compatibility with external callers.
   const setMeta = useCallback((meta) => {
-    if (loopar.utils.isJSON(meta)) {
-      const fixed = fixMeta(JSON.parse(meta));
-
-      if (commitTimerRef.current) {
-        clearTimeout(commitTimerRef.current);
-        commitTimerRef.current = null;
-      }
-
-      storeRef.current.populate(fixed);
-      setLocalMetaComponents(fixed);
-      stateRef.current.onChange?.(JSON.stringify(fixed));
+    let parsed;
+    if (Array.isArray(meta)) {
+      parsed = meta;
+    } else if (loopar.utils.isJSON(meta)) {
+      parsed = JSON.parse(meta);
     } else {
-      console.error(["Invalid JSON object", meta]);
-      loopar.throw("Invalid JSON object");
+      console.error(["Invalid meta payload", meta]);
+      loopar.throw("Invalid meta payload");
+      return;
     }
+
+    const fixed = fixMeta(parsed);
+
+    if (commitTimerRef.current) {
+      clearTimeout(commitTimerRef.current);
+      commitTimerRef.current = null;
+    }
+
+    storeRef.current.populate(fixed);
+    setLocalMetaComponents(fixed);
+    stateRef.current.onChange?.(JSON.stringify(fixed));
   }, []);
 
   // Editor commit path. Called debounced after store-only edits to flush

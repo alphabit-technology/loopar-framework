@@ -115,6 +115,17 @@ export default defineConfig(({ command }) => {
         output: !isServerBuild ? {
           chunkFileNames: 'assets/[hash].js',
           assetFileNames: 'assets/[hash].[ext]',
+          manualChunks(id) {
+            if (
+              id.includes('/node_modules/react/') ||
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react/jsx-runtime') ||
+              id.includes('/node_modules/react/jsx-dev-runtime') ||
+              id.includes('/node_modules/scheduler/')
+            ) {
+              return 'react-vendor';
+            }
+          },
         } : undefined,
       },
       chunkSizeWarningLimit: 1000,
