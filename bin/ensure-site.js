@@ -10,6 +10,7 @@ async function ensureDevSite() {
   console.log('⚠️  Creating dev site...\n');
 
   await tenant.saveTenant({
+    ID: 'dev',
     NAME: 'dev',
     PORT: process.env.PORT || 3000,
     NODE_ENV: 'development',

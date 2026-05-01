@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import "loopar/bin/pm2-home.js";
 import { execSync } from 'child_process';
 import path from 'path';
 import chalk from 'chalk';
@@ -75,6 +76,14 @@ const commands = {
       console.log(chalk.red(`Deleting ${siteName} from PM2...`));
       pm2Command(`pm2 delete ${processName} --namespace ${namespace}`);
     }
+  },
+
+  kill() {
+    // Stops every Loopar process AND the daemon itself, scoped to the
+    // project's PM2_HOME (set by bin/pm2-home.js). The next yarn dev/start
+    // will spawn a fresh daemon under <project>/.pm2/.
+    console.log(chalk.red(`Killing Loopar PM2 daemon at ${process.env.PM2_HOME}`));
+    pm2Command('pm2 kill');
   },
 
   logs(siteName) {

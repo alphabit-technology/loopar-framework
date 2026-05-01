@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "loopar/bin/pm2-home.js";
 import pm2 from "pm2";
 import Table from "cli-table3";
 import chalk from "chalk";

@@ -1,5 +1,6 @@
 'use strict';
 
+import "loopar/bin/pm2-home.js";
 import { BaseDocument, tenant } from 'loopar';
 
 import { loopar } from 'loopar';

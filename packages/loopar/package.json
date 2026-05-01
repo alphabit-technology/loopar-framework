@@ -24,7 +24,7 @@
     "mailchecker": "6.0.20",
     "nodemailer": "8.0.5",
     "ora": "^7.0.0",
-    "pm2": "6.0.14",
+    "pm2": "^6.0.14",
     "recharts": "3.8.1",
     "simple-icons": "16.17.0",
     "spamscanner": "6.1.5",
