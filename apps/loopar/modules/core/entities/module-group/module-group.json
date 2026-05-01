@@ -1,0 +1,21 @@
+{
+  "id": 7,
+  "name": "Module Group",
+  "module": "core",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 1,
+  "is_child": 0,
+  "is_builder": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"row\",\"data\":{\"name\":\"name_and_status_container\",\"key\":\"xtvv3k9ad\",\"label\":\"Row1\"},\"elements\":[{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default\":\"Active\",\"hidden\":1,\"default_value\":\"Active\",\"key\":\"azqfs1d2s\"},\"elements\":[]},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"hidden\":1,\"in_list_view\":0,\"key\":\"ziihcdmka\"},\"elements\":[]}]},{\"element\":\"row\",\"data\":{\"name\":\"row11_el31562002597\",\"id\":\"row141_el167805977366\",\"key\":\"ul5y6pxo5\",\"label\":\"Row2\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"col17_el122121685021\",\"id\":\"col243_el729076517638\",\"key\":\"t8n233qqs\",\"label\":\"Col1\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"format\":\"data\",\"type\":\"text\",\"unique\":1,\"set_only_time\":1,\"in_list_view\":1,\"size\":\"md\",\"key\":\"dzkxfsx97\",\"required\":1,\"searchable\":1},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"name\":\"col15_el67037934409\",\"id\":\"col244_el38268041351\",\"key\":\"oym5f5uqd\",\"label\":\"Col2\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Description\",\"name\":\"description\",\"format\":\"data\",\"in_list_view\":1,\"searchable\":true,\"size\":\"md\",\"key\":\"y6je6m4wu\"},\"elements\":[]}]}]},{\"element\":\"row\",\"data\":{\"name\":\"row17_el86073362483\",\"id\":\"row142_el719929637085\",\"key\":\"uy0r8v73b\",\"label\":\"Row3\"},\"elements\":[{\"element\":\"switch\",\"data\":{\"name\":\"in_sidebar\",\"id\":\"switch631_el88202491243\",\"label\":\"In Sidebar\",\"format\":\"data\",\"size\":\"md\",\"type\":\"default\",\"key\":\"lyfg52kne\"},\"elements\":[]}]},{\"element\":\"date_time\",\"data\":{\"name\":\"deleted_at\",\"label\":\"Deleted At\",\"hidden\":1,\"key\":\"b6iwegent\"},\"elements\":[]}]",
+  "search_fields": "name,description",
+  "title_fields": "description",
+  "resources": [],
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null,
+  "__ENTITY__": "Entity"
+}

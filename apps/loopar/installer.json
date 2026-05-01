@@ -1,0 +1,403 @@
+{
+  "App": {
+    "name": "loopar",
+    "version": "4.0.16"
+  },
+  "documents": {
+    "Entity:Module": {
+      "root": "/apps/loopar/modules/core/entities/module"
+    },
+    "Entity:App": {
+      "root": "/apps/loopar/modules/core/entities/app"
+    },
+    "App:loopar": {
+      "__document_status__": "Active",
+      "id": 1,
+      "deleted_at": null,
+      "type": "Desk App",
+      "name": "loopar",
+      "description": "Loopar",
+      "version": "4.0.16",
+      "autor": "Administrator",
+      "icon": "Infinity",
+      "spacing": "1",
+      "col_padding": "p-2",
+      "logo": "[{\"name\":\"logo.svg\",\"size\":17901,\"type\":\"image/svg+xml\"}]",
+      "logo_dark": "[{\"name\":\"logo.svg\",\"size\":17901,\"type\":\"image/svg+xml\"}]",
+      "logo_mini": "",
+      "logo_mini_dark": "",
+      "favicon": "",
+      "logo_width": "",
+      "has_footer": 0,
+      "footer": "\"\"",
+      "has_copyright": 0,
+      "copyright": "\"\"",
+      "fixed": 0,
+      "solid": 0,
+      "opacity": "",
+      "menu_items": [],
+      "menu_actions": [],
+      "git_repo": "",
+      "repository": "",
+      "github_user": "",
+      "github_pass": "",
+      "info": "Loopar Javascript Drag and Drop Framework"
+    },
+    "Entity:Module Group": {
+      "root": "/apps/loopar/modules/core/entities/module-group"
+    },
+    "Module Group:administration": {
+      "__document_status__": "Active",
+      "id": 4,
+      "name": "administration",
+      "description": "Administration",
+      "in_sidebar": 1,
+      "deleted_at": null,
+      "col17_el122121685021": null,
+      "col15_el67037934409": null
+    },
+    "Module:core": {
+      "__document_status__": "Active",
+      "id": 1,
+      "name": "core",
+      "description": "Core",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "Settings",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:34"
+    },
+    "Entity:Builder": {
+      "root": "/apps/loopar/modules/core/entities/builder"
+    },
+    "Module Group:developer": {
+      "__document_status__": "Active",
+      "id": 5,
+      "name": "developer",
+      "description": "Developer",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:29:07",
+      "col17_el122121685021": null,
+      "col15_el67037934409": null
+    },
+    "Module:developer": {
+      "__document_status__": "Active",
+      "id": 2,
+      "name": "developer",
+      "description": "Developer",
+      "app_name": "loopar",
+      "module_group": "developer",
+      "icon": "LucideCode",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:34"
+    },
+    "Builder:Form Builder": {
+      "root": "/apps/loopar/modules/developer/builders/form-builder"
+    },
+    "Module:auth": {
+      "__document_status__": "Active",
+      "id": 3,
+      "name": "auth",
+      "description": "Auth",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "LucideCode",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:35"
+    },
+    "Form Builder:Profile": {
+      "root": "/apps/loopar/modules/auth/forms/profile"
+    },
+    "Entity:Resources": {
+      "root": "/apps/loopar/modules/core/entities/resources"
+    },
+    "Entity:Entity": {
+      "root": "/apps/loopar/modules/core/entities/entity"
+    },
+    "Module Group:modules": {
+      "__document_status__": "Active",
+      "id": 6,
+      "name": "modules",
+      "description": "Modules",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:29:07",
+      "col17_el122121685021": null,
+      "col15_el67037934409": null
+    },
+    "Builder:Controller Builder": {
+      "root": "/apps/loopar/modules/developer/builders/controller-builder"
+    },
+    "Entity:Menu Item": {
+      "root": "/apps/loopar/modules/developer/entities/menu-item"
+    },
+    "Entity:Menu Action": {
+      "root": "/apps/loopar/modules/developer/entities/menu-action"
+    },
+    "Controller Builder:Viewer": {
+      "root": "/apps/loopar/modules/core/controllers/viewer"
+    },
+    "Controller Builder:Auth": {
+      "root": "/apps/loopar/modules/auth/controllers/auth"
+    },
+    "Controller Builder:Tenant Manage": {
+      "root": "/apps/loopar/modules/developer/controllers/tenant-manage"
+    },
+    "Module:mail": {
+      "__document_status__": "Active",
+      "id": 84,
+      "name": "mail",
+      "description": "Mail",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "Mail",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:36"
+    },
+    "Controller Builder:Contact": {
+      "__document_status__": "Active",
+      "id": 4,
+      "name": "Contact",
+      "module": "mail",
+      "zxk27furb": null,
+      "8k078erl2": null
+    },
+    "Builder:Page Builder": {
+      "root": "/apps/loopar/modules/developer/builders/page-builder"
+    },
+    "Page Builder:Desk": {
+      "root": "/apps/loopar/modules/core/pages/desk"
+    },
+    "Page Builder:App Manager": {
+      "root": "/apps/loopar/modules/developer/pages/app-manager"
+    },
+    "Module:analytics": {
+      "__document_status__": "Active",
+      "id": 85,
+      "name": "analytics",
+      "description": "Analytics",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "ChartNetwork",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:36"
+    },
+    "Page Builder:Analytics Dashboard": {
+      "root": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
+    },
+    "Page Builder:Role Permission Manager": {
+      "root": "/apps/loopar/modules/auth/pages/role-permission-manager"
+    },
+    "Builder:View Builder": {
+      "root": "/apps/loopar/modules/developer/builders/view-builder"
+    },
+    "Form Builder:Login": {
+      "root": "/apps/loopar/modules/auth/forms/login"
+    },
+    "Form Builder:Reset Password": {
+      "root": "/apps/loopar/modules/auth/forms/reset-password"
+    },
+    "Form Builder:Reset User": {
+      "root": "/apps/loopar/modules/auth/forms/reset-user"
+    },
+    "Form Builder:Reset Password Request": {
+      "root": "/apps/loopar/modules/auth/forms/reset-password-request"
+    },
+    "Entity:User": {
+      "root": "/apps/loopar/modules/auth/entities/user"
+    },
+    "Entity:Document History": {
+      "root": "/apps/loopar/modules/core/entities/document-history"
+    },
+    "Entity:Document Single Values": {
+      "root": "/apps/loopar/modules/core/entities/document-single-values"
+    },
+    "Entity:System Settings": {
+      "root": "/apps/loopar/modules/core/entities/system-settings"
+    },
+    "Entity:Menu": {
+      "root": "/apps/loopar/modules/developer/entities/menu"
+    },
+    "Module:Integrations": {
+      "__document_status__": "Active",
+      "id": 4,
+      "name": "Integrations",
+      "description": "Integrations",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "ComponentIcon",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:37"
+    },
+    "Entity:GPT": {
+      "root": "/apps/loopar/modules/integrations/entities/gpt"
+    },
+    "Entity:Stripe": {
+      "root": "/apps/loopar/modules/integrations/entities/stripe"
+    },
+    "Entity:Connected Document": {
+      "root": "/apps/loopar/modules/core/entities/connected-document"
+    },
+    "Entity:Menu Button": {
+      "root": "/apps/loopar/modules/developer/entities/menu-button"
+    },
+    "Entity:File": {
+      "root": "/apps/loopar/modules/core/entities/file"
+    },
+    "Entity:File Manager": {
+      "root": "/apps/loopar/modules/core/entities/file-manager"
+    },
+    "Entity:AI Attribute": {
+      "root": "/apps/loopar/modules/integrations/entities/ai-attribute"
+    },
+    "Entity:AI Model": {
+      "root": "/apps/loopar/modules/integrations/entities/ai-model"
+    },
+    "Entity:AI Provider": {
+      "root": "/apps/loopar/modules/integrations/entities/ai-provider"
+    },
+    "Entity:Tenant Manager": {
+      "root": "/apps/loopar/modules/developer/entities/tenant-manager"
+    },
+    "Entity:Icon Manager": {
+      "root": "/apps/loopar/modules/developer/entities/icon-manager"
+    },
+    "Entity:Email Settings": {
+      "root": "/apps/loopar/modules/mail/entities/email-settings"
+    },
+    "Entity:Email Template": {
+      "root": "/apps/loopar/modules/mail/entities/email-template"
+    },
+    "Email Template:New Contact Message": {
+      "__document_status__": "Active",
+      "id": 1,
+      "name": "New Contact Message",
+      "select9_el53438085728": "loopar",
+      "subject": "New Message of: {{subject}}",
+      "description": null,
+      "enabled": 1,
+      "body": "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n  <style>\r\n    .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }\r\n    .header { background: #1a1a2e; color: white; padding: 20px; }\r\n    .content { padding: 20px; background: #f8f9fa; }\r\n    .field { margin-bottom: 15px; }\r\n    .label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; }\r\n    .value { margin-top: 5px; padding: 10px; background: white; border-radius: 4px; }\r\n    .message-box { white-space: pre-wrap; }\r\n    .footer { padding: 15px; text-align: center; font-size: 12px; color: #666; }\r\n  </style>\r\n</head>\r\n<body>\r\n  <div class=\"container\">\r\n    <div class=\"header\">\r\n      <h2>📬 Nuevo mensaje de contacto</h2>\r\n    </div>\r\n    <div class=\"content\">\r\n      <div class=\"field\">\r\n        <div class=\"label\">Nombre</div>\r\n        <div class=\"value\">{{name}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Email</div>\r\n        <div class=\"value\">{{email}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Teléfono</div>\r\n        <div class=\"value\">{{phone}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Asunto</div>\r\n        <div class=\"value\">{{subject}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Mensaje</div>\r\n        <div class=\"value message-box\">{{message}}</div>\r\n      </div>\r\n    </div>\r\n    <div class=\"footer\">\r\n      Enviado desde: {{source_page}} | {{submitted_at}}\r\n    </div>\r\n  </div>\r\n</body>\r\n</html>",
+      "available_variables": "name, email, phone, subject, message, submitted_at, source_page",
+      "yr61ivzl8": null,
+      "zouk4s5jt": null,
+      "wofqbrchy": null,
+      "75kc4swhg": null,
+      "lngyda71x": null,
+      "xyu3pgp89": null,
+      "nzm15a8js": null,
+      "su68vw0lg": null,
+      "38gbrnomu": null,
+      "pewyz97qi": null
+    },
+    "Entity:Email Queue": {
+      "root": "/apps/loopar/modules/mail/entities/email-queue"
+    },
+    "Entity:Contact Message": {
+      "root": "/apps/loopar/modules/mail/entities/contact-message"
+    },
+    "Entity:Page View": {
+      "root": "/apps/loopar/modules/analytics/entities/page-view"
+    },
+    "Entity:Role": {
+      "root": "/apps/loopar/modules/auth/entities/role"
+    },
+    "Role:Administrator": {
+      "__document_status__": "Active",
+      "id": 1,
+      "col_role_name": null,
+      "name": "Administrator",
+      "app": "loopar",
+      "col_flags": null,
+      "is_system_role": 1,
+      "disabled": 0,
+      "col_description": null,
+      "description": "Full access to everything",
+      "permissions": null
+    },
+    "Role:Guest": {
+      "__document_status__": "Active",
+      "id": 2,
+      "col_role_name": null,
+      "name": "Guest",
+      "app": "loopar",
+      "col_flags": null,
+      "is_system_role": 1,
+      "disabled": 0,
+      "col_description": null,
+      "description": "Read-only public access",
+      "permissions": null
+    },
+    "Role:User": {
+      "__document_status__": "Active",
+      "id": 3,
+      "col_role_name": null,
+      "name": "User",
+      "app": "loopar",
+      "col_flags": null,
+      "is_system_role": 1,
+      "disabled": 0,
+      "col_description": null,
+      "description": "Standard authenticated user",
+      "permissions": null
+    },
+    "Entity:Permission": {
+      "root": "/apps/loopar/modules/auth/entities/permission"
+    },
+    "Entity:Role Permission": {
+      "root": "/apps/loopar/modules/auth/entities/role-permission"
+    },
+    "Entity:User Role": {
+      "root": "/apps/loopar/modules/auth/entities/user-role"
+    },
+    "Module:loopar": {
+      "__document_status__": "Active",
+      "id": 57,
+      "name": "loopar",
+      "description": "loopar",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "icon": "Infinity",
+      "in_sidebar": 1,
+      "deleted_at": "2026-04-25 21:30:40"
+    },
+    "Entity:Review": {
+      "root": "/apps/loopar/modules/loopar/entities/review"
+    }
+  },
+  "postInstaller": {
+    "Entity:App": "link",
+    "Entity:Entity": "link",
+    "Entity:Module Group": "link",
+    "Entity:Builder": "link",
+    "Entity:Menu Item": "link",
+    "App:loopar": "link",
+    "Entity:Menu Action": "link",
+    "Entity:User": "link",
+    "Entity:Document History": "link",
+    "Entity:Document Single Values": "link",
+    "Entity:System Settings": "link",
+    "Entity:Menu": "link",
+    "Entity:GPT": "link",
+    "Entity:Stripe": "link",
+    "Entity:Connected Document": "link",
+    "Entity:Menu Button": "link",
+    "Entity:File": "link",
+    "Entity:File Manager": "link",
+    "Entity:AI Attribute": "link",
+    "Entity:AI Model": "link",
+    "Entity:AI Provider": "link",
+    "Entity:Tenant Manager": "link",
+    "Entity:Icon Manager": "link",
+    "Entity:Email Settings": "link",
+    "Entity:Email Template": "link",
+    "Entity:Email Queue": "link",
+    "Entity:Contact Message": "link",
+    "Entity:Page View": "link",
+    "Entity:Role": "link",
+    "Entity:Permission": "link",
+    "Entity:Role Permission": "link",
+    "Entity:User Role": "link",
+    "Entity:Review": "link",
+    "Entity:Resources": "link",
+    "Entity:Module": "link"
+  }
+}

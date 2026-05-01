@@ -1,0 +1,19 @@
+{
+  "id": "55",
+  "name": "AI Provider",
+  "module": "Integrations",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 0,
+  "is_child": 0,
+  "is_builder": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"row\",\"data\":{\"name\":\"name_and_status_container\",\"key\":\"k3psyf7mm3\",\"layout\":\"[50,50]\",\"id\":\"k3psyf7mm3\",\"label\":\"Name and status container\"},\"elements\":[{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default_value\":\"Active\",\"hidden\":1,\"key\":\"k7mkpr1nhi\",\"id\":\"select6_el205278974642\"},\"imageProps\":{},\"style\":{}},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"hidden\":1,\"key\":\"kxz9k1zn24\",\"id\":\"id2_el879653170175\",\"in_list_view\":0},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"key\":\"row1_el48842131172\",\"id\":\"row1_el48842131172\",\"name\":\"row1_el48842131172\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"col\",\"data\":{\"key\":\"aklji4w2x\",\"id\":\"aklji4w2x\",\"name\":\"aklji4w2x\",\"label\":\"Aklji4w2x\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"id\":\"input4_el51875600270\",\"key\":\"input4_el51875600270\",\"required\":1,\"type\":\"text\",\"in_list_view\":1,\"set_only_time\":1,\"unique\":1,\"searchable\":1},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"col\",\"data\":{\"key\":\"7afr6w379\",\"id\":\"7afr6w379\",\"name\":\"7afr6w379\",\"label\":\"7afr6w379\"},\"elements\":[{\"element\":\"password\",\"data\":{\"label\":\"api_key\",\"name\":\"apy_key\",\"id\":\"password1_el349547879\",\"required\":1,\"key\":\"password1_el349547879\"},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}}]",
+  "resources": [],
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null,
+  "__ENTITY__": "Entity"
+}

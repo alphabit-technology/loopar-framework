@@ -1,0 +1,19 @@
+{
+  "id": "54",
+  "name": "AI Model",
+  "module": "Integrations",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 0,
+  "is_child": 0,
+  "is_builder": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"row\",\"data\":{\"name\":\"name_and_status_container\",\"key\":\"kpykpzei84\",\"layout\":\"[50,50]\",\"id\":\"kpykpzei84\",\"label\":\"Name and status container\"},\"elements\":[{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default_value\":\"Active\",\"hidden\":1,\"key\":\"klcw54jeq8\",\"id\":\"select6_el45712295199\"},\"imageProps\":{},\"style\":{}},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"hidden\":1,\"key\":\"k2s9xx6x8z\",\"id\":\"id2_el130157464370\",\"in_list_view\":0},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"key\":\"row1_el984941124069\",\"layout\":\"[50,50]\",\"id\":\"row1_el984941124069\",\"name\":\"row1_el984941124069\"},\"elements\":[{\"element\":\"col\",\"data\":{\"key\":\"61fnqs9s3\",\"id\":\"61fnqs9s3\",\"name\":\"61fnqs9s3\",\"label\":\"61fnqs9s3\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"id\":\"input6_el383912493429\",\"required\":1,\"unique\":1,\"in_list_view\":1,\"searchable\":1,\"key\":\"input6_el383912493429\",\"type\":\"text\",\"set_only_time\":1},\"imageProps\":{},\"style\":{}},{\"data\":{\"label\":\"Ai Provider\",\"name\":\"ai_provider\",\"id\":\"select5_el152508250409\",\"in_list_view\":1,\"searchable\":1,\"options\":\"AI Provider\",\"background_image\":[],\"key\":\"select5_el152508250409\"},\"element\":\"select\"}],\"imageProps\":{},\"style\":{}},{\"element\":\"col\",\"data\":{\"key\":\"be0f6wclf\",\"id\":\"be0f6wclf\",\"name\":\"be0f6wclf\",\"label\":\"Be0f6wclf\"},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"form_table\",\"data\":{\"label\":\"Attributres\",\"name\":\"attributes\",\"id\":\"form_table2_el342285525391\",\"options\":\"AI Attribute\",\"background_image\":[],\"key\":\"form_table1_el157243471796\"},\"imageProps\":{},\"style\":{}}]",
+  "resources": [],
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null,
+  "__ENTITY__": "Entity"
+}

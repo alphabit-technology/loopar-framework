@@ -1,0 +1,19 @@
+{
+  "id": 38,
+  "name": "Builder",
+  "module": "core",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 1,
+  "is_child": 0,
+  "is_builder": 1,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"name\":\"name_and_status_container\",\"key\":\"scllgdhvb\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default_value\":\"Active\",\"hidden\":1,\"key\":\"55xxr9qkz\"},\"elements\":[]},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"in_list_view\":0,\"hidden\":1,\"key\":\"kmugjx9qk\"},\"elements\":[]}]},{\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"layout\":\"[50,50]\",\"key\":\"row1_el827703294459\"},\"elements\":[{\"element\":\"col\",\"data\":{\"label\":\"Col1\",\"key\":\"col1_el1203810687257\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"key\":\"input6_el1173239299712\",\"name\":\"name\",\"required\":1,\"type\":\"text\",\"in_list_view\":1,\"set_only_time\":1,\"unique\":1,\"searchable\":1},\"elements\":[]},{\"element\":\"select\",\"data\":{\"label\":\"Build\",\"name\":\"build\",\"required\":1,\"in_list_view\":true,\"searchable\":true,\"options\":\"Entity\\nView\\nPage\\nForm\\nBuilder\\nDoctype\\nController\",\"key\":\"select6_el73793606081\"},\"elements\":[]}]},{\"element\":\"col\",\"data\":{\"label\":\"Col3\",\"key\":\"col3_el368742371475\"},\"elements\":[{\"element\":\"select\",\"data\":{\"label\":\"Module\",\"key\":\"select8_el556583137446\",\"name\":\"module\",\"options\":\"Module\",\"in_list_view\":true,\"searchable\":true,\"required\":1},\"elements\":[]},{\"element\":\"switch\",\"data\":{\"label\":\"Incluide in Installer\",\"key\":\"switch6_el270151849151\",\"name\":\"include_in_installer\"},\"elements\":[]}]}]},{\"element\":\"designer\",\"data\":{\"label\":\"Builder Structure\",\"key\":\"designer2_el52350855816\",\"name\":\"doc_structure\"},\"elements\":[]}]",
+  "resources": [],
+  "deleted_at": "2026-04-25 21:29:09",
+  "__created_at__": "2026-04-25 21:29:09",
+  "__updated_at__": "2026-04-25 21:29:09",
+  "__deleted_at__": "2026-04-25 21:29:09",
+  "__ENTITY__": "Entity"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "53",
+  "name": "AI Attribute",
+  "module": "Integrations",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 0,
+  "is_child": 1,
+  "is_builder": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"input\",\"data\":{\"name\":\"parent_id\",\"label\":\"Parent ID\",\"type\":\"integer\",\"hidden\":1,\"key\":\"kx6ziyociw\",\"id\":\"input4_el166074450144\"},\"imageProps\":{},\"style\":{}},{\"element\":\"input\",\"data\":{\"name\":\"parent_document\",\"label\":\"Parent Entity\",\"type\":\"integer\",\"hidden\":1,\"key\":\"k0y1bn5nqi\",\"id\":\"input5_el166894301533\"},\"imageProps\":{},\"style\":{}},{\"element\":\"row\",\"data\":{\"name\":\"name_and_status_container\",\"key\":\"k8flv5kww5\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"input\",\"data\":{\"name\":\"name\",\"label\":\"Name\",\"required\":1,\"type\":\"text\",\"in_list_view\":1,\"set_only_time\":1,\"unique\":1,\"searchable\":1,\"key\":\"kuqjouogv1\"},\"imageProps\":{},\"style\":{}},{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default_value\":\"Active\",\"hidden\":1,\"key\":\"k9z0kbbam7\"},\"imageProps\":{},\"style\":{}},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"hidden\":1,\"key\":\"k1hf7enegf\",\"in_list_view\":0},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"key\":\"row1_el972388547548\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"col\",\"data\":{\"key\":\"vypkclw0j\"},\"elements\":[{\"data\":{\"label\":\"Attribute\",\"name\":\"attribute\",\"id\":\"input63_el242730708471\",\"required\":1,\"in_list_view\":1,\"searchable\":1,\"key\":\"input62_el43055869279\"},\"element\":\"input\",\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}},{\"element\":\"col\",\"data\":{\"key\":\"yenh56yhq\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Value\",\"name\":\"value\",\"id\":\"input72_el275804881041\",\"required\":1,\"in_list_view\":1,\"searchable\":1,\"key\":\"input67_el441411079187\"},\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}}],\"imageProps\":{},\"style\":{}}]",
+  "resources": [],
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null,
+  "__ENTITY__": "Entity"
+}
