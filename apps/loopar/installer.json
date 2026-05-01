@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "4.0.16"
+    "version": "5.0.0"
   },
   "documents": {
     "Entity:Module": {
@@ -13,11 +13,11 @@
     "App:loopar": {
       "__document_status__": "Active",
       "id": 1,
-      "deleted_at": null,
+      "deleted_at": "2026-04-30 22:24:08",
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "4.0.16",
+      "version": "5.0.0",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": "1",
@@ -52,7 +52,7 @@
       "name": "administration",
       "description": "Administration",
       "in_sidebar": 1,
-      "deleted_at": null,
+      "deleted_at": "2026-04-28 22:40:57",
       "col17_el122121685021": null,
       "col15_el67037934409": null
     },
@@ -65,7 +65,7 @@
       "module_group": "administration",
       "icon": "Settings",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:34"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Entity:Builder": {
       "root": "/apps/loopar/modules/core/entities/builder"
@@ -76,7 +76,7 @@
       "name": "developer",
       "description": "Developer",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:29:07",
+      "deleted_at": null,
       "col17_el122121685021": null,
       "col15_el67037934409": null
     },
@@ -89,7 +89,7 @@
       "module_group": "developer",
       "icon": "LucideCode",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:34"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Builder:Form Builder": {
       "root": "/apps/loopar/modules/developer/builders/form-builder"
@@ -103,7 +103,7 @@
       "module_group": "administration",
       "icon": "LucideCode",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:35"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Form Builder:Profile": {
       "root": "/apps/loopar/modules/auth/forms/profile"
@@ -120,7 +120,7 @@
       "name": "modules",
       "description": "Modules",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:29:07",
+      "deleted_at": null,
       "col17_el122121685021": null,
       "col15_el67037934409": null
     },
@@ -151,7 +151,7 @@
       "module_group": "administration",
       "icon": "Mail",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:36"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Controller Builder:Contact": {
       "__document_status__": "Active",
@@ -179,7 +179,7 @@
       "module_group": "administration",
       "icon": "ChartNetwork",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:36"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Page Builder:Analytics Dashboard": {
       "root": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
@@ -226,7 +226,7 @@
       "module_group": "administration",
       "icon": "ComponentIcon",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:37"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Entity:GPT": {
       "root": "/apps/loopar/modules/integrations/entities/gpt"
@@ -271,12 +271,12 @@
       "__document_status__": "Active",
       "id": 1,
       "name": "New Contact Message",
-      "select9_el53438085728": "loopar",
       "subject": "New Message of: {{subject}}",
-      "description": null,
       "enabled": 1,
+      "description": null,
       "body": "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n  <style>\r\n    .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }\r\n    .header { background: #1a1a2e; color: white; padding: 20px; }\r\n    .content { padding: 20px; background: #f8f9fa; }\r\n    .field { margin-bottom: 15px; }\r\n    .label { font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; }\r\n    .value { margin-top: 5px; padding: 10px; background: white; border-radius: 4px; }\r\n    .message-box { white-space: pre-wrap; }\r\n    .footer { padding: 15px; text-align: center; font-size: 12px; color: #666; }\r\n  </style>\r\n</head>\r\n<body>\r\n  <div class=\"container\">\r\n    <div class=\"header\">\r\n      <h2>📬 Nuevo mensaje de contacto</h2>\r\n    </div>\r\n    <div class=\"content\">\r\n      <div class=\"field\">\r\n        <div class=\"label\">Nombre</div>\r\n        <div class=\"value\">{{name}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Email</div>\r\n        <div class=\"value\">{{email}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Teléfono</div>\r\n        <div class=\"value\">{{phone}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Asunto</div>\r\n        <div class=\"value\">{{subject}}</div>\r\n      </div>\r\n      <div class=\"field\">\r\n        <div class=\"label\">Mensaje</div>\r\n        <div class=\"value message-box\">{{message}}</div>\r\n      </div>\r\n    </div>\r\n    <div class=\"footer\">\r\n      Enviado desde: {{source_page}} | {{submitted_at}}\r\n    </div>\r\n  </div>\r\n</body>\r\n</html>",
       "available_variables": "name, email, phone, subject, message, submitted_at, source_page",
+      "select9_el53438085728": "loopar",
       "yr61ivzl8": null,
       "zouk4s5jt": null,
       "wofqbrchy": null,
@@ -301,42 +301,42 @@
       "root": "/apps/loopar/modules/auth/entities/role"
     },
     "Role:Administrator": {
+      "name": "Administrator",
       "__document_status__": "Active",
       "id": 1,
-      "col_role_name": null,
-      "name": "Administrator",
       "app": "loopar",
-      "col_flags": null,
       "is_system_role": 1,
       "disabled": 0,
-      "col_description": null,
       "description": "Full access to everything",
+      "col_role_name": null,
+      "col_flags": null,
+      "col_description": null,
       "permissions": null
     },
     "Role:Guest": {
+      "name": "Guest",
       "__document_status__": "Active",
       "id": 2,
-      "col_role_name": null,
-      "name": "Guest",
       "app": "loopar",
-      "col_flags": null,
       "is_system_role": 1,
       "disabled": 0,
-      "col_description": null,
       "description": "Read-only public access",
+      "col_role_name": null,
+      "col_flags": null,
+      "col_description": null,
       "permissions": null
     },
     "Role:User": {
+      "name": "User",
       "__document_status__": "Active",
       "id": 3,
-      "col_role_name": null,
-      "name": "User",
       "app": "loopar",
-      "col_flags": null,
       "is_system_role": 1,
       "disabled": 0,
-      "col_description": null,
       "description": "Standard authenticated user",
+      "col_role_name": null,
+      "col_flags": null,
+      "col_description": null,
       "permissions": null
     },
     "Entity:Permission": {
@@ -357,7 +357,7 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-25 21:30:40"
+      "deleted_at": "2026-04-30 22:24:08"
     },
     "Entity:Review": {
       "root": "/apps/loopar/modules/loopar/entities/review"
