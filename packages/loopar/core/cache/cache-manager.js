@@ -21,14 +21,14 @@ class CacheManager {
         });
         await store.connect();
         this.#store = store;
-        console.info(`[Cache] Redis conectado → ${this.#site}`);
+        console.info(`[Cache] Redis connected to → ${this.#site}`);
       } catch (err) {
-        console.warn(`[Cache] Redis no disponible, usando MemoryStore: ${err.message}`);
+        console.warn(`[Cache] Redis not available, using MemoryStore: ${err.message}`);
         this.#store = new MemoryStore();
       }
     } else {
       this.#store = new MemoryStore();
-      console.info(`[Cache] Sin config Redis → MemoryStore para ${this.#site}`);
+      console.info(`[Cache] No Redis config, using MemoryStore for ${this.#site}`);
     }
   }
 

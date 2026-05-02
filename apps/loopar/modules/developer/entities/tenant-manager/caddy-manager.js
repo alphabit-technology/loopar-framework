@@ -307,28 +307,61 @@ export default class CaddyManager {
   /**
    * Single source of truth for the Caddy config object.
    *
-   * automatic_https.disable = true — prevents Caddy from:
-   *   1. Redirecting http → https (adds unwanted :443 and scheme change)
-   *   2. Trying to bind :443 for certificate provisioning
-   *   3. Appending the port to redirect URLs (the :12000 in links issue)
+   * Two modes, picked from the chosen httpPort:
    *
-   * For production with real domains, set disable = false and add a "tls" block.
+   *   port === 80 → PRODUCTION
+   *     Caddy listens on both :80 and :443. automatic_https is left at its
+   *     defaults, which means:
+   *       - Real domains (alphabit.technology, etc.) get Let's Encrypt certs
+   *         on first request. Storage at ~/.local/share/caddy/, persists
+   *         across reboots.
+   *       - .localhost / .home / .lan get self-signed certs from Caddy's
+   *         internal CA (browser will warn — fine for dev-on-prod hybrid).
+   *       - HTTP requests are redirected to HTTPS automatically.
+   *
+   *   port !== 80 → DEV FALLBACK
+   *     Caddy is on a high port (12xxx) because :80 was taken. We disable
+   *     automatic_https entirely so it doesn't try to bind :443 (which we
+   *     also probably can't), doesn't append :12000 to redirect URLs, and
+   *     doesn't attempt cert provisioning for domains that may not even
+   *     resolve to this machine.
+   *
+   * Optional: set CADDY_ACME_EMAIL to receive Let's Encrypt renewal/expiry
+   * notifications. Without it, Caddy still works but ACME registration is
+   * anonymous.
    */
   _buildConfig(port, routes) {
-    return {
+    const isProduction = port === 80;
+
+    const srv0 = {
+      listen: isProduction ? [":80", ":443"] : [`:${port}`],
+      routes
+    };
+
+    if (!isProduction) {
+      srv0.automatic_https = { disable: true };
+    }
+
+    const config = {
       admin: { listen: "localhost:2019" },
       apps: {
         http: {
-          servers: {
-            srv0: {
-              listen: [`:${port}`],
-              automatic_https: { disable: true },
-              routes
-            }
-          }
+          servers: { srv0 }
         }
       }
     };
+
+    if (isProduction && process.env.CADDY_ACME_EMAIL) {
+      config.apps.tls = {
+        automation: {
+          policies: [{
+            issuers: [{ module: "acme", email: process.env.CADDY_ACME_EMAIL }]
+          }]
+        }
+      };
+    }
+
+    return config;
   }
 
   _getConfigPath() {

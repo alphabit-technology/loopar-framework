@@ -18,6 +18,7 @@
     "stop": "node bin/loopar-cli.js stop",
     "restart": "node bin/loopar-cli.js restart",
     "kill": "node bin/loopar-cli.js kill",
+    "startup": "node bin/loopar-cli.js startup",
     "logs": "node bin/loopar-cli.js logs",
     "list": "node bin/loopar-cli.js list",
     "build": "node bin/build-clean.js && npm-run-all build:client build:server",
