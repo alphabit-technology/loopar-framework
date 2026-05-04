@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo } from 'react';
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
@@ -55,19 +55,21 @@ export function ElementEditor() {
   if (!updatingElement) return null;
 
   const elementName = updatingElement.element;
+
   const data = useMemo(() => {
     return {...updatingElement.data,};
   }, [updatingElement.data, elementName]);
-  
+
+  const elementKey = updatingElement.node ?? data.key;
+
   const Element = __META_COMPONENTS__[elementName]?.default || {};
-  //const prevData = useRef({ ...data });
 
   typeof data.options === 'object' && (data.options = JSON.stringify(data.options));
 
   const dontHaveMetaElements = Element.dontHaveMetaElements || []
 
   const metaFields = useMemo(() => {
-    const genericMetaFields = getMetaFields(data);
+    const genericMetaFields = getMetaFields(updatingElement);
     const selfMetaFields = Element.metaFields && Element.metaFields() || [];
     return mergeGroups(genericMetaFields, ...selfMetaFields);
   }, [data, Element]);
@@ -81,9 +83,9 @@ export function ElementEditor() {
   
         elements['default_value'] = {
           element: elementName,
+          key: elementKey + "_default",
           data: {
             ...data,
-            key: data.key + "_default",
             label: "Default",
             hidden: 0,
             required: 0,
@@ -101,12 +103,12 @@ export function ElementEditor() {
       Object.entries(elements).forEach(([field, props]) => {
         if (dontHaveMetaElements.includes(field)) return null;
         if (!props.element) return props;
-        formFields[data.key + field] = (data[field] || props?.data?.default_value)
+        formFields[elementKey + field] = (data[field] || props?.data?.default_value)
       });
     });
 
     return formFields;
-  }, [metaFieldsData, dontHaveMetaElements, data]);
+  }, [metaFieldsData, dontHaveMetaElements, data, elementKey]);
 
   const prevData = useRef(__FORM_FIELDS__);
   const saveData = (_data) => {
@@ -122,15 +124,15 @@ export function ElementEditor() {
 
     function cleanKey(obj) {
       return Object.fromEntries(
-        Object.entries({...obj}).map(([key, value]) => [key.replace(data.key, ""), value])
+        Object.entries({...obj}).map(([key, value]) => [key.replace(elementKey, ""), value])
       );
     }
-    
+
     const newData = cleanKey(_data);
-    newData.key = data.key;
+    //newData.key = elementKey;
     newData.value = data.value;
 
-    updateElement(newData.key, cleanObject(newData), false, true);
+    updateElement(elementKey, cleanObject(newData), false, true);
   };
   
   const formRef = useRef(null);
@@ -140,15 +142,15 @@ export function ElementEditor() {
       value={{}}
     >
       <FormWrapper
-        key={data.key + updatingElement.__version__ || ""}
-        __DATA__={__FORM_FIELDS__} 
+        key={`${elementKey}${updatingElement.__version__ ?? ""}`}
+        __DATA__={__FORM_FIELDS__}
         onChange={saveData}
         formRef={formRef}
       >
         <div className="flex flex-col">
           <div className="p-3 pb-0">
-           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span> 
-           <span className="text-muted-foreground text-sm">{data.key}</span>
+           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span>
+           <span className="text-muted-foreground text-sm">{elementKey}</span>
           </div>
           <Tabs
             data={{ name: "element_editor_tabs" }}
@@ -156,22 +158,29 @@ export function ElementEditor() {
           >
             {metaFieldsData.map(({ group, elements }) => (
               <Tab
+                key={`${elementKey}-${group}-tab`}
                 label={loopar.utils.Capitalize(group)}
                 name={group + "_tab"}
               >
                 <div className="flex flex-col gap-2">
                   {Object.entries(elements).map(([field, props]) => {
                     if (dontHaveMetaElements.includes(field)) return null;
-                    if (!props.element) return props;
+                    if (!props.element) {
+                      // props es un ReactElement (caso del Separator del
+                      // default_value). Necesita key explícito para no
+                      // colisionar con sus hermanos.
+                      return <div key={`${elementKey}-${group}-${field}`}>{props}</div>;
+                    }
 
                     return (
                       <MetaComponent
+                        key={`${elementKey}-${group}-${field}`}
                         component={props.element}
                         render={Component => (
                           <Component
                             data={{
                               ...props.data,
-                              name: data.key + field,
+                              name: elementKey + field,
                               label: props.data?.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
                             }}
                           />

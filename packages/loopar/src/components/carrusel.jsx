@@ -3,14 +3,13 @@ import Preassembled from "@preassembled";
 import { useDesigner } from "@context/@/designer-context";
 
 export default function Carrusel(props){
-  const { designerMode, updateElements } = useDesigner();
+  const { updateElements } = useDesigner();
   
-  const data = props.data || {};
   const defaultElements = [
     {
       element: "banner",
+      node: props.node + "1",
       data: {
-        key: `${data.key}-1`,
         label: "Slider 1..",
         text: "Slide 1..",
         color_overlay: "rgba(0,0,0,0.3)",
@@ -20,8 +19,8 @@ export default function Carrusel(props){
     },
     {
       element: "banner",
+      node: props.node + "2",
       data: {
-        key: `${data.key}-2`,
         label: "Slider 2..",
         text: "Slide 2..",
         color_overlay: "rgba(0,0,0,0.3)",
@@ -36,8 +35,8 @@ export default function Carrusel(props){
 
     return {
       element: "banner",
+      node: props.node + `${ count + 1}`,
       data: {
-        key:`${data.key}-${ count + 1}`,
         label: `Slide ${count + 1}`,
         text: `Slide ${count + 1}`,
         background_image:

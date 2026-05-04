@@ -3,30 +3,21 @@ import { DragGhost } from "./DragGhost.jsx";
 import { Droppable } from "@droppable";
 import { createPortal } from 'react-dom';
 import { isEqual } from 'es-toolkit/predicate';
+import { getNodeKey } from "@global/prune-doc-structure";
 const DOWN = 'down';
 const UP = 'up';
-// Pixels the cursor must travel before we publish a new `movement` value.
-// Each publish triggers a context-level re-render across every droppable, so
-// raising this dramatically reduces React work on large pages. The ghost
-// itself moves smoothly via direct DOM writes, so a coarser movement state
-// is invisible to the user. Tune with care: too high and the placeholder
-// feels draggy.
 const MOVEMENT_THRESHOLD = 30;
 
 export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
-  // Both `insert` and `remove` are pure (no input mutation: only `splice`
-  // runs on a fresh array from .filter()). They also preserve structural
-  // sharing — branches that don't contain the changed node return their
-  // original reference. This is critical for React reconciliation: only
-  // components on the path from root to the modified parent will re-render.
+  const droppedKey = getNodeKey(dropped.el);
   function insert(nodes) {
     let changed = false;
     const result = nodes.map(node => {
       if (!node.data) return node;
 
-      if (node.data.key === targetKey) {
+      if (getNodeKey(node) === targetKey) {
         const filtered = (node.elements || []).filter(
-          child => child.data.key !== dropped.el.data.key
+          child => getNodeKey(child) !== droppedKey
         );
         filtered.splice(globalPosition, 0, dropped.el);
         changed = true;
@@ -50,9 +41,9 @@ export function completeDrop({ elements, targetKey, dropped, globalPosition }) {
     const result = nodes.map(node => {
       if (!node.data) return node;
 
-      if (node.data.key === dropped.parentKey && dropped.parentKey !== targetKey) {
+      if (getNodeKey(node) === dropped.parentKey && dropped.parentKey !== targetKey) {
         const filtered = (node.elements || []).filter(
-          child => child.data.key !== dropped.key
+          child => getNodeKey(child) !== droppedKey
         );
         changed = true;
         return { ...node, elements: filtered };
@@ -95,7 +86,7 @@ export const DragAndDropContext = createContext({
 });
 
 export const DragAndDropProvider = (props) => {
-  const { metaComponents, data, onDrop } = props;
+  const { metaComponents, data, onDrop, node } = props;
   const [dropZone, setDropZone] = useState(null);
   const [currentDragging, setCurrentDragging] = useState(null);
   const [draggingEvent, setDraggingEvent] = useState(currentDragging?.targetRect);
@@ -108,10 +99,6 @@ export const DragAndDropProvider = (props) => {
   const elementsRef = useRef(elements);
   const containerRef = useRef(null);
   const verticalDirectionRef = useRef(DOWN);
-  // movement is held in a ref + pub/sub instead of React state. Publishing it
-  // through context state caused every droppable on the page to re-render on
-  // every cursor movement, blowing up the main thread on large pages. Now
-  // only the active droppable subscribes and reacts.
   const movementRef = useRef(null);
   const movementSubscribersRef = useRef(new Set());
   const draggingRef = useRef(dragging);
@@ -161,6 +148,7 @@ export const DragAndDropProvider = (props) => {
     const gp = globalPositionRef.current;
     const newElements = completeDrop({
       elements: [{
+        node,
         data,
         elements: elementsRef.current || []
       }],
@@ -170,11 +158,9 @@ export const DragAndDropProvider = (props) => {
     })[0].elements || [];
 
     setDragging(false);
-    // Pass the object directly. Stringify+parse round-trip on the whole
-    // tree was a measurable contributor to drop latency on large pages.
     onDrop?.(newElements);
     handleSetElements(newElements);
-  }, [data, onDrop, handleSetElements]);
+  }, [node, data, onDrop, handleSetElements]);
 
   const flushPendingPointerSync = useCallback(() => {
     if (pointerFlushRafRef.current) {
@@ -300,16 +286,9 @@ export const DragAndDropProvider = (props) => {
 
       pendingPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
 
-      // Hysteresis on vertical direction: only update when Y has moved more
-      // than DIRECTION_HYSTERESIS_PX since the last anchor. Without this, the
-      // 1-3px Y jitter that happens during horizontal motion (e.g. dragging
-      // col → col) flips direction on every pointermove, which in turn flips
-      // the asymmetric thresholds in getIndex and makes the placeholder
-      // oscillate between two slots ("fight for a position").
       const DIRECTION_HYSTERESIS_PX = 4;
       const prevAnchorY = window.lastY;
       if (typeof prevAnchorY !== 'number' || Number.isNaN(prevAnchorY)) {
-        // First sample of this drag — anchor without flipping direction.
         window.lastY = e.clientY;
       } else {
         const yDelta = e.clientY - prevAnchorY;
@@ -319,16 +298,9 @@ export const DragAndDropProvider = (props) => {
           global.verticalDirection = dir;
           window.lastY = e.clientY;
         }
-        // Below threshold: keep previous direction, don't move the anchor —
-        // that way successive sub-threshold moves accumulate into a real
-        // delta instead of getting absorbed.
       }
 
       applyGhostPosition(e.clientX, e.clientY);
-      // autoScrollFromPointer is intentionally NOT called here — it's invoked
-      // once per frame inside flushPointerFrame. Calling it both sync and in
-      // rAF doubled the scroll speed, which made the brothers' rects drift
-      // between getIndex calls and the placeholder ended up one slot ahead.
 
       if (!pointerFlushRafRef.current) {
         pointerFlushRafRef.current = requestAnimationFrame(flushPointerFrame);
@@ -413,9 +385,9 @@ export const DragAndDropProvider = (props) => {
         <Droppable
           className="min-h-20 rounded p-4"
           elements={elements}
+          node={node}
           data={{
             ...data,
-            key: data.key,
           }}
         />
         {props.children}

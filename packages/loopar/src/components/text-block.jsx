@@ -9,8 +9,7 @@ export default function TextBlock(props) {
       data: {
         class: "font-bold text-2xl mb-2",
         text: "Text Block",
-        name: id + "-title",
-        //key: id + "-title",
+        name: id + "-title"
       }
     },
     {
@@ -18,8 +17,7 @@ export default function TextBlock(props) {
       data: {
         class: "text-muted font-size-lg mb-4",
         text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante.",
-        name: id + "-paragraph",
-        //key: id + "-paragraph",
+        name: id + "-paragraph"
       },
     },
   ];

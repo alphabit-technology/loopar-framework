@@ -26,7 +26,7 @@ export const PreassembledContextProvider = (props) => {
         return elements.map(el => {
           counter ++;
           el.data ??= {};
-          el.data.key ??= id + counter;
+          el.node ??= id + counter;
 
           if (el.elements?.length > 0) {
             el.elements = prepareElements(el.elements);
@@ -64,7 +64,8 @@ export default function Preassembled(props) {
         return elements.map(el => {
           counter ++;
           el.data ??= {};
-          el.data.key ??= id + counter;
+          el.node ??= id + counter;
+          //el.data.key ??= id + counter;
 
           if (el.elements?.length > 0) {
             el.elements = prepareElements(el.elements);

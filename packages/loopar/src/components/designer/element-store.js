@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useSyncExternalStore } from "react";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 export class ElementStore {
   constructor() {
@@ -24,8 +25,9 @@ export class ElementStore {
 
   populate(elements) {
     for (const el of elements || []) {
-      if (el?.data?.key) {
-        this.dataMap.set(el.data.key, el.data);
+      const key = getNodeKey(el);
+      if (key) {
+        this.dataMap.set(key, el.data);
       }
       if (el?.elements) this.populate(el.elements);
     }
@@ -41,14 +43,12 @@ export class ElementStore {
     return () => set.delete(listener);
   }
 
-  // Walk the tree and replace each el.data with the latest from the store.
-  // Preserves references (structural sharing) when nothing changed for a node,
-  // so React.memo on Meta can bail out for untouched subtrees.
   reconcileTree(elements) {
     if (!elements) return elements;
     let changed = false;
     const next = elements.map((el) => {
-      const live = el?.data?.key ? this.dataMap.get(el.data.key) : null;
+      const k = getNodeKey(el);
+      const live = k ? this.dataMap.get(k) : null;
       const newData = live && live !== el.data ? live : el.data;
       const newChildren = this.reconcileTree(el?.elements);
       if (newData === el.data && newChildren === el?.elements) return el;

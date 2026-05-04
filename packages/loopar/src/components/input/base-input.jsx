@@ -51,7 +51,7 @@ const BaseInput = (props) => {
   const getInitialData = useCallback(() => {
     if (element) {
       const data = propData || {};
-      data.id ??= names.id || names.key;
+      //data.id ??= names.id || names.key;
       data.name ??= names.name || data.id;
       data.label ??= loopar.utils.Capitalize(
         data.name?.replaceAll("_", " ") || ""
@@ -193,7 +193,7 @@ const BaseInput = (props) => {
   const hasLabel = () => withoutLabel !== true;
 
   const renderInput = useCallback((input, className = "") => {
-    const fieldName = state.data.name || state.data.key || state.data.id || "";
+    const fieldName = state.data.name || state.node || state.data.id || "";
     const isDisabled = !!state.data.disabled;
     
     const fieldProps = {

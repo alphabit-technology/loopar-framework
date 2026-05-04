@@ -167,9 +167,6 @@ class DataInterface {
   constructor(element, value) {
     this.#element = element;
     this.value = value;
-    //this.#element.value ??= value;
-    //this.#element.element ??= this.#element.def?.element;
-    //this.data = Object.assign({}, (element.data || {}), element);
   }
 
   get data() {
@@ -180,12 +177,10 @@ class DataInterface {
     return text.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s/g, '');
   }
 
-  /*function to replace underscore with space*/
   replaceUnderscore(text) {
     return text.replace(/_/g, ' ');
   }
 
-  /*function to replace space with underscore*/
   replaceSpace(text) {
     return text.replace(/ /g, '_');
   }
@@ -194,8 +189,6 @@ class DataInterface {
     const def = this.#element.props?.def || this.#element.def || this.#element || {};
     return def.element;
   }
-
-  /**function to convert  */
 
   validatorRules() {
     var type = (this.element === INPUT ? this.data.format || this.element : this.element) || 'text';

@@ -9,6 +9,7 @@ import { extractFieldNames, evaluateCondition, useBuildMetaProps } from "./meta"
 import { MetaRender } from "./MetaRender";
 import { DesignElement } from "./DesignElement";
 import { useElementData } from "../../designer/element-store.js";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 export const Meta = memo(function Meta(props) {
   const { meta, parent, parentKey, className } = props;
@@ -17,7 +18,7 @@ export const Meta = memo(function Meta(props) {
     return meta;
   }
 
-  const liveData = useElementData(meta?.data?.key, meta?.data);
+  const liveData = useElementData(getNodeKey(meta), meta?.data);
   const liveMeta = useMemo(
     () => (liveData && liveData !== meta?.data ? { ...meta, data: liveData } : meta),
     [meta, liveData]

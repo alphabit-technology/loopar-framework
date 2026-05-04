@@ -55,7 +55,8 @@ export default function Row(props) {
       for (let i = 0; i < diff; i++) {
         addCols.push({
           element: "col",
-          data: { key: elementManage.getUniqueKey() },
+          node: elementManage.getUniqueKey(),
+          data: {},
         });
       }
 

@@ -1,9 +1,7 @@
 import { WorkspaceLoader } from "@loopar/workspace-loader";
 import { MetaComponentsLoader } from "@loopar/components-loader";
 import { useEffect, lazy, useState } from "react";
-
 import { loopar } from "loopar";
-
 import { LoaderCircleIcon } from "lucide-react";
 
 const Fallback = () => (
@@ -163,7 +161,7 @@ export function Entity({ name, action, entityName, fallback, ...props }) {
 
   useEffect(() => {
     if (model && model.Document && model.Document.data)
-      model.Document.Entity.doc_structure = JSON.stringify(updateValue(JSON.parse(model.Document.Entity.doc_structure), model.Document.data));
+      model.Document.Entity.doc_structure = JSON.stringify(updateValue(JSON.parse(model.Document.Entity.doc_structure)), model.Document.data);
   }, [model])
 
   if (model) {

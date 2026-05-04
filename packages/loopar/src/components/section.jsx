@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
 import { Droppable } from "@droppable";
-import { useDroppable } from "./droppable/DroppableContext";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useCookies } from "@services/cookie";
 import { useDesigner } from "@context/@/designer-context";
@@ -15,11 +14,11 @@ const DEFAULTS = {
 };
 
 export default function Section(props) {
-  const { droppableEvents } = useDroppable();
   const { designing } = useDesigner();
   const [collapsible, setCollapsible] = useState(false);
-  const data = props.data || {};
-  const [collapsed, setCollapsed] = useCookies(data.key, false);
+  const { data = {}, node } = props;
+
+  const [collapsed, setCollapsed] =  useCookies(node, false);
   const { spacing: docSpacing = {} } = useDocument();
 
   const config = useMemo(() => ({

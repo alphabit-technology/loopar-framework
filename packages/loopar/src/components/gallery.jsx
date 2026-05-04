@@ -5,7 +5,6 @@ export default function MetaGalery(props) {
   const defaultElements = [
     {
       element: "image",
-
       data: {
         background_image:
           "https://fastly.picsum.photos/id/174/800/600.jpg?hmac=cfaSWlI7126OpICaFPhVjWRVaaGrLtpZ7Ly9SksvbTM"

@@ -13,7 +13,7 @@
     "App:loopar": {
       "__document_status__": "Active",
       "id": 1,
-      "deleted_at": "2026-04-30 22:24:08",
+      "deleted_at": "2026-05-03 21:31:28",
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
@@ -65,7 +65,7 @@
       "module_group": "administration",
       "icon": "Settings",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Entity:Builder": {
       "root": "/apps/loopar/modules/core/entities/builder"
@@ -89,7 +89,7 @@
       "module_group": "developer",
       "icon": "LucideCode",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Builder:Form Builder": {
       "root": "/apps/loopar/modules/developer/builders/form-builder"
@@ -103,7 +103,7 @@
       "module_group": "administration",
       "icon": "LucideCode",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Form Builder:Profile": {
       "root": "/apps/loopar/modules/auth/forms/profile"
@@ -151,7 +151,7 @@
       "module_group": "administration",
       "icon": "Mail",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Controller Builder:Contact": {
       "__document_status__": "Active",
@@ -179,7 +179,7 @@
       "module_group": "administration",
       "icon": "ChartNetwork",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Page Builder:Analytics Dashboard": {
       "root": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
@@ -226,7 +226,7 @@
       "module_group": "administration",
       "icon": "ComponentIcon",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Entity:GPT": {
       "root": "/apps/loopar/modules/integrations/entities/gpt"
@@ -357,7 +357,7 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 1,
-      "deleted_at": "2026-04-30 22:24:08"
+      "deleted_at": "2026-05-03 21:31:28"
     },
     "Entity:Review": {
       "root": "/apps/loopar/modules/loopar/entities/review"

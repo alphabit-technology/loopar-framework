@@ -1,6 +1,5 @@
 import { loopar, elementsDict } from "loopar";
 
-
 export const extractElements = (__META__, elements, environment) => {
   let extractedElements = [];
   const ENTITY = __META__.Document.Entity || {};
@@ -47,8 +46,8 @@ export function requireComponents(__META__) {
 
   const data = Document.data || {};
 
-  const entityDocStructure = JSON.parse(Entity.doc_structure || "[]");
-  const documentDocStructure = JSON.parse(data.doc_structure || "[]");
+  const entityDocStructure = loopar.utils.JSONparse(Entity.doc_structure, []);
+  const documentDocStructure = loopar.utils.JSONparse(data.doc_structure, []);
 
   if (action === "list") {
     return [

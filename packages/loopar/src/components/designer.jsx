@@ -11,13 +11,13 @@ export default function MetaDesigner(props) {
       field.onChange(value);
     };
     
+    const node = props.node || data.key;
     return (
       <Designer
-        key={designerMode ? data.key : data.key + "_designer"}
+        node={designerMode ? node + "_designer" : node}
         metaComponents={JSON.parse(field.value)}
         data={{
           ...data,
-          key: designerMode ? data.key : data.key + "_designer",
         }}
         onChange={handleChange}
       />

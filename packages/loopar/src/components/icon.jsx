@@ -15,17 +15,6 @@ const IconPlaceholder = memo(({ className }) => (
 
 IconPlaceholder.displayName = 'IconPlaceholder';
 
-/**
- * Renders an icon by name. Resolution order:
- *   1. Preloaded React component (no network).
- *   2. Cached SVG from IconManager (shared across the whole app).
- *   3. Network fetch via IconManager (deduped).
- *
- * Color props (mutually compatible):
- *   - useBrandColor: boolean. If true and the icon has a brand hex
- *     (simple-icons), fill with `#<hex>`.
- *   - brandColor: string. Explicit color override; wins over useBrandColor.
- */
 export const DynamicIcon = ({ icon, className, useBrandColor = false, brandColor }) => {
   const svgData = useDynamicIcon(icon);
   const value = icon?.value;

@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@cn/lib/utils";
 import { useDesigner } from "@context/@/designer-context";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 const ComponentTag = memo(({ name }) => {
   const displayName = (name || "")
@@ -28,17 +29,18 @@ export const ElementTitle = memo(function ElementTitle({
   const designer = useDesigner();
   const title = element.elementTitle || element.element || "";
 
+  const elKey = getNodeKey(element);
   const handleEditElement = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    designer.handleEditElement(element.data.key);
-  }, [designer, element.data?.key]);
+    designer.handleEditElement(elKey);
+  }, [designer, elKey]);
 
   const handleDeleteElement = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    designer.handleDeleteElement(element.data.key);
-  }, [designer, element.data?.key]);
+    designer.handleDeleteElement(elKey);
+  }, [designer, elKey]);
 
   if (!title) return null;
 

@@ -24,8 +24,6 @@ class ElementManage {
       const id = base_name + "_" + this.uuid();
 
       return {
-         //id: id,
-         //name: id,
          label: loopar.utils.Capitalize(base_name),
          key: id
       };
@@ -50,17 +48,17 @@ class ElementManage {
 
    fixElements(elements) {
       return elements.map(el => {
-         el.data ??= {};
-         if (!el.data.name || !el.data.id || !el.data.label || !el.data.key) {
-            const names = this.elementName(el.element);
-            el.data.key ??= this.getUniqueKey();
-            el.data.label ??= loopar.utils.Capitalize(names.label.replaceAll('_', ' '));
-         }
+        el.data ??= {};
+        el.node ??= el.data.key || this.getUniqueKey();
 
-         if (el.elements) {
-            el.elements = this.fixElements(el.elements);
-         }
-         return el;
+        if (!el.data.name || !el.data.label || !el.key) {
+          const names = this.elementName(el.element);
+          el.data.label ??= loopar.utils.Capitalize(names.label.replaceAll('_', ' '));
+        }
+        if (el.elements) {
+          el.elements = this.fixElements(el.elements);
+        }
+        return el;
       });
    }
 }

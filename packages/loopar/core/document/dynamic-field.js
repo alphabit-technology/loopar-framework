@@ -1,6 +1,7 @@
 'use strict'
 import { dataInterface } from '../global/element-definition.js';
 import { loopar } from '../loopar.js';
+import { pruneDocStructure, liftKeyToNode } from '../global/prune-doc-structure.js';
 
 export default class DynamicField {
   #value = null;
@@ -32,35 +33,10 @@ export default class DynamicField {
       return loopar.utils.trueValue(value) ? 1 : 0;
     }
 
-    /*if (this.element === SELECT && loopar.utils.isJSON(value)) {
-      return JSON.parse(value)?.option || ""
-    }*/
-
-    /*if(this.element === DESIGNER){
-      let els = value//loopar.utils.isJSON(value) ? JSON.parse(value) : [];
-
-      if(els && els.length > 0  && els[0].element !== 'fragment'){
-        els = [
-          {
-            element: 'fragment',
-            data: {key: "designer-root", name: "designer-root", id: "designer-root", label: "Designer Root"},
-            elements: els
-          }
-        ]
-      }
-
-      return els;
-    }*/
-
-
-    /*if (this.element === MARKDOWN) {
-      return marked(value);
-    }*/
-
     return value == null || typeof value == "undefined" ? "" : value;
   }
 
-  get stringifyValue() {
+  stringifyValue(toSave = false) {
     const value = this.#value;
     if ([DATE, TIME, DATE_TIME].includes(this.element)) {
       const fn = this.element === DATE ? 'getDate' : this.element === DATE_TIME ? 'getDateTime' : 'getTime';
@@ -79,15 +55,18 @@ export default class DynamicField {
       return loopar.utils.trueValue(value) ? 1 : 0;
     }
 
-    /*if(this.element === FILE){
-       console.log('FILE:', value, typeof value);
-       if(!value && typeof value == "object"){
-         
-          return value.name
-       }
-    }*/
+    if (this.element === DESIGNER) {
+      const parsed = loopar.utils.JSONparse(value, value);
 
-    //if (this.name === 'doc_structure') console.log(JSON.stringify(value, null, 3))
+      if (!Array.isArray(parsed)) {
+        return typeof value === 'object' ? JSON.stringify(value) : value;
+      }
+
+      const pruned = toSave ? pruneDocStructure(parsed) : parsed;
+      const pars = JSON.stringify(pruned);
+
+      return pars;
+    }
 
     return typeof value == 'object' ? JSON.stringify(value) : value;
   }

@@ -12,14 +12,15 @@ import { isEqual } from "es-toolkit/predicate";
 import { Sidebar } from "./sidebar";
 import {useDocument} from "@context/@/document-context";
 import elementManage from "@@tools/element-manage";
-import {DragAndDropProvider, useDragAndDrop} from "../droppable/DragAndDropContext.jsx";
+import {DragAndDropProvider} from "../droppable/DragAndDropContext.jsx";
 import {Prompt} from "./src/prompt/Prompt.jsx";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import {elementsNames} from "@global/element-definition";
 import {OrphanColumnsManager} from "./src/OrphanColumnsManager.jsx"
 import { ElementStore, ElementStoreContext } from "./element-store.js";
+import { getNodeKey } from "@global/prune-doc-structure";
 
-const updateE = (structure, data, key, merge) => {
+const updateE = (structure, data, node, merge) => {
   return structure.map((el) => {
     if (!el.data) return el;
 
@@ -30,11 +31,12 @@ const updateE = (structure, data, key, merge) => {
       newEl.element = "generic";
     }
 
-    if (newEl.data.key === key) {
-      newEl.data = merge ? {...newEl.data, ...data} : {...data};
-      newEl.data.key ??= elementManage.getUniqueKey();
+    if (getNodeKey(newEl) === node) {
+      const { key: _stripK, id: _stripI, ...incoming } = data || {};
+      newEl.data = merge ? {...newEl.data, ...incoming} : {...incoming};
+      newEl.node ??= elementManage.getUniqueKey();
     } else {
-      newEl.elements = updateE(newEl.elements || [], data, key, merge);
+      newEl.elements = updateE(newEl.elements || [], data, node, merge);
     }
 
     return newEl;
@@ -52,33 +54,38 @@ const fixMeta = (structure) => {
     const result = structure.map((el) => {
       const data = el.data || {};
       const writable = fieldIsWritable(el);
-
-      const needsKey = data.key == null;
-      const needsId = writable && data.id == null;
+      const currentKey = getNodeKey(el);
+      const finalKey = currentKey || elementManage.getUniqueKey();
+      const needsKeyAtNode = el.node !== finalKey;
+      const needsKeyMirror = data.key !== finalKey;
+      const needsIdMirror = data.id == null;
       const needsLabel = writable && data.label == null;
       const needsName = writable && data.name == null;
-      const dataChanged = needsKey || needsId || needsLabel || needsName || el.data == null;
+      const dataChanged = needsKeyMirror || needsIdMirror || needsLabel || needsName || el.data == null;
+      const hasChildren = Array.isArray(el.elements) && el.elements.length > 0;
+      const newChildren = hasChildren ? fixMeta(el.elements) : el.elements;
+      const childrenChanged = newChildren !== el.elements;
 
-      const sourceChildren = el.elements || [];
-      const newChildren = fixMeta(sourceChildren);
-      const childrenChanged = newChildren !== sourceChildren || el.elements == null;
-
-      if (!dataChanged && !childrenChanged) return el;
+      if (!needsKeyAtNode && !dataChanged && !childrenChanged) return el;
 
       arrChanged = true;
 
       let newData = data;
       if (dataChanged) {
-        newData = { ...data };
-        if (needsKey) newData.key = elementManage.getUniqueKey();
+        newData = { ...data};
+        if (newData.id == null) newData.id = finalKey;
         if (writable) {
-          newData.id ??= newData.key;
-          newData.label ??= loopar.utils.Capitalize((newData.name || newData.key).replaceAll("_", " "));
-          newData.name ??= newData.key;
+          newData.label ??= loopar.utils.Capitalize((newData.name || finalKey).replaceAll("_", " "));
+          newData.name ??= finalKey;
         }
       }
 
-      return { ...el, data: newData, elements: newChildren };
+      return {
+        ...el,
+        node: finalKey,
+        data: newData,
+        elements: newChildren,
+      };
     });
     return arrChanged ? result : structure;
   } catch (error) {
@@ -108,7 +115,7 @@ const DesignerButton = () => {
 }
 
 export const BaseDesigner = (props) => {
-  const {data, metaComponents} = props;
+  const {data, node, metaComponents} = props;
   const [activeId] = useState(null);
   const {designerMode} = useDesigner();
   const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
@@ -119,21 +126,15 @@ export const BaseDesigner = (props) => {
   const [sendingPrompt, setSendingPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState("Generate a form that allows me to manage inventory data");
   const [updatingFromEditor, setUpdatingFromEditor] = useState(false);
-  const [localMetaComponents, setLocalMetaComponents] = useState(metaComponents || []);
+  const [localMetaComponents, setLocalMetaComponents] = useState(() => fixMeta(metaComponents || []));
   const commitTimerRef = useRef(null);
-  const selfKey = data.key;
-
-  // Per-element data store. Lives across renders. Populated from the tree
-  // initially and re-populated on structural changes; editor edits write
-  // directly here, bypassing the BaseDesigner re-render path.
+  const selfKey = node || data.key;
   const storeRef = useRef(null);
   if (storeRef.current === null) {
     storeRef.current = new ElementStore();
-    storeRef.current.populate(metaComponents || []);
+    storeRef.current.populate(fixMeta(metaComponents || []));
   }
 
-  // Latest-state ref so the callbacks below can keep stable identities ([] deps)
-  // while still reading fresh values. Reassigned every render.
   const stateRef = useRef({});
   stateRef.current.localMetaComponents = localMetaComponents;
   stateRef.current.updatingElementName = updatingElementName;
@@ -146,12 +147,9 @@ export const BaseDesigner = (props) => {
   stateRef.current.setDesignerModeType = setDesignerModeType;
 
   useEffect(() => {
-    // Skip the prop → local sync while we have in-flight editor edits — the
-    // parent's prop is necessarily stale relative to the store, and applying
-    // it would clobber the user's typing.
     if (commitTimerRef.current !== null) return;
     if (!isEqual(localMetaComponents, metaComponents || [])) {
-      const next = metaComponents || [];
+      const next = fixMeta(metaComponents || []);
       storeRef.current.populate(next);
       setLocalMetaComponents(next);
     }
@@ -168,7 +166,7 @@ export const BaseDesigner = (props) => {
     if (!value || value == "null" || value.length == 0 || !list) return null;
 
     for (let i = 0; i < list.length; i++) {
-      if (list[i]?.data?.[field] == value) {
+      if ((field == "node" && getNodeKey(list[i]) == value) || (field != "node" && list[i]?.data?.[field] == value)) {
         return list[i];
       } else if (Array.isArray(list[i]?.elements)) {
         const found = findElement(field, value, list[i].elements || []);
@@ -180,29 +178,22 @@ export const BaseDesigner = (props) => {
   }, []);
 
   const [updatingElement, setUpdatingElement] = useState(() =>
-    findElement("key", updatingElementName)
+    findElement("node", updatingElementName)
   );
 
   useEffect(() => {
-    const found = findElement("key", updatingElementName, localMetaComponents);
+    const found = findElement("node", updatingElementName, localMetaComponents);
+
     setUpdatingElement(prev => {
-      // Same element still being edited — keep prev so its data ref doesn't
-      // get clobbered by the tree (which may lag the store on in-flight edits).
-      if (prev && found && prev.data?.key === found.data?.key) return prev;
+      if (prev && found && getNodeKey(prev) === getNodeKey(found)) return prev;
       if (!found) return null;
-      // New element selected — seed its data from the store (latest), falling
-      // back to the tree's data if the store has nothing for that key yet.
-      const liveData = storeRef.current.get(found.data?.key) || found.data;
-      return liveData === found.data ? found : { ...found, data: liveData };
+
+      const nodeKey = getNodeKey(found);
+      const liveData = storeRef.current.get(nodeKey) || found.data;
+      return liveData === found.data ? found : { ...found, node: nodeKey, data: liveData };
     });
   }, [updatingElementName, localMetaComponents, findElement]);
 
-  // Structural commit path. Used for drop/delete/programmatic tree changes.
-  // Writes the new tree to local state AND repopulates the store, then
-  // notifies the parent immediately. Cancels any pending editor commit
-  // since whatever was pending is now superseded by the new tree.
-  // Accepts either a tree (Array) — the fast path used by the drop pipeline
-  // — or a JSON string for backwards compatibility with external callers.
   const setMeta = useCallback((meta) => {
     let parsed;
     if (Array.isArray(meta)) {
@@ -215,7 +206,7 @@ export const BaseDesigner = (props) => {
       return;
     }
 
-    const fixed = fixMeta(parsed);
+    const fixed = parsed;
 
     if (commitTimerRef.current) {
       clearTimeout(commitTimerRef.current);
@@ -227,10 +218,6 @@ export const BaseDesigner = (props) => {
     stateRef.current.onChange?.(JSON.stringify(fixed));
   }, []);
 
-  // Editor commit path. Called debounced after store-only edits to flush
-  // in-flight data to the parent without forcing a BaseDesigner re-render
-  // for every keystroke. Reconciles the tree with the store on the fly,
-  // so the parent receives a consistent snapshot.
   const scheduleCommit = useCallback(() => {
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
     commitTimerRef.current = setTimeout(() => {
@@ -241,17 +228,15 @@ export const BaseDesigner = (props) => {
   }, []);
 
   const updateElements = useCallback((target, elements, current = null) => {
-    // Reconcile from store first so any in-flight editor edits aren't
-    // discarded by the structural mutation that follows.
     const currentElements = storeRef.current.reconcileTree(stateRef.current.localMetaComponents);
     const selfKeyNow = stateRef.current.selfKey;
-    const targetKey = target.data.key;
-    const currentKey = current ? current.data.key : null;
+    const targetKey = getNodeKey(target);
+    const currentKey = current ? getNodeKey(current) : null;
     const lastParentKey = current ? current.parentKey : null;
 
     const setElementsInTarget = (structure) => {
       return structure.map((el) => {
-        el.elements = el.data.key === targetKey ? elements
+        el.elements = getNodeKey(el) === targetKey ? elements
           : setElementsInTarget(el.elements || []);
         return el;
       });
@@ -262,11 +247,11 @@ export const BaseDesigner = (props) => {
 
     const deleteCurrentOnLastParent = (structure, parent) => {
       if (lastParentKey === parent) {
-        return structure.filter(e => e.data.key !== currentKey);
+        return structure.filter(e => getNodeKey(e) !== currentKey);
       }
 
       return structure.map(el => {
-        el.elements = deleteCurrentOnLastParent(el.elements || [], el.data.key);
+        el.elements = deleteCurrentOnLastParent(el.elements || [], getNodeKey(el));
         return el;
       });
     };
@@ -278,16 +263,16 @@ export const BaseDesigner = (props) => {
     setMeta(JSON.stringify(newElements));
   }, [setMeta]);
 
-  const updateElement = useCallback((key, data, merge = true, fromEditor = false) => {
+  const updateElement = useCallback((node, data, merge = true, fromEditor = false) => {
     const { localMetaComponents: current, updatingElementName: editingName } = stateRef.current;
     const store = storeRef.current;
 
     if (data.name) {
-      // Check duplicates against latest data (reconciled with in-flight edits).
       const reconciled = store.reconcileTree(current);
       const exist = findElement("name", data.name, reconciled);
 
-      if (exist && exist.data.key !== key) {
+      if (exist && getNodeKey(exist) !== node) {
+        console.error(["Duplicate field", getNodeKey(exist), node, data.name]);
         return loopar.throw(
           "Duplicate field",
           `The field with the name: ${data.name} already exists, your current field will keep the name: ${data.name} please check your fields and try again.`,
@@ -297,19 +282,15 @@ export const BaseDesigner = (props) => {
     }
 
     if (fromEditor) {
-      // Hot path: editor keystroke. Update store only, schedule a debounced
-      // commit to the parent. BaseDesigner does NOT re-render here; only the
-      // single Meta subscribed to this key reacts.
-      store.update(key, data, merge);
+      store.update(node, data, merge);
       scheduleCommit();
       return;
     }
 
-    // Programmatic / non-editor change: full tree update via setMeta.
     const reconciled = store.reconcileTree(current);
-    setMeta(JSON.stringify(updateE(reconciled, data, key, merge)));
+    setMeta(JSON.stringify(updateE(reconciled, data, node, merge)));
 
-    if (key === editingName) {
+    if ( node === editingName) {
       setUpdatingElement(prev => prev ? {
         ...prev,
         data: merge ? {...prev.data, ...data} : {...data},
@@ -321,7 +302,7 @@ export const BaseDesigner = (props) => {
   const deleteElement = useCallback((element) => {
     const removeElement = (elements) => {
       return elements.filter((el) => {
-        if (el.data.key === element) return false;
+        if (getNodeKey(el) === element) return false;
         if (el.elements) el.elements = removeElement(el.elements);
         return true;
       });
@@ -361,7 +342,7 @@ export const BaseDesigner = (props) => {
 
     if (!updatingElementName || updatingElementName == "null") {
       handleSetMode("designer");
-    } else if (!findElement("key", updatingElementName)) {
+    } else if (!findElement("node", updatingElementName)) {
       setUpdatingElementName(null);
     }
   }, []);
@@ -485,9 +466,10 @@ export const BaseDesigner = (props) => {
               <div
                 className={cn("rounded border shadow-sm w-full", designerModeType === "preview" ? "p-3" : "")}
               >
-                <DragAndDropProvider 
-                  metaComponents={metaComponents} 
+                <DragAndDropProvider
+                  metaComponents={localMetaComponents}
                   data={data}
+                  node={selfKey}
                   onDrop={setMeta}
                 >
                   {sidebarOpen && <Sidebar/>}

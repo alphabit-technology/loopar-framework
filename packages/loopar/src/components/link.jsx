@@ -202,7 +202,7 @@ export default function MetaLink({...props}) {
       {...restData}
       className={cn(props.className, dataClass)}
       variant={VARIANTS[data.variant] || VARIANTS.default}
-      key={props.key || data.key || props.to}
+      key={props.node || data.key || props.to}
     >
       {data.label || props.children}
     </Link>

@@ -114,11 +114,11 @@ class InstallerBuilder {
     
     const filters = {};
     const haveAnModule = this.checkIfHaveAnEntity(
-      JSON.parse(data.doc_structure || "[]"), 
+      loopar.utils.JSONparse(data.doc_structure, []),
       "Module"
     );
     const haveAnApp = this.checkIfHaveAnEntity(
-      JSON.parse(data.doc_structure || "[]"), 
+      loopar.utils.JSONparse(data.doc_structure, []),
       "App"
     );
 
@@ -206,7 +206,7 @@ class InstallerBuilder {
 
     const entityData = await fileManage.getConfigFile(entity.__NAME__, entity.__ROOT__);
 
-    await checkRequires(JSON.parse(entityData.doc_structure || "[]"), doc);
+    await checkRequires(loopar.utils.JSONparse(entityData.doc_structure, []), doc);
 
     if (entity.__NAME__ != entity.__ENTITY__) {
       reqs.unshift(`${entity.__ENTITY__}:${entity.__NAME__}`);

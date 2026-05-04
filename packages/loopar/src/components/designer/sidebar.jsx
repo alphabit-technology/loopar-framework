@@ -6,6 +6,7 @@ import {DesignerForm} from "./designer-form";
 import {ElementEditor} from "./element-editor";
 import {Separator} from "@cn/components/ui/separator";
 import {useDocument} from "@context/@/document-context";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 export const Sidebar = memo(() => {
   const { handleSetSidebarOpen, sidebarOpen, docRef } = useDocument();
@@ -65,7 +66,7 @@ export const Sidebar = memo(() => {
         >
           {
             (designerModeType == "editor") ? (
-              <ElementEditor key={updatingElement?.data.key}/>
+              <ElementEditor key={getNodeKey(updatingElement)}/>
             ) : <DesignerForm/>
           }
         </div>

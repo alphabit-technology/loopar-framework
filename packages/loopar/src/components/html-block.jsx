@@ -6,7 +6,7 @@ export default function MetaHtmlBlock(props) {
   const {designerRef} = useDesigner();
 
   const handleChange = (content) => {
-    designerRef && designerRef.updateElement(data.key, {value: content});
+    designerRef && designerRef.updateElement(props.node, {value: content});
   }
 
   return <Quill data={data} onChange={handleChange}/>

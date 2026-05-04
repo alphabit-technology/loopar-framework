@@ -6,6 +6,7 @@ import { useDroppable } from "../../droppable/DroppableContext.jsx";
 import { useDesigner } from "@context/@/designer-context";
 import { useDragAndDrop } from "@@droppable/DragAndDropContext";
 import { cn } from "@cn/lib/utils";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 export const DesignElement = memo(function DesignElement(props) {
   const { element, Comp, parentKey } = props;
@@ -29,24 +30,28 @@ export const DesignElement = memo(function DesignElement(props) {
   const parentHidden = useHidden();
   const { __REFS__ } = useDroppable();
   const draggableRef = useRef(null);
-  const { key: elementKey, ...elementProps } = element;
+  const { node: elementNode, ...elementProps } = element;
 
   const isDroppable = !fieldIsWritable(elementProps) && Comp.droppable !== false;
 
+  // CRITICAL: read the identity from `element` (the original), NOT from
+  // `elementProps`. The destructuring above removes `node`, so
+  // getNodeKey(elementProps) falls back to `getUniqueKey()` and generates a
+  // random identity - this breaks drag-drop (REMOVE doesn't find the child
+  // by its new random) and generates duplicates when dropping between containers.
+  const nodeKey = elementNode ?? getNodeKey(element);
   useEffect(() => {
     if (!elementProps.data) return;
-    const key = elementProps.data.key;
-
-    if (key && __REFS__) {
-      __REFS__[key] = draggableRef.current;
+    if (nodeKey && __REFS__) {
+      __REFS__[nodeKey] = draggableRef.current;
       return () => {
-        delete __REFS__[key];
+        delete __REFS__[nodeKey];
       };
     }
-  }, [elementProps.data?.key]);
+  }, [nodeKey]);
 
   if (parentHidden) {
-    return <Comp {...elementProps} />;
+    return <Comp {...elementProps} node={elementNode}/>;
   }
 
   const handleMouseOver = useCallback((isHover) => {
@@ -89,6 +94,7 @@ export const DesignElement = memo(function DesignElement(props) {
 
   const dragStart = useCallback((e) => {
     const el = {
+      node: nodeKey,
       data: { ...elementProps.data },
       element: elementProps.element,
       elements: elementProps.elements,
@@ -98,7 +104,7 @@ export const DesignElement = memo(function DesignElement(props) {
 
     setDropZone(parentKey);
     setCurrentDragging({
-      key: el.data.key,
+      node: nodeKey,
       parentKey,
       el,
       ref: draggableRef.current,
@@ -117,6 +123,7 @@ export const DesignElement = memo(function DesignElement(props) {
       className,
     });
   }, [
+    nodeKey,
     elementProps.data,
     elementProps.element,
     elementProps.elements,
@@ -141,11 +148,11 @@ export const DesignElement = memo(function DesignElement(props) {
   }, [dragEnabled, designerModeType, setInitializedDragging, dragStart]);
 
   const style = useMemo(() => {
-    if (designing && currentDragging?.key === elementProps?.data?.key) {
+    if (designing && currentDragging?.node === nodeKey) {
       return { opacity: 0.4 };
     }
     return undefined;
-  }, [currentDragging?.key, designing, elementProps?.data?.key]);
+  }, [currentDragging?.node, designing, nodeKey]);
 
   const isActive = hover && !dragging;
 
@@ -164,7 +171,7 @@ export const DesignElement = memo(function DesignElement(props) {
       >
         {designerModeType !== "preview" && (
           <ElementTitle
-            element={elementProps}
+            element={element}
             active={isActive}
             isDroppable={isDroppable}
             onDragStart={handleDragStart}
@@ -173,7 +180,7 @@ export const DesignElement = memo(function DesignElement(props) {
         {disabled ? (
           <div className="absolute top-0 left-0 w-full h-full bg-stone-700/60 z-1 rounded" />
         ) : null}
-        <Comp {...elementProps} key={elementKey} />
+        <Comp {...elementProps} node={elementNode}/>
       </div>
     </HiddenContext.Provider>
   );

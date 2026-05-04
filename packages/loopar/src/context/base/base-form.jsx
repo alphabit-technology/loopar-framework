@@ -219,16 +219,6 @@ export default class BaseForm extends BaseDocument {
         if([undefined, "undefined", null, "null", 0, "0", "[]"].includes(value)) {
           delete updatedData[key];
         }
-
-        /*if(["background_color", "color_overlay"].includes(key) && value) {
-          const defaultColors = [{color: "", alpha: 0.5}, {r:0, g:0, b:0, a:0}];
-
-          defaultColors.forEach((defaultColor) => {
-            if(_.isEqual(loopar.utils.JSONparse(value, defaultColor), defaultColor)) {
-              delete updatedData[key];
-            }
-          });
-        }*/
       }
 
       return updatedData;

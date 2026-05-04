@@ -155,7 +155,7 @@ const FormTable = (props) => {
     return [
       selectorCol({
         colSpan: 3,
-        deleteOnServer: false // Assuming we don't want to delete on server in this context
+        deleteOnServer: false
       }),
       {
         data: { name: "index" },
@@ -211,8 +211,6 @@ const FormTable = (props) => {
           strategy={verticalListSortingStrategy}
         >
           <BaseTable
-            //{...props}
-            //rows={fields}
             viewType={"List"}
             hasPagination={false}
             hasHeaderOptions={true}

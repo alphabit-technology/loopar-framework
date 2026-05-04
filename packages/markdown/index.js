@@ -3,25 +3,33 @@ import fs from 'fs';
 import { build } from 'vite';
 
 const selfRoute = path.resolve(process.cwd(), "packages/markdown");
-const distPath = path.resolve(selfRoute, "dist/ssr");
+const srcFile = path.resolve(selfRoute, "src/markdown-render.js");
+const distDir = path.resolve(selfRoute, "dist/ssr");
+const distFile  = path.resolve(distDir, "markdown-render.js");
 
-if (!fs.existsSync(distPath)) {
+const needsBuild = () => {
+  if (process.env.NODE_ENV === 'production') return !fs.existsSync(distFile);
+  if (!fs.existsSync(distFile)) return true;
+  return fs.statSync(srcFile).mtimeMs > fs.statSync(distFile).mtimeMs;
+};
+
+if (needsBuild()) {
   await build({
-    root: path.resolve(selfRoute),
+    root: selfRoute,
     ssr: {
       noExternal: ['@uiw/react-markdown-preview'],
     },
     build: {
       ssr: true,
-      outDir: path.resolve(selfRoute, "dist/ssr"),
+      outDir: distDir,
       rolldownOptions: {
-        input: path.resolve(selfRoute, "src/markdown-render.js"),
+        input: srcFile,
       },
       minify: true,
     },
   });
 }
 
-const { renderMarkdown } = await import(path.resolve(selfRoute, "dist/ssr/markdown-render.js"));
+const { renderMarkdown } = await import(distFile);
 
 export const markdownRenderer = (markdown) => renderMarkdown(markdown);

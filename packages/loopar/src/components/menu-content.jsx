@@ -10,12 +10,12 @@ const Section = forwardRef(({ element }, ref) => {
     <section
       ref={ref}
       data-section="true"
-      id={element.data.label || element.data.id || element.data.key}
+      id={element.data.label || element.data.id || element.node}
       className="w-full"
     >
       <div>
         <MetaComponent
-          key={element.data.key}
+          key={element.node}
           elements={[element]}
         />
       </div>
@@ -92,7 +92,7 @@ const SubMenus = ({ sectionRef, isVisible, activeSubSection }) => {
 
 const MenuItem = ({ element, sectionRef, visible = false, index, activeSection, activeSubSection }) => {
   const [isVisible, setIsVisible] = useState(visible);
-  const sectionId = element.data.label || element.data.id || element.data.key;
+  const sectionId = element.data.label || element.data.id || element.node
   const isSectionActive = activeSection === sectionId;
 
   useEffect(() => {
@@ -276,7 +276,7 @@ export default function MenuContentMeta(props) {
           elements.map((element, index) => (
             <Section 
               element={element} 
-              key={element.data.key}
+              key={element.node}
               ref={(el) => sectionsRefs.current[index] = el}
             />
           ))
@@ -299,7 +299,7 @@ export default function MenuContentMeta(props) {
           <div className="flex flex-col gap-2 p-2 w-full">
             {elements.map((element, index) => (
               <MenuItem
-                key={element.data.key + "-menu"}
+                key={element.node + "-menu"}
                 element={element}
                 sectionRef={sectionsRefs.current[index]}
                 index={index}

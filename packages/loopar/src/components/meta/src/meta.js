@@ -9,20 +9,20 @@ import { useDesigner } from "@context/@/designer-context";
 export function designElementProps(el) {
   if (!el.data) {
     const names = elementManage.elementName(el.element);
+    el.node ??= names.key;
     el.data = {
       label: names.label,
-      key: names.id
     }
   }
 
-  const newProps = {
-    ...{
-      ...el,
-      key: 'design-element' + el.data.key
-    }
-  }
+  return el;
+};
 
-  return newProps;
+const hasOwnKeys = (o) => o && typeof o === "object" && Object.keys(o).length > 0;
+const mergeStyle = (target, addition) => {
+  if (!hasOwnKeys(addition)) return target;
+  const base = hasOwnKeys(target) ? target : {};
+  return { ...base, ...addition };
 };
 
 export function prepareMeta(metaProps) {
@@ -76,38 +76,22 @@ export function prepareMeta(metaProps) {
           });
 
           metaProps.coverProps = {
-            style: {
-              ...backgroundImage
-            }
+            style: { ...backgroundImage }
           }
 
           if (data.aspect_ratio) {
-            metaProps.style = {
-              ...metaProps.style || {}
-            }
+            const merged = mergeStyle(metaProps.style, {});
+            if (hasOwnKeys(merged)) metaProps.style = merged;
           }
         } else {
-          metaProps.style = {
-            ...metaProps.style || {},
-            ...backgroundImage
-          };
-        }
-      }
-    }else{
-      metaProps.imageProps = {};
-
-      if (metaProps.element === "image") {
-        metaProps.coverProps = {
-          style: {}
+          const merged = mergeStyle(metaProps.style, backgroundImage);
+          if (hasOwnKeys(merged)) metaProps.style = merged;
         }
       }
     }
-
     if (metaProps.element != "image") {
-      metaProps.style = {
-        ...metaProps.style || {},
-        ...backgroundColor
-      };
+      const merged = mergeStyle(metaProps.style, backgroundColor);
+      if (hasOwnKeys(merged)) metaProps.style = merged;
     }
   }
 
@@ -122,12 +106,8 @@ export const useBuildMetaProps = (props) => {
     if (designerMode) {
       return designElementProps(mp);
     }
-    const data = mp.data;
-    return {
-      element: mp.element,
-      ...mp,
-      key: mp.key || "element" + data.key,
-    };
+ 
+    return mp;
   }, [designerMode, props.meta]);
 };
 

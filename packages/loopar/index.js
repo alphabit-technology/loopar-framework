@@ -18,6 +18,10 @@ import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
 export {generateThemeCSS} from "./core/global/theme-generator.js";
 import { parseDocument } from './core/document/tools.js';
+import {
+  pruneDocStructure,
+  getNodeKey
+} from './core/global/prune-doc-structure.js';
 import {PermissionManager} from './core/auth/PermissionManager.js'
 import {tenant} from './bin/tenant/tenant-builder.js';
 import { ActionScanner } from "./core/auth/ActionScanner.js";
@@ -45,5 +49,7 @@ export {
   parseDocument, TYPES,
   PermissionManager,
   tenant,
-  ActionScanner
+  ActionScanner,
+  pruneDocStructure,
+  getNodeKey
 };

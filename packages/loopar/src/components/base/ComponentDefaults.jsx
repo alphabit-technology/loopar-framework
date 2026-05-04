@@ -1,9 +1,11 @@
 
 import fileManager from "@@file/file-manager";
 import {useDesigner} from "@context/@/designer-context";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 export function ComponentDefaults(props) {
   const data = props.data || {};
+  const {node} = props;
   const {updateElement, updateElements, designerMode, updatingFromEditor} = useDesigner();
 
   const getSrc = () => {
@@ -54,7 +56,7 @@ export function ComponentDefaults(props) {
 
   const set = (key, value) => {
     if (!designerMode) return;
-    if (updatingFromEditor === data.key) return;
+    if (updatingFromEditor === node) return;
 
     const newData = {...data};
     if (typeof key == "object") {
@@ -66,7 +68,7 @@ export function ComponentDefaults(props) {
     }
 
     setTimeout(() => {
-      updateElement(data.key, JSON.parse(JSON.stringify(newData), true, false, true))
+      updateElement(node, JSON.parse(JSON.stringify(newData), true, false, true))
     }, 100);
   }
 
@@ -80,7 +82,10 @@ export function ComponentDefaults(props) {
     function removeDuplicates(array) {
       const seen = new Set();
       return array.filter(obj => {
-        const value = obj.data.key;
+        // getNodeKey resuelve {node, key, data.key} todos los formatos —
+        // crítico para compat con cols auto-creadas y nodos legacy aún sin
+        // migrar a la propiedad `node` canónica.
+        const value = getNodeKey(obj);
         if (!seen.has(value)) {
           seen.add(value);
           return true;

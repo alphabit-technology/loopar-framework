@@ -190,7 +190,7 @@ export default function MDXEditorWithTabs(props) {
   } = props;
 
   const initialMarkdown = data.value || '';
-  const key = `mdx_viewmode_${data.key}`;
+  const key = `mdx_viewmode_${props.node}`;
   
   const [currentMode, setCurrentMode] = useState('rich-text');
 

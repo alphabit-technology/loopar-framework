@@ -5,7 +5,7 @@ export const DroppableContext = createContext({});
 
 export const useDroppable = () => useContext(DroppableContext);
 
-export const DroppableContextProvider = ({data, children, ...props }) => {
+export const DroppableContextProvider = ({data, node, children, ...props }) => {
   const __REFS__ = useRef({}).current;
   const { 
     dropZone, setDropZone, 
@@ -16,11 +16,11 @@ export const DroppableContextProvider = ({data, children, ...props }) => {
 
   const handleSetDropZone = useCallback((e) => {
     e.preventDefault();
-    if(!currentDragging || currentDragging?.key === data.key) return;
+    if(!currentDragging || currentDragging?.node === node) return;
     if(props.element == ROW && currentDragging.el.element != COL) return;
 
-    setDropZone(data.key);
-  }, [currentDragging, data.key, props.element, setDropZone]);
+    setDropZone(node);
+  }, [currentDragging, node, props.element, setDropZone]);
 
   const droppableEvents = useMemo(() => {
     if (!currentDragging) return {};
@@ -32,9 +32,9 @@ export const DroppableContextProvider = ({data, children, ...props }) => {
   }, [currentDragging, handleSetDropZone, handleDrop]);
 
   const dragOver = useMemo(() => {
-    return dragging && dropZone && dropZone === data.key &&
-      (currentDragging && data.key !== currentDragging?.key)
-  }, [dropZone, currentDragging, data.key, dragging]);
+    return dragging && dropZone && dropZone === node &&
+      (currentDragging && node !== currentDragging?.node)
+  }, [dropZone, currentDragging, node, dragging]);
 
   const contextValue = useMemo(() => ({
     droppableEvents,

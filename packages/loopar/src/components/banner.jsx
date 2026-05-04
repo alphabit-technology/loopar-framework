@@ -101,7 +101,6 @@ function Banner() {
       />
       <Content  
         elements={props.elements}
-        data={{key: data.key}} 
         wrapperClassName="absolute inset-0 z-10 h-full w-full"
         className={cn(alignment, data.class)}
         isActive={isActive}
@@ -117,8 +116,8 @@ export default function MetaBanner(props){
   const defaultElements = [
     {
       element: "title",
+      node: props.node + "title",
       data: {
-        key: data.key + "title",
         text: data?.label || "Banner Title...",
         size: "3xl",
         text_align: "center",
@@ -126,8 +125,8 @@ export default function MetaBanner(props){
     },
     {
       element: "subtitle",
+      node: props.node + "subtitle",
       data: {
-        key: data.key + "subtitle",
         text: data?.text || "Subtitle...",
         text_align: "center",
       },

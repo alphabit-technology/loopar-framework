@@ -8,7 +8,6 @@ import { FormWrapper } from "@context/form-provider";
 import { EditorState } from '@codemirror/state';
 import { EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
 import { json } from '@codemirror/lang-json';
-//import { oneDark } from '@codemirror/theme-one-dark';
 import { bracketMatching, foldGutter, foldKeymap } from '@codemirror/language';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';

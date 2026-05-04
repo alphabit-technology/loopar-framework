@@ -60,7 +60,7 @@ const DEFAULTS = {
   animation_delay: 0,
 };
 
-export const getMetaFields = (data) => {
+export const getMetaFields = (element) => {
   return [
     {
       group: "content",
@@ -87,7 +87,7 @@ export const getMetaFields = (data) => {
           data: {
             label: "Tailwind",
             rows: 6,
-            to_element: data.key,
+            to_element: element.node,
           },
         },
         background_image: {

@@ -7,6 +7,7 @@ import {useCookies} from "@services/cookie";
 import { Droppable } from "@droppable";
 import { Trash2Icon, PlusIcon } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 const TabContent = ({element, parent, onDrop}) => {
   if(element.type === "dynamic.component"){
@@ -22,20 +23,24 @@ const TabContent = ({element, parent, onDrop}) => {
 }
 
 function TabFn(props){
-  const {id, elementsDict, asChild = false, canCustomize, setElements, parent} = props;
-  
+  const {id, elementsDict, node, data, asChild = false, canCustomize, setElements, parent} = props;
+
   const {designerMode, isDesigner, handleEditElement, handleDeleteElement} = useDesigner();
   const getIdentifier = (id) => `${id}${designerMode ? '-designer' : ''}`;
-  const getKey = (data = {}) => getIdentifier(data.key || data.name);
-  
-  const [currentTab, setCurrentTab] = useCookies(getIdentifier(id), getKey(elementsDict[0]?.data));
+  const getKey = (tab = {}) => {
+    const tabData = tab.data || {};
+    const id = tab.node || tabData.key || tabData.id || tabData.name;
+    return getIdentifier(id);
+  };
+
+  const [currentTab, setCurrentTab] = useCookies(getIdentifier(id), getKey(elementsDict[0]));
 
   const selectFirstTab = () => {
-    elementsDict.length > 0 && setCurrentTab(getKey(elementsDict[0]?.data));
+    elementsDict.length > 0 && setCurrentTab(getKey(elementsDict[0]));
   }
 
   const checkIfTabExists = (key) => {
-    return elementsDict.some(element => getKey(element.data) === key);
+    return elementsDict.some(element => getKey(element) === key);
   }
 
   const addTab = () => {
@@ -44,14 +49,13 @@ function TabFn(props){
     const tab = [
       {
         element: "tab",
-        key: name,
+        node: name,
         data: {
           name,
           id: name,
           label,
           droppable: true,
-          draggable: false,
-          key: name,
+          draggable: false
         },
       },
     ];
@@ -85,34 +89,39 @@ function TabFn(props){
     >
       <div className="flex items-center justify-between overflow-x-auto overflow-y-hidden">
         <TabsList className={`inline-flex items-center gap-1 no-drag bg-transparent ${props.tabsClassName || ""}`}>
-          {elementsDict.map(({data = {}}) => (
-            <TabsTrigger
-              key={getKey(data)}
-              value={getKey(data)}
-              className="flex items-center gap-2 !px-4 !min-h-[44px]"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setCurrentTab(getKey(data));
-                if (designerMode) {
-                  handleEditElement(data.key);
-                }
-              }}
-            >
-              <span>{data.label}</span>
-              {isCustomizable && (
-                <Trash2Icon 
-                  size={16} 
-                  className="text-red-500 hover:text-red-400 cursor-pointer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDeleteElement(data.key);
-                  }}
-                />
-              )}
-            </TabsTrigger>
-          ))}
+          {elementsDict.map((tab) => {
+            const data = tab.data || {};
+            const tabKey = getKey(tab);
+            const editKey = tab.node || data.key;
+            return (
+              <TabsTrigger
+                key={tabKey}
+                value={tabKey}
+                className="flex items-center gap-2 !px-4 !min-h-[44px]"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentTab(tabKey);
+                  if (designerMode && editKey) {
+                    handleEditElement(editKey);
+                  }
+                }}
+              >
+                <span>{data.label}</span>
+                {isCustomizable && (
+                  <Trash2Icon
+                    size={16}
+                    className="text-red-500 hover:text-red-400 cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      editKey && handleDeleteElement(editKey);
+                    }}
+                  />
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
         
         {isCustomizable && (
@@ -131,17 +140,20 @@ function TabFn(props){
         )}
       </div>
       
-      {elementsDict.map((element, index) => (
-        <TabsContent key={getKey(element.data)} value={getKey(element.data)}>
-          <TabContent element={element} parent={parent + index}/>
-        </TabsContent>
-      ))}
+      {elementsDict.map((element, index) => {
+        const tabKey = getKey(element);
+        return (
+          <TabsContent key={tabKey} value={tabKey}>
+            <TabContent element={element} parent={parent + index}/>
+          </TabsContent>
+        );
+      })}
     </BaseTabs>
   )
 }
 
 export default function MetaTabs(props){
-  const {data, setElements} = ComponentDefaults(props);
+  const {data, node, setElements} = ComponentDefaults(props);
   const key = useId();
   
   const elementsDict=useMemo(()=>{
@@ -152,11 +164,10 @@ export default function MetaTabs(props){
         return {
           element: "tab",
           type: "react.element",
-          key: element.key || `${key}-index`,
+          node: element.props?.name || `${key}-${index}`,
           data: {
             name: element.props.name,
             label: element.props.label,
-            key: element.key,
           },
           content: element.props.children,
         };
@@ -164,7 +175,7 @@ export default function MetaTabs(props){
         return {
           element: "tab",
           type: "dynamic.component",
-          key: element.key,
+          node: getNodeKey(element),
           data: element.data,
           elements: element.elements,
         };
@@ -172,7 +183,7 @@ export default function MetaTabs(props){
     });
   }, [props.children, props.elements, props.data]);
 
-  const parentKey = data.key || data.id || data.name;
+  const parentKey = node || data.key || data.id || data.name;
 
   return (
     <div className={`p-2 my-3 pt-0 mt-0 border border-separate ${props.className} ${data.class}`}id={data.id}>

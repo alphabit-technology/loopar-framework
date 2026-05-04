@@ -12,13 +12,12 @@ export function DesignElement(props){
 
   const elementToCreate = () => {
     const elementName = elementManage.elementName(toElement);
+    const { key, ...authored } = elementName;
 
     return {
       element: toElement,
-      data: {
-        ...elementName,
-        key: elementName.key
-      }
+      node: key,
+      data: authored,
     }
   }
 
@@ -31,7 +30,7 @@ export function DesignElement(props){
 
     setCurrentDragging({
       isNew: true,
-      key: el.data.key,
+      node: el.node,
       el,
       ref: draggableRef.current,
       initialPosition: {

@@ -3,7 +3,6 @@ import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
 import { parseDocStructure } from './tools.js';
-
 import { Sequelize } from 'sequelize';
 
 export default class CoreDocument {
@@ -66,13 +65,15 @@ export default class CoreDocument {
   }
 
   async __init__() {
+    // Expand legacy wire-compact (e/els → element/elements) at this load
+    // boundary so #makeFields and every downstream reader only ever sees
+    // the canonical shape.
     await this.#makeFields(loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []));
 
     if (this.__DATA__ && this.__DATA__.doc_structure) {
+      const parsed = JSON.parse(this.__DATA__.doc_structure);
       this.__DATA__.doc_structure = JSON.stringify(
-        JSON.parse(
-          this.__DATA__.doc_structure).filter(field => (field.data || {}).name !== ID
-          )
+        parsed.filter(field => (field.data || {}).name !== ID)
       );
     }
 
@@ -195,7 +196,7 @@ export default class CoreDocument {
   }
 
   getDocypeStructure() {
-    return JSON.parse(this.__ENTITY__.doc_structure).filter(field => field.data.name !== ID);
+    return loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []).filter(field => field.data.name !== ID);
   }
 
   async #makeFields(fields = this.getDocypeStructure()) {
@@ -284,10 +285,10 @@ export default class CoreDocument {
     if (validate) await this.validate();
 
     if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
-      await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues, this.__ENTITY__.is_single);
+      await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues(true), this.__ENTITY__.is_single);
       this.__DOCUMENT_NAME__ = this.name;
     } else {
-      const data = this.valuesToSetDataBase;
+      const data = this.valuesToSetDataBase(true);
 
       if (Object.keys(data).length) {
         await loopar.db.updateRow(
@@ -496,7 +497,7 @@ export default class CoreDocument {
   async values(raw=false) {
     const value = async (field) => {
       if (field.element === DESIGNER) {
-        return field.value ? JSON.stringify(await parseDocStructure(field.value, false))/*JSON.stringify(field.value.filter(field => (field.data || []).name !== ID))*/ : "[]";
+        return field.value ? JSON.stringify(await parseDocStructure(field.value, false)) : "[]";
       } else if (field.element === FORM_TABLE || field.element == REVIEW) {
         return await this.getChildValues(field.options);
       }
@@ -518,7 +519,7 @@ export default class CoreDocument {
       } else if(field.element === MARKDOWN){
         return field.value;
       } else {
-        return field.stringifyValue;
+        return field.stringifyValue();
       }
     }
 
@@ -536,13 +537,14 @@ export default class CoreDocument {
   async rawValues() {
     const value = async (field) => {
       if (field.element === DESIGNER) {
-        return field.value ? JSON.stringify(field.value.filter(field => (field.data || []).name !== ID)) : "[]";
+        const fieldValue = loopar.utils.JSONparse(field.value, field.value)
+        return field.value ? JSON.stringify(fieldValue.filter(field => (field.data || []).name !== ID)) : "[]";
       } else if (field.element === FORM_TABLE) {
         return await this.getChildRawValues(field.options);
       } else if (field.element === PASSWORD) {
         return field.value && field.value.length > 0 ? this.protectedPassword : "";
       } else {
-        return field.stringifyValue;
+        return field.stringifyValue();
       }
     }
     return Object.values(this.#fields).reduce(async (acc, cur) => {
@@ -564,14 +566,14 @@ export default class CoreDocument {
     })
   }
 
-  get stringifyValues() {
+  stringifyValues(toSave = false) {
     return Object.values(this.#fields)
       .filter(field => field.element !== FORM_TABLE)
       .filter(field => (field.element === PASSWORD ? field.value != this.protectedPassword : true))
-      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
+      .reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue(toSave) }), {});
   }
 
-  get valuesToSetDataBase() {
+  valuesToSetDataBase(toSave = false) {
     return Object.values(this.#fields).filter(field => {
       if ((this.__IS_NEW__ && field.set_only_time) || field.element === FORM_TABLE) return false;
 
@@ -580,7 +582,7 @@ export default class CoreDocument {
       }
 
       return true;
-    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue }), {});
+    }).reduce((acc, cur) => ({ ...acc, [cur.name]: cur.stringifyValue(toSave) }), {});
   }
 
   get childValuesReq() {

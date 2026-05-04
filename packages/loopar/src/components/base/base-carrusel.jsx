@@ -9,11 +9,11 @@ import {DEFAULTS} from "@@tools/meta-fields"
 const CONTENT_EXIT_DURATION = 300;
 
 const BaseCarrusel = (props) => {
-  const { data = {}, elements, children, content } = props;
+  const { data = {}, node, elements, children, content } = props;
   const { designerMode } = useDesigner();
   
   const [currentIndex, setCurrentIndex] = useState(() => {
-    const saved = loopar.cookie.get(data.key);
+    const saved = loopar.cookie.get(node);
     return saved ? parseInt(saved, 10) : 0;
   });
   const [prevIndex, setPrevIndex] = useState(0);
@@ -23,8 +23,8 @@ const BaseCarrusel = (props) => {
   
   const isTransitioningRef = useRef(false);
   const isExitingRef = useRef(false);
-  const currentIndexRef = useRef(() => {
-    const saved = loopar.cookie.get(data.key);
+  const currentIndexRef = useRef(() => {  
+    const saved = loopar.cookie.get(node);
     return saved ? parseInt(saved, 10) : 0;
   });
   
@@ -86,7 +86,7 @@ const BaseCarrusel = (props) => {
       setPrevIndex(currentIndexRef.current);
       setCurrentIndex(index);
       currentIndexRef.current = index;
-      loopar.cookie.set(data.key, index);
+      loopar.cookie.set(node, index);
       
       setIsExiting(false);
       isExitingRef.current = false;
@@ -99,7 +99,7 @@ const BaseCarrusel = (props) => {
       }, duration);
     }, CONTENT_EXIT_DURATION);
     
-  }, [data.key, data.animation_duration]);
+  }, [node, data.animation_duration]);
 
   const nextSlide = useCallback(() => {
     if (itemCount === 0) return;
@@ -306,7 +306,7 @@ const BaseCarrusel = (props) => {
           if (!element) return null;
           if (element.$$typeof === Symbol.for("react.transitional.element")) return element;
 
-          const key = element.data?.key || `slide-${index}`;
+          const key = element.node || `slide-${index}`;
           
           const isCurrentSlide = index === currentIndex;
           const isActive = isCurrentSlide && !isExiting;
@@ -322,7 +322,7 @@ const BaseCarrusel = (props) => {
             static_content: data.static_content,
             background_color: element.data?.background_color || data.background_color,
             background_blend_mode: element.data?.background_blend_mode || data.background_blend_mode,
-            key,
+            node,
           };
 
           return (

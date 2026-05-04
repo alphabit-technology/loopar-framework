@@ -5,16 +5,17 @@ export default function Slider(props) {
   const defaultElements = [
     {
       element: "banner",
+      node: elementManage.uuid(),
       data: {
         text: "Slide 1",
         color_overlay: "rgba(0,0,0,0.3)",
         background_image:
           "https://fastly.picsum.photos/id/174/800/600.jpg?hmac=cfaSWlI7126OpICaFPhVjWRVaaGrLtpZ7Ly9SksvbTM",
-        key: elementManage.uuid(),
       },
     },
     {
       element: "banner",
+      node: elementManage.uuid(),
       data: {
         text: "Slide 2",
         color_overlay: "rgba(0,0,0,0.3)",
@@ -30,8 +31,8 @@ export default function Slider(props) {
 
     const newSlide = {
       element: "banner",
+      node: elementManage.uuid(),
       data: {
-        key: `slider_${id}`,
         label: `Slide ${sliderCount + 1}`,
         background_image:
           "https://img.freepik.com/free-photo/digital-painting-mountain-with-colorful-tree-foreground_1340-25699.jpg",

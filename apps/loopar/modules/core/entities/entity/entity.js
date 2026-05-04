@@ -1,5 +1,6 @@
-import { BaseDocument, fileManage, loopar, Helpers } from "loopar";3
+import { BaseDocument, fileManage, loopar, Helpers, pruneDocStructure } from "loopar";
 import { pluralize } from "inflection";
+
 
 export default class Entity extends BaseDocument {
   __CORE_FILES__ = [];
@@ -369,9 +370,10 @@ export default class Entity extends BaseDocument {
           }, position: 'before'
         });
       }
-    } 
+    }
 
     await fixElements(this.doc_structure);
+    this.doc_structure = pruneDocStructure(this.doc_structure);
   }
 
   async delete() {

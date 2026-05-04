@@ -4,6 +4,7 @@ import { useDesigner } from "@context/@/designer-context";
 import { DesignElement } from "./src/DesignElement.jsx";
 import { Meta } from "./src/Meta.jsx"
 import { useWorkspace } from "@workspace/workspace-provider";
+import { getNodeKey } from "@global/prune-doc-structure";
 
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 
@@ -14,10 +15,11 @@ export default function MetaComponentBase ({ elements=[], parent, className, par
     if(meta && meta.$$typeof === Symbol.for("react.transitional.element")){
       return meta;
     }
-    
-    const hasKey = meta.data?.key != null && String(meta.data.key).length > 0;
+
+    const nodeKey = getNodeKey(meta);
+    const hasKey = nodeKey != null && String(nodeKey).length > 0;
     const key = hasKey
-      ? `${String(meta.data.key)}${isDesigner ? "-d" : ""}`
+      ? `${String(nodeKey)}${isDesigner ? "-d" : ""}`
       : `${String(parentKey ?? "root")}${isDesigner ? "d" : ""}-${index}`;
 
     return (

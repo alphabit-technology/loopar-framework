@@ -6,15 +6,13 @@ import loopar from "loopar";
 import MetaComponent from "@meta-component";
 import { useDragAndDrop } from "./DragAndDropContext";
 import { DroppableContextProvider, useDroppable } from "./DroppableContext";
+import { getNodeKey } from "@global/prune-doc-structure";
 const UP = 'up';
 import { isEqual } from "es-toolkit/predicate";
 
-function DroppableContainer({ data = {}, children, className, Component = "div", ...props }) {
+function DroppableContainer({ data = {}, node, children, className, Component = "div", ...props }) {
   const [elements, setElements] = useState(props.elements || []);
   const [position, setPosition] = useState(null);
-  // Local tick that increments when *this* droppable is the active dropZone
-  // and the global movement publishes. Replaces consuming `movement` from
-  // context state, which would re-render every droppable on the page.
   const [movementTick, setMovementTick] = useState(0);
 
   const {
@@ -29,10 +27,10 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   const {droppableEvents, dragOver, __REFS__} = useDroppable();
 
-  const dropZoneRef = useRef(); // DOM ref of the container element
-  const dataKeyRef = useRef(data.key);
+  const dropZoneRef = useRef();
+  const dataKeyRef = useRef(node);
   const activeDropZoneRef = useRef(dropZone);
-  dataKeyRef.current = data.key;
+  dataKeyRef.current = node;
   activeDropZoneRef.current = dropZone;
   const prevElements = useRef(props.elements);
   const dragSyncRef = useRef({
@@ -48,9 +46,6 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     elements,
   };
 
-  // Subscribe to global movement, but only re-render if this droppable is
-  // currently the active dropZone. Inactive droppables stay completely
-  // dormant during a drag — this is the core win of the refactor.
   useEffect(() => {
     if (!subscribeToMovement) return;
     return subscribeToMovement(() => {
@@ -71,11 +66,13 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
   }, [props.elements]);
 
   const setElement = (element, afterAt, current) => {
-    current = currentDragging?.key;
+    current = currentDragging?.node;
 
     const newElements = [...elements].filter(el => {
-      const key = el.data?.key;
-      return key && key != current;
+      if (!el) return false;
+      if (el.$$typeof === Symbol.for('react.transitional.element')) return false;
+      const k = getNodeKey(el);
+      return k && k != current;
     });
 
     element && newElements.splice(afterAt, 0, element);
@@ -83,42 +80,31 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
     handleSetElements(newElements);
   };
 
-  // Cleanup pass: when dropZone transitions in/out, drop any stale React
-  // elements (placeholder leftovers) and remove the dragged item from this
-  // container's local list. This used to be combined with the globalPosition
-  // publish below, which made the whole filter+isEqual run on every position
-  // tick — wasted work for the inactive droppables.
   useEffect(() => {
     if (dropZone == null) return;
     const { dragging: d, movement: m, currentDragging: cd, elements: els } = dragSyncRef.current;
     if (!d || !m) return;
     const cleared = els.filter(el =>
       el.$$typeof !== Symbol.for('react.transitional.element') &&
-      (cd ? el.data?.key !== cd.key : true)
+      (cd ? getNodeKey(el) !== cd.node : true)
     );
     handleSetElements(cleared);
-  }, [dropZone, data.key]);
+  }, [dropZone, node]);
 
-  // Publish the active droppable's position to the global insertion target.
-  // Only fires when this droppable is the dropZone and position is set —
-  // independent of the cleanup pass above.
   useEffect(() => {
-    if (dropZone === data.key && position != null) {
+    if (dropZone === node && position != null) {
       setGlobalPosition(position);
     }
-  }, [dropZone, position, data.key, setGlobalPosition]);
+  }, [dropZone, position, node, setGlobalPosition]);
 
-  // Rects must be read fresh every frame: once the placeholder is inserted,
-  // sibling DOM nodes shift and a memoized snapshot would point getIndex at
-  // stale positions, causing the placeholder to drift away from the cursor.
   const getBrothers = useCallback((current) => {
     return Object.entries(__REFS__)
-      .filter(([key, el]) => el && key !== current)
+      .filter(([node, el]) => el && node !== current)
       .map(([, el]) => el.getBoundingClientRect());
   }, [__REFS__]);
 
-  const getIndex = useCallback((currentKey) => {
-    const brothers = getBrothers(currentKey);
+  const getIndex = useCallback((currentNode) => {
+    const brothers = getBrothers(currentNode);
     const movement = movementRef?.current;
 
     if (!movement) return brothers.length;
@@ -148,44 +134,33 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
 
   useEffect(() => {
     if(!dragging || !movementRef?.current) return
-    if(!dropZone || dropZone !== data.key || position == null) return;
-    if (!currentDragging || currentDragging.key == data?.key) return;
+    if(!dropZone || dropZone !== node || position == null) return;
+    if (!currentDragging || currentDragging.node == node) return;
 
     const { size } = currentDragging;
     const { height } = size;
 
     setElement(
       <div
-        key={currentDragging.key}
+        key={currentDragging.node}
         style={{ maxHeight: height }}
         className={`${currentDragging.className} pointer-events-none opacity-60 border-2 border-dashed border-primary/70`}
         dangerouslySetInnerHTML={{ __html: currentDragging.ref?.innerHTML }}
       />,
       position
     );
-  }, [position, dropZone, data.key, currentDragging, dragging, movementRef]);
+  }, [position, dropZone, node, currentDragging, dragging, movementRef]);
 
   useEffect(() => {
     if(!dragging) return;
 
-    if(dropZone && dropZone == data.key && currentDragging) {
-      if (currentDragging.key === data.key) return;
+    if(dropZone && dropZone == node && currentDragging) {
+      if (currentDragging.node === node) return;
 
-      const i = getIndex(currentDragging.key);
+      const i = getIndex(currentDragging.node);
       position !== i && setPosition(i);
     }
-    // movementTick is the trigger: it only increments when this droppable
-    // is active, so we recompute the placeholder index in sync with cursor
-    // movement without re-rendering siblings.
-    //
-    // IMPORTANT: do NOT add `position` (or `getIndex`) to the dep array. The
-    // setPosition call below would re-trigger this effect, and getIndex —
-    // which reads live brother rects — returns different values once the
-    // placeholder shifts the layout. That feedback loop blew the React max
-    // update depth on every drag. The closure's `position` is correct
-    // because each movementTick re-creates the closure with the latest
-    // value before this effect runs.
-  }, [movementTick, dropZone, currentDragging, dragging, data.key]);
+  }, [movementTick, dropZone, currentDragging, dragging, node]);
 
   const renderizableProps = loopar.utils.renderizableProps(props);
 
@@ -209,14 +184,14 @@ function DroppableContainer({ data = {}, children, className, Component = "div",
       {children}
       <MetaComponent
         elements={elements}
-        parentKey={data.key}
+        parentKey={node}
       />
     </div>
   );
 }
 
 export function Droppable(props) {
-  const {data = {}, children, className, elements, Component = "div"} = props;
+  const {node, children, className, elements, Component = "div"} = props;
   const { designerMode, designerModeType } = useDesigner();
   const hidden = useHidden();
   const renderizableProps = loopar.utils.renderizableProps(props);
@@ -230,7 +205,7 @@ export function Droppable(props) {
 
   return (
     <C {...(C.toString() == 'Symbol(react.fragment)' ? {} : { ...renderizableProps, className: className })}>
-      {children} <MetaComponent elements={elements} parentKey={data.key} />
+      {children} <MetaComponent elements={elements} parentKey={node} />
     </C>
   );
 }

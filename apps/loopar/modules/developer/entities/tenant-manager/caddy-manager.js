@@ -46,7 +46,7 @@ export default class CaddyManager {
     const started = await this._startCaddy(this.httpPort, existingRoutes);
     if (!started) throw new Error("Failed to start Caddy.");
 
-    // If we couldn't get :80, set up OS redirect so domains work without port
+    // If couldn't get :80, set up OS redirect so domains work without port
     if (this.httpPort !== 80) {
       await this._ensurePort80Redirect(this.httpPort);
     }
@@ -75,15 +75,22 @@ export default class CaddyManager {
       const platform = os.platform();
       if (platform === 'darwin') {
         await execAsync('brew install caddy');
+        // brew may have started Caddy as a service — stop it so Loopar can manage
+        try { await execAsync('brew services stop caddy'); } catch (_) {}
       } else if (platform === 'linux') {
         await execAsync('sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl');
         await execAsync('curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/gpg.key" | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg');
         await execAsync('curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt" | sudo tee /etc/apt/sources.list.d/caddy-stable.list');
         await execAsync('sudo apt update && sudo apt install -y caddy');
+        // apt enables and starts caddy.service by default with the stock Caddyfile.
+        // That competes with Loopar's CaddyManager (different config, no admin
+        // API). Disable it so only the Loopar-managed Caddy runs.
+        try { await execAsync('sudo systemctl stop caddy');    } catch (_) {}
+        try { await execAsync('sudo systemctl disable caddy'); } catch (_) {}
       } else {
         throw new Error(`Unsupported platform: ${platform}`);
       }
-      console.log("✅ Caddy installed");
+      console.log("✅ Caddy installed (and detached from system service manager so Loopar can manage it)");
       return true;
     } catch (e) {
       console.error("Failed to install Caddy:", e);
@@ -105,13 +112,17 @@ export default class CaddyManager {
         handle: [{
           handler: "reverse_proxy",
           upstreams: [{ dial: `localhost:${tenantPort}` }],
-          // Inform the upstream app of the real scheme/host so it builds URLs correctly
+          // Inform the upstream app of the real scheme/host so it builds URLs
+          // correctly. Use Caddy placeholders so HTTP and HTTPS both report
+          // accurately — hardcoding "http"/"80" breaks HTTPS because the
+          // upstream thinks the connection is plain HTTP and can issue
+          // self-redirects to HTTPS that the browser is already on.
           headers: {
             request: {
               set: {
-                "X-Forwarded-Proto": ["http"],
+                "X-Forwarded-Proto": ["{http.request.scheme}"],
                 "X-Forwarded-Host":  [domain],
-                "X-Forwarded-Port":  ["80"],
+                "X-Forwarded-Port":  ["{http.request.port}"],
                 "X-Real-IP":         ["{http.request.remote.host}"]
               }
             }
@@ -245,8 +256,14 @@ export default class CaddyManager {
   }
 
   async _stopCaddy() {
-    try { await execAsync('caddy stop'); }
-    catch (_) { try { await execAsync('brew services stop caddy'); } catch (_) {} }
+    // Try every shutdown path because we don't know how this Caddy was started:
+    //   1. caddy stop — our own admin-API-driven instance
+    //   2. systemctl stop — apt-installed systemd service (Linux)
+    //   3. brew services stop — Homebrew-managed (macOS)
+    // All three may legitimately be no-ops; swallow errors.
+    try { await execAsync('caddy stop'); } catch (_) {}
+    try { await execAsync('sudo systemctl stop caddy'); } catch (_) {}
+    try { await execAsync('brew services stop caddy'); } catch (_) {}
     await new Promise(r => setTimeout(r, 1000));
   }
 

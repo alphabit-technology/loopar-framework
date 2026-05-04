@@ -8,12 +8,9 @@ import * as simpleIcons from 'simple-icons';
 import { fileManage } from "../file-manage.js";
 import { elementsDict, elementsDefinition } from "../global/element-definition.js";
 import {PermissionManager} from "../auth/PermissionManager.js"
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync } from "fs";
 
-
-import inflection, { titleize, singularize } from "inflection";
-
-const toLooparKey = (name) => name.charAt(0).toLowerCase() + name.slice(1);
+import inflection from "inflection";
 
 export class Builder {
   async buildRefs() {
@@ -39,9 +36,8 @@ export class Builder {
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
       const isChild = doc.is_child ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
-      const fields = typeof doc.doc_structure === "object" 
-        ? doc.doc_structure 
-        : JSON.parse(doc.doc_structure || "[]");
+      const fields = this.utils.JSONparse(doc.doc_structure, []);
+        
       const id = parseInt(doc.id) || 0;
   
       const appKey = inflection.transform(doc.__APP__, ['capitalize', 'dasherize']).toLowerCase();
@@ -231,7 +227,7 @@ export class Builder {
       for (const g of groupList) {
         const modulesGroup = { name: g.name, description: g.description, modules: [] };
 
-        const moduleList = await this.db.getList(
+        const moduleList = await this.db.getAll(
           'Module',
           ['name', 'icon', 'description', 'module_group'],
           {module_group: g.name, in_sidebar: 1}

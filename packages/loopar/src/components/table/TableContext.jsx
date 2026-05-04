@@ -63,7 +63,7 @@ export const TableProvider = ({
       elements
         .map((el) => [{ ...el }, ...parseElements(el.elements || [])])
         .flat();
-    const STRUCTURE = JSON.parse(Document.Entity?.doc_structure || "[]");
+    const STRUCTURE = loopar.utils.JSONparse(Document.Entity?.doc_structure, []);
     return parseElements(STRUCTURE);
   }, [Document.Entity]);
 
