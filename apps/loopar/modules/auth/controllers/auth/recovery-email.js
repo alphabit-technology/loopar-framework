@@ -4,7 +4,7 @@ const APP_URL = process.env.DOMAIN || 'localhost:3000';
 
 export async function sendPasswordResetEmail(user, rawToken) {
 
-  const resetUrl = `https://${APP_URL}/auth/resetPassword?token=${rawToken}`;
+  const resetUrl = `https://${APP_URL}/auth/recoveryPassword?token=${rawToken}`;
 
   await loopar.mail.send({
     to: user.email,
