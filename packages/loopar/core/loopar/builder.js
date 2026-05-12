@@ -24,13 +24,25 @@ export class Builder {
 
       const declared = getFields(fields).filter(field => {
         const def = elementsDict[field.element]?.def || {};
-        return def.isWritable && !!field.data.name && !field.element.includes(FORM_TABLE);
+        return def.isWritable && !!field.data.name;
       }).map(field => field.data.name);
 
       const out = ["id", ...declared];
       if (auditable) out.push(...AUDIT_COLUMN_NAMES);
 
       return [...new Set(out)];
+    }
+
+    // FORM_TABLE fields live in __FIELDS__ so the save chain (childValuesReq
+    // → #makeFields → DynamicField) picks them up, but they have no
+    // physical column in the parent table. DB-column-aware consumers
+    // (testFramework, SELECT-building helpers) read this list to skip them.
+    const getFormTableFields = (fields) => {
+      const getAll = fields => fields.reduce((acc, field) =>
+        acc.concat(field, ...getAll(field.elements || [])), []);
+      return getAll(fields)
+        .filter(field => field.element === FORM_TABLE && !!field.data?.name)
+        .map(field => field.data.name);
     }
   
     const refs = {};
@@ -70,7 +82,8 @@ export class Builder {
         is_audited: auditable ? 1 : 0,
         __MODULE__: doc.__MODULE__,
         __TYPE__: doc.type,
-        __FIELDS__: getEntityFields(fields, { auditable })
+        __FIELDS__: getEntityFields(fields, { auditable }),
+        __FORM_TABLE_FIELDS__: getFormTableFields(fields)
       };
   
       const key = this.utils.toEntityKey(doc.name);
@@ -90,7 +103,8 @@ export class Builder {
           __ID__: doc.id,
           __TYPE__: doc.type,
           __MODULE__: doc.__MODULE__,
-          __FIELDS__: getEntityFields(fields, { auditable })
+          __FIELDS__: getEntityFields(fields, { auditable }),
+          __FORM_TABLE_FIELDS__: getFormTableFields(fields)
         };
       }
     }

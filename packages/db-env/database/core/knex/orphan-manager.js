@@ -356,13 +356,6 @@ export class OrphanManager {
     return cols;
   }
 
-  /**
-   * Map a raw SQL column type back to one of our TYPES tokens. Used by
-   * orphan reconciliation to figure out a sane default when restoring a
-   * detached column. Returns DB-native tokens consistent with TYPES
-   * (VARCHAR, DATETIME, etc.) — never Sequelize-isms like 'DATEONLY' /
-   * 'STRING'.
-   */
   sqlTypeToLooparlFormat(rawType) {
     const t = (rawType || "").toUpperCase();
     if (t.includes("INT")) return "INTEGER";

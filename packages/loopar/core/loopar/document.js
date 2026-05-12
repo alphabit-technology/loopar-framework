@@ -18,7 +18,6 @@ export class Document extends Console {
    * @returns 
    */
   async getDocument(document, name, data = null, { ifNotFound = 'throw', parse = false } = {}) {
-    console.log(["On get Document", document, name]);
     return await documentManage.getDocument(document, name, data, { ifNotFound, parse });
   }
 

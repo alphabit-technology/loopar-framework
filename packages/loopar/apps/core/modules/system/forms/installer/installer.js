@@ -181,15 +181,25 @@ export default class Installer extends BaseDocument {
 
     const installEntity = async (e, ent) => {
       const [constructor, name] = e.split(':');
-      const exist = await loopar.db.hasEntity(constructor, name);
       const owner = entryAppOwner(ent, e);
 
       if(!owner || owner == this.app_name){
         const entityData = await this.getDocumentData(name, entryRoot(ent, e));
         if(entityData){
-          const doc = exist ? await loopar.getDocument(constructor, name, entityData) : await loopar.newDocument(constructor, entityData);
-          console.log([exist ? "Updating......." : "Installing.......", constructor, name]);
-          (!exist || reinstall) && await doc.save({ validate: false, reload: false });
+          // Use getDocument (which filters soft-deleted) as the single
+          // existence predicate instead of hasEntity (which counts all
+          // rows including tombstoned ones). Otherwise a row left with
+          // __deleted_at__ set by a previous install lands in the
+          // mismatch: hasEntity says "yes, update it", getDocument can't
+          // find it, the load throws. Falling through to newDocument on
+          // null lets insertRow's auto-restore (Task #114) clear the
+          // tombstone and write the fresh payload.
+          let doc = await loopar.getDocument(constructor, name, entityData, { ifNotFound: null });
+          const wasFound = !!doc;
+          if (!doc) doc = await loopar.newDocument(constructor, entityData);
+
+          console.log([wasFound ? "Updating......." : "Installing.......", constructor, name]);
+          (!wasFound || reinstall) && await doc.save({ validate: false, reload: false });
         }else{
           console.log([`No data found for ${constructor}:${name}, skipping...`]);
         }

@@ -4,7 +4,7 @@ import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
 import { Op } from 'db-env';
 
-function combineSequelizeConditions(...conditions) {
+function combineSConditions(...conditions) {
   const validConditions = conditions.filter(cond => {
     if (!cond || typeof cond !== 'object' || Array.isArray(cond)) {
       return false;
@@ -129,7 +129,7 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = combineSequelizeConditions(this.buildCondition(q), filters);
+    const condition = combineSConditions(this.buildCondition(q), filters);
     
     pagination.totalRecords = await this.records(condition);
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
@@ -177,7 +177,7 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = combineSequelizeConditions(this.buildCondition(q), filters);
+    const condition = combineSConditions(this.buildCondition(q), filters);
 
     pagination.totalRecords = await this.records(condition);
 

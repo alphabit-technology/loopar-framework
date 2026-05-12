@@ -384,9 +384,9 @@ export class KnexORM extends Connector {
   async getRow(...args) {
     const a = this.#normArgs(["table", "id", "fields"], args);
     const table  = a.table;
-    const id     = a.id;
+    const id = a.id;
     const fields = Array.isArray(a.fields) ? a.fields : ["*"];
-    const isSingle       = a.isSingle       ?? false;
+    const isSingle = a.isSingle ?? false;
     const includeDeleted = a.includeDeleted ?? false;
 
     this.setPage(1);

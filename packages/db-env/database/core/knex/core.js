@@ -70,7 +70,6 @@ function buildColumn(table, field, { alter = false } = {}) {
   alter && col.alter();
 }
 
-/** Same as sequelize/core.js:safeDefaultForType — used by orphan padding. */
 export function safeDefaultForType(rawType) {
   const t = (rawType || "").toLowerCase();
   if (
@@ -429,6 +428,26 @@ export default class Core {
       }
     });
 
+    // Backfill audit timestamps for rows that existed before the ALTER.
+    // The columns were added nullable to keep SQLite happy (it rejects
+    // CURRENT_TIMESTAMP as a default in ALTER ADD COLUMN); new inserts
+    // already get the value from insertRow, but pre-existing rows need
+    // an explicit UPDATE so __created_at__ / __updated_at__ aren't NULL.
+    if (addAudit) {
+      const needsCreated = !existingByName.has("__created_at__");
+      const needsUpdated = !existingByName.has("__updated_at__");
+      if (needsCreated || needsUpdated) {
+        const updates = {};
+        if (needsCreated) updates.__created_at__ = this.qx().fn.now();
+        if (needsUpdated) updates.__updated_at__ = this.qx().fn.now();
+        await this.qx()(literalName).update(updates);
+        console.log([
+          `[alterTable] ${literalName}: backfilled audit timestamps for existing rows`,
+          Object.keys(updates),
+        ]);
+      }
+    }
+
     const newFieldNames = new Set(newFields.map(f => f.data?.name?.toLowerCase()));
     const ensureUnique  = uniqueDeclared.filter(
       n => !newFieldNames.has(n?.toLowerCase())
@@ -485,12 +504,25 @@ export default class Core {
     };
 
     ensure("__created_at__", (alter) => {
-      const c = table.timestamp("__created_at__").defaultTo(knex.fn.now());
-      if (alter) c.alter();
+      // SQLite (and some MySQL versions) reject CURRENT_TIMESTAMP as a
+      // default in ALTER ADD COLUMN — only constants are allowed. On
+      // ADD: nullable, no default; alterTable backfills existing rows
+      // afterwards via UPDATE. On .alter(): the column already exists,
+      // SQLite emulates as table-rebuild which accepts fn defaults.
+      if (alter) {
+        const c = table.timestamp("__created_at__").defaultTo(knex.fn.now());
+        c.alter();
+      } else {
+        table.timestamp("__created_at__").nullable();
+      }
     });
     ensure("__updated_at__", (alter) => {
-      const c = table.timestamp("__updated_at__").defaultTo(knex.fn.now());
-      if (alter) c.alter();
+      if (alter) {
+        const c = table.timestamp("__updated_at__").defaultTo(knex.fn.now());
+        c.alter();
+      } else {
+        table.timestamp("__updated_at__").nullable();
+      }
     });
     ensure("__deleted_at__", (alter) => {
       const c = table.timestamp("__deleted_at__").nullable();

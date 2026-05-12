@@ -100,9 +100,6 @@ export default class ContactMessage extends BaseDocument {
 
     const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
 
-    // Backend-agnostic: rawQuery() returns flat rows on both Sequelize and Knex.
-    // Switched from named (:ip) to positional (?) placeholders since named
-    // placeholders are Sequelize-specific.
     const result = await loopar.db.rawQuery(
       `SELECT COUNT(*) as count FROM ${loopar.db.tableName('Contact Message')}
        WHERE ${loopar.db.escapeId('ip_address')} = ?

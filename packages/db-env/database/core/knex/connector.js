@@ -39,7 +39,7 @@ export default class Connector extends Core {
   }
 
   /**
-   * Connect to MySQL/MariaDB. Same fall-back chain as the Sequelize side:
+   * Connect to MySQL/MariaDB. Same fall-back chain:
    * if the named DB doesn't exist yet we retry against information_schema so
    * we can run CREATE DATABASE; if even that fails we drop to SQLite.
    */
@@ -329,8 +329,8 @@ export default class Connector extends Core {
       "__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
     ]);
 
-    const testFields = async (entityName, columns) => {
-      const probedCols = columns.filter(c => !FRAMEWORK_OWNED.has(c));
+    const testFields = async (entityName, columns, skip) => {
+      const probedCols = columns.filter(c => !FRAMEWORK_OWNED.has(c) && !skip.has(c));
       if (!probedCols.length) return true;
 
       try {
@@ -348,8 +348,12 @@ export default class Connector extends Core {
       const ref = loopar.getRef(entity.name);
       if (ref.is_single || ref.is_builder) continue;
 
-      const exists  = await this.hasTable(entity.name);
-      const fieldsOk = await testFields(entity.name, ref.__FIELDS__);
+      const exists   = await this.hasTable(entity.name);
+      // FORM_TABLE fields live in __FIELDS__ for the save chain but have
+      // no physical column on the parent table — they're materialised as
+      // rows in the related child table. Skip them during the probe.
+      const skipCols = new Set(ref.__FORM_TABLE_FIELDS__ || []);
+      const fieldsOk = await testFields(entity.name, ref.__FIELDS__, skipCols);
 
       if (!exists || !fieldsOk) {
         loopar.printError(`Loopar framework is not installed (failed on: ${entity.name})`);
