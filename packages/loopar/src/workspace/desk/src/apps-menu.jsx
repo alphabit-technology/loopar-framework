@@ -10,7 +10,7 @@ import {Link} from "@link"
 import { buttonVariants } from "@cn/components/ui/button"
 import { 
   ComponentIcon, CircuitBoardIcon, FilesIcon, LayoutGridIcon, Settings2Icon, 
-  User2Icon, CogIcon, ServerCogIcon, BrushIcon, LockKeyhole, ChartSpline
+  User2Icon, CogIcon, ServerCogIcon, BrushIcon, LockKeyhole, ChartSpline, StarIcon
 } from "lucide-react"
 
 const MakeButton = ({ Icon, text, link}) => (
@@ -38,7 +38,7 @@ export function AppsMenu() {
           <span className="sr-only">Home</span>
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-card">
         <div className="grid grid-cols-2 p-2" onClick={() => setOpen(false)}>
           <MakeButton Icon={BrushIcon} text="Entities" link="/desk/Entity/list"/>
           <MakeButton Icon={CogIcon} text="Builders" link="/desk/Builder/list"/>
@@ -50,6 +50,7 @@ export function AppsMenu() {
           <MakeButton Icon={ChartSpline} text="Analytics" link="/desk/Analytics%20Dashboard/view" />
           <MakeButton Icon={User2Icon} text="Users" link="/desk/user/list" />
           <MakeButton Icon={LockKeyhole} text="Auth Manager" link="/desk/Role Permission Manager/view" />
+          <MakeButton Icon={StarIcon} text="Reviews" link="/desk/Review/list" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
