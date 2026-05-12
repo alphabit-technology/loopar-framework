@@ -1,6 +1,6 @@
 'use strict';
 
-import {SequelizeORM} from 'db-env';
+import {KnexORM} from 'db-env';
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
@@ -17,6 +17,7 @@ import {EmailService} from "./email.js"
 import { cacheManager } from './cache/cache-manager.js';
 import { RealtimeManager } from './realtime/RealtimeManager.js';
 import { HookManager } from "./HookManager.js";
+import { setupDocumentHistory } from "./document/document-history.js";
 import argon2 from 'argon2';
 
 
@@ -33,41 +34,36 @@ export class Loopar extends Document {
   constructor() {
     super("Loopar");
     
+    this.ORM = KnexORM;
     this.dateUtils = dateUtils;
     this.server = new Server();
-    this.db = new SequelizeORM();
+    this.db = new this.ORM();
+
+    setupDocumentHistory(this, KnexORM);
   }
 
   hook(document, event, callback) {
     this.hookManager.register(document, event, callback);
   }
 
-  /* emit(event, payload = null) {
+  emit(event, payload = null) {
     const [room, action] = event.includes(":")
       ? event.split(":")
       : ["__global__", event];
   
-    RealtimeManager.emit(this.tenantId, room, action, payload);
-  } */
-
-    emit(event, payload = null) {
-      const [room, action] = event.includes(":")
-        ? event.split(":")
-        : ["__global__", event];
-    
-      const data = {
-        ...(payload && typeof payload === 'object' ? payload : { data: payload }),
-        user: this.auth?.user() ?? null,
-      };
-    
-      RealtimeManager.emit(this.tenantId, room, action, data);
-    }
+    const data = {
+      ...(payload && typeof payload === 'object' ? payload : { data: payload }),
+      user: this.auth?.user() ?? null,
+    };
+  
+    RealtimeManager.emit(this.tenantId, room, action, data);
+  }
 
   async init({
     tenantId,
     appsBasePath
   }){
-    this.hookManager.attach(SequelizeORM);
+    this.hookManager.attach(this.ORM);
     this.tenantId = tenantId;
     this.tenantPath = this.makePath(this.pathRoot, "sites", tenantId);
     this.pathCore = `${process.cwd()}/packages/loopar`
@@ -219,6 +215,10 @@ export class Loopar extends Document {
     const err = new Error(error.message);
     err.code = error.code;
     err.redirect = redirect;
+    // With redirects are always auth / session / csrf failures:
+    // force hard reload to discard client state (csrf, user,
+    // cached permissions) and do a clean bootstrap.
+    err.hardRedirect = redirect ? true : false;
 
     this.#installingApp = null;
     throw err;
@@ -277,9 +277,6 @@ export class Loopar extends Document {
     const actions = new Set();
     let proto = ControllerClass.prototype;
     let isOwner = true;
-    // currentFilter: restriction accumulated along the chain
-    // null = no restriction yet
-    // string[] = the most restrictive intersection so far
     let currentFilter = null;
   
     while (
@@ -307,20 +304,15 @@ export class Loopar extends Document {
         }
       }
   
-      // Update accumulated filter:
-      // intersect current filter with this level's inheritedActions
       const thisInherited = proto.constructor?.inheritedActions ?? null;
   
       if (isOwner) {
-        // First parent level — seed the filter from the owner's declaration
         currentFilter = thisInherited;
       } else if (thisInherited !== null) {
-        // Intersect — most restrictive wins
         currentFilter = currentFilter === null
           ? thisInherited
           : currentFilter.filter(a => thisInherited.includes(a));
       }
-      // If thisInherited === null → keep currentFilter as is (no new restriction)
   
       proto   = Object.getPrototypeOf(proto);
       isOwner = false;

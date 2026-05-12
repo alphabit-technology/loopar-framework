@@ -1,29 +1,31 @@
-import { loopar, fileManage, BaseDocument } from "loopar";
+import { loopar, BaseDocument } from "loopar";
 
 export default class Connector extends BaseDocument {
   async connect() {
-    const values = await this.values();
+    const values = await this.values(true);
     const dbConfig = loopar.getDbConfig();
     const originalConfig = dbConfig.connection || {};
+    const dialect = values.dialect || values.database;
+    
+    const { dialect: _dialect, database: _legacyDialect, ...connectionValues } = values;
 
     Object.assign(dbConfig, {
-      dialect: values.database,
-      connection: Object.assign(originalConfig, values)
+      dialect,
+      connection: Object.assign(originalConfig, connectionValues),
     });
 
     await loopar.setDbConfig(dbConfig);
-
     await loopar.db.initialize();
 
     if (await loopar.db.testServer()) {
       await loopar.initialize();
       return true;
-    } else {
-      loopar.throw({
-        message: `Could not connect to the database server<br><br>
-If you are using a remote server, check that your firewall is configured properly.<br><br>
-If you are using a local server, check that your server is running and that your credentials are correct.`
-      });
     }
+
+    loopar.throw({
+      message: `Could not connect to the database server.<br><br>
+        Check that the server is running, the credentials are correct,
+        and (for remote servers) that the firewall allows the connection.`,
+    });
   }
 }

@@ -1,41 +1,83 @@
-import React, { useEffect, useState, useRef, MouseEvent } from 'react';
+import React, { useEffect, useReducer, useRef, MouseEvent } from 'react';
 import { ToggleGroup, ToggleGroupItem } from "@cn/components/ui/toggle-group";
-import { loopar } from "loopar";
 import dayjs from "dayjs";
-
-/*interface MarkPosition {
-  x: number;
-  y: number;
-}*/
 
 interface PropsInterface {
   handleChange: Function,
-  value: string
+  value: string | Date | null
 }
 
-const getTime = (time: string) => {
-  if (!time || typeof time == "object") return dayjs(time).format("HH:mm");
-  time = dayjs(time).format("HH:mm");
+const parseTime = (time: string | Date | null | undefined): { hour24: number; minute: number } => {
+  if (!time) return { hour24: 0, minute: 0 };
 
-  const date = new Date();
-  const [hours = 0, minutes = 0] = time.split(":").map((value) => parseInt(value) || 0);
-  date.setHours(hours);
-  date.setMinutes(minutes);
+  if (typeof time === "string" && /^\d{1,2}:\d{2}/.test(time)) {
+    const [h, m] = time.split(":");
+    return {
+      hour24: Math.min(23, Math.max(0, parseInt(h) || 0)),
+      minute: Math.min(59, Math.max(0, parseInt(m) || 0)),
+    };
+  }
 
-  return loopar.utils.formatTime(date);
-}
+  const parsed = dayjs(time);
+  if (parsed.isValid()) return { hour24: parsed.hour(), minute: parsed.minute() };
+
+  return { hour24: 0, minute: 0 };
+};
+
+type SelectorType = "Hours" | "Minutes";
+
+type State = {
+  hour24: number;
+  minute: number;
+  selector: SelectorType | null;
+  dragging: boolean;
+};
+
+type Action =
+  | { type: "SET_HOUR_FROM_CLOCK"; clockHour: number }
+  | { type: "SET_MINUTE"; minute: number }
+  | { type: "SET_AMPM"; amPm: "AM" | "PM" }
+  | { type: "BEGIN_DRAG"; selector: SelectorType }
+  | { type: "END_DRAG" };
+
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "SET_HOUR_FROM_CLOCK": {
+      const isPm = state.hour24 >= 12;
+      const ch = action.clockHour % 12;
+      const hour24 = isPm ? ch + 12 : ch;
+      return hour24 === state.hour24 ? state : { ...state, hour24 };
+    }
+    case "SET_MINUTE": {
+      const minute = Math.min(59, Math.max(0, action.minute));
+      return minute === state.minute ? state : { ...state, minute };
+    }
+    case "SET_AMPM": {
+      const isPm = state.hour24 >= 12;
+      if (action.amPm === "PM" && !isPm) return { ...state, hour24: state.hour24 + 12 };
+      if (action.amPm === "AM" && isPm) return { ...state, hour24: state.hour24 - 12 };
+      return state;
+    }
+    case "BEGIN_DRAG":
+      return { ...state, dragging: true, selector: action.selector };
+    case "END_DRAG":
+      return state.dragging ? { ...state, dragging: false, selector: null } : state;
+  }
+};
+
+const init = (value: string | Date | null | undefined): State => ({
+  ...parseTime(value),
+  selector: null,
+  dragging: false,
+});
 
 const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const { handleChange, value } = props;
-  const [hours, minutes] = getTime(value).split(":").map(value => parseInt(value));
-
-  const [AmPm, setAmPm] = useState<string>(hours > 12 ? "PM" : "AM");
-  const [selectorType, setSelectorType] = useState<string | null>(null);
-  const [selectedHour, setSelectedHour] = useState<number>(hours);
-  const [selectedMinute, setSelectedMinute] = useState<number>(minutes);
-  const [dragging, setDragging] = useState<boolean>(false);
-
+  const [state, dispatch] = useReducer(reducer, value, init);
+  const userInteracted = useRef<boolean>(false);
   const clockRef = useRef<HTMLDivElement>(null);
+
+  const amPm = state.hour24 >= 12 ? "PM" : "AM";
 
   const [clockSize, markSize] = [200, 20];
   const clockRadius = clockSize / 2;
@@ -43,105 +85,54 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const hourColor = "bg-slate-500";
   const minuteColor = "bg-green-500";
 
-  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+  const computeAction = (e: MouseEvent<HTMLDivElement>, selector: SelectorType): Action | null => {
+    if (!clockRef.current) return null;
+    const rect = clockRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) + Math.PI / 2;
+    const degrees = (angle * (180 / Math.PI) + 360) % 360;
+
+    if (selector === "Minutes") {
+      const minute = Math.round(degrees / 6) % 60;
+      return { type: "SET_MINUTE", minute: isNaN(minute) ? 0 : minute };
+    }
+    const clockHour = Math.round(degrees / 30) % 12 || 12;
+    return { type: "SET_HOUR_FROM_CLOCK", clockHour: isNaN(clockHour) ? 12 : clockHour };
+  };
+
+  const handleMouseDown = (selector: SelectorType) => (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const typeSelector = e.currentTarget.getAttribute("type-selector");
-    if (typeSelector) {
-      setSelectorType(typeSelector);
-    }
-    setDragging(true);
-    updateHourFromMouseEvent(e);
+    userInteracted.current = true;
+    dispatch({ type: "BEGIN_DRAG", selector });
+    const action = computeAction(e, selector);
+    if (action) dispatch(action);
   };
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (dragging && clockRef.current) {
-      updateHourFromMouseEvent(e);
-    }
+    if (!state.dragging || !state.selector) return;
+    const action = computeAction(e, state.selector);
+    if (action) dispatch(action);
   };
 
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-
-    setSelectorType(null);
-    setDragging(false);
+    dispatch({ type: "END_DRAG" });
   };
 
-  const updateHourFromMouseEvent = (e: MouseEvent<HTMLDivElement>) => {
-    if (clockRef.current) {
-      const rect = clockRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) + Math.PI / 2;
-      let degrees = (angle * (180 / Math.PI) + 360) % 360;
-
-      if (selectorType === "Minutes") {
-        const minutes = Math.round(degrees / 6) % 60;
-        setSelectedMinute(isNaN(minutes) ? 0 : minutes);
-        setTimeHandler(`${selectedHour}:${minutes}`);
-      } else if (selectorType === "Hours") {
-        const hours = Math.round(degrees / 30) % 12 || 12;
-        setHour(isNaN(hours) ? 0 : hours);
-      }
-    }
-  };
-
-  const setTimeHandler = (value: string) => {
-    handleChange && handleChange(value);
-  }
-
-  const amPmHandler = (value: string) => {
-    setAmPm(value);
-  }
-
-  const setHour = (hour = selectedHour) => {
-    let newHour = hour;
-
-    if (AmPm === "PM") {
-      newHour = hour < 12 ? hour + 12 : hour;
-    } else {
-      newHour = hour >= 12 ? hour - 12 : hour;
-    }
-
-    setSelectedHour(newHour);
+  const setAmPm = (next: "AM" | "PM") => {
+    userInteracted.current = true;
+    dispatch({ type: "SET_AMPM", amPm: next });
   };
 
   useEffect(() => {
-    setHour(selectedHour);
-  }, [AmPm, selectedHour]);
-
-  useEffect(() => {
-    setTimeHandler(`${selectedHour}:${selectedMinute}`);
-  }, [selectedHour, selectedMinute]);
-
-
-  /*const handleHourSelection = (hourIndex) => {
-    setSelectedHour(hourIndex + 1);
-  };
-
-  const selectHour = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-
-    const angle = Math.atan2(clickY - centerY, clickX - centerX) * (180 / Math.PI);
-    const hour = Math.round(((angle + 360) % 360) / 30) || 12;
-    
-    selectorType === "Minutes" ? setSelectedMinute(hour + 3) : setSelectedHour(hour + 3);
-  };*/
-
-  /*const calculateMarkPosition = (index:Number) => {
-    const angle = (Number(index) * 30) * (Math.PI / 180);
-
-    const x = clockRadius + markRadius * Math.cos(angle) - markSize / 2;
-    const y = clockRadius + markRadius * Math.sin(angle) - markSize / 2;
-    return { x, y };
-  };*/
+    if (!userInteracted.current) return;
+    const hh = String(state.hour24).padStart(2, "0");
+    const mm = String(state.minute).padStart(2, "0");
+    handleChange?.(`${hh}:${mm}`);
+  }, [state.hour24, state.minute, handleChange]);
 
   const calculateMarkPosition = (index: number, isHourMark: boolean) => {
     const angle = (index * (isHourMark ? 30 : 6)) * (Math.PI / 180);
@@ -154,9 +145,9 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   return (
     <div className="flex flex-col items-center p-2 w-full">
       <div className="flex w-full items-center justify-end">
-        <ToggleGroup type="single" defaultValue={AmPm} value={AmPm}>
-          <ToggleGroupItem onClick={() => amPmHandler("AM")} value="AM">Am</ToggleGroupItem>
-          <ToggleGroupItem onClick={() => amPmHandler("PM")} value="PM">Pm</ToggleGroupItem>
+        <ToggleGroup type="single" value={amPm}>
+          <ToggleGroupItem onClick={() => setAmPm("AM")} value="AM">Am</ToggleGroupItem>
+          <ToggleGroupItem onClick={() => setAmPm("PM")} value="PM">Pm</ToggleGroupItem>
         </ToggleGroup>
       </div>
       <div
@@ -167,7 +158,6 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
         onMouseLeave={handleMouseUp}
         onMouseUp={handleMouseUp}
       >
-        {/*Hours marks*/}
         {Array.from({ length: 12 }).map((_, index) => {
           const { x, y } = calculateMarkPosition(index, true);
           const hour = index + 3 > 12 ? index - 9 : index + 3;
@@ -180,7 +170,6 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
           );
         })}
 
-        {/*Marks*/}
         {Array.from({ length: 60 }).map((_, index) => {
           const isHourMark = index % 5 === 0;
           const { x, y } = calculateMarkPosition(index, false);
@@ -198,36 +187,31 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
           );
         })}
         <div className={`rounded-full ${hourColor}`} style={{ width: '100%', height: '100%' }}>
-          {/*Hour hand*/}
           <div
             className={`absolute cursor-grab rounded ${hourColor}`}
-            type-selector="Hours"
             style={{
               width: 18,
               height: `${clockRadius * (0.6)}px`,
               left: 'calc(50% - 9px)',
               bottom: '50%',
-              transform: `rotate(${(selectedHour % 12) * 30}deg)`,
+              transform: `rotate(${(state.hour24 % 12) * 30}deg)`,
               transformOrigin: '50% 100%',
             }}
-            onMouseDown={handleMouseDown}
+            onMouseDown={handleMouseDown("Hours")}
             onMouseUp={handleMouseUp}
           />
-          {/*Minutes Hand*/}
           <div
             className={`absolute w-[12px] cursor-grab rounded ${minuteColor}`}
-            type-selector="Minutes"
             style={{
               height: `${clockRadius * (0.85)}px`,
               left: 'calc(50% - 6px)',
               bottom: '50%',
-              transform: `rotate(${(selectedMinute % 60) * 6}deg)`,
+              transform: `rotate(${state.minute * 6}deg)`,
               transformOrigin: '50% 100%'
             }}
-            onMouseDown={handleMouseDown}
+            onMouseDown={handleMouseDown("Minutes")}
             onMouseUp={handleMouseUp}
           />
-          {/*Minutes hand center*/}
           <div
             className={`absolute h-6 w-6 rounded-full ${minuteColor}`}
             style={{
@@ -236,7 +220,6 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
               transform: 'translate(-50%, -50%)'
             }}
           />
-          {/*Center dot*/}
           <div
             className="absolute h-4 w-4 rounded-full bg-slate-800"
             style={{

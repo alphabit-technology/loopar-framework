@@ -1,8 +1,14 @@
+import { elementsDict } from "./element-definition.js";
+
 const FIELD_DEFAULTS = Object.freeze({
   format: "data",
   size: "md",
   type: "default",
 });
+
+const FRAMEWORK_OWNED_FIELDS = new Set([
+  "id","__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
+]);
 
 const EMPTY_BG_VARIANTS = new Set([
   '{"color":"","alpha":0}',
@@ -27,12 +33,18 @@ const KEEP_NUMERIC_ZERO = new Set([
 ]);
 
 const NEVER_PERSIST = new Set([
-  "rendered_value",     // tools.js: markdown-rendered version of `value`
-  "reviews",            // tools.js: REVIEW element fetch from DB
-  "value_descriptive",  // core-document.js: SELECT human-readable label
-  "previewSrc",         // file-manager.js: image preview URL
-  "mappedFiles",        // file-manager.js: resolved file objects
-  "tag",                // base-designer.jsx: original element tag
+  "rendered_value",
+  "reviews",
+  "value_descriptive",
+  "previewSrc",
+  "mappedFiles",
+  "tag",
+  "style",
+  "imageProps",
+  "coverProps",
+  "className",
+  "parent",
+  "parentKey",
 ]);
 
 const isPlainObject = (v) =>
@@ -71,13 +83,14 @@ const pruneDeep = (v) => {
   return v;
 };
 
-const pruneData = (data, nodeKey) => {
+const pruneData = (data, nodeKey, isWritable = false) => {
   if (!isPlainObject(data)) return data;
   const out = {};
   for (const [k, v] of Object.entries(data)) {
     if (NEVER_PERSIST.has(k)) continue;
     if (k === "key") continue;
-    if ((k === "id" || k === "name") && v === nodeKey) continue;
+    if (k === "id" && v === nodeKey) continue;
+    if (k === "name" && v === nodeKey && !isWritable) continue;
 
     if (isEmptyValue(v)) continue;
     if (FIELD_DEFAULTS[k] !== undefined && v === FIELD_DEFAULTS[k]) continue;
@@ -105,10 +118,21 @@ const pruneNode = (node) => {
 
   if (node.element !== undefined) out.element = node.element;
 
-  out.data = pruneData(node.data || {}, lifted);
+  const isWritable = fieldIsWritable(node);
+
+  let dataIn = node.data || {};
+  if (isWritable && !dataIn.name && lifted) {
+    dataIn = { ...dataIn, name: lifted };
+  }
+
+  if (isWritable && dataIn.name && FRAMEWORK_OWNED_FIELDS.has(dataIn.name)) {
+    return null;
+  }
+
+  out.data = pruneData(dataIn, lifted, isWritable);
 
   if (Array.isArray(node.elements) && node.elements.length > 0) {
-    const pruned = node.elements.map(pruneNode);
+    const pruned = node.elements.map(pruneNode).filter(n => n !== null);
     if (pruned.length > 0) out.elements = pruned;
   }
 
@@ -131,10 +155,8 @@ const pruneNode = (node) => {
 };
 
 export const pruneDocStructure = (tree) => {
-  if (Array.isArray(tree)) {console.log(['Array', JSON.stringify(tree.map(pruneNode), null, 2)]); return tree.map(pruneNode);}
-  if (isPlainObject(tree)) return pruneNode(tree);
-
-  
+  if (Array.isArray(tree)) return tree.map(pruneNode).filter(n => n !== null);
+  if (isPlainObject(tree))  return pruneNode(tree);
   return tree;
 };
 

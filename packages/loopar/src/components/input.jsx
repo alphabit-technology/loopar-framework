@@ -2,7 +2,7 @@ import BaseInput from "@base-input";
 import {FormLabel, invalidClass} from "./input/index.js";
 import { Input as FormInput } from "@cn/components/ui/input";
 import loopar from "loopar";
-import {inputType} from '@global/element-definition'
+import {inputType, COLUMN_FORMATS} from '@global/element-definition'
 import {
   FormControl,
   FormDescription
@@ -60,7 +60,11 @@ Input.metaFields = () => {
           format: {
             element: SELECT,
             data: {
-              options: Object.entries(inputType).map(([value]) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) })),
+              options: Object.entries(COLUMN_FORMATS).map(([value, def]) => ({
+                value,
+                label: value.charAt(0).toUpperCase() + value.slice(1),
+                description: def.description,
+              })),
               selected: "data",
             },
           },

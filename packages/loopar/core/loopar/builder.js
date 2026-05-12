@@ -7,6 +7,7 @@ import * as simpleIcons from 'simple-icons';
 
 import { fileManage } from "../file-manage.js";
 import { elementsDict, elementsDefinition } from "../global/element-definition.js";
+import { isAuditableEntity, AUDIT_COLUMN_NAMES } from "../global/audit.js";
 import {PermissionManager} from "../auth/PermissionManager.js"
 import { existsSync, readdirSync, readFileSync } from "fs";
 
@@ -17,13 +18,19 @@ export class Builder {
     let types = {};
     const docs = this.getEntities();
   
-    const getEntityFields = (fields) => {
-      const getFields = fields => fields.reduce((acc, field) => 
+    const getEntityFields = (fields, { auditable = false } = {}) => {
+      const getFields = fields => fields.reduce((acc, field) =>
         acc.concat(field, ...getFields(field.elements || [])), []);
-      return getFields(fields).filter(field => {
+
+      const declared = getFields(fields).filter(field => {
         const def = elementsDict[field.element]?.def || {};
-        return def.isWritable && !!field.data.name;
+        return def.isWritable && !!field.data.name && !field.element.includes(FORM_TABLE);
       }).map(field => field.data.name);
+
+      const out = ["id", ...declared];
+      if (auditable) out.push(...AUDIT_COLUMN_NAMES);
+
+      return [...new Set(out)];
     }
   
     const refs = {};
@@ -31,17 +38,25 @@ export class Builder {
     const refsByApp = {};
   
     for (const doc of Object.values(docs)) {
-      if (doc.__document_status__ === "Deleted") continue;
+      if (doc.__deleted_at__) continue;
   
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
       const isChild = doc.is_child ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
       const fields = this.utils.JSONparse(doc.doc_structure, []);
-        
+
       const id = parseInt(doc.id) || 0;
-  
+
       const appKey = inflection.transform(doc.__APP__, ['capitalize', 'dasherize']).toLowerCase();
-  
+    
+      const auditable = isAuditableEntity({
+        name: doc.name,
+        is_static: doc.is_static,
+        is_child:  isChild,
+        is_single: isSingle,
+        is_audited: doc.is_audited,
+      });
+
       const ref = {
         id,
         __NAME__: doc.name,
@@ -52,9 +67,10 @@ export class Builder {
         is_single: isSingle,
         is_builder: isBuilder,
         is_child: isChild,
+        is_audited: auditable ? 1 : 0,
         __MODULE__: doc.__MODULE__,
         __TYPE__: doc.type,
-        __FIELDS__: getEntityFields(fields)
+        __FIELDS__: getEntityFields(fields, { auditable })
       };
   
       const key = this.utils.toEntityKey(doc.name);
@@ -74,7 +90,7 @@ export class Builder {
           __ID__: doc.id,
           __TYPE__: doc.type,
           __MODULE__: doc.__MODULE__,
-          __FIELDS__: getEntityFields(fields)
+          __FIELDS__: getEntityFields(fields, { auditable })
         };
       }
     }
@@ -263,6 +279,24 @@ export class Builder {
     this.DBInitialized = (this.DBServerInitialized && await this.db.testDatabase());
     this.__installed__ = (this.DBInitialized && await this.db.testFramework("loopar"));
 
+    let wasInstalledHint = false;
+    if (this.DBInitialized) {
+      try {
+        if (await this.db.hasTable("App")) {
+          wasInstalledHint = (await this.db.count("App", "loopar")) > 0;
+        }
+      } catch (e) {
+        console.warn(
+          `[loopar.build] Could not probe App table for __wasInstalled__: ${e.message}`
+        );
+      }
+    }
+    this.__wasInstalled__ = this.DBInitialized && (this.__installed__ || wasInstalledHint);
+
+    if (!this.__wasInstalled__ && this.installedApps?.loopar) {
+      await this.unsetApp("loopar");
+    }
+
     data.DBInitialized = this.DBInitialized;
     data.DBServerInitialized = this.DBServerInitialized;
     data.__installed__ = this.__installed__;
@@ -316,24 +350,6 @@ export class Builder {
 
   async buildGlobalEnvironment() {
     GlobalEnvironment();
-    
-   const handleFatalError = async (err, source) => {
-      console.error(`${source}:`, err);
-      this.installingApp = null;
-      this.db && (await this.db.safeRollback());
-      
-      /* try {
-        this.server?.renderError({ 
-          error: getHttpError(err), 
-          redirect: err?.redirect 
-        });
-      } catch (renderError) {
-        console.error('Failed to render error:', renderError.message);
-      } */
-    };
-
-    //process.on('uncaughtException', (err) => handleFatalError(err, 'uncaughtException'));
-    //process.on('unhandledRejection', (err) => handleFatalError(err, 'unhandledRejection'));
 
     global.Crypto = crypto;
     global.AJAX = 'POST';

@@ -1,0 +1,98 @@
+# Loopar — local DB servers for testing across dialects
+#
+# All four engines on their default ports so loopar's connector form picks
+# the right defaults without manual override. Volumes persist data between
+# `docker compose down` / `up`; use `docker compose down -v` to wipe.
+#
+# Usage:
+#   docker compose -f dev-databases/docker-compose.yml up -d
+#   docker compose -f dev-databases/docker-compose.yml down
+#   docker compose -f dev-databases/docker-compose.yml logs <service>
+#
+# Credentials are intentionally simple — root/root — for local dev.
+# Do NOT use this file in any environment other than your laptop.
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: loopar-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: loopar
+      MYSQL_PASSWORD: loopar
+      # Empty initial DB — Loopar's installer creates its own schema.
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16
+    container_name: loopar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      # The default `postgres` DB is created by the image; Loopar's installer
+      # uses its own auto-generated schema name and creates it via CREATE
+      # DATABASE IF NOT EXISTS, so this just gives the installer a database
+      # to connect to first.
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mariadb:
+    image: mariadb:11
+    container_name: loopar-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: loopar
+      MARIADB_PASSWORD: loopar
+    ports:
+      - "3307:3306"   # 3307 on host so it doesn't clash with mysql
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: loopar-mssql
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Loopar!2026"   # MSSQL requires complexity
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Loopar!2026' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  mysql_data:
+  postgres_data:
+  mariadb_data:
+  mssql_data:

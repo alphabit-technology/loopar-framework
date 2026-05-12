@@ -1,110 +1,62 @@
 import HTTP from '@@tools/router/http';
 
 export default class Router extends HTTP {
-  #route = global.location;
-  routeOptions = null;
-  currentRoute = null;
+  #navigate = null;
+  workspace = "desk";
 
-  setRoute() {
-    return this.#setRoute.apply(this, arguments);
+  /** Injected by <RouterBridge/> when mounted. */
+  _bindRouter({ navigate }) {
+    this.#navigate = navigate;
   }
 
-  get route() {
-    return this.#route;
+  _unbindRouter() {
+    this.#navigate = null;
   }
 
-  sendRoute() {
-    this.currentRoute = this.getSubPath();
-    this.change();
-  }
+  /**
+   * Navigates to a route using react-router.
+   * @param {string} to - Absolute or relative path to the active workspace.
+   * @param {{ replace?: boolean, state?: any }} [options]
+   */
+  navigate(to, options = {}) {
+    const target = this.#resolveUrl(to);
 
-  #setRoute() {
-    this.pushState(this.makeUrl(arguments));
-  }
-
-  makeUrl(params) {
-    const isPlainObject = function (obj) {
-      return Object.prototype.toString.call(obj) === '[object Object]';
-    };
-
-    return Object.keys(params).map((key) => {
-      if (isPlainObject(params[key])) {
-        this.routeOptions = params[key];
-        return null;
-      } else {
-        let a = String(params[key]);
-        if (a && a.match(/[%'"\s\t]/)) { }
-        return a;
-      }
-    }).join('/') || "/desk";
-  }
-
-  pushState(url) {
-    if (global.location.pathname !== url) {
-      global.location.hash = '';
+    if (this.#navigate) {
+      this.#navigate(target, options);
+      return;
     }
 
-    this.sendRoute();
-  }
-
-  getSubPathString(route) {
-    if (!route) {
-      route = global.location.hash || (global.location.pathname + global.location.search);
-    }
-    return this.stripPrefix(route);
-  }
-
-  stripPrefix(route) {
-    if (route.startsWith('desk')) route = route.substr(5);
-    if (["/", "#", "!"].includes(route.substr(0, 1))) route = route.substr(1);
-
-    return route;
-  }
-
-  getSubPath(route) {
-    return this.getSubPathString(route).split('/').map(c => this.decodeComponent(c));
-  }
-
-  decodeComponent(r) {
-    try {
-      return decodeURIComponent(r);
-    } catch (e) {
-      if (e instanceof URIError) {
-        // legacy: not sure why URIError is ignored.
-        return r;
-      } else {
-        throw e;
-      }
+    if (typeof window !== 'undefined') {
+      window.location.assign(target);
     }
   }
 
-  slug(name) {
-    return (name || "").toLowerCase().replace(/ /g, '-');
-  }
+  #resolveUrl(route) {
+    if (typeof route !== 'string') return route;
 
-  change() {
-    this.#route = global.location;
-  }
-  
-  navigate(route, query = {}) {
+    if (!route.startsWith('/')) {
+      if (typeof window === 'undefined') return route;
+      const currentPath = window.location.pathname;
+      const lastSlash = currentPath.lastIndexOf('/');
+      const parent = lastSlash >= 0 ? currentPath.slice(0, lastSlash + 1) : '/';
+      return parent + route;
+    }
+
     const isLoggedIn = this.isLoggedIn();
     const isAuthRoute = route.split('/')[1] === 'auth' && !isLoggedIn;
     const isDeskRoute = route.split('/')[1] === 'desk' && isLoggedIn;
-    const workspace = isDeskRoute ? "" : (this.workspace === "desk" ? `/${this.workspace}` : "");
+    const wsPrefix = isDeskRoute
+      ? ""
+      : (this.workspace === "desk" ? `/${this.workspace}` : "");
 
-    const ROUTE = isAuthRoute ? route : route.split('/')[0] === '' ? workspace + route : route;
-
-    //if (isAuthRoute && isLoggedIn) return;
-
-    console.log(["ROUTE", ROUTE])
-    this.setRoute(ROUTE);
+    return isAuthRoute ? route : wsPrefix + route;
   }
 
   isLoggedIn() {
-    return this.user.name;
+    return !!(this.user && this.user.name);
   }
 
   get user() {
-    return this.rootApp && this.rootApp.meta.user || {};
+    return (this.rootApp && this.rootApp.meta.user) || {};
   }
 }

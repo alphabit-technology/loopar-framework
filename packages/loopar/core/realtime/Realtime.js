@@ -1,5 +1,5 @@
 'use strict';
-import { SequelizeORM } from "SequelizeORM";
+import { KnexORM } from "db-env";
 
 const HOOK_MAP = {
   beforeCreate: ["beforeCreate"],
@@ -16,7 +16,6 @@ const HOOK_MAP = {
 
   afterGet:     ["afterGet"],
 };
-
 
 function normalize(hook, model, payload) {
   return {
@@ -46,7 +45,7 @@ export class Realtime {
       const qualifiedEvent = `${ormEvent}:${model}`;
       const wrapper        = (payload) => handler(normalize(hook, model, payload));
 
-      SequelizeORM.on(qualifiedEvent, wrapper);
+      KnexORM.on(qualifiedEvent, wrapper);
       entries.push({ ormEvent: qualifiedEvent, wrapper });
     }
 
@@ -60,7 +59,7 @@ export class Realtime {
 
     if (entries) {
       for (const { ormEvent, wrapper } of entries) {
-        SequelizeORM.off(ormEvent, wrapper);
+        KnexORM.off(ormEvent, wrapper);
       }
       this.#registry.delete(key);
     }
@@ -81,7 +80,7 @@ export class Realtime {
       if (model && !key.startsWith(`${model}::`)) continue;
 
       for (const { ormEvent, wrapper } of entries) {
-        SequelizeORM.off(ormEvent, wrapper);
+        KnexORM.off(ormEvent, wrapper);
       }
       this.#registry.delete(key);
     }

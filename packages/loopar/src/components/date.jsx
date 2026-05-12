@@ -22,23 +22,24 @@ import {
 import { CalendarIcon } from "lucide-react";
 
 export default function DatePicker(props) {
-  const { renderInput, data, value } = BaseInput(props);
-    
+  const { renderInput, data } = BaseInput(props);
+
   return renderInput(field => {
-    const fieldDate = new Date(field.value);
+    const parsed = dayjs(field.value);
+    const isValid = !!field.value && parsed.isValid();
+    const fieldDate = isValid ? parsed.toDate() : null;
 
     const setDateHandler = (val) => {
-      const newDate = dayjs(new Date(val));
-      const [year, month, day] = [newDate.year(), newDate.month() + 1, newDate.date()];
+      if (!val) return;
+      const newDate = dayjs(val);
+      const date = fieldDate ? new Date(fieldDate) : new Date();
+      date.setFullYear(newDate.year());
+      date.setMonth(newDate.month());
+      date.setDate(newDate.date());
 
-      const date = dayjs(field.value).toDate();
-      date.setFullYear(year);
-      date.setMonth(month - 1);
-      date.setDate(day);
-
-      value(date);
+      field.onChange({ target: { value: date } });
     }
-    
+
     return (
       <FormItem className="flex flex-col" >
         <FormLabel>{data.label}</FormLabel>
@@ -49,11 +50,11 @@ export default function DatePicker(props) {
                 variant={"outline"}
                 className={cn(
                   "w-[240px] pl-3 text-left font-normal",
-                  !field.value && "text-muted-foreground"
+                  !isValid && "text-muted-foreground"
                 )}
               >
-                {field.value ? (
-                  format(dayjs(fieldDate).isValid() ? fieldDate : new Date(), "PPP HH:mm:ss a")
+                {isValid ? (
+                  format(fieldDate, "PPP")
                 ) : (
                   <span>Pick a date</span>
                 )}
@@ -64,7 +65,7 @@ export default function DatePicker(props) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={fieldDate}
+              selected={fieldDate ?? undefined}
               onSelect={setDateHandler}
               disabled={(date) =>
                 date > new Date() || date < new Date("1900-01-01")

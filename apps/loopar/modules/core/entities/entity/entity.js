@@ -1,6 +1,5 @@
-import { BaseDocument, fileManage, loopar, Helpers, pruneDocStructure } from "loopar";
+import { BaseDocument, fileManage, loopar, Helpers, pruneDocStructure, TYPES } from "loopar";
 import { pluralize } from "inflection";
-
 
 export default class Entity extends BaseDocument {
   __CORE_FILES__ = [];
@@ -67,14 +66,15 @@ export default class Entity extends BaseDocument {
     const args = arguments[0] || {};
     const validate = args.validate !== false;
 
-    await this.fixFields(this.doc_structure);
+    await this.normalizeFields(this.doc_structure);
 
     if (validate) {
       this.validateFields();
       this.validateEntityName();
       this.validateUniqueEntityName();
 
-      if(!loopar.installing){
+      if (!loopar.installing) {
+        await this.validateAppVersion();
         await this.validateLinkedDocument(SELECT);
         await this.validateLinkedDocument(FORM_TABLE);
       }
@@ -87,7 +87,7 @@ export default class Entity extends BaseDocument {
     }
 
     args.save != false && await super.save(arguments[0] || {});
-    
+
     if (!loopar.installing) {
       await this.save__CORE_FILES__();
       await loopar.db.endTransaction();
@@ -99,7 +99,7 @@ export default class Entity extends BaseDocument {
     this.is_single = this.entityIsSingle();
     this.is_static = 0;
    
-    await this.fixFields(this.doc_structure);
+    await this.normalizeFields(this.doc_structure);
     await loopar.db.makeTable("Entity", this.doc_structure);
   }
 
@@ -139,32 +139,11 @@ export default class Entity extends BaseDocument {
             name: 'name',
             label: 'Name',
             required: 1,
-            type: 'text',
+            type: TYPES.string,
             in_list_view: 1,
             set_only_time: 1,
             unique: 1,
             searchable: 1
-          }
-        },
-        {
-          element: SELECT,
-          data: {
-            name: '__document_status__',
-            label: 'Status',
-            options: 'Active\nInactive\nDraft\nPending\nApproved\nRejected\nArchived\nDeleted',
-            default_value: 'Active',
-            hidden: 1,
-          }
-        },
-        {
-          element: ID,
-          data: {
-            name: 'id',
-            label: 'ID',
-            type: INTEGER,
-            required: 1,
-            in_list_view: 0,
-            hidden: 1
           }
         }
       ]
@@ -200,193 +179,185 @@ export default class Entity extends BaseDocument {
     return ["Entity", "Builder"].includes(this.getEntityType()) && !this.entityIsSingle();
   }
 
-  async fixFields() {
-    const __IS_NEW__ = this.__IS_NEW__;
-
-    const updateOrInsertField = ({ fields = this.doc_structure, field, position = null, target = null }) => {
-      let foundField = false;
-      let targetFound = fields;
-
-      const searchAndInsert = (items) => {
-        items.forEach(f => {
-          if (target && f.data.name === target) {
-            targetFound = f.elements || null;
-          }
-
-          if (field.data.name === f.data.name) {
-            foundField = true;
-            Object.assign(f.data, field.data);
-          } else if (f.elements && f.elements.length > 0) {
-            searchAndInsert(f.elements);
-          }
-        });
-      };
-
-      searchAndInsert(fields);
-
-      if (!foundField && (position === 'after' || position === null)) {
-        targetFound.push(field);
-      } else if (!foundField && position === 'before') {
-        targetFound.unshift(field);
-      }
-
-      foundField = false;
-      this.doc_structure = fields;
-    };
-
-    const removeField = ({ fields = this.doc_structure, fieldName }) => {
-      const removeField = (fields) => {
-        fields.forEach((field, index) => {
-          if (field.data.name === fieldName) {
-            fields.splice(index, 1);
-          } else if (field.elements && field.elements.length > 0) {
-            removeField(field.elements);
-          }
-        });
-      };
-
-      removeField(fields);
-
-      this.doc_structure = fields;
-    };
-
-    const getField = (fieldName) => {
-      const getField = (fields) => {
-        for (const field of fields) {
-          if (field.data.name === fieldName) {
-            return field;
-          } else if (field.elements && field.elements.length > 0) {
-            const result = getField(field.elements);
-            if (result) {
-              return result;
-            }
-          }
-        }
-      };
-
-      return getField(this.doc_structure);
-    };
-
-    const fixFieldData = async (field) => {
-      const updatedData = {};
-      const nullValues = [null, undefined, "", "null", "undefined", 0, "0"];
-
-      for (const [key, value] of Object.entries(field.data || {})) {
-        //field.id ??= loopar.Helpers.randomString(12);
-        if (key === "name" && nullValues.includes(value)) {
-          updatedData[key] = Helpers.randomString(12);
-        } else {
-          updatedData[key] = value;
-        }
-
-        if (__IS_NEW__ && key === "required" && field.data.required) {
-          updatedData[key] = 1;
-        }
-
-        /*if (key === "background_image" && value) {
-          const files = value;
-          const filesToSave = [];
-
-          for (const file of files || []) {
-            if (typeof file === "string") continue;
-
-            const typeMatches = file.src.match(/^data:(.*);base64,/);
-            const isFile = typeMatches ? typeMatches[1] : null;
-
-            if (isFile) {
-              const binaryData = Buffer.from(file.src.split(';base64,')[1], 'base64');
-              file.src = "public/" + file.name
-
-              this.__CORE_FILES__.push({
-                buffer: binaryData,
-                originalname: file.name,
-                size: binaryData.length,
-              });
-
-              filesToSave.push({
-                name: file.name,
-                size: binaryData.length,
-                src: file.src,
-              });
-            }else{
-              filesToSave.push(file);
-            }
-          }
-
-          updatedData[key] = JSON.stringify(filesToSave);
-        }*/
-
-        if ((key === "background_color" || key === "color_overlay") && JSON.stringify(value) === '{"color":"#000000","alpha":0.5}') {
-          delete updatedData[key];
-        }
-      }
-
-      return updatedData;
-    };
-
-    const fixElements = async (elements = []) => {
-      for (const field of elements) {
-        field.data = await fixFieldData(field);
-
-        if (field.elements && field.elements.length > 0) {
-          await fixElements(field.elements);
-        }
-      }
-
-      /*elements.forEach(async field => {
-         await fixFieldData(field);
-         if (field.elements && field.elements.length > 0) {
-            await fixElements(field.elements);
-         }
-      });*/
-
-      this.doc_structure = elements;
-    };
-
-    if (this.isDBEntity() && !loopar.installing) {
-      const specialFields = this.getSpecialMetaFields();
-
-      updateOrInsertField({ field: specialFields.namedContainer, position: 'before' });
-      specialFields.elementsNamed.map(field => {
-        updateOrInsertField({ field, position: 'after', target: specialFields.namedContainer.data.name });
-      });
-
-      if (getField(specialFields.namedContainer.data.name).elements.length === 0) {
-        removeField({ fieldName: specialFields.namedContainer.data.name });
-      }
-
-      if (this.is_child) {
-        updateOrInsertField({
-          field: {
-            element: INPUT,
-            data: { name: "parent_document", label: "Parent Entity", type: INTEGER, hidden: 1 }
-          }, position: 'before'
-        });
-
-        updateOrInsertField({
-          field: {
-            element: INPUT,
-            data: { name: "parent_id", label: "Parent ID", type: INTEGER, hidden: 1 }
-          }, position: 'before'
-        });
+  /**
+   * Walk doc_structure recursively and call `visitor(field)` on every node.
+   * Mutates `field` in place when the visitor mutates. Returns nothing.
+   */
+  #walkDocStructure(visitor, fields = this.doc_structure) {
+    if (!Array.isArray(fields)) return;
+    for (const field of fields) {
+      visitor(field);
+      if (Array.isArray(field?.elements) && field.elements.length > 0) {
+        this.#walkDocStructure(visitor, field.elements);
       }
     }
+  }
 
-    await fixElements(this.doc_structure);
+  /**
+   * Locate a field by `data.name` anywhere in the doc_structure tree.
+   * Returns the first match or undefined.
+   */
+  #getField(fieldName) {
+    let found;
+    this.#walkDocStructure(f => { if (!found && f?.data?.name === fieldName) found = f; });
+    return found;
+  }
+
+  /**
+   * Insert `field` into the tree, or merge its `data` into an existing
+   * field of the same name.
+   *
+   *   - If a field with matching `data.name` is found anywhere → merge
+   *     (Object.assign over existing data).
+   *   - Otherwise insert under the parent identified by `target`
+   *     (matched on `data.name`); falls back to the top level when no
+   *     target is given.
+   *   - `position` controls where: 'before' → unshift, 'after' (default)
+   *     → push.
+   */
+  #updateOrInsertField({ field, position = null, target = null }) {
+    const fields = this.doc_structure;
+    let foundField  = false;
+    let targetFound = fields;
+
+    const searchAndInsert = (items) => {
+      for (const f of items) {
+        if (target && f?.data?.name === target) {
+          targetFound = f.elements ?? null;
+        }
+        if (field.data.name === f?.data?.name) {
+          foundField = true;
+          Object.assign(f.data, field.data);
+        } else if (Array.isArray(f?.elements) && f.elements.length > 0) {
+          searchAndInsert(f.elements);
+        }
+      }
+    };
+    searchAndInsert(fields);
+
+    if (!foundField) {
+      if (position === 'before') targetFound.unshift(field);
+      else                       targetFound.push(field);
+    }
+    this.doc_structure = fields;
+  }
+
+  /**
+   * Remove every field whose `data.name` equals `fieldName` from the tree
+   * (top-level or nested).
+   */
+  #removeField(fieldName) {
+    const removeFrom = (fields) => {
+      for (let i = fields.length - 1; i >= 0; i--) {
+        const f = fields[i];
+        if (f?.data?.name === fieldName) {
+          fields.splice(i, 1);
+        } else if (Array.isArray(f?.elements) && f.elements.length > 0) {
+          removeFrom(f.elements);
+        }
+      }
+    };
+    removeFrom(this.doc_structure);
+  }
+
+  async #normalizeFieldData(field) {
+    const NULL_VALUES = [null, undefined, "", "null", "undefined", 0, "0"];
+    const updated = {};
+
+    for (const [key, value] of Object.entries(field.data || {})) {
+      if (key === "name" && NULL_VALUES.includes(value)) {
+        updated[key] = Helpers.randomString(12);
+      } else {
+        updated[key] = value;
+      }
+
+      if (this.__IS_NEW__ && key === "required" && field.data.required) {
+        updated[key] = 1;
+      }
+
+      if (
+        (key === "background_color" || key === "color_overlay") &&
+        JSON.stringify(value) === '{"color":"#000000","alpha":0.5}'
+      ) {
+        delete updated[key];
+      }
+    }
+    return updated;
+  }
+
+  /** Recursively apply #normalizeFieldData to every field in the subtree. */
+  async #normalizeElements(elements = []) {
+    for (const field of elements) {
+      field.data = await this.#normalizeFieldData(field);
+      if (Array.isArray(field?.elements) && field.elements.length > 0) {
+        await this.#normalizeElements(field.elements);
+      }
+    }
+    this.doc_structure = elements;
+  }
+
+  /**
+   * Inject framework-required meta fields into the doc_structure of a
+   * DB-backed entity:
+   *   - `name` + `id` inside a synthetic row container (the "named
+   *     container") so the form layout has somewhere to mount them.
+   *   - `parent_document` + `parent_id` for child entities (FORM_TABLE
+   *     rows, where the parent reference is part of the row contract).
+   *
+   * Skipped during install (the snapshot already contains what it needs)
+   * and for non-DB entities (singles, builders without storage).
+   */
+  #injectMetaFields() {
+    if (!this.isDBEntity() || loopar.installing) return;
+
+    const special = this.getSpecialMetaFields();
+    const containerName = special.namedContainer.data.name;
+
+    this.#updateOrInsertField({ field: special.namedContainer, position: 'before' });
+    for (const field of special.elementsNamed) {
+      this.#updateOrInsertField({ field, position: 'after', target: containerName });
+    }
+
+    const container = this.#getField(containerName);
+    if (container && (!container.elements || container.elements.length === 0)) {
+      this.#removeField(containerName);
+    }
+
+    if (this.is_child) {
+      this.#updateOrInsertField({
+        field: {
+          element: INPUT,
+          data: { name: "parent_document", label: "Parent Entity", type: TYPES.string, hidden: 1 }
+        },
+        position: 'before',
+      });
+      this.#updateOrInsertField({
+        field: {
+          element: INPUT,
+          data: { name: "parent_id", label: "Parent ID", type: TYPES.integer, hidden: 1 }
+        },
+        position: 'before',
+      });
+    }
+  }
+
+  async normalizeFields() {
+    this.#injectMetaFields();
+    await this.#normalizeElements(this.doc_structure);
     this.doc_structure = pruneDocStructure(this.doc_structure);
   }
 
   async delete() {
     const ref = loopar.getRef(this.name);
-    if (ref.__APP__ === 'loopar' && ref.__TYPE__ == "Entity") {
+
+    if (ref && ref.__APP__ === 'loopar' && ref.__TYPE__ == "Entity") {
       loopar.throw(`You can not delete Entity:${this.name}, it is a core Entity.`);
       return;
     }
 
     await super.delete(...arguments);
 
-    if(!loopar.installing){
-      this.__document_status__ = "Deleted";
+    if (!loopar.installing) {
       await this.makeJSON();
     }
   }
@@ -460,6 +431,40 @@ export default class Entity extends BaseDocument {
 
   async targetApp() {
     return await loopar.db.getValue("Module", "app_name", this.module);
+  }
+
+  async validateAppVersion() {
+    const appName = await this.targetApp();
+    if (!appName) return;
+
+    const installerData = fileManage.getConfigFile(
+      'installer',
+      loopar.makePath('apps', appName),
+      null
+    );
+    const physical = installerData?.App?.version;
+    if (!physical) return;
+
+    const installedApp = await loopar.getApp(appName);
+    const installed = installedApp?.version;
+    if (!installed) return;
+
+    if (this.#compareVersion(physical, installed) > 0) {
+      loopar.throw(
+        `Cannot modify entities of "${appName}": ` +
+        `physical version (${physical}) is ahead of installed (${installed}). ` +
+        `Run <a href="/desk/App Manager/view">Update</a> first to sync the database.`
+      );
+    }
+  }
+
+  #compareVersion(a, b) {
+    const pa = (a || '0.0.0').split('.').map(n => parseInt(n, 10) || 0);
+    const pb = (b || '0.0.0').split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < 3; i++) {
+      if (pa[i] !== pb[i]) return pa[i] - pb[i];
+    }
+    return 0;
   }
 
   async modulePath() {
@@ -545,14 +550,22 @@ export default class Entity extends BaseDocument {
     }
   }
 
-  /**installer**/
-  
   async makeJSON() {
     const meta = await this.__meta__();
-    await fileManage.setConfigFile(this.name, { ...meta.data, ...{ __ENTITY__: meta.Entity.name } }, await this.documentPath());
+
+    const { __created_at__, __updated_at__, __deleted_at__, __document_status__, ...payload } = meta.data;
+    if (__deleted_at__) {
+      payload.__deleted_at__ = __deleted_at__;
+    }
+
+    await fileManage.setConfigFile(
+      this.name,
+      { ...payload, __ENTITY__: meta.Entity.name },
+      await this.documentPath()
+    );
 
     const app = await loopar.getDocument("App", await this.targetApp());
-    app.buildInstaller()
+    await app.bump("patch");
   }
 
   async getOrphanColumns(){

@@ -1,10 +1,11 @@
 import { cn } from "@cn/lib/utils";
-import React, {useEffect, createContext} from "react";
+import React, {useEffect} from "react";
 import {CookiesProvider} from '@services/cookie';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { useNavigate } from 'react-router';
 import { RealtimeProvider } from "@services/realtime/RealtimeContext";
 import { AuthProvider} from "@context/AuthContext"
+import { RouterBridge } from "@@tools/router/router-bridge";
 
 type ViewType = "module" | "app" | "page" | "list" | "view" | "form";
 type Environment = "development" | "staging" | "production";
@@ -84,6 +85,7 @@ const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
   
   return (
     <RealtimeProvider siteName={__META__.site} userId={__META__.userId}>
+      <RouterBridge />
       <main
         className={cn(
           "h-full font-sans antialiased"

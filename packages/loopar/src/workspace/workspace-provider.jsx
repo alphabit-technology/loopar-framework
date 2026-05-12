@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef, useTransition } from "react"
 import { loopar } from "loopar";
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
 import { AppSourceLoader } from "@loopar/loader";
 import {useAuth} from "@context/AuthContext"
@@ -17,7 +17,6 @@ const initialState = {
   activeModule: "",
   setActiveModule: () => null,
   pathname: "",
-  navigate: () => null,
   award: () => null
 }
 
@@ -45,8 +44,7 @@ export function WorkspaceProvider({
     props.pathname || (typeof window !== "undefined" ? window.location.pathname + window.location.search : "")
   );
 
-  const __META_CACHE__ = {};
-  const routerNavigate = useNavigate();
+  const metaCacheRef = useRef({});
   const lastFetchedPath = useRef(null);
   const fetchIdRef = useRef(0);
   const isInitialMount = useRef(true);
@@ -56,10 +54,6 @@ export function WorkspaceProvider({
     const newPath = location.pathname + location.search;
     setPathname(newPath);
   }, [location.pathname, location.search]);
-
-  const navigate = useCallback((url) => {
-    routerNavigate(url);
-  }, [routerNavigate]);
 
   const memoizedActiveView = useMemo(() => {
     return Object.values(Documents)
@@ -127,17 +121,18 @@ export function WorkspaceProvider({
   }, [goToErrorView]);
 
   const setDocument = useCallback((r) => {
+    const cache = metaCacheRef.current;
     let __META__ = {};
 
-    if (__META_CACHE__[r.instance]) {
-      __META__ = __META_CACHE__[r.instance];
-      __META__.Document = { ...__META_CACHE__[r.instance].Document, ...r }
+    if (cache[r.instance]) {
+      __META__ = cache[r.instance];
+      __META__.Document = { ...cache[r.instance].Document, ...r }
     } else {
       __META__ = {
         key: r.key,
         Document: r,
       }
-      __META_CACHE__[r.instance] = __META__
+      cache[r.instance] = __META__
     }
 
     AppSourceLoader(__META__.Document).then((Module) => {
@@ -162,7 +157,7 @@ export function WorkspaceProvider({
     const currentFetchId = ++fetchIdRef.current;
     const targetPath = route.pathname;
     const targetSearch = route.search || '';
-    const preloadedMeta = !!__META_CACHE__[loopar.utils.urlInstance(route)];
+    const preloadedMeta = !!metaCacheRef.current[loopar.utils.urlInstance(route)];
 
     return new Promise((resolve, reject) => {
       loopar.send({
@@ -179,7 +174,20 @@ export function WorkspaceProvider({
     });
   }, [setDocument]);
 
-  const refresh = useCallback(() => {
+  /**
+   * Re-fetch the active document.
+   *
+   * @param {{ force?: boolean }} [opts]
+   *   force:true => invalidates metaCacheRef before the fetch. This makes
+   *     fetchDocument send `preloaded=false` and the server returns the
+   *     complete meta (not just data), refreshing fields, permissions,
+   *     enabled actions, etc. This is the semantics of `loopar.reload()`.
+   *   force:false (default) => maintains the cache; the server usually
+   *     responds with lightweight data (preloaded=true) and a shallow merge.
+   *     This is the semantics of `loopar.refresh()`.
+   */
+  const refresh = useCallback((opts = {}) => {
+    if (opts.force) metaCacheRef.current = {};
     fetchDocument(pathname).then(() => {
       setRefreshFlag(prev => !prev);
     });
@@ -275,7 +283,6 @@ export function WorkspaceProvider({
     isPending,
     workspace: __WORKSPACE_NAME__,
     pathname,
-    navigate,
     award
   }), [
     getTheme,
@@ -292,7 +299,6 @@ export function WorkspaceProvider({
     refresh,
     isPending,
     pathname,
-    navigate,
     award
   ]);
 

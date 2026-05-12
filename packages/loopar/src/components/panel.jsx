@@ -112,7 +112,8 @@ export default function MetaPanel(props) {
     hoverable,
     focusable,
     backdrop,
-    "w-full h-full transition-colors"
+    "w-full h-full transition-colors",
+    config.class
   );
 
   return (

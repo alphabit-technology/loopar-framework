@@ -1,8 +1,7 @@
 
 'use strict';
 
-import {BaseController, loopar} from 'loopar';
-import { Op} from '@sequelize/core';
+import { BaseController, loopar, Op } from 'loopar';
 
 export default class ContactController extends BaseController {
   static publicActions = ['submit'];

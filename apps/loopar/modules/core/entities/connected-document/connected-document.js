@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { BaseDocument, loopar } from 'loopar';
+import { BaseDocument, loopar, Op } from 'loopar';
 
 export default class ConnectedDocument extends BaseDocument {
     constructor(props) {
@@ -9,7 +9,11 @@ export default class ConnectedDocument extends BaseDocument {
     }
 
     async save() {
-        const exist = await loopar.db.getValue("Connected Document", "name", this.name, { distinctToId: this.id, includeDeleted: true });
+        const filter = this.id
+            ? { name: this.name, id: { [Op.ne]: this.id } }
+            : { name: this.name };
+
+        const exist = await loopar.db.getValue("Connected Document", "name", filter, { includeDeleted: true });
 
         if (exist) {
             await loopar.db.setValue("Connected Document", "__document_status__", "Active", this.name);

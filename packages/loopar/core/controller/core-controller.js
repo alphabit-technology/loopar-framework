@@ -50,7 +50,6 @@ export default class CoreController extends AuthController {
       description: description || "The document you are looking for does not exist",
     };
 
-    // Return raw data for AJAX channels (POST or any /api/* verb).
     const isAjax = this.method === "POST" || this.req?.__WORKSPACE_NAME__ === "api";
     if (isAjax) {
       return document.data;
@@ -94,8 +93,23 @@ export default class CoreController extends AuthController {
     return await this.render(document);
   }
 
-  redirect(url = null) {
-    return { redirect: url };
+  /**
+   * Returns a redirect payload for the client.
+   * @param {string|null} url
+   * @param {{ hard?: boolean }} [opts]
+   */
+  redirect(url = null, { hard = false } = {}) {
+    return { redirect: url, hardRedirect: hard };
+  }
+
+  refresh(url = null) {
+    if (url) return this.redirect(url, { hard: false });
+    return { refresh: 'soft' };
+  }
+
+  reload(url = null) {
+    if (url) return this.redirect(url, { hard: true });
+    return { refresh: 'hard' };
   }
 
   async getError(code, { title = "Error", message = "An error occurred.." } = {}) {

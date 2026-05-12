@@ -1,6 +1,6 @@
 'use strict'
 
-import { BaseDocument, loopar } from "loopar";
+import { BaseDocument, loopar, Op } from "loopar";
 
 export default class User extends BaseDocument {
   constructor(props) {
@@ -25,11 +25,11 @@ export default class User extends BaseDocument {
       loopar.throw('User name "Administrator" is not allowed');
     }
 
-    if (await loopar.db.getValue('User', 'id', this.name, { distinctToId: this.id })) {
+    if (await loopar.db.getValue('User', 'id', { name: this.name, ...excludeSelf })) {
       loopar.throw(`The name <strong>${this.name}</strong> is invalid`);
     }
 
-    if (await loopar.db.getValue('User', 'id', { email: this.email }, { distinctToId: this.id })) {
+    if (await loopar.db.getValue('User', 'id', { email: this.email, ...excludeSelf })) {
       loopar.throw(`The email <strong>${this.email}</strong> is invalid`);
     }
   }

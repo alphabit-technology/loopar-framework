@@ -1,51 +1,231 @@
 import dayjs from 'dayjs';
 import {getTime} from './date-utils.js';
 
-/**
- * Database column types using Sequelize DataTypes
- * This ensures compatibility and leverages Sequelize's built-in type system
- */
 export const TYPES = Object.freeze({
   increments: 'increments',
+  timestamps: 'timestamps',
   integer: 'INTEGER',
   bigInteger: 'BIGINT',
+  smallint: 'SMALLINT',
+  tinyint: 'TINYINT',
   float: 'FLOAT',
   decimal: 'DECIMAL',
   double: 'DOUBLE',
-  smallint: 'SMALLINT',
-  tinyint: 'TINYINT',
-  string: 'STRING',           // VARCHAR(255)
+
+  string: 'VARCHAR',
   text: 'TEXT',
-  mediumtext: 'TEXT.medium',
-  longtext: 'TEXT.long',
+  mediumtext: 'MEDIUMTEXT',
+  longtext: 'LONGTEXT',
+
   uuid: 'UUID',
   enum: 'ENUM',
   boolean: 'BOOLEAN',
-  date: 'DATEONLY',
-  dateTime: 'DATE',
+
+  date: 'DATE',
+  dateTime: 'DATETIME',
   time: 'TIME',
-  timestamp: 'DATE',
-  timestamps: 'timestamps',
+  timestamp: 'TIMESTAMP',
+
   binary: 'BLOB',
   json: 'JSON',
   jsonb: 'JSONB',
+
   geometry: 'GEOMETRY',
-  point: 'GEOMETRY.POINT',
-  multiPoint: 'GEOMETRY.MULTIPOINT'
+  point: 'POINT',
+  multiPoint: 'MULTIPOINT',
 });
 
-/*Types to use in HTML inputs types*/
-export const inputType = {
-  data: "text",
-  text: "text",
-  email: "email",
-  decimal: "number",
-  percent: "number",
-  currency: "text",
-  int: "number",
-  long_int: "number",
-  read_only: "text",
+export const COLUMN_FORMATS = {
+  data: {
+    description: "Short generic text. VARCHAR (length default 255).",
+    inputType: "text",
+    aliases: ["text", "read_only"],
+    legacyTags: ["VARCHAR"],
+    sql: (t, name, d) => t.string(name, d.length || 255),
+  },
+  email: {
+    description: "Email address. VARCHAR.",
+    inputType: "email",
+    sql: (t, name, d) => t.string(name, d.length || 255),
+  },
+  password: {
+    description: "Hashed password. VARCHAR (never store in plain text).",
+    inputType: "password",
+    sql: (t, name, d) => t.string(name, d.length || 255),
+  },
+  text: {
+    description: "Long-form text. SQL TEXT (no key-length on UNIQUE).",
+    inputType: "text",
+    legacyTags: ["TEXT"],
+    sql: (t, name) => t.text(name),
+  },
+  mediumtext: {
+    description: "Medium-sized text (MySQL MEDIUMTEXT, TEXT elsewhere).",
+    inputType: "text",
+    legacyTags: ["MEDIUMTEXT"],
+    sql: (t, name) => t.text(name, "mediumtext"),
+  },
+  longtext: {
+    description: "Large text blob (MySQL LONGTEXT, TEXT elsewhere).",
+    inputType: "text",
+    legacyTags: ["LONGTEXT"],
+    sql: (t, name) => t.text(name, "longtext"),
+  },
+
+  int: {
+    description: "32-bit signed integer.",
+    inputType: "number",
+    aliases: ["integer"],
+    legacyTags: ["INTEGER"],
+    sql: (t, name) => t.integer(name),
+  },
+  long_int: {
+    description: "64-bit signed integer.",
+    inputType: "number",
+    aliases: ["bigint"],
+    legacyTags: ["BIGINT"],
+    sql: (t, name) => t.bigInteger(name),
+  },
+  float: {
+    description: "Single-precision float.",
+    inputType: "number",
+    legacyTags: ["FLOAT"],
+    sql: (t, name) => t.float(name),
+  },
+  double: {
+    description: "Double-precision float (DOUBLE / DOUBLE PRECISION).",
+    inputType: "number",
+    legacyTags: ["DOUBLE"],
+    sql: (t, name) => t.double(name),
+  },
+  decimal: {
+    description: "Fixed-precision decimal. precision/scale from data.",
+    inputType: "number",
+    aliases: ["percent"],
+    legacyTags: ["DECIMAL"],
+    sql: (t, name, d) => t.decimal(name, d.precision || 10, d.scale || 2),
+  },
+  currency: {
+    description:
+      "Money amount. Stored as DECIMAL — no native CURRENCY type exists " +
+      "across MySQL/PG/SQLite, so we fall back to fixed-precision decimal.",
+    inputType: "text",
+    sql: (t, name, d) => t.decimal(name, d.precision || 18, d.scale || 4),
+  },
+
+  date: {
+    description: "Calendar date (no time).",
+    inputType: "date",
+    legacyTags: ["DATE"],
+    sql: (t, name) => t.date(name),
+  },
+  datetime: {
+    description: "Date + time (TIMESTAMP / DATETIME depending on dialect).",
+    inputType: "datetime-local",
+    legacyTags: ["DATETIME", "TIMESTAMP"],
+    sql: (t, name) => t.timestamp(name),
+  },
+  time: {
+    description: "Time of day.",
+    inputType: "time",
+    legacyTags: ["TIME"],
+    sql: (t, name) => t.time(name),
+  },
+
+  boolean: {
+    description: "True/false (BOOLEAN — INTEGER on SQLite via Knex).",
+    inputType: "checkbox",
+    legacyTags: ["BOOLEAN"],
+    sql: (t, name) => t.boolean(name),
+  },
+  json: {
+    description: "JSON object. Maps to native JSON where supported.",
+    inputType: "text",
+    legacyTags: ["JSON"],
+    sql: (t, name) => t.json(name),
+  },
+  jsonb: {
+    description: "Binary JSON (PG-only; falls back to JSON elsewhere).",
+    inputType: "text",
+    legacyTags: ["JSONB"],
+    sql: (t, name) => t.jsonb(name),
+  },
+  uuid: {
+    description: "UUID. CHAR(36) on most dialects, native UUID on PG.",
+    inputType: "text",
+    legacyTags: ["UUID"],
+    sql: (t, name) => t.uuid(name),
+  },
+  blob: {
+    description: "Binary blob (BLOB / BYTEA).",
+    inputType: "file",
+    legacyTags: ["BLOB"],
+    sql: (t, name) => t.binary(name),
+  },
+  increments: {
+    description: "Auto-increment primary key (SERIAL / AUTO_INCREMENT).",
+    inputType:   "number",
+    legacyTags:  ["increments"],
+    sql: (t, name) => t.increments(name),
+  },
 };
+
+/**
+ * Register a new column format at runtime (plugins / extensions).
+ * Throws on collision — formats are append-only by design so a plugin
+ * can't silently change DDL semantics for an existing key.
+ */
+export function registerColumnFormat(name, def) {
+  if (!name || !def) throw new Error("registerColumnFormat: name and def required");
+  if (COLUMN_FORMATS[name]) {
+    throw new Error(`registerColumnFormat: format '${name}' already exists`);
+  }
+  if (typeof def.sql !== "function") {
+    throw new Error(`registerColumnFormat('${name}'): def.sql must be a function`);
+  }
+  COLUMN_FORMATS[name] = def;
+  rebuildDerivedMaps();
+}
+
+export const inputType = {};
+export const COLUMN_FORMAT = {};
+export const LEGACY_TAG_TO_FORMAT = new Map();
+
+function rebuildDerivedMaps() {
+  const it  = {};
+  const cf  = {};
+  LEGACY_TAG_TO_FORMAT.clear();
+
+  for (const [key, def] of Object.entries(COLUMN_FORMATS)) {
+    it[key] = def.inputType || "text";
+    cf[key] = key;
+
+    for (const tag of def.legacyTags || []) {
+      LEGACY_TAG_TO_FORMAT.set(tag, key);
+    }
+  }
+
+  for (const [key, def] of Object.entries(COLUMN_FORMATS)) {
+    for (const alias of def.aliases || []) {
+      const lower = alias.toLowerCase();
+      it[lower] = def.inputType || "text";
+      cf[lower] = key;
+    }
+  }
+
+  Object.keys(inputType).forEach(k => delete inputType[k]);
+  Object.assign(inputType, it);
+  Object.keys(COLUMN_FORMAT).forEach(k => delete COLUMN_FORMAT[k]);
+  Object.assign(COLUMN_FORMAT, cf);
+}
+rebuildDerivedMaps();
+
+export function resolveColumnFormat(field) {
+  if (!field?.data) return null;
+  const declared = field.data.format ?? field.data.type;
+  if (!declared) return null;
+  return COLUMN_FORMAT[String(declared).toLowerCase()] || null;
+}
 export const ELEMENT_GROUPS = Object.freeze({
   LAYOUT_ELEMENT: 'layout',
   DESIGN_ELEMENT: 'design',

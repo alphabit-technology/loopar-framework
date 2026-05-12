@@ -114,10 +114,11 @@ export const getMetaFields = (element) => {
             selected: DEFAULTS.background_size,
           },
         },
-        style: {
+        inline_css: {
           element: TEXTAREA,
           data: {
-            label: "Custom CSS",
+            label: "Inline CSS",
+            description: "Raw CSS text (e.g. 'color: red; font-size: 20px;'). Parsed and applied as inline style on the rendered element. For programmatic JSON authoring you can alternatively set `inline_style` to a plain object.",
             rows: 3,
           },
         },

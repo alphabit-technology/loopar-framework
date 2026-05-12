@@ -1,16 +1,13 @@
-import { format as Format, setHours, setMinutes, setSeconds, parse } from 'date-fns';
+import { format as Format, setHours, setMinutes, setSeconds } from 'date-fns';
 
 const getDate = (date=new Date(), format) => {
   if(!date) return null;
 
   if(format){
-    if(typeof date === "string"){
-      date = parse(new Date(date).toString(), 'yyyy-MM-dd', new Date());
-    } else if(typeof date === "object"){
-      date = new Date(date);
-    }else{
-      return null;
-    }
+    if(typeof date !== "string" && typeof date !== "object") return null;
+
+    date = new Date(date);
+    if(isNaN(date.getTime())) return null;
 
     return Format(date, format === "DB" ? 'yyyy-MM-dd' : format);
   }
@@ -22,15 +19,10 @@ const getDateTime = (date=new Date(), format) => {
   if (!date) return null;
 
   if (format) {
-    if (typeof date === "string") {
-      date = parse((new Date(date)).toString(), 'yyyy-MM-dd HH:mm:ss', new Date());
-    } else if (typeof date === "object") {
-      date = new Date(date);
-    } else {
-      return null;
-    }
+    if (typeof date !== "string" && typeof date !== "object") return null;
 
-    if(date == "Invalid Date") return null;
+    date = new Date(date);
+    if(isNaN(date.getTime())) return null;
 
     return Format(date, format === "DB" ? 'yyyy-MM-dd HH:mm:ss' : format);
   }
@@ -57,7 +49,6 @@ const getTime = (date = new Date(), format) => {
     }
   }
 
-  /**Because our time widget doesn't control the seconds yet.*/
   time = setSeconds(time, "00");
   
   if (format) {

@@ -27,25 +27,28 @@ export default function DateTime(props) {
   const { renderInput, data } = BaseInput(props);
 
   return renderInput(field => {
-    const initialHour = dayjs(field.value).format("HH:mm");
+    const parsed = dayjs(field.value);
+    const isValid = !!field.value && parsed.isValid();
+    const baseDate = isValid ? parsed.toDate() : null;
+    const initialHour = isValid ? parsed.format("HH:mm") : "00:00";
 
     const setTimeHandler = (val) => {
-      const [hours, minutes] = val.split(":");
-      const date = dayjs(field.value).toDate();
+      const [hours, minutes] = val.split(":").map(v => parseInt(v) || 0);
+      const date = baseDate ? new Date(baseDate) : new Date();
       date.setHours(hours);
       date.setMinutes(minutes);
+      date.setSeconds(0);
 
       field.onChange({target: { value: date }});
     };
 
     const setDateHandler = (val) => {
+      if (!val) return;
       const newDate = dayjs(val);
-      const [year, month, day] = [newDate.year(), newDate.month() + 1, newDate.date()];
-
-      const date = dayjs(field.value).toDate();
-      date.setFullYear(year);
-      date.setMonth(month - 1);
-      date.setDate(day);
+      const date = baseDate ? new Date(baseDate) : new Date();
+      date.setFullYear(newDate.year());
+      date.setMonth(newDate.month());
+      date.setDate(newDate.date());
 
       field.onChange({target: { value: date }});
     }
@@ -60,11 +63,11 @@ export default function DateTime(props) {
                 variant={"outline"}
                 className={cn(
                   "w-[240px] pl-3 text-left font-normal",
-                  !field.value && "text-muted-foreground"
+                  !isValid && "text-muted-foreground"
                 )}
               >
-                {field.value ? (
-                  format(dayjs(field.value).isValid() ? new Date(field.value) : new Date(), "PPP HH:mm:ss a")
+                {isValid ? (
+                  format(baseDate, "PPP HH:mm")
                 ) : (
                   <span>Pick a date & time</span>
                 )}
@@ -81,7 +84,7 @@ export default function DateTime(props) {
               <TabsContent value="calendar">
                 <Calendar
                   mode="single"
-                  selected={field.value}
+                  selected={baseDate ?? undefined}
                   onSelect={setDateHandler}
                   disabled={(date) =>
                     date > new Date() || date < new Date("1900-01-01")

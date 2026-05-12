@@ -135,7 +135,7 @@ export default function Row(props) {
       colMargin={config.col_margin}
       spacing={_spacing}
     >
-      <div className={cn("flex flex-col", rowHeight)}>
+      {/* <div className={cn("flex flex-col", rowHeight)}> */}
         <Droppable
           {...props}
           elements={cols}
@@ -156,7 +156,7 @@ export default function Row(props) {
             ...props.style,
           }}
         />
-      </div>
+      {/* </div> */}
       <LayoutSelector setLayout={handleSetLayout} current={layout} />
     </RowContextProvider>
   );

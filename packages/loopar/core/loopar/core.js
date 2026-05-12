@@ -46,7 +46,11 @@ export class Core extends Builder {
 
             if (data) {
               data = this.utils.isJSON(data) ? JSON.parse(data) : null;
-              if(data.__document_status__ !== 'Deleted') {
+              // `__deleted_at__` is the canonical tombstone signal at
+              // both DB and FS levels (Task #88). makeJSON preserves the
+              // timestamp for soft-deleted entities and strips it for
+              // active ones, so the FS read aligns with the DB row.
+              if (!data.__deleted_at__) {
                 data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
                 data.type = titleize(singularize(core.name));
                 data.__MODULE__ = module.name;

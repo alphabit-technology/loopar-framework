@@ -25,77 +25,91 @@ const mergeStyle = (target, addition) => {
   return { ...base, ...addition };
 };
 
+const parseCssText = (css) => {
+  if (typeof css !== "string" || !css.trim()) return null;
+  const out = {};
+  for (const decl of css.split(";")) {
+    const [rawProp, ...rest] = decl.split(":");
+    if (!rawProp || rest.length === 0) continue;
+    const prop = rawProp.trim();
+    const value = rest.join(":").trim();
+    if (!prop || !value) continue;
+
+    const reactKey = prop.startsWith("--")
+      ? prop
+      : prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    out[reactKey] = value;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+};
+
+export const toCssText = (obj) => {
+  if (!obj || typeof obj !== "object") return "";
+  const parts = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined || value === null || value === "") continue;
+    const cssKey = key.startsWith("--")
+      ? key
+      : key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+    parts.push(`${cssKey}: ${value};`);
+  }
+  return parts.join(" ");
+};
+
 export function prepareMeta(metaProps) {
-  metaProps.data ??= {};
-  const data = metaProps.data;
-  metaProps.elements = metaProps.elements || [];
+  const out = { ...metaProps };
+  out.data = out.data ? { ...out.data } : {};
+  out.elements = out.elements || [];
 
-  const getSrc = () => {
-    if (data) {
-      return fileManager.getMappedFiles(data.background_image, data.name);
-    }
-    return [];
-  }
+  const data = out.data;
 
-  if (data) {
-    const backgroundColor = {};
-    if (data?.background_color) {
-      const color = loopar.utils.objToRGBA(data.background_color);
+  const getSrc = () => fileManager.getMappedFiles(data.background_image, data.name) || [];
 
-      if (color) {
-        Object.assign(backgroundColor, {
-          backgroundColor: color,
-          backgroundBlendMode: data.background_blend_mode || 'normal',
-        });
-      }
-    }
-
-    if (data.background_image && data.background_image.length > 0) {
-      const src = getSrc();
-
-      if (src && src.length > 0) {
-        const imageUrl = src[0].src || "/uploads/empty-image.svg";
-
-        const backgroundImage = {
-          backgroundImage: `url("${imageUrl}")`,
-          backgroundSize: data.background_size || "cover",
-          backgroundPosition: data.background_position || "center",
-          backgroundRepeat: data.background_repeat || "no-repeat",
-
-          ...backgroundColor
-        }
-
-        metaProps.imageProps = {
-          src: imageUrl
-        }
-
-        if (metaProps.element === "image") {
-          Object.assign(metaProps.imageProps, {
-            alt: data.label || "",
-            title: data.description || "",
-          });
-
-          metaProps.coverProps = {
-            style: { ...backgroundImage }
-          }
-
-          if (data.aspect_ratio) {
-            const merged = mergeStyle(metaProps.style, {});
-            if (hasOwnKeys(merged)) metaProps.style = merged;
-          }
-        } else {
-          const merged = mergeStyle(metaProps.style, backgroundImage);
-          if (hasOwnKeys(merged)) metaProps.style = merged;
-        }
-      }
-    }
-    if (metaProps.element != "image") {
-      const merged = mergeStyle(metaProps.style, backgroundColor);
-      if (hasOwnKeys(merged)) metaProps.style = merged;
+  const backgroundColor = {};
+  if (data.background_color) {
+    const color = loopar.utils.objToRGBA(data.background_color);
+    if (color) {
+      backgroundColor.backgroundColor = color;
+      backgroundColor.backgroundBlendMode = data.background_blend_mode || 'normal';
     }
   }
 
-  return metaProps
+  if (data.background_image && data.background_image.length > 0) {
+    const src = getSrc();
+    if (src.length > 0) {
+      const imageUrl = src[0].src || "/uploads/empty-image.svg";
+      const backgroundImage = {
+        backgroundImage: `url("${imageUrl}")`,
+        backgroundSize: data.background_size || "cover",
+        backgroundPosition: data.background_position || "center",
+        backgroundRepeat: data.background_repeat || "no-repeat",
+        ...backgroundColor,
+      };
+
+      out.imageProps = { src: imageUrl };
+
+      if (out.element === "image") {
+        out.imageProps.alt = data.label || "";
+        out.imageProps.title = data.description || "";
+        out.coverProps = { style: { ...backgroundImage } };
+      } else {
+        const merged = mergeStyle(out.style, backgroundImage);
+        if (hasOwnKeys(merged)) out.style = merged;
+      }
+    }
+  }
+
+  if (out.element !== "image") {
+    const merged = mergeStyle(out.style, backgroundColor);
+    if (hasOwnKeys(merged)) out.style = merged;
+  }
+
+  const parsedCss = parseCssText(data.inline_css);
+  if (parsedCss) {
+    out.style = mergeStyle(out.style, parsedCss);
+  }
+
+  return out;
 }
 
 export const useBuildMetaProps = (props) => {

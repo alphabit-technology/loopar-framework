@@ -3,7 +3,7 @@ import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
 import { parseDocStructure } from './tools.js';
-import { Sequelize } from 'sequelize';
+import { FRAMEWORK_OWNED_COLUMN_NAMES } from '../global/audit.js';
 
 export default class CoreDocument {
   #fields = {};
@@ -65,10 +65,9 @@ export default class CoreDocument {
   }
 
   async __init__() {
-    // Expand legacy wire-compact (e/els → element/elements) at this load
-    // boundary so #makeFields and every downstream reader only ever sees
-    // the canonical shape.
     await this.#makeFields(loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []));
+
+    this.#defineFrameworkOwnedProps();
 
     if (this.__DATA__ && this.__DATA__.doc_structure) {
       const parsed = JSON.parse(this.__DATA__.doc_structure);
@@ -144,10 +143,6 @@ export default class CoreDocument {
           (Array.isArray(val) && val.length > 0) ? value : this.__DATA__[fieldName]
         );
       } else {
-        if (fieldName === "doc_structure") {
-          //console.log("doc_structure", value, this.__DATA__[fieldName])
-        }
-
         this.#fields[fieldName] = new DynamicField(field, value || this.__DATA__[fieldName]);
       }
 
@@ -199,6 +194,37 @@ export default class CoreDocument {
     return loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []).filter(field => field.data.name !== ID);
   }
 
+  /**
+   * Define `this.id` and `this.__created_at__` / `__updated_at__` /
+   * `__deleted_at__` / `__document_status__` as enumerable getter/setter
+   * pairs backed by __DATA__. Mirrors what #makeField does for declared
+   * fields — minus the DynamicField wrapper, since these are plain scalar
+   * columns with no UI metadata to attach.
+   *
+   * Safe to call even when an entity isn't auditable: a non-auditable
+   * table simply won't have those columns in __DATA__, the getters
+   * resolve to undefined, and nothing breaks. Defining them
+   * unconditionally keeps this code branchless.
+   *
+   * Idempotent: if a property was already defined (subclass override,
+   * field collision, etc.), we leave it alone so we never clobber
+   * existing behavior.
+   */
+  #defineFrameworkOwnedProps() {
+    for (const name of FRAMEWORK_OWNED_COLUMN_NAMES) {
+      if (Object.getOwnPropertyDescriptor(this, name)) continue;
+      Object.defineProperty(this, name, {
+        get: () => this.__DATA__?.[name],
+        set: (val) => {
+          if (!this.__DATA__) this.__DATA__ = {};
+          this.__DATA__[name] = val;
+        },
+        configurable: false,
+        enumerable: true,
+      });
+    }
+  }
+
   async #makeFields(fields = this.getDocypeStructure()) {
     const entityFields = this.__ENTITY__.__REF__.__FIELDS__;
 
@@ -223,7 +249,18 @@ export default class CoreDocument {
   }
 
   async __ID__() {
-    return this.__IS_NEW__ ? await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__) : this.id;
+    // `this.id` is the cached value loaded with the doc; trust it when set
+    // regardless of __IS_NEW__. The DB fallback covers two cases:
+    //   1. A fresh doc that just got insertRow'd — id was assigned on the
+    //      payload but not pushed back to `this`, so `this.id` is still
+    //      undefined. getValue picks it up by name.
+    //   2. A doc loaded from a stale ref cache whose __FIELDS__ predates
+    //      the id-as-framework refactor and therefore didn't SELECT `id`.
+    //      Without this fallback, deleteChildRecords would issue a
+    //      `DELETE FROM <child> WHERE parent_id = undefined` and Knex
+    //      would bail with "Undefined binding(s) detected".
+    if (this.id != null) return this.id;
+    return await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__);
   }
 
   async deleteChildRecords(force = false) {
@@ -231,21 +268,19 @@ export default class CoreDocument {
     const childValuesReq = this.childValuesReq;
 
     if (Object.keys(childValuesReq).length === 0) return;
-    
+
+    if (ID == null) return;
+
     for (const [key, value] of Object.entries(childValuesReq)) {
       if(key == this.name) continue;
       if(!await loopar.db.hasTable(key)) continue;
-      
+
       const values = loopar.utils.isJSON(value) ? JSON.parse(value) : Array.isArray(value) ? value : null;
 
       if (values || force) {
-        await loopar.db.sequelize.query(
+        await loopar.db.raw(
           `DELETE FROM ${loopar.db.tableName(key)} WHERE parent_id = ?`,
-          {
-            replacements: [ID],
-            type: Sequelize.QueryTypes.DELETE,
-            transaction: loopar.db.transaction
-          }
+          [ID]
         );
       }
     }
@@ -257,14 +292,15 @@ export default class CoreDocument {
 
     const updateRows = async (Ent, rows, parentType, parentId) => {
       const nextId = await loopar.db.nextId(Ent);
+      const cleanParentId = Number.isFinite(+parentId) ? parseInt(parentId, 10) : parentId;
       for (const [index, row] of rows/*.sort((a, b) => a.id - b.id)*/.entries()) {
         row.id = nextId + index;
         row.name = loopar.utils.randomString(15);
         row.parent_document = parentType;
-        row.parent_id = parentId;
+        row.parent_id = cleanParentId;
 
         const document = await loopar.newDocument(Ent, row);
-        await document.save();
+        await document.save(args.forceChildren ? { forceChildren: true } : undefined);
       }
     }
     
@@ -300,7 +336,7 @@ export default class CoreDocument {
       }
     }
 
-    if (!loopar.installing) {
+    if (!loopar.installing || args.forceChildren) {
       const childValuesReq = this.childValuesReq;
 
       if (Object.keys(childValuesReq).length) {
@@ -309,7 +345,6 @@ export default class CoreDocument {
       }
     }
 
-    await this.updateHistory();
     const files = this.__DATA__.__REQ_FILES__ || [];
 
     for (const file of files) {
@@ -325,26 +360,6 @@ export default class CoreDocument {
 
   fieldsName() {
 
-  }
-
-  async updateHistory(action) {
-    if (loopar.installing) return;
-    if (this.__ENTITY__.name !== "Document History") {
-      if (!loopar.installing || (loopar.installing && this.__ENTITY__.name !== "Entity")) {
-
-        const id = await this.__ID__();
-        const hist = await loopar.newDocument("Document History");
-
-        hist.name = loopar.utils.randomString(15);
-        hist.document_id = id;
-        hist.document_name = this.__DOCUMENT_NAME__;
-        hist.document = this.__ENTITY__.name;
-        hist.action = action || (this.__IS_NEW__ ? "Created" : "Updated");
-        hist.date = dayjs(new Date())//.format("YYYY-MM-DD HH:mm:ss");
-        hist.user = loopar.currentUser?.name;
-        await hist.save({ validate: false });
-      }
-    }
   }
 
   async validate() {
@@ -399,7 +414,7 @@ export default class CoreDocument {
   }
 
   async delete() {
-    const { sofDelete, force, updateHistory } = arguments[0] || {};
+    const { sofDelete, force, build = true } = arguments[0] || {};
     const connections = await this.getConnectedDocuments();
 
     let message = connections.map((e, index) => {
@@ -419,7 +434,6 @@ export default class CoreDocument {
     await loopar.db.beginTransaction();
     await this.deleteChildRecords(true);
     await loopar.db.deleteRow(this.__ENTITY__.name, this.__DOCUMENT_NAME__, sofDelete);
-    updateHistory && await this.updateHistory("Deleted");
 
     await loopar.db.endTransaction();
     console.log(["Deleting", this.__ENTITY__.name, this.name]);
@@ -527,12 +541,6 @@ export default class CoreDocument {
       return { ...await acc, [cur.name]: await value(cur) }
     }, {});
   }
-
-  /*async rawValues() {
-     return Object.values(this.#fields).reduce(async (acc, cur) => {
-        return { ...await acc, [cur.name]: cur.value }
-     }, {});
-  }*/
 
   async rawValues() {
     const value = async (field) => {

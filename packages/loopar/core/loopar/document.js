@@ -6,7 +6,6 @@ export class Document extends Console {
   async getEntity(entity, data = null, { ifNotFound = 'throw', parse = false } = {}) {
     const ref = this.getRef(entity);
 
-    console.log(["On get Entity", ref]);
     return await documentManage.getDocument(ref.__ENTITY__, ref.__NAME__, data, { ifNotFound, parse });
   }
 
@@ -19,6 +18,7 @@ export class Document extends Console {
    * @returns 
    */
   async getDocument(document, name, data = null, { ifNotFound = 'throw', parse = false } = {}) {
+    console.log(["On get Document", document, name]);
     return await documentManage.getDocument(document, name, data, { ifNotFound, parse });
   }
 
@@ -32,9 +32,9 @@ export class Document extends Console {
     return await documentManage.newDocument(document, data);
   }
 
-  async deleteDocument(document, name, { sofDelete = true, force = false, ifNotFound = null, updateHistory = true } = {}) {
+  async deleteDocument(document, name, { sofDelete = true, force = false, ifNotFound = null } = {}) {
     const Doc = await this.getDocument(document, name);
-    await Doc.delete({ sofDelete, force, updateHistory });
+    await Doc.delete({ sofDelete, force });
   }
 
   async getList(document, { data = {}, fields = null, filters = {}, orderBy = 'name', limit = 10, offset = 0, q = null, rowsOnly = false } = {}, ifNotFound = null) {

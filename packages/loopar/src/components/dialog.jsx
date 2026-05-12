@@ -3,6 +3,7 @@ import loopar from "loopar";
 import {Button} from "@cn/components/ui/button";
 import { AlertCircle, InfoIcon, HelpCircle } from "lucide-react";
 import { cn } from "@cn/lib/utils"
+import { SlideButton } from "./button";
 
 import {
   Dialog,
@@ -15,6 +16,8 @@ import {
 
 import { Label } from "@cn/components/ui/label";
 import { Textarea } from "@cn/components/ui/textarea";
+
+export { SlideButton };
 
 const DialogContext = React.createContext();
 const DialogContextProvider = ({children}) => {
@@ -114,7 +117,6 @@ const MetaDialog = (props) => {
           props.ok && props.ok();
           setDialogOpen(false);
         };
-        //okButton.dismiss = true;
       }
 
       const cancelButton = buttons.find((b) => b.name === "cancel");
@@ -126,7 +128,6 @@ const MetaDialog = (props) => {
           props.cancel && props.cancel();
           setDialogOpen(false, false);
         };
-        //cancelButton.dismiss = true;
       }
     }
 
@@ -147,7 +148,10 @@ const MetaDialog = (props) => {
             <>
             {
               contentType === "text" ? (
-                <p className="h-full whitespace-pre-line">{content}</p>
+                <div
+                  className="h-full"
+                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
+                />
               ) : (
                 <div className="h-full">{content}</div>
               )
@@ -157,21 +161,38 @@ const MetaDialog = (props) => {
           </DialogDescription>
           {props.hasFooter !== false && (
             <DialogFooter>
-              {(getButtons() || []).map((b) => (
-                <Button
-                  key={b.name}
-                  variant={b.variant || "primary"}
-                  onClick={(e) => {
-                    e.preventDefault();
+              {(getButtons() || []).map((b) => {
+                if (props.slide && b.name === "ok") {
+                  return (
+                    <SlideButton
+                      key={b.name}
+                      text={props.slideText || b.text || "Slide to confirm"}
+                      confirmedText={props.slideConfirmedText || "Confirmed"}
+                      threshold={typeof props.slideThreshold === "number" ? props.slideThreshold : 0.95}
+                      onConfirm={() => {
+                        b.dismiss && setDialogOpen(false);
+                        b.onClick();
+                      }}
+                    />
+                  );
+                }
 
-                    b.dismiss && setDialogOpen(false);
-                    b.onClick();
-                  }}
-                  ref={b.name === "ok" ? okButton : null}
-                >
-                  {b.content || b.text || b.label}
-                </Button>
-              ))}
+                return (
+                  <Button
+                    key={b.name}
+                    variant={b.variant || "primary"}
+                    onClick={(e) => {
+                      e.preventDefault();
+
+                      b.dismiss && setDialogOpen(false);
+                      b.onClick();
+                    }}
+                    ref={b.name === "ok" ? okButton : null}
+                  >
+                    {b.content || b.text || b.label}
+                  </Button>
+                );
+              })}
             </DialogFooter>
           )}
         </DialogContent>

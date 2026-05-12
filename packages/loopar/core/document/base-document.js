@@ -2,7 +2,7 @@
 
 import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
-import {Op} from '@sequelize/core';
+import { Op } from 'db-env';
 
 function combineSequelizeConditions(...conditions) {
   const validConditions = conditions.filter(cond => {
@@ -24,11 +24,6 @@ function combineSequelizeConditions(...conditions) {
 
 
 export default class BaseDocument extends CoreDocument {
-
-  constructor(props) {
-    super(props);
-  }
-
   validateReservedFieldName(fieldName){
     const restricrtedClass = [BaseDocument, CoreDocument]
 

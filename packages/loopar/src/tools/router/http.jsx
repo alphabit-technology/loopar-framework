@@ -3,19 +3,6 @@ export default class HTTP {
   #options = {};
 
   /**
-   * Low-level transport. Sends an HTTP request to a literal URL.
-   *
-   * Most app code SHOULD NOT call this directly. Prefer:
-   *   - loopar.call(Doc, action, params)        ← high-level RPC sugar
-   *   - loopar.api.{get|post|put|patch|delete}  ← verb-explicit RPC
-   *
-   * Both of those build the URL as /api/{Document}/{action} automatically
-   * and run through send() under the hood. Use send() directly only when:
-   *   1. The URL cannot be expressed as /api/{Doc}/{action} — e.g. SPA
-   *      page-meta bootstrap (workspace-provider) or external endpoints.
-   *   2. A form posts to its own page URL (login, install, connect) and
-   *      depends on the workspace-as-router pattern.
-   *
    * @param {Object} options
    * @param {string} options.action - Literal URL (relative or absolute).
    * @param {string} [options.method="POST"]
@@ -141,18 +128,29 @@ export default class HTTP {
             });
           }
 
+          if (data?.redirect) {
+            if (data.hardRedirect) {
+              window.location.replace(data.redirect);
+            } else {
+              self.navigate(data.redirect, { replace: true });
+            }
+            if (options.success) options.success?.(data?.message || data);
+            return data;
+          }
+
           if (options.success) {
             options.success?.(data?.message || data);
           }
 
-          if (data?.redirect) {
-            setTimeout(() => {
-              window.location.href = data.redirect;
-            }, 0);
-            return data;
-          }
-
           data?.notify && self.notify(data.notify);
+
+          if (data?.refresh) {
+            if (data.refresh === 'hard') {
+              window.location.reload();
+            } else {
+              self.refresh();
+            }
+          }
 
           return data;
         });
@@ -160,9 +158,11 @@ export default class HTTP {
       return await withFreeze(fetchPromise);
     } catch (error) {
       if (error?.redirect) {
-        setTimeout(() => {
-          window.location.href = error.redirect;
-        }, 0);
+        if (error.hardRedirect) {
+          window.location.replace(error.redirect);
+        } else {
+          self.navigate(error.redirect, { replace: true });
+        }
         return;
       }
 

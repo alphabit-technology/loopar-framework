@@ -3,7 +3,6 @@
 import { BaseDocument, fileManage, loopar } from 'loopar';
 import { buildInstaller } from './builder.js';
 
-
 export default class App extends BaseDocument {
   constructor(props) {
     super(props);
@@ -12,50 +11,61 @@ export default class App extends BaseDocument {
   async save(makeStructure = true) {
     const args = arguments[0] || {};
     const isNew = this.__IS_NEW__;
-    if (isNew && this.git_repo && !["null", "undefined"].includes(this.git_repo)) {
-      loopar.validateGitRepository(this.git_repo);
 
-      const app_name = this.git_repo.split('/').pop().replace('.git', '');
-      const appStatus = await loopar.appStatus(app_name);
-
-      if (fileManage.existFileSync(loopar.makePath('apps', app_name))) {
-        if (appStatus === 'installer')
-          loopar.throw('App already exists, update or install it in <a href="/developer/App%20Manager/view">App Manage</a>');
-        else
-          await super.save(args);
-      } else {
-        await loopar.git(app_name).clone(this.git_repo).then(async () => {
-          const appData = fileManage.getAppData(app_name);
-
-          if (!appData || !appData.DeskWorkspace || !appData.DeskWorkspace[app_name]) {
-            loopar.throw('Invalid App Structure');
-            return;
-          }
-
-          const dataInfo = appData.DeskWorkspace[app_name];
-
-          this.name = app_name;
-          this.autor = dataInfo.autor;
-          this.version = dataInfo.version;
-          this.description = dataInfo.description;
-          this.git_repo = dataInfo.git_repo;
-          this.app_info = dataInfo.app_info;
-
-          await super.save(args);
-        });
-      }
-    } else {
-      this.autor = !this.autor || this.autor === '' ? loopar.currentUser.email : this.autor;
-      this.version = !this.version || this.version === '' ? '0.0.1' : this.version;
-      await super.save(args);
-      makeStructure && await this.makeAppStructure();
+    if (makeStructure && !loopar.installing) {
+      await this.validateAppVersion();
     }
 
-    isNew && loopar.setApp({[this.name]: this.version})
-    
+    this.autor = (!this.autor || this.autor === '')
+      ? loopar.currentUser.email
+      : this.autor;
+    this.version = (!this.version || this.version === '')
+      ? '0.0.1'
+      : this.version;
+
+    await super.save(args);
+
+    if (makeStructure) await this.makeAppStructure();
+
+    if (isNew) loopar.setApp({ [this.name]: this.version });
+
     await loopar.build();
 
     return true;
+  }
+
+  async validateAppVersion() {
+    if (this.__IS_NEW__) return;
+
+    const installerData = fileManage.getConfigFile(
+      'installer',
+      loopar.makePath('apps', this.name),
+      null
+    );
+    const physical = installerData?.App?.version;
+    if (!physical) return;
+
+    const installedApp = await loopar.getApp(this.name);
+    const installed = installedApp?.version;
+    if (!installed) return;
+
+    if (this.#compareVersion(physical, installed) > 0) {
+      loopar.throw(
+        `Cannot save "${this.name}": ` +
+        `physical version (${physical}) is ahead of installed (${installed}). ` +
+        `Run <a href="/desk/App Manager/view">Update</a> first to sync the database.`
+      );
+    }
+  }
+
+
+  #compareVersion(a, b) {
+    const pa = (a || '0.0.0').split('.').map(n => parseInt(n, 10) || 0);
+    const pb = (b || '0.0.0').split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < 3; i++) {
+      if (pa[i] !== pb[i]) return pa[i] - pb[i];
+    }
+    return 0;
   }
 
   async makeAppStructure() {
@@ -71,16 +81,13 @@ export default class App extends BaseDocument {
         module_group: 'modules',
         app_name: this.name,
         icon: this.icon,
-        in_sidebar: 1
+        in_sidebar: 1,
       });
-
       await newModule.save();
     }
 
     await fileManage.makeClass(loopar.makePath('apps', this.name), 'installer', {
-      IMPORTS: {
-        CoreInstaller: 'loopar'
-      },
+      IMPORTS: { CoreInstaller: 'loopar' },
       EXTENDS: 'CoreInstaller',
     });
 
@@ -90,8 +97,8 @@ export default class App extends BaseDocument {
 
   async bump(type) {
     const version = this.version.split('.');
-    
-    switch(type) {
+
+    switch (type) {
       case 'major':
         version[0] = parseInt(version[0]) + 1;
         version[1] = 0;
@@ -105,24 +112,23 @@ export default class App extends BaseDocument {
         version[2] = parseInt(version[2]) + 1;
         break;
     }
-    
+
     this.version = version.join('.');
     await this.save(false);
-    await this.buildInstaller()
-    
+    await this.buildInstaller();
+
     return true;
   }
 
-  async buildInstaller(){
-    await buildInstaller({app: this.name, version: this.version});
+  async buildInstaller() {
+    await buildInstaller({ app: this.name, version: this.version });
   }
 
   async setOnInstall() {
     await fileManage.setConfigFile('installed-apps', {
       ...fileManage.getConfigFile('installed-apps'),
-      [this.name]: this.version
+      [this.name]: this.version,
     });
-
     return true;
   }
 

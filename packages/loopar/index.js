@@ -13,7 +13,18 @@ import FormController from "./core/controller/form-controller.js";
 import SystemController from "./apps/core/modules/system/controllers/system/system-controller.js";
 import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.js";
 import * as Helpers from "./core/global/helper.js";
-import { elementsNames, elementsNameByType, elementsDict, AIPrompt, TYPES } from "./core/global/element-definition.js";
+import {
+  elementsNames,
+  elementsNameByType,
+  elementsDict,
+  AIPrompt,
+  TYPES,
+  COLUMN_FORMAT,
+  COLUMN_FORMATS,
+  LEGACY_TAG_TO_FORMAT,
+  resolveColumnFormat,
+  registerColumnFormat,
+} from "./core/global/element-definition.js";
 import { MetaComponents } from "./core/global/require-components.js";
 export {themes, showColors} from "./core/global/themes.js";
 export {generateThemeCSS} from "./core/global/theme-generator.js";
@@ -25,6 +36,20 @@ import {
 import {PermissionManager} from './core/auth/PermissionManager.js'
 import {tenant} from './bin/tenant/tenant-builder.js';
 import { ActionScanner } from "./core/auth/ActionScanner.js";
+import { Op, opByDescription, isOpSymbol } from 'db-env';
+
+import {
+  DOC_STATUS,
+  DOC_STATUS_LABEL,
+  AUDIT_COLUMN_NAMES,
+  AUDIT_COLUMN_SET,
+  FRAMEWORK_OWNED_COLUMN_NAMES,
+  FRAMEWORK_OWNED_COLUMN_SET,
+  coerceDocStatus,
+  isAuditableEntity,
+  addAuditColumns,
+  addPrimaryKey,
+} from './core/global/audit.js';
 
 export {
   loopar,
@@ -46,10 +71,29 @@ export {
   MetaComponents,
   CoreInstaller,
   AIPrompt,
-  parseDocument, TYPES,
+  parseDocument,
+  TYPES,
+  COLUMN_FORMAT,
+  COLUMN_FORMATS,
+  LEGACY_TAG_TO_FORMAT,
+  resolveColumnFormat,
+  registerColumnFormat,
   PermissionManager,
   tenant,
   ActionScanner,
   pruneDocStructure,
-  getNodeKey
+  getNodeKey,
+  Op,
+  opByDescription,
+  isOpSymbol,
+  DOC_STATUS,
+  DOC_STATUS_LABEL,
+  AUDIT_COLUMN_NAMES,
+  AUDIT_COLUMN_SET,
+  FRAMEWORK_OWNED_COLUMN_NAMES,
+  FRAMEWORK_OWNED_COLUMN_SET,
+  coerceDocStatus,
+  isAuditableEntity,
+  addAuditColumns,
+  addPrimaryKey,
 };

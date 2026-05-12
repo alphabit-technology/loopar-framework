@@ -1,6 +1,6 @@
 'use strict';
 
-import { Op } from "sequelize";
+import { Op } from "db-env";
 import { loopar } from "loopar";
 import { ActionScanner } from "./ActionScanner.js";
 

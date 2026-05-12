@@ -10,8 +10,8 @@ export default class SystemController extends BaseController {
     super(props);
   }
 
-  redirect(route = '/auth/login') {
-    return super.redirect(route);
+  redirect(route = '/auth/login', opts = {}) {
+    return super.redirect(route, { hard: true, ...opts });
   }
 
   async publicActionConnect() {
@@ -23,14 +23,16 @@ export default class SystemController extends BaseController {
       }
     } else {
       const response = await model.__meta__();
+      
       response.data = {
         dialect: "mysql",
         host: "localhost",
         port: "3306",
         user: "root",
         password: "root",
-        tyme_zone: "+00:00",
+        time_zone: "+00:00",
       }
+
       return await this.render(response);
     }
   }
@@ -39,33 +41,30 @@ export default class SystemController extends BaseController {
     return this.app_name || "loopar";
   }
 
-  async getInstallerModel() {
-    const installerRoute = loopar.makePath('apps', this.getAppName(), 'installer.js')
+  async getInstallerModel(appName, data = {}) {
+    const installerRoute = loopar.makePath('apps',appName || this.getAppName(), 'installer.js')
 
     const Installer = await fileManage.importClass(installerRoute, false);
 
     if (Installer) return new Installer(this.data);
-    return await loopar.newDocument("Installer", { ...this.data, app_name: this.app_name });
+    return await loopar.newDocument("Installer", { ...(data || this.data), app_name: appName || this.app_name });
+  }
+
+  async unInstallApp(appName, data = {}, reinstall = false) {
+    const model = await this.getInstallerModel(appName, data);
+    model.app_name ??= appName || this.getAppName();
+    
+    if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed' && !reinstall) {
+      loopar.throw("App already installed please refresh page");
+    }
+
+    await model.install(reinstall);
   }
 
   async publicActionInstall(reinstall = false) {
     if (this.hasData()) {
-      const model = await this.getInstallerModel();
-      model.app_name ??= this.getAppName();
-
-      if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed' && !reinstall) {
-        loopar.throw("App already installed please refresh page");
-      }
-
-      await model.install(reinstall);
-      return new Promise(resolve => {
-        setTimeout(() => {
-          // Use the controller's own default — SystemController → /auth/login
-          // after first install; AppManagerController → /desk/App Manager/view
-          // after a re-install.
-          resolve(this.redirect());
-        }, 1000);
-      });
+      await this.unInstallApp(this.getAppName(), this.data, reinstall);
+      return this.redirect("view");
     } else {
       const model = await loopar.newDocument("Installer", this.data)
       const response = await model.__meta__();
@@ -80,12 +79,7 @@ export default class SystemController extends BaseController {
       model.app_name ??= this.getAppName();
 
       await model.install(true);
-
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve(this.redirect());
-        }, 1000);
-      });
+      return this.redirect();
     } else {
       const model = await loopar.newDocument("Update", this.data)
       const response = await model.__meta__();
@@ -111,6 +105,6 @@ export default class SystemController extends BaseController {
   async actionUninstall() {
     const app = await loopar.getDocument("App", this.data.app_name);
     await app.unInstall();
-    return this.redirect('view');  
+    return this.refresh('view');  
   }
 }

@@ -117,6 +117,7 @@ function ReviewForm({ requireCity, requireRating, entity }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const {entityMenu, Document} = useDocument();
 
   useEffect(() => {
     fetch("http://ip-api.com/json")
@@ -134,8 +135,9 @@ function ReviewForm({ requireCity, requireRating, entity }) {
     setError("");
     setLoading(true);
 
+    console.log(["entity", Document]);
     try {
-      await loopar.api.post(entity, "addReview", {
+      await loopar.api.call(Document.Entity.name, "addReview", {
         body: {
           author_name: name.trim(),
           rating,
@@ -305,7 +307,7 @@ export default function MetaReview({
             <div className="flex flex-col gap-3">
               <h3 className="text-lg font-medium">Leave a review</h3>
               <p className="text-sm text-muted-foreground -mt-2">
-                Did we work on your floors? We'd love to hear from you.
+                {data.message}
               </p>
               {!designerMode &&
               <ReviewForm
@@ -332,7 +334,8 @@ MetaReview.metaFields = () => {
         require_rating: { element: SWITCH },
         page_size: { element: INPUT, data: {format: "int"} },
         title: {element: TEXTAREA},
-        subtitle: {element: TEXTAREA}
+        subtitle: {element: TEXTAREA},
+        message: {element: TEXTAREA},
       }
     },
   ];

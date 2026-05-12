@@ -3,7 +3,7 @@
 import SingleConrtroller from './single-controller.js';
 import { loopar } from "loopar";
 
-const  detectCity = async (request) => {
+const detectCity = async (request) => {
   const ip = request.ip;
   
   if (!ip || ip === "::1" || ip === "127.0.0.1") {
@@ -14,17 +14,21 @@ const  detectCity = async (request) => {
   const data = await res.json();
 
   return {
-    city:   data.city   || "",
+    city: data.city   || "",
     region: data.region || "",
   };
 }
 
 export default class PageController extends SingleConrtroller {
-  client= 'page';
+  client = 'page';
   static inheritedActions = ['view'];
   
   constructor(props) {
     super(props);
+  }
+
+  #getApp() {
+    return loopar.webApp;
   }
 
   async publicActionGetReviews() {
@@ -49,22 +53,23 @@ export default class PageController extends SingleConrtroller {
   }
 
   async publicActionAddReview() {
-    const { author_name, city, rating, comment, app, page_id } = this.body;
+    const { author_name, city, rating, comment, app } = this.body;
+    const _app = this.#getApp();
  
     if (!author_name?.trim()) return this.error("Author name is required.");
-    if (!comment?.trim())     return this.error("Comment is required.");
+    if (!comment?.trim()) return this.error("Comment is required.");
     if (rating < 1 || rating > 5) return this.error("Rating must be between 1 and 5.");
  
     const doc = await loopar.newDocument("Review", {
-      name:        loopar.utils.randomString(15),
+      name: loopar.utils.randomString(15),
       author_name: author_name.trim(),
-      city:        (await detectCity(this.req)).city,
-      rating:      parseInt(rating),
-      comment:     comment.trim(),
-      app:         app || "",
-      parent_id:  this.document,
-      approved:    0,
-      helpful:     0,
+      city: (await detectCity(this.req)).city,
+      rating: parseInt(rating),
+      comment: comment.trim(),
+      app: _app.name || "",
+      parent_id: this.document,
+      approved: 0,
+      helpful: 0,
       not_helpful: 0,
     });
  
@@ -76,7 +81,7 @@ export default class PageController extends SingleConrtroller {
   async publicActionVoteReview() {
     const { review_id, vote } = this.body;
  
-    if (!review_id)                              return this.error("review_id is required.");
+    if (!review_id) return this.error("review_id is required.");
     if (!["helpful", "not_helpful"].includes(vote)) return this.error("Invalid vote type.");
  
     const review = await loopar.db.getDoc("Review", { name: review_id, approved: 1 }, 

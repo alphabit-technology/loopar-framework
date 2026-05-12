@@ -1,5 +1,5 @@
 {
-  "id": "7",
+  "id": "45",
   "name": "Document Single Values",
   "module": "core",
   "default_list_view": "List",
@@ -8,15 +8,10 @@
   "include_in_installer": 0,
   "is_child": 0,
   "is_builder": 0,
-  "__document_status__": "Active",
   "__builder__": "",
-  "doc_structure": "[{\"element\":\"row\",\"data\":{\"name\":\"name_and_status_container\",\"key\":\"yw9fxbupf\",\"label\":\"Row1\"},\"elements\":[{\"element\":\"select\",\"data\":{\"name\":\"__document_status__\",\"label\":\"Status\",\"options\":\"Active\\nInactive\\nDraft\\nPending\\nApproved\\nRejected\\nArchived\\nDeleted\",\"default_value\":\"Active\",\"hidden\":1,\"key\":\"ba9omfawt\"},\"elements\":[]},{\"element\":\"id\",\"data\":{\"name\":\"id\",\"label\":\"ID\",\"type\":\"integer\",\"required\":1,\"in_list_view\":0,\"hidden\":1,\"key\":\"a79bu6ykt\"},\"elements\":[]}]},{\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"format\":\"data\",\"size\":\"md\",\"type\":\"text\",\"no_validate_type\":0,\"required\":1,\"unique\":1,\"set_only_time\":1,\"draggable\":0,\"droppable\":0,\"hidden\":0,\"in_list_view\":1,\"collapsed\":0,\"id\":\"input66_el675020497208\",\"searchable\":1,\"key\":\"oluuyvdpn\"},\"elements\":[]},{\"element\":\"input\",\"data\":{\"label\":\"Document\",\"name\":\"document\",\"format\":\"data\",\"size\":\"md\",\"type\":\"default\",\"no_validate_type\":0,\"required\":0,\"unique\":0,\"set_only_time\":0,\"draggable\":0,\"droppable\":0,\"hidden\":0,\"in_list_view\":0,\"collapsed\":0,\"id\":\"input67_el29783882368\",\"key\":\"vdez14aeb\"},\"elements\":[]},{\"element\":\"input\",\"data\":{\"label\":\"Field\",\"name\":\"field\",\"format\":\"data\",\"size\":\"md\",\"type\":\"default\",\"no_validate_type\":0,\"required\":0,\"unique\":0,\"set_only_time\":0,\"draggable\":0,\"droppable\":0,\"hidden\":0,\"in_list_view\":0,\"collapsed\":0,\"id\":\"input68_el151624253799\",\"key\":\"k8lfws498\"},\"elements\":[]},{\"element\":\"textarea\",\"data\":{\"label\":\"Value\",\"key\":\"textarea1_el610449692078\",\"name\":\"value\"},\"elements\":[]},{\"element\":\"date_time\",\"data\":{\"name\":\"deleted_at\",\"label\":\"Deleted At\",\"required\":0,\"in_list_view\":0,\"hidden\":1,\"key\":\"9rkpumgyr\"},\"elements\":[]},{\"element\":\"date_time\",\"data\":{\"label\":\"Created At\",\"key\":\"date_time2_el1102884850192\",\"name\":\"createdAt\"},\"elements\":[]},{\"element\":\"date_time\",\"data\":{\"label\":\"Updated At\",\"key\":\"date_time44_el556563576533\",\"name\":\"updatedAt\"},\"elements\":[]}]",
+  "doc_structure": "[{\"node\": \"yw9fxbupf\", \"element\": \"row\", \"data\": {\"name\": \"name_and_status_container\", \"label\": \"Row1\", \"layout\": \"[50,50]\"}, \"elements\": [{\"node\": \"acpfv66px\", \"element\": \"col\", \"data\": {}}]}, {\"node\": \"oluuyvdpn\", \"element\": \"input\", \"data\": {\"label\": \"Name\", \"name\": \"name\", \"type\": \"VARCHAR\", \"required\": 1, \"unique\": 1, \"set_only_time\": 1, \"in_list_view\": 1, \"id\": \"input66_el675020497208\", \"searchable\": 1}}, {\"node\": \"vdez14aeb\", \"element\": \"input\", \"data\": {\"label\": \"Document\", \"name\": \"document\", \"id\": \"input67_el29783882368\"}}, {\"node\": \"k8lfws498\", \"element\": \"input\", \"data\": {\"label\": \"Field\", \"name\": \"field\", \"id\": \"input68_el151624253799\"}}, {\"node\": \"textarea1_el610449692078\", \"element\": \"textarea\", \"data\": {\"label\": \"Value\", \"name\": \"value\"}}, {\"node\": \"date_time2_el1102884850192\", \"element\": \"date_time\", \"data\": {\"label\": \"Created At\", \"name\": \"createdAt\"}}, {\"node\": \"date_time44_el556563576533\", \"element\": \"date_time\", \"data\": {\"label\": \"Updated At\", \"name\": \"updatedAt\"}}]",
   "search_fields": "",
   "title_fields": "",
   "resources": [],
-  "deleted_at": "2026-04-25 21:29:25",
-  "__created_at__": "2026-04-25 21:29:25",
-  "__updated_at__": "2026-04-25 21:29:25",
-  "__deleted_at__": "2026-04-25 21:29:25",
   "__ENTITY__": "Entity"
 }

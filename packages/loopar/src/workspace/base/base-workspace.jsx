@@ -53,8 +53,12 @@ export function DialogContextProvider() {
   }
 
   const setNotify = ({ title, message, type = "info", timeout = 5000 }) => {
+    const description = typeof message === "string"
+      ? <span dangerouslySetInnerHTML={{ __html: message }} />
+      : message;
+
     (toast[type] || toast)(title || loopar.utils.Capitalize(type), {
-      description: message,
+      description,
       duration: timeout,
       theme: theme
     });
@@ -117,8 +121,12 @@ export default function BaseWorkspace(props) {
   const workspace = useWorkspace();
 
   useEffect(() => {
-    const handleRefresh = () => {
-      workspace.refresh();
+    // Accepts an optional payload. loopar.reload() invokes it with
+    // { force: true } to invalidate metaCacheRef 
+    // before the refetch (preloaded=false => complete meta).
+    // loopar.refresh() invokes it without payload (soft refetch, maintains cache).
+    const handleRefresh = (opts) => {
+      workspace.refresh(opts);
     };
 
     Emitter.on('refresh', handleRefresh);

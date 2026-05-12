@@ -1,88 +1,116 @@
 import { fileManage, loopar } from 'loopar';
+import {Op} from 'db-env';
 
-const BuildList = async (appData, refs) => {
-  const ListInstaller = {};
-  const evaluated = {}
+function queueKey(constructor, name) {
+  return `${constructor}:${name}`;
+}
 
-  const build = async (appData, refs) => {
-    refs = refs || Object.keys(appData);
-
-    for (const e of refs) {
-      if(evaluated[e]) continue;
-      evaluated[e] = true;
-
-      const ent = appData[e];
-      const {requires} = ent;
-
-      if(requires && Array.isArray(requires) && requires.length > 0){
-        await build(appData, requires);
-      }
-
-      if(ListInstaller[e]) continue;
-      delete ent.requires
-      ListInstaller[e] = ent.doc || ent
+function stripPersistedIds(doc) {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return doc;
+  const { id: _id, parent_id: _pid, ...rest } = doc;
+  for (const key of Object.keys(rest)) {
+    const value = rest[key];
+    if (Array.isArray(value)) {
+      rest[key] = value.map(stripPersistedIds);
     }
   }
+  return rest;
+}
 
-  await build(appData, refs);
+/**
+ * @param {Object} appData - { key: { requires?: string[], doc?: any, ...rest } }
+ * @param {string[]} [refs] - Subset of keys to start from. Defaults to all.
+ * @returns {Object} { key: docOrEntryWithoutRequires } in install order.
+ */
+function topologicalSort(appData, refs = null) {
+  const result = {};
+  const visited = new Set();
 
-  return ListInstaller;
+  const visit = (key) => {
+    if (visited.has(key)) return;
+    visited.add(key);
+
+    const ent = appData[key];
+    if (!ent) return;
+
+    if (Array.isArray(ent.requires)) {
+      for (const r of ent.requires) visit(r);
+    }
+
+    if (result[key]) return;
+
+    if (ent.doc) {
+      result[key] = ent.doc;
+    } else {
+      const { requires: _ignored, ...rest } = ent;
+      result[key] = rest;
+    }
+  };
+
+  for (const key of (refs || Object.keys(appData))) visit(key);
+  return result;
 }
 
 class InstallerBuilder {
-  constructor(app, version) {
+  /**
+   * @param {string} app
+   * @param {string} version
+   * @param {InstallerBuilder} [postInstaller]
+   */
+  constructor(app, version, postInstaller = null) {
     this.app = app;
     this.version = version;
+
     this.modules = [];
     this.entities = [];
     this.entitiesName = [];
+
     this.Queues = {};
-    this.PostInstallerQueue = {}
+    this.PostInstallerQueue = {};
+
+    this.postInstaller = postInstaller || this;
   }
 
   async initialize() {
     await this.loadModules();
-    await this.loadEntities();
+    this.loadEntities();
   }
 
   async loadModules() {
-    this.modules = await loopar.db.getAll(
-      "Module", 
-      ["name"], 
-      { app_name: this.app }
-    ).then(modules => modules.map(m => m.name));
+    const modules = await loopar.db.getAll("Module", ["name"], { app_name: this.app });
+    this.modules = modules.map(m => m.name);
   }
 
   loadEntities() {
     this.entities = loopar.getEntities(this.app).map(entity => {
       const parent = loopar.getRef(entity.__ENTITY__);
       return {
-        sortedId: parseInt(`${parent?.id || ''}${entity.id}`),
+        sortKey: [parseInt(parent?.id) || 0, parseInt(entity.id) || 0],
         id: parseInt(entity.id),
         __ENTITY__: entity.__ENTITY__ || "Entity",
         __NAME__: entity.name,
         __APP__: entity.__APP__,
         __ROOT__: entity.entityRoot,
       };
-    }).sort((a, b) => a.sortedId - b.sortedId);
+    }).sort((a, b) => {
+      if (a.sortKey[0] !== b.sortKey[0]) return a.sortKey[0] - b.sortKey[0];
+      return a.sortKey[1] - b.sortKey[1];
+    });
 
     this.entitiesName = this.entities.map(e => e.__NAME__);
   }
 
-  fieldIsModel(field) {
-    if ([SELECT, FORM_TABLE].includes(field.element) && field.data.options && typeof field.data.options === 'string') {
-      const options = (field.data.options || "").split("\n");
-      return !(options.length > 1 || options[0] === "");
-    }
-    return false;
+  fieldIsModelReference(field) {
+    if (![SELECT, FORM_TABLE].includes(field.element)) return false;
+    const opts = field.data?.options;
+    if (typeof opts !== 'string' || !opts) return false;
+    const lines = opts.split("\n");
+    return !(lines.length > 1 || lines[0] === "");
   }
 
   findFieldInStructure(elements, criteria) {
     for (const el of elements) {
-      if (criteria(el)) {
-        return el.data?.name || true;
-      }
-      
+      if (criteria(el)) return el.data?.name || true;
       if (Array.isArray(el?.elements)) {
         const found = this.findFieldInStructure(el.elements, criteria);
         if (found) return found;
@@ -91,108 +119,99 @@ class InstallerBuilder {
     return false;
   }
 
-  checkIfHaveAnEntity(els, entityName) {
-    return this.findFieldInStructure(els, el => 
-      el.element === SELECT && el?.data?.options === entityName
+  findSelectFieldFor(elements, entityName) {
+    return this.findFieldInStructure(
+      elements,
+      el => el.element === SELECT && el?.data?.options === entityName
     );
   }
 
-  async buildDocuments(entity) {
-    const ref = loopar.getRef(entity.__NAME__);
-    
-    if (!ref || ref.is_child || ref.is_single) return;
-    
-    const include_in_installer = await loopar.db.getValue(
-      entity.__ENTITY__ || "Entity", 
-      "include_in_installer", 
-      entity.__NAME__
-    );
+  checkIfHaveAnEntity(els, entityName) { return this.findSelectFieldFor(els, entityName); }
+  fieldIsModel(field) { return this.fieldIsModelReference(field); }
 
-    if (include_in_installer !== 1) return;
-    
-    const data = fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
-    
-    const filters = {};
-    const haveAnModule = this.checkIfHaveAnEntity(
-      loopar.utils.JSONparse(data.doc_structure, []),
-      "Module"
-    );
-    const haveAnApp = this.checkIfHaveAnEntity(
-      loopar.utils.JSONparse(data.doc_structure, []),
-      "App"
-    );
+  async queueEntity(entity) {
+    const constructor = loopar.getRef(entity.__ENTITY__ || "Entity");
+    const key = queueKey(constructor.__NAME__, entity.__NAME__);
+    if (this.Queues[key]) return;
 
-    if (haveAnModule || haveAnApp) {
-      if (haveAnModule) {
-        filters[loopar.db.Op.or] = [
-          {
-            name: { [loopar.db.Op.notIn]: [...this.entitiesName] },
-            [haveAnModule]: { [loopar.db.Op.in]: this.modules }
-          },
-          {
-            name: { [loopar.db.Op.in]: [...this.entitiesName] }
-          }
-        ];
+    this.Queues[key] = {};
+
+    if (loopar.utils.compare(entity.__APP__, this.app)) {
+      const ent = await loopar.getDocument(
+        constructor.__NAME__ || "Entity",
+        entity.__NAME__,
+        {},
+        { ifNotFound: false, parse: true }
+      );
+
+      const Doc = ent
+        ? await ent.rawValues()
+        : fileManage.getConfigFile(entity.__NAME__, entity.__ROOT__);
+
+      if (Doc) {
+        const requires = await this.getRequires(constructor, Doc);
+
+        if (constructor.__NAME__ !== entity.__NAME__ && constructor.__NAME__ !== "Entity") {
+          requires.unshift(queueKey(constructor.__ENTITY__, constructor.__NAME__));
+        }
+
+        this.Queues[key] = {
+          requires: Array.from(new Set(requires)),
+          __root__: entity.__ROOT__
+        };
+      } else {
+        console.log([`[buildInstaller] No data for ${key} (DB miss + file missing)`]);
       }
 
-      if (haveAnApp) {
-        filters[haveAnApp] = this.app;
-      }
+      await this.buildDocuments(entity);
     } else {
-      if (!this.entitiesName.includes(entity.__NAME__)) return;
+      this.Queues[key] = {
+        requires: [],
+        __app__: entity.__APP__
+      };
+    }
+  }
+
+  async queue(Entity, Doc) {
+    const isEntity = loopar.getRef(Doc?.name);
+    if (isEntity && isEntity.__ENTITY__ == Entity.__NAME__) {
+      return this.queueEntity(isEntity);
     }
 
-    data.name === "Module" && (filters.app_name = this.app);
-    data.name === "App" && (filters.name = this.app);
+    const key = queueKey(Entity.__NAME__, Doc?.name);
+    if (this.Queues[key]) return;
 
-    const docs = await loopar.db.getAll(ref.__NAME__, ["*"], filters);
-
-    for (const doc of docs.sort((a, b) => a.id - b.id).filter(d => d.name !== "Entity")) {
-      await this.queue(ref, doc);
-    }
+    this.Queues[key] = {};
+    const requires = await this.getRequires(Entity, Doc);
+    this.Queues[key] = {
+      requires: Array.from(new Set(requires)),
+      doc: stripPersistedIds(Doc)
+    };
   }
 
   async getRequires(entity, doc) {
     const reqs = [];
-    
+
     const checkRequires = async (els, d) => {
       for (const el of els) {
-        if (el.data && this.fieldIsModel(el)) {
+        if (el.data && this.fieldIsModelReference(el)) {
           const relatedEntity = loopar.getRef(el.data.options);
-          
           if (!relatedEntity) continue;
 
           await this.queueEntity(relatedEntity);
 
-          if (relatedEntity.__NAME__ != doc.name && doc && doc.name == "Entity") {
-            reqs.push(`${relatedEntity.__ENTITY__}:${relatedEntity.__NAME__}`);
+          if (relatedEntity.__NAME__ != doc?.name && doc?.name == "Entity") {
+            reqs.push(queueKey(relatedEntity.__ENTITY__, relatedEntity.__NAME__));
           }
 
-          if (el.element == SELECT && d && el.data.options != doc.name) {
-            const relatedDoc = await loopar.getDocument(
-              el.data.options, 
-              d[el.data.name], 
-              null, 
-              { ifNotFound: false }
-            );
-            
-            if (relatedDoc) {
-              const rawValues = await relatedDoc.rawValues();
-              reqs.push(`${relatedEntity.__NAME__}:${rawValues.name}`);
-              await this.queue(relatedEntity, rawValues);
-            } else {
-              console.log(['relatedDoc not found', entity.__NAME__, el.data.options, d[el.data.name]]);
-            }
+          if (el.element === SELECT) {
+            const refKey = await this._resolveSelectRef(el, d, doc, relatedEntity, entity);
+            if (refKey) reqs.push(refKey);
           }
 
-          if (el.element == FORM_TABLE && d) {
-            const childs = d[el.data.name] || [];
-
-            for(const item of childs){
-              await postInstaller.getRequires(relatedEntity, item);
-            }
-
-            postInstaller.PostInstallerQueue[`${entity.__NAME__}:${d.name}`] = this.Queues[`${entity.__NAME__}:${d.name}`] ? 'link' : d
+          if (el.element === FORM_TABLE) {
+            console.log(['el', el]);
+            await this._resolveFormTableRef(el, d, entity, relatedEntity);
           }
         }
 
@@ -202,119 +221,195 @@ class InstallerBuilder {
       }
     };
 
-    if (this.Queues[`${entity.__NAME__}:${doc?.__name}`]) return;
-
     const entityData = await fileManage.getConfigFile(entity.__NAME__, entity.__ROOT__);
-
     await checkRequires(loopar.utils.JSONparse(entityData.doc_structure, []), doc);
 
     if (entity.__NAME__ != entity.__ENTITY__) {
-      reqs.unshift(`${entity.__ENTITY__}:${entity.__NAME__}`);
+      reqs.unshift(queueKey(entity.__ENTITY__, entity.__NAME__));
     }
 
     await this.queueEntity(entity);
     return reqs;
   }
 
-  async queueEntity(entity) {
-    const constructor = loopar.getRef(entity.__ENTITY__ || "Entity");
-    if (this.Queues[`${constructor.__NAME__}:${entity.__NAME__}`]) return;
-    
-    this.Queues[`${constructor.__NAME__}:${entity.__NAME__}`] = {};
+  /**
+   * @returns {Promise<string|null>}
+   */
+  async _resolveSelectRef(el, d, doc, relatedEntity, entity) {
+    if (!d || el.data.options === doc?.name) return null;
 
-    if (loopar.utils.compare(entity.__APP__, this.app)) {
-      const ent = await loopar.getDocument(
-        constructor.__NAME__ || "Entity", 
-        entity.__NAME__, 
-        {}, 
-        { ifNotFound: false, parse: true }
+    const relatedDoc = await loopar.getDocument(
+      el.data.options,
+      d[el.data.name],
+      null,
+      { ifNotFound: false }
+    );
+
+    if (!relatedDoc) {
+      console.log(['relatedDoc not found', entity.__NAME__, el.data.options, d[el.data.name]]);
+      return null;
+    }
+
+    const rawValues = await relatedDoc.rawValues();
+    await this.queue(relatedEntity, rawValues);
+    return queueKey(relatedEntity.__NAME__, rawValues.name);
+  }
+
+  async _resolveFormTableRef(el, d, entity, relatedEntity) {
+    if (!d) return;
+
+    // The value of a FORM_TABLE field can reach this point in several
+    // shapes depending on how `d` was produced upstream:
+    //   - From `rawValues()` on a live Doc → resolved array of child rows.
+    //   - From the FORM_TABLE async getter on a Doc instance → Promise<Array>.
+    //   - From the entity JSON on disk → null, an array, or (legacy) a
+    //     stringified JSON array.
+    //   - Edge case observed in practice: a single Doc instance (with
+    //     `__ENTITY__`, `__DATA__`, …) leaked into the field — likely
+    //     from upstream code that stored the resolved related-doc by
+    //     mistake instead of an array of child rows. We log that case so
+    //     the offending entity can be tracked down, and treat it as "no
+    //     children" so the install doesn't abort.
+    let raw = d[el.data.name];
+    if (raw && typeof raw.then === 'function') raw = await raw;
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch { raw = null; }
+    }
+
+    let childs;
+    if (Array.isArray(raw)) {
+      childs = raw;
+    } else if (raw == null) {
+      childs = [];
+    } else {
+      console.warn(
+        `[builder._resolveFormTableRef] non-array value for FORM_TABLE field "${el.data.name}" ` +
+        `on entity "${entity.__NAME__}" (parent doc "${d?.name}", related "${relatedEntity?.__NAME__}"). ` +
+        `Got ${typeof raw}; treating as empty. Inspect upstream rawValues / getter for this field.`
       );
+      childs = [];
+    }
 
-      if(ent) {
-        const Doc = await ent.rawValues();
-        const requires = await this.getRequires(constructor, Doc);
-        
-        if (constructor.__NAME__ !== entity.__NAME__ && constructor.__NAME__ !== "Entity") {
-          requires.unshift(`${constructor.__ENTITY__}:${constructor.__NAME__}`);
-        }
+    for (const item of childs) {
+      await this.postInstaller.getRequires(relatedEntity, item);
+    }
 
-        this.Queues[`${constructor.__NAME__}:${entity.__NAME__}`] = {
-          requires: Array.from(new Set(requires)),
-          root: entity.__ROOT__
-        };
-      }else{
-        console.log(["ENt", ent])
+    const parentKey = queueKey(entity.__NAME__, d.name);
+    this.postInstaller.PostInstallerQueue[parentKey] =
+      this.Queues[parentKey] ? 'link' : d;
+  }
+
+  async buildDocuments(entity) {
+    const ref = loopar.getRef(entity.__NAME__);
+    if (!ref || ref.is_child || ref.is_single) return;
+
+    const include_in_installer = await loopar.db.getValue(
+      entity.__ENTITY__ || "Entity",
+      "include_in_installer",
+      entity.__NAME__
+    );
+    if (include_in_installer !== 1) return;
+
+    const data = fileManage.getConfigFile(ref.__NAME__, ref.__ROOT__);
+    const docStructure = loopar.utils.JSONparse(data.doc_structure, []);
+
+    const moduleField = this.findSelectFieldFor(docStructure, "Module");
+    const appField = this.findSelectFieldFor(docStructure, "App");
+
+    const filters = {};
+
+    if (moduleField || appField) {
+      if (moduleField) {
+        filters[Op.or] = [
+          {
+            name: { [Op.notIn]: [...this.entitiesName] },
+            [moduleField]: { [Op.in]: this.modules }
+          },
+          {
+            name: { [Op.in]: [...this.entitiesName] }
+          }
+        ];
+      }
+      if (appField) {
+        filters[appField] = this.app;
       }
     } else {
-      this.Queues[`${constructor.__NAME__}:${entity.__NAME__}`] = {
-        requires: [],
-        app: entity.__APP__
-      };
+      if (!this.entitiesName.includes(entity.__NAME__)) return;
     }
 
-    await this.buildDocuments(entity);
-  }
-  
-  async queue(Entity, Doc) {
-    const isEntity = loopar.getRef(Doc?.name);
+    if (data.name === "Module") filters.app_name = this.app;
+    if (data.name === "App") filters.name = this.app;
 
-    if (isEntity && isEntity.__ENTITY__ == Entity.__NAME__) {
-      return this.queueEntity(isEntity);
+    const docs = await loopar.db.getAll(ref.__NAME__, ["*"], filters);
+
+    const sortedDocs = docs
+      .sort((a, b) => a.id - b.id)
+      .filter(d => d.name !== "Entity");
+
+    for (const doc of sortedDocs) {
+      await this.queue(ref, doc);
     }
-
-    if (this.Queues[`${Entity.__NAME__}:${Doc?.name}`]) return;
-
-    this.Queues[`${Entity.__NAME__}:${Doc?.name}`] = {};
-    const requires = await this.getRequires(Entity, Doc);
-    this.Queues[`${Entity.__NAME__}:${Doc?.name}`] = {
-      requires: Array.from(new Set(requires)),
-      doc: Doc
-    };
   }
 
-  async build() {
+  /**
+   * @param {{dryRun?: boolean}} [options]
+   * @returns {Promise<{App: {name: string, version: string}, documents: object, postInstaller: object}>}
+   */
+  async build({ dryRun = false } = {}) {
     await this.initialize();
 
     for (const entity of this.entities) {
-      await this.queueEntity(entity, null);
+      await this.queueEntity(entity);
     }
 
     const app = await loopar.getDocument("App", this.app);
-    
     await this.queue(loopar.getRef("App"), await app.rawValues());
 
-    this.Queues = { ...this.Queues, ...Object.entries(postInstaller.Queues).reduce((acc, [key, value]) => {
-      if(this.Queues[key]) return acc;
-      acc[key] = value;
-      return acc;
-    }, {})};
+    for (const [key, value] of Object.entries(this.postInstaller.Queues)) {
+      if (!this.Queues[key]) this.Queues[key] = value;
+    }
 
-    await this.buildFile();
+    const snapshot = this.composeSnapshot();
+    if (!dryRun) await this.writeSnapshot(snapshot);
+    return snapshot;
   }
 
-  async buildFile(){
-    const entitiesStructure = {
+  composeSnapshot() {
+    const docs = topologicalSort(this.Queues);
+    const appKey = `App:${this.app}`;
+    if (docs[appKey] && typeof docs[appKey] === 'object') {
+      docs[appKey] = { ...docs[appKey], version: this.version };
+    }
+
+    return {
       App: {
         name: this.app,
         version: this.version,
       },
-      documents: await BuildList(this.Queues),
-      postInstaller: postInstaller.PostInstallerQueue
+      documents: docs,
+      postInstaller: this.postInstaller.PostInstallerQueue
     };
+  }
 
+  async writeSnapshot(snapshot) {
     await fileManage.setConfigFile(
-      'installer', 
-      entitiesStructure,
+      'installer',
+      snapshot,
       loopar.makePath('apps', this.app)
     );
   }
 }
 
-const postInstaller = new InstallerBuilder();;
-
-export async function buildInstaller({app, version}) {
-  const installer = new InstallerBuilder(app, version);
-  postInstaller.app = app;
-  postInstaller.version = version;
-  return await installer.build();
+/**
+ * @param {Object} options
+ * @param {string} options.app
+ * @param {string} options.version
+ * @param {boolean} [options.dryRun=false] - When true, computes the snapshot
+ *   but does not write `installer.json`. The snapshot is still returned.
+ * @returns {Promise<object>} The composed snapshot.
+ */
+export async function buildInstaller({app, version, dryRun = false}) {
+  const postInstaller = new InstallerBuilder(app, version);
+  const installer = new InstallerBuilder(app, version, postInstaller);
+  return await installer.build({ dryRun });
 }

@@ -1,7 +1,6 @@
 'use strict';
 
-import { PageController, loopar, BaseController, PermissionManager} from 'loopar';
-import { Op } from '@sequelize/core';
+import { PageController, loopar, BaseController, PermissionManager, Op } from 'loopar';
 
 const getCommonActions = () => {
   return loopar.extractControllerMethods(BaseController).map(a => a.replace(/^(public)?action/i, ''))

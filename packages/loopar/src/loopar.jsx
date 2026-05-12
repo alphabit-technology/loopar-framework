@@ -8,7 +8,6 @@ import animation from "./loopar/animation.js";
 import { ClientDatabase } from "./loopar/ClientDatabase.js";
 export { useRealtime } from "./loopar/useRealtime.js";
 
-
 class Loopar extends Router {
   scriptManager = scriptManager;
   currentPageName = "";
@@ -25,10 +24,7 @@ class Loopar extends Router {
     this.dateUtils = dateUtils;
     this.db = new ClientDatabase(this);
     this.animation = animation;
-    // Public RPC API. Verb is informative on the wire — the server router
-    // dispatches by URL (/api/{Document}/{action}) regardless of method.
-    // All helpers share the same options shape:
-    //   { query, body, success, error, always, freeze }
+
     const dispatch = (method) => (Document, action, options = {}) =>
       this.#apiCall(Document, action, { ...options, method });
 
@@ -43,18 +39,8 @@ class Loopar extends Router {
   }
 
   /**
-   * High-level RPC sugar. Posts a payload to a controller action.
-   *
-   * Mirrors the everyday case of "call Document.action with these params":
-   *
-   *   loopar.call("Db", "count", { filter: { relation: "Role" } })
-   *   loopar.call("App", "increment", null, { query: { name: "myapp" } })
-   *
-   * Always POST to /api/{Document}/{action}. If you need a different verb,
-   * use loopar.api.{get|put|patch|delete}(...) directly.
-   *
    * @param {string} Document - Document/entity name (controller key).
-   * @param {string} action   - Controller action name.
+   * @param {string} action - Controller action name.
    * @param {Object|null} [params] - Sent as JSON body. Pass null for none.
    * @param {Object} [options] - { query, success, error, always, freeze }.
    * @returns {Promise} Resolves with the controller response.
@@ -119,15 +105,16 @@ class Loopar extends Router {
     });
   }
 
-  dialog(dialog) {
+  dialog(dialog, callback) {
     const content = dialog.content || dialog.message;
     dialog.id ??= typeof content === "string" ? dialog.content : dialog.title;
     dialog.open = dialog.open !== false;
+    dialog.ok ??= callback;
     this.emit('dialog', dialog);
   }
 
   prompt(dialog) {
-    dialog.id = "test-dialog"// dialog.title;
+    dialog.id = "test-dialog";
     dialog.open = true;
     dialog.type = "prompt";
     dialog.content = <></>
@@ -154,11 +141,6 @@ class Loopar extends Router {
     });
   }
 
-  reload() {
-    console.log("Reloading...");
-    this.navigate(window.location.href);
-  }
-
   closeDialog(id) {
     this.handleOpenCloseDialog(id, false);
   }
@@ -167,16 +149,6 @@ class Loopar extends Router {
     this.emit('handle-open-close-dialog', id, open);
   }
 
-  /**
-   * Display an error and (optionally) re-throw it.
-   *
-   * Accepts:
-   *   - an object: { code?, title?, message, type? }
-   *   - one string: the message (title defaults to "Error")
-   *   - two strings: first is title, second is message
-   *
-   * The dialog event always carries the standard shape { type, title, message, code }.
-   */
   throw(error, m, throwError = true) {
     console.log(["Loopar.throw", error])
     this.emit('freeze', false);
@@ -285,6 +257,11 @@ class Loopar extends Router {
     return mixColors(colors);
   }
 
+  reload() {
+    this.#loadedMeta = {};
+    this.emit('refresh', { force: true });
+  }
+
   refresh() {
     this.emit('refresh');
   }
@@ -322,11 +299,6 @@ class Loopar extends Router {
     } else {
       return loadScript(src, callback, options);
     }
-    /*return new Promise(resolve => {
-         window.loadScript(src, callback, options);
-         resolve();
-      });*/
-    //this.scriptManager.loadScript(src, callback, options);
   }
 
   includeCSS(src, callback) {

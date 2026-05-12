@@ -171,7 +171,17 @@ function JSONstringify(obj) {
 }
 
 function JSONparse(obj, ifNotValid) {
-  return isJSON(obj) ? JSON.parse(obj) : ifNotValid || null;
+  // Idempotent: if the input is already a parsed object/array, return it
+  // as-is. `JSON.parse` on a non-string coerces to String() first, which
+  // turns arrays-of-objects into "[object Object]" and then throws — so
+  // the previous version silently returned the fallback in those cases,
+  // discarding valid pre-parsed data. That's how the system bootstrap
+  // forms (connector, installer, update) ended up with `__FIELDS__ = []`
+  // after commit 2ea1c7e: their `doc_structure` ships as an array literal
+  // in JSON files, not stringified, and the new `JSONparse(obj, [])` call
+  // in builder.js silently dropped them.
+  if (obj !== null && typeof obj === 'object') return obj;
+  return isJSON(obj) ? JSON.parse(obj) : (ifNotValid ?? null);
 }
 
 function randomString(length = 15) {

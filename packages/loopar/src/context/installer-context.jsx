@@ -12,7 +12,7 @@ export default class InstallerContext extends BaseForm {
 
   render(content = [], slots) {
     return super.render(
-      <FormWrapper Document={this.Document} docRef={this}>
+      <FormWrapper __DATA__={this.Document.data} STRUCTURE={this.__STRUCTURE__} docRef={this}>
         <MetaComponent elements={this.__STRUCTURE__} parent={this} />
         {content}
       </FormWrapper>,
