@@ -258,18 +258,6 @@ class InstallerBuilder {
   async _resolveFormTableRef(el, d, entity, relatedEntity) {
     if (!d) return;
 
-    // The value of a FORM_TABLE field can reach this point in several
-    // shapes depending on how `d` was produced upstream:
-    //   - From `rawValues()` on a live Doc → resolved array of child rows.
-    //   - From the FORM_TABLE async getter on a Doc instance → Promise<Array>.
-    //   - From the entity JSON on disk → null, an array, or (legacy) a
-    //     stringified JSON array.
-    //   - Edge case observed in practice: a single Doc instance (with
-    //     `__ENTITY__`, `__DATA__`, …) leaked into the field — likely
-    //     from upstream code that stored the resolved related-doc by
-    //     mistake instead of an array of child rows. We log that case so
-    //     the offending entity can be tracked down, and treat it as "no
-    //     children" so the install doesn't abort.
     let raw = d[el.data.name];
     if (raw && typeof raw.then === 'function') raw = await raw;
     if (typeof raw === 'string') {
@@ -347,7 +335,14 @@ class InstallerBuilder {
       .filter(d => d.name !== "Entity");
 
     for (const doc of sortedDocs) {
-      await this.queue(ref, doc);
+      const liveDoc = await loopar.getDocument(
+        ref.__NAME__,
+        doc.name,
+        null,
+        { ifNotFound: null }
+      );
+      const payload = liveDoc ? await liveDoc.rawValues() : doc;
+      await this.queue(ref, payload);
     }
   }
 
@@ -362,8 +357,8 @@ class InstallerBuilder {
       await this.queueEntity(entity);
     }
 
-    const app = await loopar.getDocument("App", this.app);
-    await this.queue(loopar.getRef("App"), await app.rawValues());
+    const app = await loopar.getDocument("App", this.app, null, { ifNotFound: null });
+    if (app) await this.queue(loopar.getRef("App"), await app.rawValues());
 
     for (const [key, value] of Object.entries(this.postInstaller.Queues)) {
       if (!this.Queues[key]) this.Queues[key] = value;
