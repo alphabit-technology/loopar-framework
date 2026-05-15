@@ -17,6 +17,21 @@ function hourExpr(dialect) {
   return 'HOUR(created_at)';
 }
 
+function referrerHostname(raw) {
+  if (!raw || raw === 'Direct') return 'Direct';
+  try {
+    return new URL(raw).hostname.replace(/^www\./i, '') || 'Direct';
+  } catch {
+    const cleaned = String(raw)
+      .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+      .replace(/^www\./i, '')
+      .split('/')[0]
+      .split('?')[0]
+      .trim();
+    return cleaned || 'Direct';
+  }
+}
+
 export default class AnalyticsDashboard extends BaseDocument {
   constructor(props) { super(props); }
 
@@ -147,9 +162,7 @@ export default class AnalyticsDashboard extends BaseDocument {
 
     return rows.map(r => ({
       ...r,
-      source: r.source !== 'Direct'
-        ? new URL(r.source).hostname.replace('www.', '')
-        : 'Direct',
+      source: referrerHostname(r.source),
     })).reduce((acc, row) => {
       const existing = acc.find(r => r.source === row.source);
       if (existing) existing.views += row.views;

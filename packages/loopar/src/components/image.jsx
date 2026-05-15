@@ -6,7 +6,7 @@ import { cn } from "@cn/lib/utils";
 export function FallbackImage(props) {
   const [loading, setLoading] = useState(true);
   const [isValidImage, setIsValidImage] = useState(false);
-  const { coverProps, imageProps, data } = props;
+  const { coverProps={}, imageProps, data } = props;
 
   const handleLoad = (valid) => {
     setIsValidImage(valid);
