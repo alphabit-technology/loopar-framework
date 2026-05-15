@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html class="${THEME}" lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var src = document.cookie;
+          var tm = src.match(/(?:^|;\s*)vite-ui-theme=([^;]+)/);
+          var sm = src.match(/(?:^|;\s*)vite-ui-theme-source=([^;]+)/);
+          var theme = tm ? decodeURIComponent(tm[1]) : null;
+          var source = sm ? decodeURIComponent(sm[1]) : null;
+          if (!theme || theme === 'system' || source === 'auto') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+          }
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(theme);
+        } catch (e) {}
+      })();
+    </script>
     <!--__theme-definition__-->
     <link rel="stylesheet" href="/app/src/styles/main.css">
     <link rel="stylesheet" href="/node_modules/@uiw/react-markdown-preview/markdown.css">

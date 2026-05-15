@@ -1,5 +1,21 @@
 import { io } from "socket.io-client";
 
+/**
+ * Stub socket — returned when io() construction fails. Implements just
+ * enough of the socket.io-client API surface (on/off/emit/connected) that
+ * callers don't crash. All event subscriptions are silent no-ops.
+ */
+function makeStubSocket() {
+  return {
+    connected: false,
+    on: () => {},
+    once: () => {},
+    off: () => {},
+    emit: () => {},
+    disconnect: () => {},
+  };
+}
+
 class _LoopSocket {
   constructor() {
     this._socket = null;
@@ -20,7 +36,6 @@ class _LoopSocket {
   /**
    * Connects to the given site (or returns an existing connection).
    * Identity is derived server-side from the JWT cookie — the client does
-   * not pass userId here.
    * @param {string} siteName  Site name (namespace)
    * @returns {import("socket.io-client").Socket}
    */
@@ -36,31 +51,36 @@ class _LoopSocket {
 
     this._siteName = siteName;
 
-    const url = window.location.origin;
+    try {
+      const url = window.location.origin;
 
-    this._socket = io(`${url}/${siteName}`, {
-      path: "/ws/socket.io",
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
-    });
+      this._socket = io(`${url}/${siteName}`, {
+        path: "/ws/socket.io",
+        transports: ["websocket", "polling"],
+        withCredentials: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: Infinity,
+      });
 
-    this._socket.on("connect", () => {
-      console.log(`[LoopSocket] connected  site=${siteName}  id=${this._socket.id}`);
-      (this._queue || []).forEach(cb => cb(this._socket));
-      this._queue = [];
-    });
+      this._socket.on("connect", () => {
+        console.log(`[LoopSocket] connected  site=${siteName}  id=${this._socket.id}`);
+        (this._queue || []).forEach(cb => cb(this._socket));
+        this._queue = [];
+      });
 
-    this._socket.on("disconnect", (reason) => {
-      console.log(`[LoopSocket] disconnected  reason=${reason}`);
-    });
+      this._socket.on("disconnect", (reason) => {
+        console.log(`[LoopSocket] disconnected  reason=${reason}`);
+      });
 
-    this._socket.on("connect_error", (err) => {
-      console.warn("[LoopSocket] connection error:", err.message);
-    });
+      this._socket.on("connect_error", (err) => {
+        console.warn("[LoopSocket] connection error:", err.message);
+      });
+    } catch (err) {
+      console.error("[LoopSocket] failed to initialize socket:", err);
+      this._socket = makeStubSocket();
+    }
 
     return this._socket;
   }

@@ -4,6 +4,22 @@
 import {BaseController} from 'loopar';
 import {loopar} from 'loopar';
 import {getTenant, tenantList} from "./tenant-manager.js";
+import { spawn } from 'child_process';
+import crypto from 'node:crypto';
+
+let buildState = { state: 'idle' };
+let buildChild = null;
+
+function emitBuildStatus() {
+  loopar.emit("buildStatus", { build: buildState });
+}
+
+function finalizeBuild(next) {
+  if (buildState.state !== 'running') return;
+  buildState = { ...buildState, ...next };
+  buildChild = null;
+  emitBuildStatus();
+}
 
 export default class TenantManagerController extends BaseController {
   unRestrictedActions = ["list", "create", "update"]
@@ -66,6 +82,82 @@ export default class TenantManagerController extends BaseController {
 
   async actionRestart(){
     return await this.makeAction("restart");
+  }
+
+  async actionReload(){
+    return await this.makeAction("reload");
+  }
+
+  async actionBuild() {
+    if (buildState.state === 'running') {
+      return {
+        status: 200,
+        success: true,
+        build: buildState,
+        notify: { type: "warning", message: "A build is already in progress." },
+      };
+    }
+
+    buildState = {
+      id: crypto.randomUUID(),
+      state: 'running',
+      startedAt: Date.now(),
+    };
+    emitBuildStatus();
+
+    buildChild = spawn('npm', ['run', 'build'], {
+      cwd: loopar.pathRoot,
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        BUILD_INITIATOR: loopar.tenantId,
+        FORCE_COLOR: '0',
+        TENANT_ID: undefined,
+        TENANT_PATH: undefined,
+        PORT: undefined,
+        DOMAIN: undefined,
+        HMR_PORT: undefined,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    buildChild.stdout.on('data', (chunk) => {
+      process.stdout.write(`[build] ${chunk}`);
+    });
+    buildChild.stderr.on('data', (chunk) => {
+      process.stderr.write(`[build] ${chunk}`);
+    });
+
+    buildChild.on('exit', (code) => {
+      finalizeBuild({
+        state: code === 0 ? 'completed' : 'failed',
+        finishedAt: Date.now(),
+        exitCode: code,
+      });
+    });
+
+    buildChild.on('error', (err) => {
+      finalizeBuild({
+        state: 'failed',
+        finishedAt: Date.now(),
+        error: err.message,
+      });
+    });
+
+    return {
+      status: 200,
+      success: true,
+      build: buildState,
+      notify: { type: "info", message: "Build started — you'll be notified when it finishes." },
+    };
+  }
+
+  async actionBuildStatus() {
+    return {
+      status: 200,
+      success: true,
+      build: buildState,
+    };
   }
 
   async actionSetOnProduction(){

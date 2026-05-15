@@ -12,6 +12,7 @@ import { createServer as createViteServer } from 'vite';
 import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
 import { requestContext } from './router/request-context.js';
+import { shouldServeProduction, isDevTenant } from './runtime-mode.js';
 import http from "http";
 import net from "node:net";
 import { RealtimeManager } from "../realtime/RealtimeManager.js";
@@ -63,7 +64,17 @@ export class Server extends Router {
       throw new Error(`Invalid PORT env: "${process.env.PORT}"`);
     }
 
-    if (!this.isProduction) {
+    // Auto-shift to a free port pair when:
+    //   - We're a non-production process (classic dev workflow), OR
+    //   - We're the dev tenant, regardless of mode. Dev hosts the admin
+    //     UI and always sets up Vite (so it needs HMR_PORT free too).
+    //     If admin toggled dev to production mode, we still want it to
+    //     survive a port collision instead of crash-looping.
+    // Other tenants in production keep the "fail loud" behavior — their
+    // ports are stable contracts behind Caddy.
+    const shouldAutoShift = !this.isProduction || isDevTenant();
+
+    if (shouldAutoShift) {
       const httpFree = await isPortFree(requestedPort);
       const hmrFree = await isPortFree(requestedPort + HMR_PORT_OFFSET);
 
@@ -86,7 +97,25 @@ export class Server extends Router {
       }
     }
 
-    if (this.isProduction) {
+    if (isDevTenant()) {
+      // Dev tenant gets dynamic mode switching: both Vite and the
+      // production chain are always set up. A per-request dispatcher
+      // (see #installDynamicModeDispatcher) reads the tenant's `.env`
+      // and the presence of `dist/` to decide which path to serve.
+      // This lets the admin flip Mode in the UI and have it take effect
+      // on the next request, without restarting the process.
+      this.vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: {
+            protocol: 'ws',
+            port: parseInt(process.env.PORT) + HMR_PORT_OFFSET,
+          }
+        },
+        appType: 'custom'
+      });
+      this.#installDynamicModeDispatcher();
+    } else if (this.isProduction) {
       server.use(compression());
       server.use(zstdMiddleware({
         root: 'dist/client',
@@ -123,8 +152,45 @@ export class Server extends Router {
     server.use(tenantContextMiddleware);
   }
 
+  /**
+   * Per-request dispatcher for the dev tenant. Inspects the runtime mode
+   * (tenant .env + dist presence) on each request and routes to either
+   * the production chain (compression → zstd → serveStatic) or the
+   * Vite middleware. Both are pre-built once; the per-request cost is
+   * just the `.env` read (cached) and a function dispatch.
+   */
+  #installDynamicModeDispatcher() {
+    const distClientPath = path.join(loopar.pathRoot, 'dist/client');
+    const prodChain = [
+      compression(),
+      zstdMiddleware({ root: 'dist/client', priority: ['zst', 'br', 'gz'] }),
+      serveStatic(distClientPath),
+    ];
+
+    const runProdChain = (req, res, next) => {
+      let i = 0;
+      const advance = (err) => {
+        if (err) return next(err);
+        if (i >= prodChain.length) return next();
+        prodChain[i++](req, res, advance);
+      };
+      advance();
+    };
+
+    server.use((req, res, next) => {
+      if (shouldServeProduction()) {
+        runProdChain(req, res, next);
+      } else {
+        this.vite.middlewares(req, res, next);
+      }
+    });
+  }
+
   async #exposePublicDirectories() {
-    if (process.env.NODE_ENV == 'production') {
+    // For the dev tenant, dist/client is already part of the dynamic
+    // dispatcher (runs only in production mode), so we skip the static
+    // wiring here. For non-dev tenants, keep the startup decision.
+    if (!isDevTenant() && process.env.NODE_ENV == 'production') {
       server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
     }
 
@@ -175,7 +241,6 @@ export class Server extends Router {
       tenantId: loopar.tenantId,
       getJwtSecret: () => loopar.jwtSecret,
     });
-    //RealtimeManager.namespace(loopar.tenantId);
 
     httpServer.listen(port, () => {
       console.log("Server is started in " + port + installMessage);

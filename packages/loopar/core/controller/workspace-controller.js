@@ -2,6 +2,7 @@
 
 import AuthController from "../auth/AuthController.js";
 import { loopar, fileManager, PermissionManager } from "loopar";
+import { shouldServeProduction, isDevTenant } from "../server/runtime-mode.js";
 import fs from 'fs';
 
 export default class WorkspaceController extends AuthController {
@@ -56,16 +57,22 @@ export default class WorkspaceController extends AuthController {
     }
 
     const url = this.req.originalUrl;
-    const isProduction = process.env.NODE_ENV == 'production';
+    // For the dev tenant, the mode decision is dynamic per-render: if the
+    // tenant's .env says production AND a built dist exists, serve from
+    // the bundle; otherwise fall back to Vite's source-file rendering.
+    // For all other tenants, stick with the startup decision (process env).
+    const isProduction = isDevTenant()
+      ? shouldServeProduction()
+      : process.env.NODE_ENV == 'production';
     let HTML;
 
     const _p = (path) => loopar.makePath(loopar.pathRoot, path);
-    
+
     const [{ render }, template] = await Promise.all([
       isProduction
         ? import(_p("dist/server/entry-server.js"))
         : loopar.server.vite.ssrLoadModule(_p("app/entry-server.jsx")),
-    
+
       isProduction
         ? fs.readFileSync("dist/client/main.html", "utf-8")
         : loopar.server.vite.transformIndexHtml(
@@ -86,7 +93,14 @@ export default class WorkspaceController extends AuthController {
     __META__.permissions = permissions
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
-    html = html.replace('${THEME}', loopar.cookie.get('vite-ui-theme') || 'dark');
+    // The cookie now stores a resolved value ("light" | "dark"). Older clients
+    // may still have the legacy "system" value; fall back to "dark" in that
+    // case — the inline FOUC script in main.html will correct it client-side
+    // before the first paint if the OS preference is actually light.
+    const cookieTheme = loopar.cookie.get('vite-ui-theme');
+    const ssrTheme =
+      cookieTheme === 'light' || cookieTheme === 'dark' ? cookieTheme : 'dark';
+    html = html.replace('${THEME}', ssrTheme);
 
     const faviconSrc = fileManager.getMappedFiles(__META__.web_app?.favicon)[0]?.src;
 
@@ -107,7 +121,10 @@ export default class WorkspaceController extends AuthController {
         window.process = ${JSON.stringify({
           env: {
             TENANT_ID: process.env.TENANT_ID,
-            NODE_ENV: process.env.NODE_ENV,
+            // Reflects the *runtime* mode the client is being served with,
+            // not the cached process.env.NODE_ENV — so the dev tenant's
+            // client matches what the server actually decided this render.
+            NODE_ENV: isProduction ? 'production' : 'development',
           }
         })};
       </script>

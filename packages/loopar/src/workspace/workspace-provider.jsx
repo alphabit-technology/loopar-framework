@@ -26,9 +26,17 @@ export function WorkspaceProvider({
   children,
   defaultTheme = "system",
   storageKey = "vite-ui-theme",
+  sourceStorageKey = "vite-ui-theme-source",
   ...props
 }) {
-  const [theme, setTheme] = useCookies(storageKey);
+  const [storedTheme, setStoredTheme] = useCookies(storageKey);
+  const [storedSource, setStoredSource] = useCookies(sourceStorageKey);
+
+  const setTheme = useCallback((value) => {
+    setStoredTheme(value);
+    setStoredSource("manual");
+  }, [setStoredTheme, setStoredSource]);
+
   const __META__ = props.__META__ || {}
   const __WORKSPACE_NAME__ = __META__.name || "desk"
 
@@ -76,17 +84,44 @@ export function WorkspaceProvider({
   }, [setOpenNav]);
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    if (typeof window === "undefined") return;
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      root.classList.add(systemTheme)
-      return
+    const detect = () =>
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+    if (!storedTheme || storedTheme === "system") {
+      setStoredTheme(detect());
+      setStoredSource("auto");
+      return;
     }
 
-    root.classList.add(theme)
-  }, [theme, pathname])
+    if (!storedSource) {
+      setStoredSource("manual");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (storedSource !== "auto") return;
+
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => setStoredTheme(e.matches ? "dark" : "light");
+
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [storedSource, setStoredTheme]);
+  
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const resolved =
+      storedTheme === "light" || storedTheme === "dark"
+        ? storedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+  }, [storedTheme, pathname]);
 
   const goToErrorView = useCallback((e) => {
     __META__.Document = {
@@ -203,17 +238,16 @@ export function WorkspaceProvider({
   }, [getActiveDocument]);
 
   const getTheme = useCallback(() => {
-    const theme = loopar.cookie.get(storageKey);
+    if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
 
-    if (theme === "system") {
-      if (typeof window !== "undefined") {
-        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      }
-      return "dark"
+    const cookieTheme = loopar.cookie.get(storageKey);
+    if (cookieTheme === "light" || cookieTheme === "dark") return cookieTheme;
+
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-
-    return theme || "dark"
-  }, [storageKey]);
+    return "dark";
+  }, [storedTheme, storageKey]);
 
   useEffect(() => {
     setTimeout(() => {

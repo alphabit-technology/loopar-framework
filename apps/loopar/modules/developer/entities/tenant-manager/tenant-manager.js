@@ -107,6 +107,10 @@ export default class TenantManager extends BaseDocument {
     return restarted;
   }
 
+  async reload() {
+    return await this.#pm2Action("reload");
+  }
+
   validateDomain(domain) {
     if (typeof domain !== "string") return false;
     domain = domain.trim().toLowerCase();
@@ -163,6 +167,8 @@ export default class TenantManager extends BaseDocument {
     return true;
   }
 
+  static SELF_ACTION_DELAY_MS = 400;
+
   async #pm2Action(action) {
     return new Promise(resolve => {
       const finish = (success, message, err = null) => {
@@ -180,11 +186,14 @@ export default class TenantManager extends BaseDocument {
           config = await this.__data__();
           if (!config) return finish(false, "Tenant config not found");
           const NODE_ENV = config.env.NODE_ENV || "development";
-          config.exec_mode = NODE_ENV === 'production' ? 'cluster' : 'fork';
+          const isProduction = NODE_ENV === 'production';
+          config.exec_mode = isProduction ? 'cluster' : 'fork';
           config.instances = 1;
         }
 
         const run = (fn, ok, fail) => fn(e => e ? finish(false, fail, e) : finish(true, ok));
+
+        const isSelf = this.name === loopar.tenantId;
 
         switch (action) {
           case "start":
@@ -192,12 +201,31 @@ export default class TenantManager extends BaseDocument {
             break;
 
           case "restart":
-            if (this.name !== "dev") {
+            if (isSelf) {
+              setTimeout(() => pm2.reload(this.name, () => {}), TenantManager.SELF_ACTION_DELAY_MS);
+              finish(true, "restart→reload (self; env changes need external restart)");
+            } else {
               pm2.delete(this.name, () =>
                 run(cb => pm2.start(config, cb), "restarted", "PM2 restart failed")
               );
+            }
+            break;
+
+          case "reload":
+            if (isSelf) {
+              setTimeout(() => pm2.reload(this.name, () => {}), TenantManager.SELF_ACTION_DELAY_MS);
+              finish(true, "reload triggered (self)");
             } else {
-              run(cb => pm2.restart(config, cb), "restarted", "PM2 restart failed");
+              run(cb => pm2.reload(this.name, cb), "reloaded", "PM2 reload failed");
+            }
+            break;
+
+          case "stop":
+            if (isSelf) {
+              setTimeout(() => pm2.stop(this.name, () => {}), TenantManager.SELF_ACTION_DELAY_MS);
+              finish(true, "stop triggered (self) — session will disconnect");
+            } else {
+              run(cb => pm2.stop(this.name, cb), "stopped", "PM2 stop failed");
             }
             break;
 

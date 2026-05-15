@@ -5,9 +5,31 @@ import { Link } from "@link";
 import { useMemo } from "react";
 
 export function MainNav() {
-  const { openNav, setOpenNav, webApp, activeParentMenu } = useWorkspace();
+  const { openNav, setOpenNav } = useWorkspace();
   const Icon = openNav ? Cross1Icon : HamburgerMenuIcon;
-  const menuItems = useMemo(() => webApp.menu_items, [webApp.menu_items]);
+
+  const handleSetOpenNav = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpenNav(!openNav);
+  };
+
+  return (
+    <div className="flex min-w-[180px] items-center">
+      <button onClick={handleSetOpenNav}>
+        <Icon className="h-11 w-11 fill-current text-primary" />
+      </button>
+      <Logo variant="mobile" />
+    </div>
+  );
+}
+
+export function MenuItems({ half = null, className = "" }) {
+  const { webApp, activeParentMenu } = useWorkspace();
+  const menuItems = useMemo(
+    () => (webApp.menu_items || []).filter(item => !item.parent_menu),
+    [webApp.menu_items]
+  );
   const solid = useMemo(() => webApp.solid, [webApp.solid]);
 
   const rounded = useMemo(() => {
@@ -20,40 +42,28 @@ export function MainNav() {
   }, [webApp.rounded]);
 
   const Items = useMemo(() => {
-    return menuItems.filter(item => !item.parent_menu).map((item, i) => {
-      return (
-        <Link
-          className={`transition-colors px-6 py-1 ${rounded} ${!solid && 'focus:bg-transparent hover:bg-transparent bg-transparent'}`}
-          active={activeParentMenu === item.page}
-          key={item.id + i} 
-          to={`/${item.link}`}
-        >
-          {item.link}
-        </Link>
-      )
-    });
-  }, [menuItems, activeParentMenu]);
+    let arr = menuItems;
+    if (half === "first") {
+      arr = menuItems.slice(0, Math.ceil(menuItems.length / 2));
+    } else if (half === "second") {
+      arr = menuItems.slice(Math.ceil(menuItems.length / 2));
+    }
 
-  const handleSetOpenNav = (e) => {
-    e.preventDefault();
-    e.stopPropagation()
-    setOpenNav(!openNav)
-  }
+    return arr.map((item, i) => (
+      <Link
+        className={`transition-colors px-6 py-1 ${rounded} ${!solid && 'focus:bg-transparent hover:bg-transparent bg-transparent'}`}
+        active={activeParentMenu === item.page}
+        key={item.id + i}
+        to={`/${item.link}`}
+      >
+        {item.link}
+      </Link>
+    ));
+  }, [menuItems, half, activeParentMenu, solid, rounded]);
 
   return (
-    <>
-      <div className="flex min-w-[180px]">
-        <button
-          onClick={handleSetOpenNav}
-          className="lg:hidden"
-        >
-          <Icon className="h-11 w-11 fill-current text-primary" />
-        </button>
-        <Logo />
-      </div>
-      <div className="flex-row items-center text-sm hidden lg:flex gap-2">
-        {Items}
-      </div>
-    </>
-  )
+    <nav className={`flex flex-row items-center text-sm gap-2 ${className}`}>
+      {Items}
+    </nav>
+  );
 }

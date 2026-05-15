@@ -8,7 +8,11 @@ export default function Col(props) {
   const { colPadding } = useRowContext();
   const data = props.data || {};
 
-  const className = cn((!designerMode || !designing) && colPadding, props.className, 'h-full', data?.class);
+  const className = cn(
+    (!designerMode || !designing) && colPadding, 
+    props.className,
+     data?.class
+  );
   return (
     <Droppable
       {...props}

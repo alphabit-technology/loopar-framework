@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.12"
+    "version": "5.0.13"
   },
   "documents": {
     "Entity:Module": {
@@ -14,7 +14,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.12",
+      "version": "5.0.13",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,
@@ -44,11 +44,7 @@
     "Module Group:administration": {
       "name": "administration",
       "description": "Administration",
-      "in_sidebar": 1,
-      "__created_at__": "2026-05-11 02:15:52",
-      "__updated_at__": "2026-05-11 02:15:52",
-      "__deleted_at__": null,
-      "__document_status__": 1
+      "in_sidebar": 1
     },
     "Module:core": {
       "name": "core",
@@ -64,11 +60,7 @@
     "Module Group:developer": {
       "name": "developer",
       "description": "Developer",
-      "in_sidebar": 1,
-      "__created_at__": "2026-05-11 02:15:52",
-      "__updated_at__": "2026-05-11 02:15:52",
-      "__deleted_at__": null,
-      "__document_status__": 1
+      "in_sidebar": 1
     },
     "Module:developer": {
       "name": "developer",
@@ -101,11 +93,7 @@
     "Module Group:modules": {
       "name": "modules",
       "description": "Modules",
-      "in_sidebar": 1,
-      "__created_at__": "2026-05-11 02:15:53",
-      "__updated_at__": "2026-05-11 02:15:53",
-      "__deleted_at__": null,
-      "__document_status__": 1
+      "in_sidebar": 1
     },
     "Entity:Menu Item": {
       "__root__": "/apps/loopar/modules/developer/entities/menu-item"
@@ -309,9 +297,9 @@
     "Entity:Role Permission": "link",
     "Entity:User Role": "link",
     "Entity:Review": "link",
-    "Entity:Resources": "link",
-    "Entity:Module": "link",
     "Entity:Side Menu": "link",
-    "Entity:Side Menu Item": "link"
+    "Entity:Side Menu Item": "link",
+    "Entity:Resources": "link",
+    "Entity:Module": "link"
   }
 }

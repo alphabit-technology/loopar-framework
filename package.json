@@ -1,7 +1,7 @@
 {
   "name": "loopar-framework",
   "sideEffects": false,
-  "version": "6.0.0",
+  "version": "6.0.1",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -21,9 +21,9 @@
     "startup": "node bin/loopar-cli.js startup",
     "logs": "node bin/loopar-cli.js logs",
     "list": "node bin/loopar-cli.js list",
-    "build": "node bin/build-clean.js && npm-run-all build:client build:server",
-    "build:client": "vite build --outDir dist/client",
-    "build:server": "vite build --outDir dist/server --ssr app/entry-server.jsx"
+    "build": "yarn install --immutable --inline-builds && node bin/build-prepare.js && npm-run-all build:client build:server && node bin/build-activate.js",
+    "build:client": "node bin/run-vite.js client",
+    "build:server": "node bin/run-vite.js server"
   },
   "bin": {
     "loopar": "./bin/loopar-cli.js"

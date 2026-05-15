@@ -2,10 +2,10 @@
 'use strict';
 
 import ListContext from '@context/list-context';
-import loopar from "loopar";
+import loopar, { useRealtime } from "loopar";
 import DragToggle from "./DragToggle.jsx";
 import { Code, Star } from 'lucide-react';
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 
 import {
   Avatar,
@@ -13,7 +13,7 @@ import {
 
 import {Link} from "@link"
 import {Button} from "@cn/components/ui/button";
-import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot } from 'lucide-react';
+import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer } from 'lucide-react';
 
 import {cn} from "@cn/lib/utils";
 
@@ -130,7 +130,22 @@ const Buttons = ({row}) => {
     <div className="flex flex-row items-center gap-0">
       <Button
         variant="outline"
-        disabled={row.name == process.env.TENANT_ID || row.name == "dev" || status != "online" || updateRows.includes(row.name)}
+        title="Reload — graceful, picks up code changes (no env refresh)"
+        disabled={status != "online" || loading}
+        onClick={(e) => {
+          e.preventDefault();
+          setUpdateRows([...updateRows, row.name]);
+          sendAction("reload", row.name, true, () => {
+            setUpdateRows(updateRows.filter(name => name != row.name));
+          });
+        }}
+      >
+        <RefreshCw className={`text-blue-500/70 ${loading && "animate-spin"}`} />
+      </Button>
+      <Button
+        variant="outline"
+        title="Restart — hard, refreshes env (port/domain/NODE_ENV). Disabled for the active dev tenant."
+        disabled={row.name == process.env.TENANT_ID || row.name == "dev" || status != "online" || loading}
         onClick={(e) => {
           e.preventDefault();
           setUpdateRows([...updateRows, row.name]);
@@ -152,10 +167,105 @@ const Buttons = ({row}) => {
   );
 }
 
+
+const BuildButton = () => {
+  const [build, setBuild] = useState({ state: 'idle' });
+  const notifiedRef = useRef(new Set());
+
+  useEffect(() => {
+    let mounted = true;
+    loopar.api.post("Tenant Manager", "buildStatus", {
+      freeze: false,
+      success: (res) => {
+        if (!mounted) return;
+        const build = (res && typeof res === 'object') ? res.build : null;
+        if (!build) return;
+
+        setBuild(build);
+        if (build.id && build.state !== 'running' && build.state !== 'idle') {
+          notifiedRef.current.add(build.id);
+        }
+      },
+      error: () => {},
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useRealtime("buildStatus", (payload) => {
+    if (!payload?.build) return;
+    const next = payload.build;
+    setBuild(next);
+
+    if (next.state !== 'completed' && next.state !== 'failed') return;
+    if (!next.id || notifiedRef.current.has(next.id)) return;
+    notifiedRef.current.add(next.id);
+
+    if (next.state === 'completed') {
+      loopar.notify({
+        message: "Build completed. Click 'Reload' on the dev tenant to apply.",
+        type: "success",
+      });
+    } else {
+      loopar.notify({
+        message: `Build failed${next.exitCode != null ? ` (exit ${next.exitCode})` : ''}. Check server logs.`,
+        type: "error",
+      });
+    }
+  });
+
+  const isRunning = build.state === 'running';
+
+  const onClick = (e) => {
+    e.preventDefault();
+    if (isRunning) return;
+
+    loopar.confirm(
+      "Run a full build now? Client + server bundles will be rebuilt and every production tenant (except this one) will be reloaded.",
+      () => {
+        setBuild((prev) => ({
+          ...prev,
+          state: 'running',
+          startedAt: Date.now(),
+        }));
+
+        loopar.api.post("Tenant Manager", "build", {
+          freeze: false,
+          success: (res) => {
+            if (res && typeof res === 'object' && res.build) {
+              setBuild(res.build);
+            }
+          },
+          error: (msg) => {
+            setBuild({ state: 'idle' });
+            loopar.throw(msg);
+          },
+        });
+      }
+    );
+  };
+
+  return (
+    <Button
+      variant={isRunning ? "outline" : "primeblue"}
+      onClick={onClick}
+      disabled={isRunning}
+      title="Build the framework (versioned release + reload production tenants)"
+    >
+      <Hammer className={`mr-2 ${isRunning ? "animate-pulse" : ""}`} />
+      {isRunning ? "Building…" : "Build"}
+    </Button>
+  );
+};
+
 class TenantManagerListBase extends ListContext {
   onlyList=true;
   constructor(props){
     super(props);
+  }
+
+  setCustomActions() {
+    super.setCustomActions();
+    this.setCustomAction('build', <BuildButton />);
   }
 
   customColumns(baseColumns) {
@@ -184,10 +294,10 @@ class TenantManagerListBase extends ListContext {
           const mode = row.node_env;
   
           return (
-            <DragToggle 
+            <DragToggle
               value={mode == "production"}
               site={row.name}
-              disabled={row.name =="dev"}
+              disabled={updateRows.includes(row.name)}
               onChange={(isProduction) => {
                 setUpdateRows([...updateRows, row.name]);
                 sendAction(isProduction ? "production" : "development", row.name, false, () => {
@@ -219,10 +329,10 @@ class TenantManagerListBase extends ListContext {
           const status = row.status;
           
           return (
-            <DragToggle 
+            <DragToggle
               value={status=="online"}
               site={row.name}
-              disabled={row.name == process.env.TENANT_ID || row.name == "dev"}
+              disabled={updateRows.includes(row.name)}
               onChange={(isOnline) => {
                 setUpdateRows([...updateRows, row.name]);
                 sendAction(isOnline ? "start" : "stop", row.name, false, () => {

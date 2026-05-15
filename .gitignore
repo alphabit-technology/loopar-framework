@@ -38,8 +38,9 @@ coverage/
 # -----------------------------------
 # 🎨 BUILD OUTPUT
 # -----------------------------------
-dist/
+dist
 build/
+releases/
 
 # -----------------------------------
 # ⚙️ CONFIGURATION FILES (Auto-generated)

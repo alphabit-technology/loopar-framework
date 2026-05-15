@@ -76,6 +76,7 @@ const Content = (props) => {
 function Banner() {
   const {props} = usePreassembledContext()
   const data = props.data || {};
+  const {designerMode} = useDesigner();
 
   const alignment = {
     center: "justify-center items-center",
@@ -86,14 +87,18 @@ function Banner() {
   const coverClassName = cn(
     "h-full w-full",
     "transform transition-all ease-in-out",
-    "absolute inset-0 z-0"
+    "absolute inset-0 z-0",
   );
 
   const isActive = data.isActive !== false;
   const animationDuration = (parseFloat(data.animation_duration) || 0.7);
 
   return (
-    <div className={cn(props.className.split("transition-all")[0], "p-0 relative min-h-100")}>
+    <div className={cn(
+      props.className.split("transition-all")[0],
+      "p-0 relative",
+      data.full_height && !designerMode && "h-[calc(100vh-var(--spacing-web-header-height))] max-h-[calc(100vh-var(--spacing-web-header-height))]",
+    )}>
       <Cover
         className={coverClassName}
         style={props.style}
@@ -101,7 +106,8 @@ function Banner() {
       />
       <Content  
         elements={props.elements}
-        wrapperClassName="absolute inset-0 z-10 h-full w-full"
+        // wrapperClassName="absolute inset-0 z-10 h-full w-full"
+        wrapperClassName="inset-0 z-10 h-full w-full"
         className={cn(alignment, data.class)}
         isActive={isActive}
         animationDuration={animationDuration}
@@ -151,7 +157,14 @@ MetaBanner.metaFields =()=>{
         data: {
           options: ["center", "start", "end"],
         }
-      }
+      },
+      full_height: {
+        element: SWITCH,
+        data: {
+          description:
+            "If enabled the slider will have the height of the screen.",
+        },
+      },
     }
   }];
 }
