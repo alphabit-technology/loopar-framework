@@ -140,6 +140,24 @@ export class KnexORM extends Connector {
     }, {});
   }
 
+  #canonicalizeEavValue(value) {
+    if (value == null) return null;
+    if (typeof value === "boolean") return value ? "1" : "0";
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) return null;
+      return Number.isInteger(value) ? String(value) : String(value);
+    }
+    if (typeof value === "string") {
+      if (/^-?\d+(\.\d+)?$/.test(value)) {
+        const num = Number(value);
+        if (Number.isFinite(num) && Number.isInteger(num)) return String(num);
+      }
+      return value;
+    }
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  }
+
   async #padOrphanColumns(document, data) {
     const colMap   = await this.getTableColumns(document);
     const dataKeys = new Set(Object.keys(data).map(k => k.toLowerCase()));
@@ -200,7 +218,7 @@ export class KnexORM extends Connector {
         const payload = {
           document,
           field,
-          value: value ?? null,
+          value: this.#canonicalizeEavValue(value),
           __document_status__: DOC_STATUS.ACTIVE,
         };
 
