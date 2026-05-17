@@ -210,7 +210,6 @@ class InstallerBuilder {
           }
 
           if (el.element === FORM_TABLE) {
-            console.log(['el', el]);
             await this._resolveFormTableRef(el, d, entity, relatedEntity);
           }
         }

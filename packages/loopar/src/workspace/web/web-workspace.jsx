@@ -64,7 +64,7 @@ const Layout = (({ ...props }) => {
           <div
             className={` relative row-start-1 grid ${childMenu.length > 0 ? 'grid-cols-subgrid lg:col-start-2' : 'col-span-12'}`}
           >
-            <div className="grid grid-cols-1">
+            <div className="grid grid-cols-1 min-h-[calc(100vh-var(--spacing-web-header-height))]">
               {props.children}
             </div>
           </div>

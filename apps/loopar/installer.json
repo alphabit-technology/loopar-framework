@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.13"
+    "version": "5.0.19"
   },
   "documents": {
     "Entity:Module": {
@@ -14,7 +14,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.13",
+      "version": "5.0.19",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,
@@ -245,6 +245,29 @@
     "Entity:User Role": {
       "__root__": "/apps/loopar/modules/auth/entities/user-role"
     },
+    "Module:Web": {
+      "name": "Web",
+      "description": "Web",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "icon": "Globe",
+      "in_sidebar": 1
+    },
+    "Entity:Review": {
+      "__root__": "/apps/loopar/modules/web/entities/review"
+    },
+    "Entity:Side Menu": {
+      "__root__": "/apps/loopar/modules/developer/entities/side-menu"
+    },
+    "Entity:Side Menu Item": {
+      "__root__": "/apps/loopar/modules/developer/entities/side-menu-item"
+    },
+    "Entity:Project": {
+      "__root__": "/apps/loopar/modules/web/entities/project"
+    },
+    "Entity:Service": {
+      "__root__": "/apps/loopar/modules/web/entities/service"
+    },
     "Module:loopar": {
       "name": "loopar",
       "description": "loopar",
@@ -252,15 +275,6 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 1
-    },
-    "Entity:Review": {
-      "__root__": "/apps/loopar/modules/loopar/entities/review"
-    },
-    "Entity:Side Menu": {
-      "__root__": "/apps/loopar/modules/developer/entities/side-menu"
-    },
-    "Entity:Side Menu Item": {
-      "__root__": "/apps/loopar/modules/developer/entities/side-menu-item"
     }
   },
   "postInstaller": {
@@ -299,6 +313,8 @@
     "Entity:Review": "link",
     "Entity:Side Menu": "link",
     "Entity:Side Menu Item": "link",
+    "Entity:Project": "link",
+    "Entity:Service": "link",
     "Entity:Resources": "link",
     "Entity:Module": "link"
   }

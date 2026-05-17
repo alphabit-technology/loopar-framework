@@ -278,7 +278,9 @@ export const elementsDefinition = {
     { element: 'particles', icon: 'DotsHorizontal' },
     { element: 'particles_settings', icon: 'DotsHorizontal' },
     { element: 'example_viewer', icon: 'Scan' },
-    { element: 'review', icon: "Pencil"}
+    { element: 'review', icon: "Pencil"},
+    { element: 'projects_gallery', icon: "ImagePlus"},
+    { element: 'services_grid', icon: "Grid2x2"}
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },

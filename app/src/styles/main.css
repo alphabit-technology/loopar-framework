@@ -65,6 +65,11 @@
   --spacing-footer-height: 4rem;
   --spacing-web-footer-height: 5rem;
 
+  /* Reserved content height: keeps the footer in place while data-driven
+     sections (galleries, detail views, async lists) are loading. Uses svh
+     so mobile toolbars don't cause layout shift. */
+  --spacing-section-min: calc(100svh - var(--spacing-web-header-height) - var(--spacing-web-footer-height));
+
   /* Breakpoints */
   --breakpoint-2xl: 1400px;
 
