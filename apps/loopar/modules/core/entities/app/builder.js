@@ -82,7 +82,7 @@ class InstallerBuilder {
   }
 
   loadEntities() {
-    this.entities = loopar.getEntities(this.app).map(entity => {
+    const mapEntity = (entity, extra = {}) => {
       const parent = loopar.getRef(entity.__ENTITY__);
       return {
         sortKey: [parseInt(parent?.id) || 0, parseInt(entity.id) || 0],
@@ -91,13 +91,46 @@ class InstallerBuilder {
         __NAME__: entity.name,
         __APP__: entity.__APP__,
         __ROOT__: entity.entityRoot,
+        ...extra,
       };
-    }).sort((a, b) => {
+    };
+
+    const sortFn = (a, b) => {
       if (a.sortKey[0] !== b.sortKey[0]) return a.sortKey[0] - b.sortKey[0];
       return a.sortKey[1] - b.sortKey[1];
-    });
+    };
+
+    // Single pass over getEntities() — partition into own vs foreign
+    // include_in_installer, dedup foreign by name against own via Set.
+    const all = loopar.getEntities();
+    const own = [];
+    const foreignCandidates = [];
+    for (const e of all) {
+      if (loopar.utils.compare(e.__APP__, this.app)) own.push(e);
+      else if (e.include_in_installer === 1) foreignCandidates.push(e);
+    }
+
+    const ownNamesSet = new Set(own.map(e => e.name));
+
+    this.entities = own.map(e => mapEntity(e)).sort(sortFn);
+
+    // Pre-resolve `appField` once per foreign entity (avoids re-fetching
+    // and re-parsing doc_structure inside build()). Foreigns without an
+    // `app` Select get dropped here — without one we can't scope records
+    // to this.app, and the entity stays implicit (framework data).
+    this.foreignIncluded = foreignCandidates
+      .filter(e => !ownNamesSet.has(e.name))
+      .map(e => {
+        const docStructure = loopar.utils.JSONparse(e.doc_structure, []);
+        const appField = this.findSelectFieldFor(docStructure, "App");
+        return appField
+          ? mapEntity(e, { __IS_FOREIGN__: true, appField })
+          : null;
+      })
+      .filter(Boolean);
 
     this.entitiesName = this.entities.map(e => e.__NAME__);
+    this.foreignEntitiesName = this.foreignIncluded.map(e => e.__NAME__);
   }
 
   fieldIsModelReference(field) {
@@ -361,6 +394,25 @@ class InstallerBuilder {
 
     for (const [key, value] of Object.entries(this.postInstaller.Queues)) {
       if (!this.Queues[key]) this.Queues[key] = value;
+    }
+
+    // Foreign include_in_installer entities: collect records pointing
+    // to this.app via the pre-resolved appField. Use liveDoc.rawValues()
+    // for parity with buildDocuments — derived/computed fields included.
+    for (const entity of this.foreignIncluded) {
+      const records = await loopar.db.getAll(entity.__NAME__, ["*"], {
+        [entity.appField]: this.app
+      });
+      for (const record of records) {
+        const liveDoc = await loopar.getDocument(
+          entity.__NAME__,
+          record.name,
+          null,
+          { ifNotFound: null }
+        );
+        const payload = liveDoc ? await liveDoc.rawValues() : record;
+        await this.queue(entity, payload);
+      }
     }
 
     const snapshot = this.composeSnapshot();

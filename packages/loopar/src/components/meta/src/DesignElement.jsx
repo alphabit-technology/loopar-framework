@@ -34,11 +34,6 @@ export const DesignElement = memo(function DesignElement(props) {
 
   const isDroppable = !fieldIsWritable(elementProps) && Comp.droppable !== false;
 
-  // CRITICAL: read the identity from `element` (the original), NOT from
-  // `elementProps`. The destructuring above removes `node`, so
-  // getNodeKey(elementProps) falls back to `getUniqueKey()` and generates a
-  // random identity - this breaks drag-drop (REMOVE doesn't find the child
-  // by its new random) and generates duplicates when dropping between containers.
   const nodeKey = elementNode ?? getNodeKey(element);
   useEffect(() => {
     if (!elementProps.data) return;
@@ -69,6 +64,14 @@ export const DesignElement = memo(function DesignElement(props) {
     return elementProps.data && (elementProps.data.hidden || elementProps.data.disabled);
   }, [elementProps.data?.hidden, elementProps.data?.disabled]);
 
+  // True from pointerdown until pointerup (or drop). Used to paint the source
+  // element with the same dashed-border treatment the placeholder uses, so
+  // the user gets visual confirmation that the drag started even before
+  // movement crosses MOVEMENT_THRESHOLD. Once threshold is crossed, the
+  // cleanup effect removes this element from the local list and the
+  // placeholder takes over — visual is continuous.
+  const isBeingDragged = designing && currentDragging?.node === nodeKey;
+
   const className = useMemo(() => {
     return cn(
       "rounded p-1",
@@ -89,8 +92,11 @@ export const DesignElement = memo(function DesignElement(props) {
       designing ? [
         //elementProps. === MARKDOWN && "max-w-[300px] overflow-y-auto"
       ] : "",
+      // Source-of-drag visual: matches the placeholder so the transition
+      // (source → placeholder when threshold is crossed) is seamless.
+      isBeingDragged && "border-2 border-dashed border-primary/70 opacity-60",
     );
-  }, [designing, elementProps.className, disabled, isDroppable]);
+  }, [designing, elementProps.className, disabled, isDroppable, isBeingDragged]);
 
   const dragStart = useCallback((e) => {
     const el = {
@@ -147,13 +153,9 @@ export const DesignElement = memo(function DesignElement(props) {
     dragStart(e);
   }, [dragEnabled, designerModeType, setInitializedDragging, dragStart]);
 
-  const style = useMemo(() => {
-    if (designing && currentDragging?.node === nodeKey) {
-      return { opacity: 0.4 };
-    }
-    return undefined;
-  }, [currentDragging?.node, designing, nodeKey]);
-
+  // The being-dragged opacity moved into `className` (opacity-60) so it
+  // unifies with the placeholder visual. Inline style would override class
+  // opacity, which would split the source's appearance from the placeholder.
   const isActive = hover && !dragging;
 
   return (
@@ -167,7 +169,6 @@ export const DesignElement = memo(function DesignElement(props) {
         }}
         onPointerOut={() => handleMouseOver(false)}
         onPointerDown={handleDragStart}
-        style={style}
       >
         {designerModeType !== "preview" && (
           <ElementTitle

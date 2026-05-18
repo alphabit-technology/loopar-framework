@@ -258,7 +258,7 @@ export const elementsDefinition = {
   [DESIGN_ELEMENT]: [
     { element: "image", icon: "Image" },
     { element: "slider", icon: "SlidersHorizontal" },
-    { element: "carrusel", icon: "GalleryHorizontalEnd" },
+    { element: "carousel", icon: "GalleryHorizontalEnd" },
     { element: "gallery", icon: "ImagePlus" },
     { element: "text_block", icon: "AlignJustify" },
     { element: "text_block_icon", icon: "Outdent" },
@@ -279,8 +279,7 @@ export const elementsDefinition = {
     { element: 'particles_settings', icon: 'DotsHorizontal' },
     { element: 'example_viewer', icon: 'Scan' },
     { element: 'review', icon: "Pencil"},
-    { element: 'projects_gallery', icon: "ImagePlus"},
-    { element: 'services_grid', icon: "Grid2x2"}
+    { element: 'collection', icon: "LayoutGrid"}
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },

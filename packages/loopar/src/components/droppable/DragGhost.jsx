@@ -2,21 +2,36 @@ import { useDragAndDrop } from "./DragAndDropContext";
 import { memo, useLayoutEffect } from 'react';
 
 export const DragGhost = memo(function DragGhost() {
-  const { ghostDomRef, draggingEventRef, currentDragging, dragging } = useDragAndDrop();
+  const { ghostDomRef, draggingEventRef, currentDragging, containerRef } = useDragAndDrop();
 
   useLayoutEffect(() => {
     const el = ghostDomRef?.current;
-    const ev = draggingEventRef?.current;
+
+    if (!currentDragging) {
+      draggingEventRef.current = null;
+      return;
+    }
+
+    const ip = currentDragging.initialPosition;
+    if (ip && containerRef?.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const isNew = currentDragging.isNew;
+      draggingEventRef.current = {
+        x: ip.x - (!isNew ? rect.left : 0),
+        y: ip.y - (!isNew ? rect.top : 0),
+      };
+    }
+
+    const ev = draggingEventRef.current;
     if (el && ev) {
       el.style.left = `${ev.x}px`;
       el.style.top = `${ev.y}px`;
     }
-  }, [dragging, currentDragging?.node, ghostDomRef, draggingEventRef]);
+  }, [currentDragging?.node, ghostDomRef, draggingEventRef, containerRef]);
 
-  if (!(dragging && currentDragging)) return null;
+  if (!currentDragging) return null;
 
   const { size, offset } = currentDragging;
-
   const isNew = currentDragging.isNew;
 
   return (

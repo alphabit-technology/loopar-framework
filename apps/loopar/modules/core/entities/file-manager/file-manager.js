@@ -247,9 +247,11 @@ export default class FileManager extends BaseDocument {
     }
   }
 
-  loadDiskFiles(rows = []) {
-    const apps = fs.readdirSync(loopar.makePath(loopar.pathRoot, 'apps'));
+  async loadDiskFiles(rows = []) {
+    //const apps = fs.readdirSync(loopar.makePath(loopar.pathRoot, 'apps'));
+    const apps = (await loopar.db.getAll("App", { fields: ["name"] })).map(app => app.name);
 
+    console.log(["apps", apps]);
     const loadFiles = (source = "uploads", app) => {
       const sourcePath = path.join(loopar.pathRoot, source);
 
@@ -354,7 +356,7 @@ export default class FileManager extends BaseDocument {
 
     const condition = { ...this.buildCondition(q), ...filters };
 
-    const diskFiles = this.loadDiskFiles();
+    const diskFiles = await this.loadDiskFiles();
 
     pagination.totalRecords = await this.records(condition) + diskFiles.length;
 
@@ -363,7 +365,7 @@ export default class FileManager extends BaseDocument {
     loopar.db.pagination = pagination;
 
     const rows = this.paginate(
-      this.loadDiskFiles(await loopar.db.getList("File Manager", [...listFields, "id"], condition)),
+      await this.loadDiskFiles(await loopar.db.getList("File Manager", [...listFields, "id"], condition)),
       pagination.page,
       pagination.pageSize
     )

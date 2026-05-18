@@ -55,7 +55,7 @@ const Content = (props) => {
 
   const animationClassName = cn(
     "transition-all duration-700 ease-out",
-    props.haveCarrusel && (isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")
+    props.haveCarousel && (isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")
   )
   
   return (
@@ -111,7 +111,7 @@ function Banner() {
         className={cn(alignment, data.class)}
         isActive={isActive}
         animationDuration={animationDuration}
-        haveCarrusel={props.haveCarrusel}
+        haveCarousel={props.haveCarousel}
       />
     </div>
   )
@@ -141,7 +141,7 @@ export default function MetaBanner(props){
 
   return (
     <PreassembledContextProvider {...props} defaultElements={defaultElements}>
-      <Banner haveCarrusel={props.haveCarrusel} staticContent={data.static_content}/>
+      <Banner haveCarousel={props.haveCarousel} staticContent={data.static_content}/>
     </PreassembledContextProvider>
   )
 }

@@ -178,10 +178,13 @@ export const DragAndDropProvider = (props) => {
       x: p.clientX - (!isNew ? rect.left : 0),
       y: p.clientY - (!isNew ? rect.top : 0),
     };
+
     const mv = movementRef.current;
+    const refY = mv ? mv.y : cd.initialPosition.y;
+    const refX = mv ? mv.x : cd.initialPosition.x;
     const crossed =
-      Math.abs(p.clientY - (mv?.y || 0)) > MOVEMENT_THRESHOLD ||
-      Math.abs(p.clientX - (mv?.x || 0)) > MOVEMENT_THRESHOLD;
+      Math.abs(p.clientY - refY) > MOVEMENT_THRESHOLD ||
+      Math.abs(p.clientX - refX) > MOVEMENT_THRESHOLD;
     setDraggingEvent(nextEvent);
     draggingEventRef.current = nextEvent;
     const host = ghostDomRef.current;
@@ -261,9 +264,11 @@ export const DragAndDropProvider = (props) => {
       autoScrollFromPointer(p.clientY);
 
       const mv = movementRef.current;
+      const refY = mv ? mv.y : cd.initialPosition.y;
+      const refX = mv ? mv.x : cd.initialPosition.x;
       const enough =
-        Math.abs(p.clientY - (mv?.y || 0)) > MOVEMENT_THRESHOLD ||
-        Math.abs(p.clientX - (mv?.x || 0)) > MOVEMENT_THRESHOLD;
+        Math.abs(p.clientY - refY) > MOVEMENT_THRESHOLD ||
+        Math.abs(p.clientX - refX) > MOVEMENT_THRESHOLD;
 
       if (enough) {
         if (!draggingRef.current) setDragging(true);

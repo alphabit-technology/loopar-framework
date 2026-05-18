@@ -355,6 +355,12 @@ export default class CoreDocument {
       await fileManager.save();
     }
 
+   
+    if(this.__ENTITY__.include_in_installer === 1 && this.app && !loopar.installing) {
+      const app = await loopar.getDocument("App", this.app, null, { ifNotFound: null });
+      app && app.bump("patch");
+    }
+
     this.afterSave && await this.afterSave();
   }
 

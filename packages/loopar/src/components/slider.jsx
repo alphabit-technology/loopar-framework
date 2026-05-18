@@ -1,5 +1,5 @@
 import elementManage from "@@tools/element-manage";
-import BaseCarrusel from "@base-carrusel";
+import BaseCarousel from "@base-carousel";
 
 export default function Slider(props) {
   const defaultElements = [
@@ -46,10 +46,12 @@ export default function Slider(props) {
   }
 
   return (
-    <BaseCarrusel
+    <BaseCarousel
       {...props}
       defaultElements={defaultElements}
       addSlide={addSlide}
     />
   );
 }
+
+Slider.metaFields = BaseCarousel.metaFields;

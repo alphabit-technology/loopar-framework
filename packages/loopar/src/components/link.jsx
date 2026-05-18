@@ -96,6 +96,7 @@ export function Link({
   notControlled,
   activeClassName,
   onClick,
+  bare = false,
   ...props
 }) {
   const { setOpenNav, currentPage, workspace, award } = useWorkspace();
@@ -140,15 +141,26 @@ export function Link({
 
   if (!canRender && !props.renderOnRestrict) return null;
 
-  const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "");
-  
-  const className = cn(
-    "justify-normal cursor-pointer p-2",
-    canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
-    classVariant,
-    "justify-start",
-    props.className,
-  );
+  // `bare` opts out of the shadcn button styling — useful when the Link
+  // is a wrapper around custom content (cards, image tiles, sections) and
+  // the caller wants full control of the visual. Without it, the Link
+  // forces inline-flex + button paddings that flatten any vertical layout
+  // inside.
+  const className = bare
+    ? cn(
+        canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
+        props.className,
+      )
+    : (() => {
+        const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "");
+        return cn(
+          "justify-normal cursor-pointer p-2",
+          canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
+          classVariant,
+          "justify-start",
+          props.className,
+        );
+      })();
 
   const renderizableProps = loopar.utils.renderizableProps(props);
   const commonProps = {

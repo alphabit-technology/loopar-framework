@@ -1,0 +1,139 @@
+import { useMemo } from "react";
+import fileManager from "@@file/file-manager";
+import {Link} from "@link";
+
+export default function DefaultCard({ item, fields = [], buildHref, onNavigate, variant = "default" }) {
+  const fieldsByName = useMemo(() => {
+    const map = {};
+    for (const f of (fields || [])) map[f.name] = f;
+    return map;
+  }, [fields]);
+
+  const cover = useMemo(() => {
+    const candidates = [];
+    if (fieldsByName.cover_image) candidates.push("cover_image");
+    for (const f of fields) {
+      if (f.element === "image_input" && !f.multiple && !candidates.includes(f.name)) {
+        candidates.push(f.name);
+      }
+    }
+    for (const name of candidates) {
+      const raw = item?.[name];
+      if (!raw) continue;
+      const mapped = fileManager.getMappedFiles(raw) || [];
+      const hit = mapped.find(x => x && x.src);
+      if (hit) return hit;
+    }
+    return null;
+  }, [item, fields, fieldsByName]);
+
+  const title = item?.title
+    ?? item?.[fieldsByName.title?.name || ""]
+    ?? item?.[firstField(fields, f => f.element === "input")?.name || ""]
+    ?? item?.name
+    ?? "Untitled";
+
+  const summary = item?.summary
+    ?? item?.[firstField(fields, f => f.element === "textarea")?.name || ""]
+    ?? null;
+
+  const tags = Array.isArray(item?.tags) ? item.tags.slice(0, 3) : [];
+
+  const dateField = firstField(fields, f => f.element === "date" || f.element === "date_time");
+  const dateValue = dateField ? item?.[dateField.name] : null;
+  const dateLabel = dateValue
+    ? new Date(dateValue).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+    : null;
+
+  const badges = useMemo(() => {
+    const out = [];
+    if (item?.featured) out.push("Featured");
+    for (const f of fields) {
+      if (f.element !== "switch" || !f.show_in_card) continue;
+      if (f.name === "featured") continue; // already covered
+      if (item?.[f.name]) out.push(f.label || f.name);
+    }
+    return out;
+  }, [item, fields]);
+
+  const to = item?.custom_url
+    ? String(item.custom_url).trim()
+    : (item?.slug || item?.name || "");
+  const isExternal = /^https?:\/\//i.test(to);
+
+  return (
+    <Link
+      to={to}
+      bare
+      notControlled={isExternal}
+      _target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      className="group bg-card text-card-foreground border rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow"
+    >
+      <div className={`relative bg-secondary overflow-hidden ${
+        variant === "compact" ? "aspect-[16/10]" : "aspect-[4/3]"
+      }`}>
+        {cover ? (
+          <img
+            src={cover.src}
+            alt={cover.name || title}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs opacity-60">
+            No cover
+          </div>
+        )}
+        {badges.length > 0 ? (
+          <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+            {badges.map(b => (
+              <span key={b} className="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-md bg-primary text-primary-foreground">
+                {b}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-base font-medium leading-tight line-clamp-2">
+            {title}
+          </h3>
+          {dateLabel ? (
+            <span className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">
+              {dateLabel}
+            </span>
+          ) : null}
+        </div>
+
+        {summary ? (
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+            {summary}
+          </p>
+        ) : null}
+
+        {tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
+            {tags.map(t => (
+              <span
+                key={t}
+                className="text-xs px-2 py-0.5 rounded-md bg-secondary/60 text-secondary-foreground"
+              >
+                #{t}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </Link>
+  );
+}
+
+function firstField(fields, predicate) {
+  for (const f of (fields || [])) {
+    if (predicate(f)) return f;
+  }
+  return null;
+}

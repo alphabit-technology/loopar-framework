@@ -7,15 +7,18 @@ class DocumentManage {
     Object.assign(this, props);
   }
 
-  async getDocument(document, name, data = null, {ifNotFound = 'throw', parse=false}={}) {
-    const ENTITY = await this.#GET_ENTITY(document);
+  async getDocument(document, name, data = null, {ifNotFound = 'throw', parse=false, requestContext=null}={}) {
+    const ENTITY = await this.#GET_ENTITY(document, requestContext);
     const databaseData = await loopar.db.getDoc(ENTITY, name, ENTITY.__REF__.__FIELDS__);
 
     if (databaseData) {
-      return await this.newDocument(document, { ...databaseData, ...(data || {}) }, name, parse);
+      // Pass the pre-parsed ENTITY through so newDocument doesn't trigger
+      // a second parseDocStructure pass (which would re-execute side
+      // effects like COLLECTION preload — losing the requestContext).
+      return await this.newDocument(document, { ...databaseData, ...(data || {}) }, name, parse, ENTITY);
     } else {
       if (ifNotFound === 'new') {
-        return await this.newDocument(document, data, name, parse);
+        return await this.newDocument(document, data, name, parse, ENTITY);
       }
 
       if (ifNotFound === 'throw') {
@@ -26,8 +29,11 @@ class DocumentManage {
     }
   }
 
-  async newDocument(document, data = {}, name, parse = false) {
-    const ENTITY = await this.#GET_ENTITY(document);
+  async newDocument(document, data = {}, name, parse = false, preParsedEntity = null) {
+    // Reuse the ENTITY when the caller already parsed it (carrying the
+    // request-scoped state in field.data.preloaded). Falls back to a
+    // fresh parse for standalone callers — which is the original behaviour.
+    const ENTITY = preParsedEntity || await this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
     const spacing = loopar.__installed__ && ENTITY.__REF__.is_child != 1 ?
       await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
@@ -44,7 +50,7 @@ class DocumentManage {
     return instance;
   }
 
-  async #GET_ENTITY(document) {
+  async #GET_ENTITY(document, requestContext = null) {
     const throwError = (type) => {
       loopar.throw({
         code: 404,
@@ -53,7 +59,7 @@ class DocumentManage {
     }
 
     let ENTITY = null;
-    
+
     const ref = loopar.getRef(document);
     if (!ref) return throwError();
 
@@ -70,7 +76,7 @@ class DocumentManage {
       }
 
       ENTITY.doc_structure = JSON.stringify(
-        await parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure), true, document)
+        await parseDocStructure(loopar.utils.JSONparse(ENTITY.doc_structure, ENTITY.doc_structure), true, document, requestContext)
       );
     }
 

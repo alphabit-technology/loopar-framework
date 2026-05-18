@@ -1,8 +1,8 @@
-import BaseCarrusel from "@base-carrusel";
+import BaseCarousel from "./carousel/base-carousel.jsx";
 import Preassembled from "@preassembled";
 import { useDesigner } from "@context/@/designer-context";
 
-export default function Carrusel(props){
+export default function Carousel(props){
   const { updateElements } = useDesigner();
   
   const defaultElements = [
@@ -59,12 +59,13 @@ export default function Carrusel(props){
       notDroppable={true} 
       defaultElements={defaultElements}
     >
-      <BaseCarrusel
+      <BaseCarousel
         {...props}
         addSlide={addSlide}
       />
     </Preassembled>
   );
 }
-Carrusel.designerClasses = "pt-2";
-Carrusel.metaFields = () => BaseCarrusel.metaFields();
+
+Carousel.designerClasses = "pt-2";
+Carousel.metaFields = BaseCarousel.metaFields;

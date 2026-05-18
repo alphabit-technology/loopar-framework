@@ -31,12 +31,41 @@ export default class SingleController extends BaseController {
   async actionView() {
     return await this.sendDocument();
   }
-  
+
   async sendDocument(action=this.document, data={}) {
     const webApp = loopar.webApp || { menu_items: [] };
     const menu = webApp.menu_items.find(item => [item.page, item.link].includes(action));
 
-    const document = await loopar.getDocument(menu?.page || action);
+    let pageDocName;
+    let detailSlug = null;
+
+    if (menu) {
+      pageDocName = menu.page;
+    } else if (action === this.document) {
+      pageDocName = this.document;
+    } else {
+      pageDocName = this.document;
+      detailSlug = action;
+    }
+
+    const requestContext = {
+      slug: detailSlug,
+      app: webApp?.name || null,
+      query: this.query || {},
+    };
+
+    const document = await loopar.getDocument(pageDocName, undefined, null, { requestContext });
+
+    // If the URL carries a slug but no COLLECTION on this page claimed it
+    // (parseDocStructure would have set _anyDetailMatched when one did),
+    // the URL is bogus relative to this page — surface a real 404 instead
+    // of rendering the listings silently.
+    if (detailSlug && !requestContext._anyDetailMatched) {
+      return loopar.throw({
+        code: 404,
+        message: `Page not found: ${this.document}/${detailSlug}`,
+      });
+    }
 
     return await this.render({
       Entity: {
@@ -46,6 +75,7 @@ export default class SingleController extends BaseController {
       },
       activeParentMenu: await this.getParent(),
       __DOCUMENT_TITLE__: menu?.link || this.document,
+      ...(detailSlug? { __DETAIL_SLUG__: detailSlug } : {}),
       ...data,
     });
   }

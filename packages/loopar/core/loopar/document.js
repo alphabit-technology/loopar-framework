@@ -17,8 +17,8 @@ export class Document extends Console {
    * @param {*} ifNotFound
    * @returns 
    */
-  async getDocument(document, name, data = null, { ifNotFound = 'throw', parse = false } = {}) {
-    return await documentManage.getDocument(document, name, data, { ifNotFound, parse });
+  async getDocument(document, name, data = null, { ifNotFound = 'throw', parse = false, requestContext = null } = {}) {
+    return await documentManage.getDocument(document, name, data, { ifNotFound, parse, requestContext });
   }
 
   /**

@@ -1,4 +1,4 @@
-import BaseCarrusel from "@base-carrusel";
+import BaseCarousel from "./carousel/base-carousel.jsx";
 import Preassembled from "@preassembled";
 
 export default function MetaGalery(props) {
@@ -39,10 +39,12 @@ export default function MetaGalery(props) {
       notDroppable={true} 
       defaultElements={defaultElements}
     >
-      <BaseCarrusel
+      <BaseCarousel
         {...props}
         newItem={mewItem}
       />
     </Preassembled>
   );
 }
+
+MetaGalery.metaFields = BaseCarousel.metaFields;
