@@ -19,6 +19,13 @@ import { RealtimeManager } from "../realtime/RealtimeManager.js";
 
 const server = new express();
 
+// Trust only the loopback hop (Caddy → app). This lets Express read the
+// real client protocol from Caddy's X-Forwarded-Proto header, so req.secure
+// reflects the actual browser↔Caddy connection (HTTPS via domain) and not
+// the plain-HTTP localhost hop. An external client hitting the app port
+// directly is NOT loopback, so it cannot spoof the header.
+server.set('trust proxy', 'loopback');
+
 /** HMR port = HTTP port + this offset (kept in sync with vite hmr config below). */
 const HMR_PORT_OFFSET = 10000;
 

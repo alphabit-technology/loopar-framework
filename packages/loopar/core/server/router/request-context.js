@@ -78,10 +78,16 @@ export const cookieManager = {
   set(name, value, options = {}) {
     const res = getResponse();
     if (!res || res.headersSent) return;
-    
+
+    // Secure follows the real connection (req.secure, populated from Caddy's
+    // X-Forwarded-Proto via `trust proxy`), not NODE_ENV. So a tenant reached
+    // over its HTTPS domain still gets Secure cookies, while the same tenant
+    // reached directly over HTTP by IP gets a usable, non-Secure cookie.
+    const req = getRequest();
+
     res.cookie(name, value, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: req?.secure === true,
       sameSite: 'lax',
       ...options
     });

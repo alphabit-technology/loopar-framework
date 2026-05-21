@@ -44,7 +44,10 @@ function buildMiddleware() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      // 'auto' = Secure only when the request is actually HTTPS (req.secure,
+      // resolved from Caddy's X-Forwarded-Proto via `trust proxy`). Keeps
+      // Secure on the domain/HTTPS path; allows login over plain HTTP by IP.
+      secure: 'auto',
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: 'lax',
     },
