@@ -74,6 +74,7 @@ export default class SystemController extends BaseController {
   }
 
   async publicActionUpdate() {
+    console.log(['publicActionUpdate', this.app_name]);
     if (this.app_name) {
       const model = await this.getInstallerModel();
       model.app_name ??= this.getAppName();
