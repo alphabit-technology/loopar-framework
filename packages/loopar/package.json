@@ -22,6 +22,7 @@
     "inquirer": "^9.2.0",
     "ioredis": "5.10.1",
     "mailchecker": "6.0.20",
+    "mime-types": "3.0.2",
     "nodemailer": "8.0.5",
     "ora": "^7.0.0",
     "pm2": "^6.0.14",

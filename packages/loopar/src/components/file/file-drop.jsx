@@ -16,6 +16,48 @@ const origins = [
   { name: "Trash", icon: Trash2Icon, color: "bg-danger" }
 ];
 
+const decodeBase64Url = (s) => {
+  try {
+    let b64 = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return atob(b64);
+  } catch {
+    return null;
+  }
+};
+
+const resolveImageUrl = (rawUrl) => {
+  let u;
+  try { u = new URL(rawUrl); } catch { return rawUrl; }
+
+  if (u.hostname === 'imgs.search.brave.com') {
+    const seg = u.pathname.split('/').filter(Boolean).pop() || '';
+    const decoded = decodeBase64Url(seg);
+    if (decoded && /^https?:\/\/.+/i.test(decoded)) return decoded;
+  }
+
+  if (/(^|\.)google\./i.test(u.hostname)) {
+    const imgurl = u.searchParams.get('imgurl');
+    if (imgurl && /^https?:\/\/.+/i.test(imgurl)) return imgurl;
+  }
+
+  if (/(^|\.)bing\.com$/i.test(u.hostname)) {
+    const mediaurl = u.searchParams.get('mediaurl');
+    if (mediaurl && /^https?:\/\/.+/i.test(mediaurl)) return mediaurl;
+  }
+
+  return rawUrl;
+};
+
+const deriveAssetName = (url) => {
+  try {
+    const u = new URL(url);
+    const last = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '');
+    if (last && /\.[a-z0-9]{2,5}$/i.test(last) && last.length <= 100) return last;
+  } catch {}
+  return `web-image-${Date.now().toString(36)}`;
+};
+
 export const FileDrop = (props) => {
   const {data} = props;
 
@@ -163,12 +205,23 @@ export const FileDrop = (props) => {
           if (!url.match(/^https?:\/\/.+/)) loopar.throw("Invalid URL");
           return true;
         },
-        ok: (url) => {
-          const file = {
-            name: url.split("/").pop(),
-            src: url,
+        ok: (rawUrl) => {
+          const url = resolveImageUrl(rawUrl);
+
+          const probe = new Image();
+          probe.onload = () => {
+            setFile({
+              name: deriveAssetName(url),
+              src: url,
+              type: "image",
+              importPending: true,
+              importMode: "reference",
+            });
           };
-          setFile(file);
+          probe.onerror = () => {
+            loopar.alert("The URL did not resolve to a valid image.");
+          };
+          probe.src = url;
         },
       });
     }

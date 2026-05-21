@@ -50,8 +50,8 @@ export default class ContactMessage extends BaseDocument {
     await this.checkRateLimit();
   
     this.sanitizeFields();
-    //await this.save();
-    //this.notifyAdmin();
+    await this.save();
+    await this.notifyAdmin();
     return true
   }
 
@@ -136,6 +136,7 @@ export default class ContactMessage extends BaseDocument {
       const settings = await loopar.getDocument('Email Settings');
       const adminEmail = settings.notification_email || settings.from_email;
 
+      console.log(["settings", settings]);
       if (!adminEmail) {
         console.warn('No notification email configured');
         return;

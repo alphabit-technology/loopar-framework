@@ -2,12 +2,26 @@ import { BaseDocument, fileManage, loopar, Helpers, pruneDocStructure, TYPES } f
 import { pluralize } from "inflection";
 
 export default class Entity extends BaseDocument {
-  __CORE_FILES__ = [];
-
   get is_builder() {return true};
-  
+
   constructor(props) {
     super(props);
+  }
+
+  /**
+   * Scope files saved through an Entity to its owning app (overrides
+   * `CoreDocument.getFileScopeApp()` which returns null / site).
+   *
+   * Anything saved through an `Entity` subclass (page builders,
+   * designed forms, custom entities…) is design-time content that
+   * belongs to an app and must travel with its code/installer.
+   * `CoreDocument`'s default (site-scoped) is for runtime attachments.
+   *
+   * Resolved fresh from `module` via `targetApp()` so a just-edited
+   * module field routes the asset to the right app.
+   */
+  async getFileScopeApp() {
+    return await this.targetApp();
   }
 
   entityIsSingle() {
@@ -59,6 +73,13 @@ export default class Entity extends BaseDocument {
     }
   }
 
+  async validateAppName() {
+    const appName = await this.targetApp();
+    if (!appName) {
+      loopar.throw(`Module ${this.module} has not associated app name`);
+    }
+  }
+
   async save() {
     this.is_single = this.entityIsSingle();
     this.is_static = 0;
@@ -71,6 +92,7 @@ export default class Entity extends BaseDocument {
     if (validate) {
       this.validateFields();
       this.validateEntityName();
+      await this.validateAppName();
       this.validateUniqueEntityName();
 
       if (!loopar.installing) {
@@ -89,9 +111,10 @@ export default class Entity extends BaseDocument {
     args.save != false && await super.save(arguments[0] || {});
 
     if (!loopar.installing) {
-      await this.save__CORE_FILES__();
       await loopar.db.endTransaction();
       await this.__build__();
+    }else{
+      await this.makeViews();
     }
   }
 
@@ -101,18 +124,6 @@ export default class Entity extends BaseDocument {
    
     await this.normalizeFields(this.doc_structure);
     await loopar.db.makeTable("Entity", this.doc_structure);
-  }
-
-  async save__CORE_FILES__() {
-    for (const file of this.__CORE_FILES__ || []) {
-      const fileManager = await loopar.newDocument("File Manager");
-
-      fileManager.reqUploadFile = file;
-      fileManager.app = this.__APP__;
-      await fileManager.save();
-    }
-
-    this.__CORE_FILES__ = [];
   }
 
   clientFieldsList(fields = this.doc_structure) {
@@ -203,18 +214,6 @@ export default class Entity extends BaseDocument {
     return found;
   }
 
-  /**
-   * Insert `field` into the tree, or merge its `data` into an existing
-   * field of the same name.
-   *
-   *   - If a field with matching `data.name` is found anywhere → merge
-   *     (Object.assign over existing data).
-   *   - Otherwise insert under the parent identified by `target`
-   *     (matched on `data.name`); falls back to the top level when no
-   *     target is given.
-   *   - `position` controls where: 'before' → unshift, 'after' (default)
-   *     → push.
-   */
   #updateOrInsertField({ field, position = null, target = null }) {
     const fields = this.doc_structure;
     let foundField  = false;
@@ -242,10 +241,6 @@ export default class Entity extends BaseDocument {
     this.doc_structure = fields;
   }
 
-  /**
-   * Remove every field whose `data.name` equals `fieldName` from the tree
-   * (top-level or nested).
-   */
   #removeField(fieldName) {
     const removeFrom = (fields) => {
       for (let i = fields.length - 1; i >= 0; i--) {
@@ -542,6 +537,8 @@ export default class Entity extends BaseDocument {
         await makeView(context);
       }
     } else if (type === "Builder") {
+      if(this._ENTITY__.builder === "Controller") return;
+      
       for (const context of ["list", "form"]) {
         await makeView(context);
       }

@@ -8,7 +8,7 @@ import { simpleGit, CleanOptions } from 'simple-git';
 import jwt from 'jsonwebtoken';
 import Auth from './auth/Auth.js';
 import { Document } from './loopar/document.js';
-import { tailwinInit, setTailwindTemp } from './loopar/tailwindbase.js';
+import { tailwinInit } from './loopar/tailwindbase.js';
 import { Server } from './server/server.js';
 import { fileManage } from './file-manage.js';
 import { cookieManager, sessionManager } from './server/router/request-context.js';
@@ -18,6 +18,7 @@ import { cacheManager } from './cache/cache-manager.js';
 import { RealtimeManager } from './realtime/RealtimeManager.js';
 import { HookManager } from "./HookManager.js";
 import { setupDocumentHistory } from "./document/document-history.js";
+import { StorageManager } from "./global/storage/index.js";
 import argon2 from 'argon2';
 
 
@@ -38,6 +39,7 @@ export class Loopar extends Document {
     this.dateUtils = dateUtils;
     this.server = new Server();
     this.db = new this.ORM();
+    this.storage = new StorageManager();
 
     setupDocumentHistory(this, KnexORM);
   }
@@ -93,12 +95,44 @@ export class Loopar extends Document {
       await this.buildIcons();
     } catch (error) {
       console.log(["Err on build Icons", error])
-      //this.throw(["Err On Build Icons"])
     }
     
     this.mail = new EmailService()
 
     await tailwinInit(this.tenantId);
+
+    await this.#bootstrapStorage();
+  }
+
+  async #bootstrapStorage() {
+    try {
+      const activeName = await this.#resolveActiveStorageName();
+      if (!activeName) {
+        this.storage.setActive('local');
+        return;
+      }
+
+      const doc = await this.getDocument(activeName, null, null, { ifNotFound: null });
+      if (!doc || typeof doc.buildDriver !== 'function') {
+        console.warn(`[storage] "${activeName}" is not a valid storage provider; using local.`);
+        this.storage.setActive('local');
+        return;
+      }
+
+      const driver = await doc.buildDriver();
+      this.storage.activateDriver(driver);
+    } catch (err) {
+      console.log('[storage] bootstrap skipped:', err?.message || err);
+      this.storage.setActive('local');
+    }
+  }
+
+  async #resolveActiveStorageName() {
+    return (await this.getSettings())?.active_storage || null;
+  }
+
+  async applyStorage() {
+    await this.#bootstrapStorage();
   }
   
   get authTokenName() {
@@ -260,6 +294,53 @@ export class Loopar extends Document {
   async getSettings() {
     this.systemSettings ??= await this.db.getDoc("System Settings", null, ["*"], { isSingle: 1 });
     return this.systemSettings;
+  }
+
+  /**
+   * Filesystem roots that back `/assets/{visibility}/` URLs.
+   *
+   * `Server#exposePublicDirectories` mounts `express.static` on these
+   * (in this order) so the framework can serve user-uploaded files
+   * regardless of which scope they belong to. The asset middleware
+   * uses the same list to locate mirror `.meta.json` files for assets
+   * whose binary lives in a remote driver (Cloudinary / Reference).
+   *
+   * Single source of truth — if you add a new scope (e.g. plugins),
+   * extend this method and both the static dispatcher and the
+   * middleware pick it up automatically.
+   */
+  getAssetRoots(visibility = 'public') {
+    const uploadPath = 'uploads';
+    const roots = [
+      this.makePath(this.pathRoot, visibility),
+      this.makePath(this.pathRoot, uploadPath, visibility),
+      this.makePath(this.tenantPath, visibility),
+      this.makePath(this.tenantPath, uploadPath, visibility),
+    ];
+    if (this.__installed__ && this.installedApps) {
+      for (const app of Object.keys(this.installedApps)) {
+        roots.push(this.makePath(this.pathRoot, 'apps', app, uploadPath, visibility));
+      }
+    }
+    return roots;
+  }
+
+  /**
+   * Path where an asset's binary AND its mirror live, given the
+   * asset's `app` scope. Returns:
+   *   apps/{app}/uploads/{visibility}/     when scoped to an app
+   *   {tenant}/uploads/{visibility}/       otherwise
+   *
+   * Mirror files (`.meta.json`) and physical binaries (when the
+   * driver is local) live side-by-side under this path so a single
+   * directory tree contains everything Loopar knows about an asset.
+   */
+  getAssetPath({ app, visibility = 'public' } = {}) {
+    const uploadPath = 'uploads';
+    if (app && app.length > 0) {
+      return this.makePath(this.pathRoot, 'apps', app, uploadPath, visibility);
+    }
+    return this.makePath(this.tenantPath, uploadPath, visibility);
   }
 
   /**

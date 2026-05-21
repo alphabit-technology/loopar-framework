@@ -345,23 +345,250 @@ export default class CoreDocument {
       }
     }
 
-    const files = this.__DATA__.__REQ_FILES__ || [];
-
-    for (const file of files) {
-      const fileManager = await loopar.newDocument("File Manager");
-      fileManager.reqUploadFile = file;
-      fileManager.app = this.__APP__;
-
-      await fileManager.save();
+    const uploadedRefs = await this.saveFiles();
+    if (uploadedRefs.length > 0) {
+      await this.#patchUploadedFileRefs(uploadedRefs);
     }
 
-   
-    if(this.__ENTITY__.include_in_installer === 1 && this.app && !loopar.installing) {
-      const app = await loopar.getDocument("App", this.app, null, { ifNotFound: null });
+
+    if (this.installerApp && !loopar.installing) {
+      const app = await loopar.getDocument("App", this.installerApp, null, { ifNotFound: null });
       app && app.bump("patch");
     }
 
     this.afterSave && await this.afterSave();
+  }
+
+  /**
+   * The app this record installs into, or `null`.
+   *
+   * A record belongs to an app's installer when its entity is flagged
+   * `include_in_installer` AND the record itself carries an `app`
+   * reference (e.g. a `Project` created *for* a specific app). This
+   * getter is the single source of truth for two coupled decisions:
+   *   - bumping the owning app's version on save (see above), and
+   *   - scoping uploaded files to that app (see `getFileScopeApp`).
+   *
+   * Keeping both off the same condition guarantees a record and its
+   * files never drift apart — if the record travels in the
+   * installer, its assets travel with it.
+   */
+  get installerApp() {
+    return (this.__ENTITY__?.include_in_installer === 1 && this.app)
+      ? this.app
+      : null;
+  }
+
+  /**
+   * App scope for files saved through this document.
+   *
+   * **Runtime attachments → site.** When the record is plain tenant
+   * data (a profile picture, an end-user file input) this returns
+   * `null` and files land under `{tenant}/uploads/...`.
+   *
+   * **Installer records → their app.** When the record belongs to an
+   * app's installer (`installerApp`), its files must travel with the
+   * app's code/installer, so they go to `apps/{app}/uploads/...`
+   * instead of being orphaned in the site.
+   *
+   * `Entity` overrides this to return its owning app, because
+   * anything saved through Entity (page builders, designed
+   * entities, …) is *design-time content* resolved from `module`.
+   *
+   * Async because subclasses may need a DB lookup (e.g. Entity
+   * resolves the app from its `module`).
+   */
+  async getFileScopeApp() {
+    return this.installerApp;
+  }
+
+  /**
+   * Persist files that arrived with the request:
+   *   - `__REQ_FILES__`   — binary uploads (multipart).
+   *   - `__REMOTE_FILES__` — deferred URL imports staged by the
+   *     "Web" origin of the file picker.
+   *
+   * Both are scoped by `getFileScopeApp()` and return the same
+   * `{ name, src, previewSrc, type, size }` ref shape, so the caller
+   * (`#patchUploadedFileRefs`) can backfill designer/file-input
+   * fields that reference assets by name only.
+   */
+  async saveFiles() {
+    const app = await this.getFileScopeApp();
+    const uploadedRefs = [];
+
+    const files = this.__DATA__.__REQ_FILES__ || [];
+    for (const file of files) {
+      const ref = await this._processFile(file, app);
+      if (ref) uploadedRefs.push(ref);
+    }
+
+    for (const remote of this.#remoteFilesFromData()) {
+      const ref = await this._processRemoteFile(remote, app);
+      if (ref) uploadedRefs.push(ref);
+    }
+
+    return uploadedRefs;
+  }
+
+  /**
+   * Parse the `__REMOTE_FILES__` payload (a JSON string of
+   * `{ name, url, mode }` entries) staged by `base-form.jsx`.
+   */
+  #remoteFilesFromData() {
+    const raw = this.__DATA__.__REMOTE_FILES__;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Import one staged URL through the `File Manager` entity's
+   * `remoteImport` path. `mode` ("reference" / "download") selects
+   * the driver; `app` scopes the asset. Returns the resolved ref or
+   * null.
+   */
+  async _processRemoteFile(remote, app = null) {
+    if (!remote || !remote.url) return null;
+
+    const fileManager = await loopar.newDocument("File Manager");
+    fileManager.remoteImport = {
+      url: remote.url,
+      name: remote.name,
+      mode: remote.mode,
+    };
+    if (app) fileManager.app = app;
+    await fileManager.save();
+
+    try {
+      const ref = JSON.parse(fileManager.file_ref || '[{}]')[0] || {};
+      if (ref.src) {
+        return {
+          name: fileManager.name,
+          src: ref.src,
+          previewSrc: ref.previewSrc,
+          type: ref.type || fileManager.type,
+          size: ref.size || fileManager.size,
+        };
+      }
+    } catch {}
+    return null;
+  }
+
+  /**
+   * Shared helper for `saveFiles()` and any subclass override. Uploads
+   * one binary through the active storage driver via the `File Manager`
+   * entity, then returns the resolved `{ name, src, previewSrc, type,
+   * size }` so the caller can patch designer fields that referenced
+   * the file by name only.
+   *
+   * `app` is the scope: null routes to tenant (site), a non-empty
+   * string routes to `apps/{app}/uploads/`.
+   */
+  async _processFile(file, app = null) {
+    const fileManager = await loopar.newDocument("File Manager");
+    fileManager.reqUploadFile = file;
+    if (app) fileManager.app = app;
+    await fileManager.save();
+
+    try {
+      const ref = JSON.parse(fileManager.file_ref || '[{}]')[0] || {};
+      if (ref.src) {
+        return {
+          name: fileManager.name,
+          src: ref.src,
+          previewSrc: ref.previewSrc,
+          type: ref.type || fileManager.type,
+          size: ref.size || fileManager.size,
+        };
+      }
+    } catch {}
+    return null;
+  }
+
+  /**
+   * After files are uploaded through `loopar.storage.active`, the
+   * driver decides the final URL (local `/assets/...` or remote
+   * `https://res.cloudinary.com/...`). The page-builder designer and
+   * regular file inputs strip the `src` field when they serialize the
+   * form (the client only keeps `{ name, size, type }` — see
+   * `base-form.jsx#buildDesignerToSave`), so the doc we just saved to
+   * the DB has dangling references that the renderer can't resolve
+   * for non-local drivers.
+   *
+   * This method walks every JSON-encoded string field on `__DATA__`
+   * and patches any `{ name }` object whose name matches one of the
+   * files we just uploaded, injecting `src` + `previewSrc`. Affected
+   * fields are then re-written to the DB so subsequent reads see the
+   * resolved URLs.
+   *
+   * Discrimination: only items that look like file references
+   * (`{ name, size, type }` shape, missing `src`) are patched, so we
+   * don't accidentally rewrite unrelated objects that happen to share
+   * a `name` property.
+   */
+  async #patchUploadedFileRefs(uploadedRefs) {
+    const byName = new Map(uploadedRefs.map(r => [r.name, r]));
+
+    const isFileRefShape = (obj) =>
+      obj && typeof obj === 'object' && !Array.isArray(obj)
+      && typeof obj.name === 'string'
+      && (obj.size !== undefined || obj.type !== undefined || obj.importPending === true)
+      && !obj.src;
+
+    let touched = false;
+
+    const walk = (node) => {
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          if (isFileRefShape(item) && byName.has(item.name)) {
+            const r = byName.get(item.name);
+            item.src = r.src;
+            item.previewSrc = r.previewSrc;
+            
+            if (item.importPending) delete item.importPending;
+            touched = true;
+          }
+          walk(item);
+        }
+      } else if (node && typeof node === 'object') {
+        for (const k of Object.keys(node)) {
+          walk(node[k]);
+        }
+      }
+    };
+
+    const patches = {};
+    for (const [key, value] of Object.entries(this.__DATA__ || {})) {
+      if (typeof value !== 'string') continue;
+      const trimmed = value.trimStart();
+      if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) continue;
+
+      let parsed;
+      try { parsed = JSON.parse(value); } catch { continue; }
+
+      touched = false;
+      walk(parsed);
+
+      if (touched) {
+        patches[key] = JSON.stringify(parsed);
+        this.__DATA__[key] = patches[key];
+      }
+    }
+
+    if (Object.keys(patches).length > 0) {
+      await loopar.db.updateRow(
+        this.__ENTITY__.name,
+        this.__DOCUMENT_NAME__,
+        patches,
+        this.__ENTITY__.is_single
+      );
+    }
   }
 
   fieldsName() {

@@ -37,32 +37,16 @@ export default class BaseForm extends BaseDocument {
   }
 
   /**
-   * Static class field — subclasses can override to declare which controller
-   * receives this form's submissions. `BaseForm.send` will use it implicitly
-   * so subclass action methods can call `this.send({ action: "..." })` without
-   * repeating the controller name.
-   *
-   * Resolution order (first non-null wins):
-   *   1. `opts.document` passed to `send()` (caller wins)
-   *   2. `this.controller` (subclass declaration)
-   *   3. `this.Document.Entity.name` (regular Document forms)
-   *   4. legacy fallback to `loopar.send` with the relative URL
-   */
-  controller = null;
-
-  /**
    * Submit the form to a controller action.
    *
    * @param {Object} opts
-   * @param {string} [opts.document] - Target controller name (overrides
-   *   `this.controller` and the implicit `Document.Entity.name`).
    * @param {string} opts.action - Controller action to invoke.
    * @param {Object} [opts.query] - Extra URL query params (merged with
    *   `this.queryParams`).
    * @param {Function} [opts.success]
    * @param {Function} [opts.error]
    */
-  send({ document, action, query={}, ...options } = {}) {
+  send({ action, query={}, ...options } = {}) {
     this.validate();
 
     if (!this.checkChanges()) return;
@@ -82,12 +66,10 @@ export default class BaseForm extends BaseDocument {
     const mergedQuery = { ...this.queryParams, ...query };
     const body = this.#getFormData(true);
 
-    // Resolve target controller (see `controller` field above for resolution
-    // order). If none is known we keep the old "URL is the router" pattern.
-    const targetDocument = document || this.controller || this.Document?.Entity?.name;
+    const document = this.Document?.Entity?.name;
 
-    if (targetDocument) {
-      return loopar.call(targetDocument, action, body, {
+    if (document) {
+      return loopar.call(document, action, body, {
         query: mergedQuery,
         success: handleSuccess,
         error: handleError,
@@ -95,16 +77,14 @@ export default class BaseForm extends BaseDocument {
       });
     }
 
-    // Legacy fallback — form-on-page pattern (login, install, etc. when the
-    // subclass hasn't declared its target document yet).
-    loopar.send({
+    /* loopar.send({
       action,
       query: mergedQuery,
       body,
       success: handleSuccess,
       error: handleError,
       freeze: true,
-    });
+    }); */
   }
 
   get queryParams() {
@@ -168,6 +148,7 @@ export default class BaseForm extends BaseDocument {
 
   buildDesignerToSave(structure, toSave = false) {
     const __files = [];
+    const __remote = [];
 
     const fixFieldData = (field) => {
       const updatedData = field.data;
@@ -180,6 +161,23 @@ export default class BaseForm extends BaseDocument {
           if(files && Array.isArray(files) && files.length > 0) {
             for (const file of files) {
               if (typeof file === "string") continue;
+
+              // Pending URL import (origin "Web"): stage it for the
+              // server to import at save time. The clean metadata
+              // entry kept in the designer is patched with the
+              // resolved src/previewSrc once the import runs.
+              if (file.importPending && file.src) {
+                const cleanName = toSave
+                  ? Sanitize(file.name || "file").replaceAll(/\s+/g, "-")
+                  : (file.name || "file");
+                __remote.push({
+                  name: cleanName,
+                  url: file.src,
+                  mode: file.importMode || "reference",
+                });
+                filesToSave.push({ name: cleanName, type: file.type, importPending: true });
+                continue;
+              }
 
               if(file.src){
                 const typeMatches = file.src.match(/^data:(.*);base64,/);
@@ -238,13 +236,14 @@ export default class BaseForm extends BaseDocument {
       });
     }
 
-    return {files: __files, designer: fixElements(structure)};
+    return {files: __files, remote: __remote, designer: fixElements(structure)};
   }
 
   #getFormValues(toSave = false) {
     if(!this.Form)  return this.Document.data || {};
 
     let __FILES__ = [];
+    let __REMOTE_FILES__ = [];
 
     const values = this.Form.getValues();
 
@@ -266,7 +265,19 @@ export default class BaseForm extends BaseDocument {
                 type: file.rawFile.type,
               });
               __FILES__.push(file.rawFile);
-            }else{
+            } else if (file.importPending && file.src) {
+              // Pending URL import — staged, imported server-side at save.
+              metaFiles.push({
+                name: file.name,
+                type: file.type,
+                importPending: true,
+              });
+              __REMOTE_FILES__.push({
+                name: file.name,
+                url: file.src,
+                mode: file.importMode || "reference",
+              });
+            } else {
               metaFiles.push({
                 name: file.name,
                 size: file.size,
@@ -277,15 +288,19 @@ export default class BaseForm extends BaseDocument {
           }
 
           obj[name] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
+          obj.__FILES__ = __FILES__;
+          obj.__REMOTE_FILES__ = __REMOTE_FILES__;
           return obj
         }
 
         if(field.def.element === DESIGNER && toSave) {
-          const {files, designer} = this.buildDesignerToSave(JSON.parse(value), toSave);
+          const {files, remote, designer} = this.buildDesignerToSave(JSON.parse(value), toSave);
           obj[name] = JSON.stringify(designer);
           __FILES__ = [...(__FILES__ || []), ...(files || [])];
+          __REMOTE_FILES__ = [...(__REMOTE_FILES__ || []), ...(remote || [])];
 
           obj.__FILES__ = __FILES__;
+          obj.__REMOTE_FILES__ = __REMOTE_FILES__;
           return obj;
         }
       }
@@ -301,6 +316,7 @@ export default class BaseForm extends BaseDocument {
       }
 
       obj.__FILES__ = __FILES__;
+      obj.__REMOTE_FILES__ = __REMOTE_FILES__;
       obj[name] = value;
       return obj;
     }, {});

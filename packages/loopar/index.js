@@ -1,6 +1,12 @@
 
 import BaseDocument from "./core/document/base-document.js";
+import BaseStorage from "./core/document/base-storage.js";
 import { loopar } from "./core/loopar.js";
+import {
+  StorageDriver,
+  LocalDriver,
+  CloudinaryDriver,
+} from "./core/global/storage/index.js";
 import { documentManage } from "./core/document/document-manage.js";
 import { fileManage } from "./core/file-manage.js";
 import fileManager from "./core/global/file-manager.js";
@@ -55,6 +61,10 @@ export {
   loopar,
   documentManage,
   BaseDocument,
+  BaseStorage,
+  StorageDriver,
+  LocalDriver,
+  CloudinaryDriver,
   BaseController,
   SystemController,
   SingleController,

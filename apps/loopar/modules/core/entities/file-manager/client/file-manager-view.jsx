@@ -40,13 +40,18 @@ export function FallbackFile({ src, ...props }) {
           />
         }
         <div className={`overflow-hidden w-full ${isValidImage ? "h-full" :''} p-0 m-0`}>
-          <img 
-            alt={props.alt || "Image"} 
+          <img
+            alt={props.alt || "Image"}
             loading="lazy"
-            decoding="async" 
-            data-nimg="1" 
+            decoding="async"
+            data-nimg="1"
             className={`object-containt w-full h-full transition-all aspect-ratio-1/1`}
-            srcSet={src}
+            // Use `src`, not `srcSet`: Cloudinary delivery URLs embed
+            // transformation params separated by commas
+            // (`c_fill,w_200,h_200,f_auto,q_auto/...`) which the
+            // browser interprets as multiple sources when fed to
+            // srcSet, producing broken URLs and a load failure.
+            src={src}
             style={{color: "transparent", ...(!isValidImage ? {width: 0, height: 0} : {height: "100%"})}}
             onLoad={() => handleLoad(true)}
             onError={() => handleLoad(false)}
@@ -80,7 +85,10 @@ export default class FileManagerView extends ViewContext {
         <div className='flex flex-1 flex-col items-center justify-between w-full h-full p-3'>
           <div className="container">
             <FallbackFile
-              src={file.previewSrc || file.src}
+              // Full-size first on the view page. The 200x200 preview
+              // (`previewSrc`) is meant for thumbnails in lists/cards;
+              // here the user is looking at the asset directly.
+              src={file.src || file.previewSrc}
               icon={Icon}
               iconColor={file.color}
             />

@@ -181,11 +181,12 @@ export default function Collection({ data = {} }) {
       Card={Card}
       fields={schemaFields}
       preloaded={preloaded?.mode === "list" ? preloaded : null}
+      collectionSlug={data.options}
     />
   );
 }
 
-function DetailView({ entityName, Detail, preloaded, fields, slug, appOverride, layout, galleryMode, galleryColumns, backLabel }) {
+function DetailView({ entityName, Detail, preloaded, fields, slug, appOverride, layout, galleryMode, galleryColumns, backLabel, collectionSlug }) {
   const preloadedItem = preloaded?.item || null;
   const backHref = buildListHref();
 
@@ -193,6 +194,7 @@ function DetailView({ entityName, Detail, preloaded, fields, slug, appOverride, 
     <Detail
       slug={slug}
       app={appOverride}
+      collectionSlug={collectionSlug}
       entity={entityName}
       fields={fields}
       layout={layout}
@@ -206,7 +208,7 @@ function DetailView({ entityName, Detail, preloaded, fields, slug, appOverride, 
   );
 }
 
-function ListingView({ data, entityName, Card, fields, preloaded }) {
+function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug }) {
   const {
     app: appOverride,
     page_size = 12,
@@ -315,6 +317,7 @@ function ListingView({ data, entityName, Card, fields, preloaded }) {
                     to={item.slug}
                     buildHref={buildDetailHref}
                     onNavigate={spaNavigate}
+                    collectionSlug={collectionSlug}
                   />
               ))}
             </div>

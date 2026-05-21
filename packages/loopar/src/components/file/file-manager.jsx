@@ -138,16 +138,17 @@ class FileManager {
   }
 
   getFileSize(bytes, decimals = 2) {
-    bytes = parseInt(bytes);
-    if (bytes === 0) return '0 Bytes';
+    const n = parseInt(bytes);
+    if (!Number.isFinite(n)) return ['—', ''];
+    if (n === 0) return '0 Bytes';
 
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const i = Math.floor(Math.log(n) / Math.log(k));
 
-    return [parseFloat((bytes / Math.pow(k, i)).toFixed(dm)), sizes[i]];
+    return [parseFloat((n / Math.pow(k, i)).toFixed(dm)), sizes[i]];
   }
 
   getFileIcon(type) {
@@ -211,14 +212,18 @@ class FileManager {
       const normalizedName = this.decodeFileName(file.name);
       const ext = getExtention(file.name);
       const fileType = this.getFileType(file);
-      
+
+      const previewSrc = file.previewSrc
+        ? encodeURI(file.previewSrc)
+        : this.getSrc(file, true, ext);
+
       return file instanceof File ? file : {
         ...file,
         name: normalizedName,
         type: fileType,
         src: this.getSrc(file),
         extention: ext || (fileType === 'image' ? 'jpg' : 'file'),
-        previewSrc: this.getSrc(file, true, ext)
+        previewSrc
       };
     });
   }

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import fileManager from "@@file/file-manager";
 import {Link} from "@link";
 
-export default function DefaultCard({ item, fields = [], buildHref, onNavigate, variant = "default" }) {
+export default function DefaultCard({ item, fields = [], variant = "default", collectionSlug }) {
   const fieldsByName = useMemo(() => {
     const map = {};
     for (const f of (fields || [])) map[f.name] = f;
@@ -63,7 +63,7 @@ export default function DefaultCard({ item, fields = [], buildHref, onNavigate, 
 
   return (
     <Link
-      to={to}
+      to={`${to}?collection=${collectionSlug}`}
       bare
       notControlled={isExternal}
       _target={isExternal ? "_blank" : undefined}

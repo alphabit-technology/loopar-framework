@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'pathe';
 import { loopar } from '../../loopar.js';
 import { RouterUtils } from './router-utils.js';
 import WorkspaceController from '../../controller/workspace-controller.js';
@@ -145,7 +147,7 @@ export class Middleware {
 
       // AJAX channel (POST or /api/*) NEVER emits a 302 — would make fetch
       // follow it and the client end up navigating to the wrong place. The
-      // redirect URL travels inside the JSON; the client decides.
+      // redirect URL travels inside the JSON.
       if (RouterUtils.isAjaxRequest(req)) {
         return this.renderAjax(res, response);
       }
@@ -180,12 +182,33 @@ export class Middleware {
   }
 
   /**
-   * Sets up not found source middleware
+   * Sets up not found source middleware.
+   *
+   * Reaches here only when `express.static` (mounted earlier in
+   * `server.js#exposePublicDirectories`) didn't find the asset
+   * binary on disk. Before giving up with 404, we look for the
+   * asset's mirror sidecar (`{name}.meta.json`) in the same roots —
+   * a remote-driver asset (Cloudinary, S3, …) has only the mirror on
+   * disk. If found, we 302 to the driver's delivery URL pulled from
+   * the mirror.
+   *
+   * Pure filesystem — no DB. Read-side counterpart to the mirror
+   * writer on the save path.
+   *
    * @returns {Function} Middleware function
    */
   setupNotFoundSourceMiddleware() {
-    return (req, res, next) => {
+    return async (req, res, next) => {
       if (!req.isAssetUrl) return next();
+
+      try {
+        const target = await this.#resolveRemoteAsset(req._parsedUrl.pathname);
+        if (target) {
+          return res.redirect(302, target);
+        }
+      } catch (err) {
+        console.warn('[asset middleware] remote lookup failed:', err?.message || err);
+      }
 
       req.tryToServePrivateFile = true;
 
@@ -200,6 +223,63 @@ export class Middleware {
         .set('Content-Type', 'text/html')
         .send(errString);
     };
+  }
+
+  /**
+   * Map a `/assets/{visibility}/...` path back to its real delivery
+   * URL when the binary lives outside the local filesystem.
+   *
+   * Resolution is filesystem-only: the asset's mirror file
+   * (`{name}.meta.json`) lives in the same roots `express.static`
+   * searches. Zero DB hits on the read path.
+   *
+   * Scope is intentionally narrow: only URLs under `/assets/public/`
+   * and `/assets/private/` (with an optional `/thumbnails/` segment)
+   * are resolved. Any other 404 stays a 404.
+   */
+  async #resolveRemoteAsset(pathname) {
+    const m = pathname.match(/^\/assets\/(public|private)\/(thumbnails\/)?(.+)$/);
+    if (!m) return null;
+    const visibility = m[1];
+    const isThumb = !!m[2];
+    const filename = decodeURIComponent(m[3]);
+    if (!filename || filename.includes('/')) return null;
+
+    return await this.#resolveFromMirror(filename, visibility, isThumb);
+  }
+
+  /**
+   * Find a `{filename}.meta.json` in any of the asset roots and pull
+   * the delivery URL out of it. The mirror is the cheap path — a
+   * filesystem stat + small JSON parse.
+   * @param {string} filename - The filename to resolve
+   * @param {string} visibility - The visibility of the asset
+   * @param {boolean} isThumb - Whether the asset is a thumbnail
+   * @returns {Promise<string|null>} The delivery URL or null if not found
+   */
+  async #resolveFromMirror(filename, visibility, isThumb) {
+    const roots = loopar.getAssetRoots ? loopar.getAssetRoots(visibility) : [];
+    for (const root of roots) {
+      const mirrorPath = path.join(root, `${filename}.meta.json`);
+      let raw;
+      try {
+        raw = await fs.promises.readFile(mirrorPath, 'utf8');
+      } catch (err) {
+        if (err?.code !== 'ENOENT') {
+          console.warn('[asset middleware] mirror read failed:', mirrorPath, err?.message);
+        }
+        continue;
+      }
+      let meta;
+      try { meta = JSON.parse(raw); } catch { continue; }
+      if (!meta?.src) continue;
+
+      if (isThumb && meta.storage_driver === 'local') {
+        return meta.src;
+      }
+      return isThumb ? (meta.previewSrc || meta.src) : meta.src;
+    }
+    return null;
   }
 
   /**

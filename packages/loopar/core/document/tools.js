@@ -1,24 +1,12 @@
 import { fileManage } from "../file-manage.js";
 import { loopar } from "../loopar.js";
 
-// Elements that persist a per-instance slide index in a cookie keyed by
-// `field.node`. The server injects the cookie value into the element's
-// `data._cookie_index` so the client hydrates from `data` (consistent)
-// instead of re-reading the cookie post-mount (causes a visible flash).
 const CAROUSEL_LIKE_ELEMENTS = new Set([
   "carousel",
-  "carrusel",
   "banner_image",
   "gallery",
 ]);
 
-/**
- * Flatten an entity's doc_structure into a serialisable schema the client
- * can use to render the entity dynamically. We only keep what the default
- * card/detail need: element type, name, label, multiple, format, options.
- * Cards/containers (row, col, card, section) become section markers so the
- * detail renderer can preserve visual grouping.
- */
 function buildEntitySchema(entityName) {
   const ref = loopar.getRef(entityName);
   if (!ref) return [];
@@ -39,8 +27,6 @@ function flattenSchema(nodes) {
     const elem = node?.element;
     const data = node?.data || {};
     if (["row", "col", "card", "section", "tabs", "tab", "generic", "div"].includes(elem)) {
-      // Emit a soft section marker so the detail renderer can group fields
-      // visually, then descend into children.
       if (data.label && elem === "card") {
         out.push({ element: "_section", label: data.label, name: data.name || null });
       }
@@ -48,8 +34,7 @@ function flattenSchema(nodes) {
       continue;
     }
     if (!data.name) continue;
-    // Skip framework-owned helper fields the editor uses to disambiguate
-    // parent links etc. — they're not useful in a public render.
+
     if (["parent_id", "parent_document"].includes(data.name)) continue;
     out.push({
       element: elem,
@@ -59,7 +44,6 @@ function flattenSchema(nodes) {
       format: data.format || null,
       options: data.options || null,
       placeholder: data.placeholder || null,
-      // Hints the editor can set on a field to control public rendering.
       show_in_card: data.show_in_card ? 1 : 0,
       show_in_detail: data.show_in_detail ? 1 : 0,
       hidden: data.hidden ? 1 : 0,
@@ -76,21 +60,13 @@ function flattenSchema(nodes) {
  * COLLECTION (a generic data-backed gallery) gets its detail item or its
  * paginated list — driven by `requestContext` from the current request.
  *
- * @param {Array}  doc_structure   Parsed doc_structure tree.
- * @param {boolean} renderMarkdown Whether to pre-render markdown values.
- * @param {string} document_name   Host document name (page). Used by some
- *                                 elements (REVIEW) as a parent reference.
- * @param {Object} [requestContext] Optional info from the active request.
- * @param {string} [requestContext.slug] Detail slug from the URL second
- *                                       segment. When present, COLLECTION
- *                                       precarga UN documento; cuando no,
- *                                       precarga la primera página del
- *                                       listado.
- * @param {string} [requestContext.app]  Scope app name. Used to filter
- *                                       COLLECTION queries.
- * @param {Object} [requestContext.query] Query string params (page, tag,
- *                                       featured_only, etc.) forwarded
- *                                       to the COLLECTION listing.
+ * @param {Array}  doc_structure
+ * @param {boolean} renderMarkdown
+ * @param {string} document_name
+ * @param {Object} [requestContext]
+ * @param {string} [requestContext.slug]
+ * @param {string} [requestContext.app]
+ * @param {Object} [requestContext.query]
  */
 export const parseDocStructure = async (
   doc_structure,
@@ -127,14 +103,6 @@ export const parseDocStructure = async (
         await preloadCollection(field, requestContext);
       }
 
-      // Carousel-like elements persist their current slide in a cookie
-      // keyed by their unique `node`. Hydrating from a useState() that
-      // reads the cookie in-client only is fine in CSR, but in SSR the
-      // server may not have access to the cookie via the same call,
-      // causing a "flash to slide 0 then jump to N" on hydration. We
-      // inject the cookie value into `data._cookie_index` here so the
-      // component initialises from `data` — consistent across SSR and
-      // hydration.
       if (CAROUSEL_LIKE_ELEMENTS.has(field.element) && field.node) {
         try {
           const saved = loopar.cookie?.get?.(field.node);
@@ -203,11 +171,8 @@ async function preloadCollection(field, requestContext) {
         if (requestContext) requestContext._anyDetailMatched = true;
         return;
       }
-      // Slug present but no match for this entity → fall through to list.
     }
 
-    // List mode: paginated query honoring the field's own metaFields +
-    // anything the URL query forwarded (page, tag, featured_only).
     const pageNum = clampInt(q.page ?? field.data.page, 1, 1000, 1);
     const pageSize = clampInt(
       q.page_size ?? field.data.page_size,
@@ -240,8 +205,6 @@ async function preloadCollection(field, requestContext) {
       .whereNull("__deleted_at__");
     if (tag) countQb = countQb.where("tags", "like", `%${String(tag).trim()}%`);
 
-    // Ordering: feature flag → manual `order` (for catalogues like Service)
-    // when the column exists; fall back to creation date.
     const orderBy = [{ column: "featured", order: "desc" }];
     const fields = ref.__FIELDS__ || [];
     const hasOrder = fields.some(f => f?.data?.name === "order");
@@ -265,8 +228,6 @@ async function preloadCollection(field, requestContext) {
       fields: schema,
     };
   } catch (err) {
-    // Don't blow up the whole page render if the collection query fails;
-    // surface the error so the client can show a graceful message.
     loopar.warn?.(`COLLECTION preload failed for entity=${entityName}: ${err?.message || err}`);
     field.data.preloaded = { mode: slug ? "detail" : "list", items: [], item: null, total: 0, fields: schema, error: "fetch_failed" };
   }

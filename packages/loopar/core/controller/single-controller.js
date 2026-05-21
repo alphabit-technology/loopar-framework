@@ -2,6 +2,7 @@
 
 import BaseController from './base-controller.js';
 import { loopar } from "loopar";
+import {parseDocStructure} from '../document/tools.js';
 
 export default class SingleController extends BaseController {
   static inheritedActions = ['view', 'update', 'print'];
@@ -32,6 +33,46 @@ export default class SingleController extends BaseController {
     return await this.sendDocument();
   }
 
+  async publicActionCollection(action=this.document, data={}) {
+    const webApp = loopar.webApp || { menu_items: [] };
+    const detailSlug = action;
+
+    const requestContext = {
+      slug: detailSlug,
+      app: webApp?.name || null,
+      query: this.query || {},
+    };
+
+    const document = await loopar.getDocument(pageDocName, undefined, null, { requestContext });
+
+    if (detailSlug && !requestContext._anyDetailMatched) {
+      return loopar.throw({
+        code: 404,
+        message: `Page not found: ${this.document}/${detailSlug}`,
+      });
+    }
+
+    const doc_structure = await parseDocStructure(JSON.stringify([
+      {
+        element: "collection",
+        data: {
+          options: this.query.collection,
+        }
+      }
+    ]), true, this.document, requestContext);
+
+    return await this.render({
+      Entity: {
+        name: "Collection Viewer",
+        doc_structure: JSON.stringify(doc_structure)
+      },
+      activeParentMenu: await this.getParent(),
+      __DOCUMENT_TITLE__: document.__ENTITY__?.name,
+      __DETAIL_SLUG__: detailSlug,
+      ...data,
+    });
+  }
+
   async sendDocument(action=this.document, data={}) {
     const webApp = loopar.webApp || { menu_items: [] };
     const menu = webApp.menu_items.find(item => [item.page, item.link].includes(action));
@@ -56,10 +97,6 @@ export default class SingleController extends BaseController {
 
     const document = await loopar.getDocument(pageDocName, undefined, null, { requestContext });
 
-    // If the URL carries a slug but no COLLECTION on this page claimed it
-    // (parseDocStructure would have set _anyDetailMatched when one did),
-    // the URL is bogus relative to this page — surface a real 404 instead
-    // of rendering the listings silently.
     if (detailSlug && !requestContext._anyDetailMatched) {
       return loopar.throw({
         code: 404,

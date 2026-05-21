@@ -189,32 +189,18 @@ export class Server extends Router {
   async #exposePublicDirectories() {
     // For the dev tenant, dist/client is already part of the dynamic
     // dispatcher (runs only in production mode), so we skip the static
-    // wiring here. For non-dev tenants, keep the startup decision.
     if (!isDevTenant() && process.env.NODE_ENV == 'production') {
       server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
     }
 
-    server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, "public")));
-    server.use("/assets/public", serveStatic(path.join(loopar.pathRoot, this.uploadPath, "public")));
-    server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, "public")));
-    server.use("/assets/public", serveStatic(path.join(loopar.tenantPath, this.uploadPath, "public")));
+    for (const root of loopar.getAssetRoots("public")) {
+      server.use("/assets/public", serveStatic(root));
+    }
     server.get("/assets/public/theme.css", (_req, res, next) => {
       res.sendFile(path.join(loopar.tenantPath, "theme.css"), (err) => {
         if (err) next();
       });
     });
-
-    await this.exposeClientAppFiles();
-  }
-
-  async exposeClientAppFiles() {
-    if (loopar.__installed__) {
-      for (const app of Object.keys(loopar.installedApps)) {
-        const appPath = loopar.makePath(loopar.pathRoot, "apps", app, this.uploadPath, "public");
-        console.log("Exposing public directory for: " + app);
-        server.use("/assets/public", serveStatic(appPath));
-      }
-    }
   }
 
   #start() {

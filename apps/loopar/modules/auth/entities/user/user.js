@@ -17,6 +17,8 @@ export default class User extends BaseDocument {
   async validateUserName() {
     const regex = new RegExp("^[a-zA-Z ]+$");
 
+    const excludeSelf = this.id ? { id: { [Op.ne]: this.id } } : {};
+    
     if (!regex.test(this.name)) {
       loopar.throw('Your name must be at least 3 characters long');
     }
