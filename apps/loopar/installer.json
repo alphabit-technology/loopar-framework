@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.37"
+    "version": "5.0.38"
   },
   "documents": {
     "Entity:Module": {
@@ -14,7 +14,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.37",
+      "version": "5.0.38",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,
@@ -187,13 +187,6 @@
       "icon": "ComponentIcon",
       "in_sidebar": 1
     },
-    "Builder:Storage Builder": {
-      "name": "Storage Builder",
-      "build": "Entity",
-      "module": "Integrations",
-      "include_in_installer": 0,
-      "doc_structure": "[{\"node\":\"row_general\",\"element\":\"row\",\"data\":{\"label\":\"Row1\",\"layout\":\"[40,30,30]\"},\"elements\":[{\"node\":\"col_name\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"input_name\",\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"required\":1,\"type\":\"VARCHAR\",\"in_list_view\":1,\"set_only_time\":1,\"unique\":1,\"searchable\":1,\"description\":\"Display name of the provider (becomes the generated entity name, e.g. \\\"Cloudinary Settings\\\").\"}}]},{\"node\":\"col_driver_key\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"input_driver_key\",\"element\":\"input\",\"data\":{\"label\":\"Driver Key\",\"name\":\"driver_key\",\"required\":1,\"unique\":1,\"type\":\"VARCHAR\",\"in_list_view\":1,\"set_only_time\":1,\"description\":\"Internal slug used to bind this provider to its driver class in code (e.g. \\\"cloudinary\\\", \\\"r2\\\", \\\"s3\\\").\"}}]},{\"node\":\"col_module\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"select_module\",\"element\":\"select\",\"data\":{\"animation_duration\":1000,\"label\":\"Module\",\"name\":\"module\",\"required\":1,\"options\":\"Module\"}}]}]},{\"node\":\"row_description\",\"element\":\"row\",\"data\":{\"label\":\"Description Row\",\"layout\":\"[100]\"},\"elements\":[{\"node\":\"col_description\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"textarea_description\",\"element\":\"textarea\",\"data\":{\"label\":\"Description\",\"name\":\"description\",\"description\":\"What this provider is, when to use it. Shown in the StorageBuilder list to help pick between providers.\"}}]}]},{\"node\":\"designer_doc_structure\",\"element\":\"designer\",\"data\":{\"label\":\"Storage Structure\",\"name\":\"doc_structure\",\"animation_duration\":1000,\"description\":\"Drag in the fields this provider needs (e.g. for Cloudinary: cloud_name, api_key, api_secret, folder_root). The framework will also inject `is_active` automatically.\"}}]"
-    },
     "Entity:Document History": {
       "__root__": "/apps/loopar/modules/core/entities/document-history"
     },
@@ -284,20 +277,6 @@
     "Entity:Service": {
       "__root__": "/apps/loopar/modules/web/entities/service"
     },
-    "Entity:Storage Integration": {
-      "name": "Storage Integration",
-      "module": "Integrations",
-      "default_list_view": "List",
-      "is_single": 0,
-      "is_static": 0,
-      "include_in_installer": 1,
-      "is_child": 0,
-      "is_builder": 0,
-      "doc_structure": "[{\"node\":\"xz0aavytq4oafuywiu1b5s\",\"element\":\"tabs\",\"data\":{\"label\":\"Storage Integration\"},\"elements\":[{\"node\":\"cnyhh4lxa0f5jyv140etg9\",\"element\":\"tab\",\"data\":{\"label\":\"General\",\"droppable\":true},\"elements\":[{\"node\":\"w84yf9yw1ricackm35s3z\",\"element\":\"row\",\"data\":{\"name\":\"row_general_1\",\"layout\":\"[50,25,25]\"},\"elements\":[{\"node\":\"sb4ula8pqleqlt00tnr6s\",\"element\":\"col\",\"data\":{\"name\":\"col_general_1a\"},\"elements\":[{\"node\":\"t49bhwfde2pmj129oclvpe\",\"element\":\"input\",\"data\":{\"label\":\"Name\",\"name\":\"name\",\"required\":1,\"unique\":1,\"set_only_time\":1,\"in_list_view\":1,\"searchable\":1,\"description\":\"Identifier for this integration, e.g. \\\"Cloudinary Prod\\\".\",\"type\":\"VARCHAR\"}}]},{\"node\":\"yx9y0k9hsmrcst4dy1h7bv\",\"element\":\"col\",\"data\":{\"name\":\"col_general_1b\"},\"elements\":[{\"node\":\"2p0ad0jmnyx253p2k62loh\",\"element\":\"select\",\"data\":{\"animation_duration\":1000,\"label\":\"Driver\",\"name\":\"driver\",\"description\":\"Which storage backend this integration represents.\",\"required\":1,\"in_list_view\":1,\"options\":\"Cloudinary\\nCloudflare R2\"}}]},{\"node\":\"4qe7hmyeonc9lbzqvspzt9\",\"element\":\"col\",\"data\":{\"name\":\"col_general_1c\"},\"elements\":[{\"node\":\"osm8uqmad2hjcxnazs6fok\",\"element\":\"switch\",\"data\":{\"label\":\"Active\",\"name\":\"is_active\",\"default_value\":1,\"in_list_view\":1}},{\"node\":\"1egfovquxw4663bh180c4\",\"element\":\"switch\",\"data\":{\"label\":\"Default\",\"name\":\"is_default\",\"in_list_view\":1,\"description\":\"The active integration for new uploads. Only one row can be default at a time.\"}}]}]},{\"node\":\"1b1x6944kkhh3g15jxqoa9p\",\"element\":\"row\",\"data\":{\"name\":\"row_general_2\",\"layout\":\"[50,50]\"},\"elements\":[{\"node\":\"lwvvvkawfv5r1z4b9k7n\",\"element\":\"col\",\"data\":{\"name\":\"col_general_2a\"},\"elements\":[{\"node\":\"ohk626ld570w0qu2aeu7lj\",\"element\":\"input\",\"data\":{\"label\":\"Folder Root\",\"name\":\"folder_root\",\"default_value\":\"loopar\",\"description\":\"Top-level prefix under which tenant subfolders are created on the provider.\"}}]},{\"node\":\"73rrw0955xxkeun2rs3sl8\",\"element\":\"col\",\"data\":{\"name\":\"col_general_2b\"},\"elements\":[{\"node\":\"mqyvynw0m8x2vzjenhtvs\",\"element\":\"input\",\"data\":{\"label\":\"Public Base URL\",\"name\":\"public_base\",\"description\":\"Optional custom CDN domain that serves the provider (e.g. https://cdn.example.com). Leave empty to use the provider default.\"}}]}]}]},{\"node\":\"s2q74460rhawjyq3oy9vfk\",\"element\":\"tab\",\"data\":{\"label\":\"Credentials\",\"droppable\":true},\"elements\":[{\"node\":\"zss1m9n4nnfachm1j3n66b\",\"element\":\"row\",\"data\":{\"name\":\"row_creds_1\",\"layout\":\"[50,50]\"},\"elements\":[{\"node\":\"mp60asm64pjjw1tfjk4s3b\",\"element\":\"col\",\"data\":{\"name\":\"col_creds_1a\"},\"elements\":[{\"node\":\"1oeqiz1zhw2vibpg5y2veo\",\"element\":\"input\",\"data\":{\"label\":\"Provider ID\",\"name\":\"provider_id\",\"description\":\"Cloudinary: cloud name. S3/R2/B2: bucket name. Cloudflare R2: also include account_id in extra_config.\"}},{\"node\":\"xtbu8cdea8dn8cb1dmdatb\",\"element\":\"input\",\"data\":{\"label\":\"Access Key\",\"name\":\"access_key\",\"description\":\"Cloudinary API key, S3/R2 access key id, B2 keyId, etc.\"}}]},{\"node\":\"uk6al2wci8cela7d2vjw\",\"element\":\"col\",\"data\":{\"name\":\"col_creds_1b\"},\"elements\":[{\"node\":\"tn5rrqmrovjgbgh3jigcff\",\"element\":\"password\",\"data\":{\"label\":\"Secret Key\",\"name\":\"secret_key\",\"description\":\"Cloudinary API secret, S3/R2 secret access key, B2 applicationKey, etc. Stored as PASSWORD, never sent back to the client.\"}},{\"node\":\"8sysl8an23xwwgiqcbftwi\",\"element\":\"input\",\"data\":{\"label\":\"Region\",\"name\":\"region\",\"description\":\"Required for S3 (us-east-1, etc.) and R2 (auto). Leave empty for Cloudinary.\"}}]}]},{\"node\":\"wcb0qsfi31eaul1gvebgd\",\"element\":\"row\",\"data\":{\"name\":\"row_creds_2\",\"layout\":\"[100]\"},\"elements\":[{\"node\":\"smp7g84ofkhl8aku6vt24\",\"element\":\"col\",\"data\":{\"name\":\"col_creds_2a\"},\"elements\":[{\"node\":\"uj0qfq2glryxnkomc23zo\",\"element\":\"input\",\"data\":{\"label\":\"Endpoint Override\",\"name\":\"endpoint\",\"description\":\"S3-compatible custom endpoint URL (MinIO, Wasabi, Linode Object, Cloudflare R2). Leave empty for AWS S3 and Cloudinary.\"}}]}]}]},{\"node\":\"4wgvrb89j8w16iv4qx9sj7\",\"element\":\"tab\",\"data\":{\"label\":\"Advanced\",\"droppable\":true},\"elements\":[{\"node\":\"2jej6ox2aherf8cbmiyiao\",\"element\":\"row\",\"data\":{\"name\":\"row_adv_1\",\"layout\":\"[100]\"},\"elements\":[{\"node\":\"v1dh9pxcf5f3802k7esiy5\",\"element\":\"col\",\"data\":{\"name\":\"col_adv_1a\"},\"elements\":[{\"node\":\"j1vbdnmcz982buaqb2d2aq\",\"element\":\"textarea\",\"data\":{\"label\":\"Extra Config (JSON)\",\"name\":\"extra_config\",\"description\":\"Provider-specific options as JSON. E.g. Cloudinary: { \\\"upload_preset\\\": \\\"...\\\" }; S3: { \\\"acl\\\": \\\"public-read\\\", \\\"sse\\\": \\\"AES256\\\" }. Leave empty if not needed.\"}}]}]}]}]}]",
-      "search_fields": "",
-      "title_fields": "",
-      "resources": []
-    },
     "Entity:Cloudinary": {
       "__root__": "/apps/loopar/modules/integrations/entities/cloudinary"
     },
@@ -348,7 +327,6 @@
     "Entity:Side Menu Item": "link",
     "Entity:Project": "link",
     "Entity:Service": "link",
-    "Entity:Storage Integration": "link",
     "Entity:Cloudinary": "link",
     "Entity:Resources": "link",
     "Entity:Module": "link"
