@@ -38,7 +38,7 @@ export default class SystemController extends BaseController {
   }
 
   getAppName() {
-    return this.app_name || "loopar";
+    return this.query.app_name || "loopar";
   }
 
   async getInstallerModel(appName, data = {}) {
@@ -74,8 +74,8 @@ export default class SystemController extends BaseController {
   }
 
   async publicActionUpdate() {
-    console.log(['publicActionUpdate', this.app_name]);
-    if (this.app_name) {
+    const appName = this.getAppName();
+    if (appName) {
       const model = await this.getInstallerModel();
       model.app_name ??= this.getAppName();
 
