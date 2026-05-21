@@ -37,16 +37,32 @@ export default class BaseForm extends BaseDocument {
   }
 
   /**
+   * Static class field — subclasses can override to declare which controller
+   * receives this form's submissions. `BaseForm.send` will use it implicitly
+   * so subclass action methods can call `this.send({ action: "..." })` without
+   * repeating the controller name.
+   *
+   * Resolution order (first non-null wins):
+   *   1. `opts.document` passed to `send()` (caller wins)
+   *   2. `this.controller` (subclass declaration)
+   *   3. `this.Document.Entity.name` (regular Document forms)
+   *   4. legacy fallback to `loopar.send` with the relative URL
+   */
+  controller = null;
+
+  /**
    * Submit the form to a controller action.
    *
    * @param {Object} opts
+   * @param {string} [opts.document] - Target controller name (overrides
+   *   `this.controller` and the implicit `Document.Entity.name`).
    * @param {string} opts.action - Controller action to invoke.
    * @param {Object} [opts.query] - Extra URL query params (merged with
    *   `this.queryParams`).
    * @param {Function} [opts.success]
    * @param {Function} [opts.error]
    */
-  send({ action, query={}, ...options } = {}) {
+  send({ document, action, query={}, ...options } = {}) {
     this.validate();
 
     if (!this.checkChanges()) return;
@@ -66,10 +82,12 @@ export default class BaseForm extends BaseDocument {
     const mergedQuery = { ...this.queryParams, ...query };
     const body = this.#getFormData(true);
 
-    const document = this.Document?.Entity?.name;
+    // Resolve target controller (see `controller` field above for resolution
+    // order). If none is known we keep the old "URL is the router" pattern.
+    const targetDocument = document || this.controller || this.Document?.Entity?.name;
 
-    if (document) {
-      return loopar.call(document, action, body, {
+    if (targetDocument) {
+      return loopar.call(targetDocument, action, body, {
         query: mergedQuery,
         success: handleSuccess,
         error: handleError,
@@ -77,14 +95,16 @@ export default class BaseForm extends BaseDocument {
       });
     }
 
-    /* loopar.send({
+    // Legacy fallback — form-on-page pattern (login, install, etc. when the
+    // subclass hasn't declared its target document yet).
+    loopar.send({
       action,
       query: mergedQuery,
       body,
       success: handleSuccess,
       error: handleError,
       freeze: true,
-    }); */
+    });
   }
 
   get queryParams() {
