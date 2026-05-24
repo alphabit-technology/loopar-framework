@@ -112,6 +112,10 @@ export const parseDocStructure = async (
         } catch (_) { /* cookie store unavailable; client will fall back */ }
       }
 
+      if (field.element === COLLECTION_VIEW) {
+        await preloadCollectionView(field, requestContext);
+      }
+
       if (field.elements) {
         field.elements = await parseDocStructure(field.elements, renderMarkdown, document_name, requestContext);
       }
@@ -123,6 +127,8 @@ export const parseDocStructure = async (
 
 /**
  * Internal — fills field.data.preloaded for a COLLECTION element.
+ * COLLECTION only ever renders a paginated LIST. The detail of a single
+ * item is handled by the COLLECTION_VIEW element (preloadCollectionView).
  */
 async function preloadCollection(field, requestContext) {
   const entityName = field.data?.options ? String(field.data.options).trim() : null;
@@ -143,36 +149,10 @@ async function preloadCollection(field, requestContext) {
   const schema = buildEntitySchema(entityName);
 
   const ctx = requestContext || {};
-  const slug = ctx.slug ? String(ctx.slug).trim() : null;
   const app = ctx.app ? String(ctx.app).trim() : null;
   const q = ctx.query || {};
 
   try {
-    if (slug) {
-      // Detail mode: one row matching slug + app + published.
-      // If THIS entity doesn't have a row with that slug, it means the
-      // URL belongs to another COLLECTION on the same page (e.g. /Project/
-      // <slug> on a page with both Project and Service galleries — the
-      // slug only matches one of them). Fall back to list mode rather
-      // than rendering a misleading "not found".
-      const filter = { slug, published: 1 };
-      if (app) filter.app = app;
-      const row = await loopar.db.qx()(entityName)
-        .select("*")
-        .where(filter)
-        .whereNull("__deleted_at__")
-        .first();
-      if (row) {
-        field.data.preloaded = { mode: "detail", item: parseRowTags(row), fields: schema };
-        // Flag the request context so the controller knows at least one
-        // collection on this page owned the detail slug. If no collection
-        // ends up flagging it, the URL is bogus and the controller will
-        // surface a real 404.
-        if (requestContext) requestContext._anyDetailMatched = true;
-        return;
-      }
-    }
-
     const pageNum = clampInt(q.page ?? field.data.page, 1, 1000, 1);
     const pageSize = clampInt(
       q.page_size ?? field.data.page_size,
@@ -229,7 +209,58 @@ async function preloadCollection(field, requestContext) {
     };
   } catch (err) {
     loopar.warn?.(`COLLECTION preload failed for entity=${entityName}: ${err?.message || err}`);
-    field.data.preloaded = { mode: slug ? "detail" : "list", items: [], item: null, total: 0, fields: schema, error: "fetch_failed" };
+    field.data.preloaded = { mode: "list", items: [], total: 0, fields: schema, error: "fetch_failed" };
+  }
+}
+
+/**
+ * Internal — fills field.data.preloaded for a COLLECTION_VIEW element.
+ * Resolves ONE published item by slug (+ app scope) and flags
+ * `requestContext._anyDetailMatched` so the controller can 404 a bogus
+ * slug. `mode` is always "detail"; `item` is null when nothing matches.
+ */
+async function preloadCollectionView(field, requestContext) {
+  const entityName = field.data?.options ? String(field.data.options).trim() : null;
+  if (!entityName) {
+    field.data.preloaded = { mode: "detail", item: null, fields: [], error: "missing_options" };
+    return;
+  }
+
+  const ref = loopar.getRef(entityName);
+  if (!ref) {
+    field.data.preloaded = { mode: "detail", item: null, fields: [], error: "unknown_entity" };
+    return;
+  }
+
+  const schema = buildEntitySchema(entityName);
+  const ctx = requestContext || {};
+  const slug = ctx.slug ? String(ctx.slug).trim() : null;
+  const app = ctx.app ? String(ctx.app).trim() : null;
+
+  if (!slug) {
+    field.data.preloaded = { mode: "detail", item: null, fields: schema, error: "missing_slug" };
+    return;
+  }
+
+  try {
+    const filter = { slug, published: 1 };
+    if (app) filter.app = app;
+    const row = await loopar.db.qx()(entityName)
+      .select("*")
+      .where(filter)
+      .whereNull("__deleted_at__")
+      .first();
+
+    if (row) {
+      field.data.preloaded = { mode: "detail", item: parseRowTags(row), fields: schema };
+      if (requestContext) requestContext._anyDetailMatched = true;
+      return;
+    }
+    // Slug didn't resolve — controller will surface a 404.
+    field.data.preloaded = { mode: "detail", item: null, fields: schema };
+  } catch (err) {
+    loopar.warn?.(`COLLECTION_VIEW preload failed for entity=${entityName}: ${err?.message || err}`);
+    field.data.preloaded = { mode: "detail", item: null, fields: schema, error: "fetch_failed" };
   }
 }
 

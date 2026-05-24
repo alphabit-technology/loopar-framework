@@ -33,9 +33,17 @@ export default class SingleController extends BaseController {
     return await this.sendDocument();
   }
 
-  async publicActionCollection(action=this.document, data={}) {
+
+  async publicActionCollection(action = this.document, data = {}) {
     const webApp = loopar.webApp || { menu_items: [] };
-    const detailSlug = action;
+    const { collection, detailSlug } = this.query;
+
+    if (!collection || !detailSlug) {
+      return loopar.throw({
+        code: 404,
+        message: "Collection viewer requires ?collection= and ?detailSlug=.",
+      });
+    }
 
     const requestContext = {
       slug: detailSlug,
@@ -43,31 +51,32 @@ export default class SingleController extends BaseController {
       query: this.query || {},
     };
 
-    const document = await loopar.getDocument(pageDocName, undefined, null, { requestContext });
+    const doc_structure = await parseDocStructure(JSON.stringify([
+      {
+        element: "collection_view",
+        data: {
+          options: collection,
+        },
+      },
+    ]), true, this.document, requestContext);
 
-    if (detailSlug && !requestContext._anyDetailMatched) {
+    if (!requestContext._anyDetailMatched) {
       return loopar.throw({
         code: 404,
-        message: `Page not found: ${this.document}/${detailSlug}`,
+        message: `Page not found: ${collection}/${detailSlug}`,
       });
     }
 
-    const doc_structure = await parseDocStructure(JSON.stringify([
-      {
-        element: "collection",
-        data: {
-          options: this.query.collection,
-        }
-      }
-    ]), true, this.document, requestContext);
+    const preloadedItem = doc_structure?.[0]?.data?.preloaded?.item;
 
+    this.client = 'page';
     return await this.render({
       Entity: {
         name: "Collection Viewer",
-        doc_structure: JSON.stringify(doc_structure)
+        doc_structure: JSON.stringify(doc_structure),
       },
       activeParentMenu: await this.getParent(),
-      __DOCUMENT_TITLE__: document.__ENTITY__?.name,
+      __DOCUMENT_TITLE__: preloadedItem?.title || detailSlug,
       __DETAIL_SLUG__: detailSlug,
       ...data,
     });

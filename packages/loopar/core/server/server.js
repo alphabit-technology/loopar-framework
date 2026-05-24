@@ -26,7 +26,11 @@ const server = new express();
 // directly is NOT loopback, so it cannot spoof the header.
 server.set('trust proxy', 'loopback');
 
-/** HMR port = HTTP port + this offset (kept in sync with vite hmr config below). */
+/**
+ * Legacy HMR port offset. HMR no longer opens its own port (it rides on the
+ * shared HTTP server), but startup still probes PORT+OFFSET so that range
+ * stays reserved/free. Safe to simplify away later.
+ */
 const HMR_PORT_OFFSET = 10000;
 
 /** Probe a TCP port — resolves true if nothing is listening, false otherwise. */
@@ -104,7 +108,35 @@ export class Server extends Router {
       }
     }
 
-    if (isDevTenant()) {
+    // Single HTTP server shared by Express, the realtime socket and Vite's
+    // HMR websocket. Created here (before Vite) so HMR can ride on it instead
+    // of opening its own ws:// port, which a browser on an HTTPS page blocks.
+    this.httpServer = http.createServer(server);
+
+    if (this.isProduction) {
+      server.use(compression());
+      server.use(zstdMiddleware({
+        root: 'dist/client',
+        priority: ['zst', 'br', 'gz'],
+      }));
+    } else {
+      this.vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: { server: this.httpServer },
+        },
+        appType: 'custom'
+      });
+
+      if(isDevTenant()){
+        this.#installDynamicModeDispatcher();
+      }else{
+        server.use(this.vite.middlewares);
+      }
+    }
+
+
+    /* if (isDevTenant()) {
       // Dev tenant gets dynamic mode switching: both Vite and the
       // production chain are always set up. A per-request dispatcher
       // (see #installDynamicModeDispatcher) reads the tenant's `.env`
@@ -114,10 +146,9 @@ export class Server extends Router {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
-          hmr: {
-            protocol: 'ws',
-            port: parseInt(process.env.PORT) + HMR_PORT_OFFSET,
-          }
+          // HMR rides on the shared HTTP server, so the browser reaches it at
+          // the same origin/protocol as the page (wss:// via Caddy, ws:// by IP).
+          hmr: { server: this.httpServer },
         },
         appType: 'custom'
       });
@@ -132,15 +163,19 @@ export class Server extends Router {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
-          hmr: {
-            protocol: 'ws',
-            port: parseInt(process.env.PORT) + HMR_PORT_OFFSET,
-          }
+          // HMR rides on the shared HTTP server, so the browser reaches it at
+          // the same origin/protocol as the page (wss:// via Caddy, ws:// by IP).
+          hmr: { server: this.httpServer },
         },
         appType: 'custom'
       });
       server.use(this.vite.middlewares);
-    }
+    } */
+
+
+
+
+
 
     await this.#exposePublicDirectories();
     server.use(useragent());
@@ -154,7 +189,14 @@ export class Server extends Router {
       requestContext.run({ req, res }, next);
     });
     server.use(cookieParser());
-    server.use(express.json({ limit: '50mb' }));
+    server.use(express.json({
+      limit: '50mb',
+      // Preserve the raw request bytes on `req.rawBody`. Endpoints that must
+      // verify a byte-exact payload — e.g. Stripe webhook signature checks —
+      // need the original body; re-serializing the parsed `req.body` changes
+      // whitespace/key order and breaks the HMAC. `req.body` is unaffected.
+      verify: (req, res, buf) => { req.rawBody = buf; }
+    }));
     server.use(express.urlencoded({ extended: true, limit: '50mb' }));
     server.use(tenantContextMiddleware);
   }
@@ -214,7 +256,7 @@ export class Server extends Router {
     const port = process.env.PORT;
     const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
 
-    const httpServer = http.createServer(server);
+    const httpServer = this.httpServer;
 
     // Catch EADDRINUSE with an actionable message instead of a raw stack trace.
     // In dev this is a fallback (initialize() already resolved a free pair);

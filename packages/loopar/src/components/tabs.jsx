@@ -3,7 +3,7 @@ import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import { useEffect, useMemo, useId } from "react";
-import {useCookies} from "@services/cookie";
+import {usePersist} from "@services/persist-state";
 import { Droppable } from "@droppable";
 import { Trash2Icon, PlusIcon } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
@@ -33,7 +33,7 @@ function TabFn(props){
     return getIdentifier(id);
   };
 
-  const [currentTab, setCurrentTab] = useCookies(getIdentifier(id), getKey(elementsDict[0]));
+  const [currentTab, setCurrentTab] = usePersist(getIdentifier(id), getKey(elementsDict[0]));
 
   const selectFirstTab = () => {
     elementsDict.length > 0 && setCurrentTab(getKey(elementsDict[0]));

@@ -186,14 +186,6 @@ export default class Installer extends BaseDocument {
       if(!owner || owner == this.app_name){
         const entityData = await this.getDocumentData(name, entryRoot(ent, e));
         if(entityData){
-          // Use getDocument (which filters soft-deleted) as the single
-          // existence predicate instead of hasEntity (which counts all
-          // rows including tombstoned ones). Otherwise a row left with
-          // __deleted_at__ set by a previous install lands in the
-          // mismatch: hasEntity says "yes, update it", getDocument can't
-          // find it, the load throws. Falling through to newDocument on
-          // null lets insertRow's auto-restore (Task #114) clear the
-          // tombstone and write the fresh payload.
           let doc = await loopar.getDocument(constructor, name, entityData, { ifNotFound: null });
           const wasFound = !!doc;
           if (!doc) doc = await loopar.newDocument(constructor, entityData);
@@ -213,15 +205,18 @@ export default class Installer extends BaseDocument {
 
       const { id: _ignoredSnapshotId, ...cleanEnt } = ent;
 
-      if (!await loopar.db.count(constructor, name)) {
+      const existing = await loopar.getDocument(
+        constructor, name, cleanEnt, { ifNotFound: null }
+      );
+
+      if (!existing) {
         console.log([`Inserting ${constructor}:${name}`]);
         const doc = await loopar.newDocument(constructor, { ...cleanEnt, __document_status__: "Active" });
         doc.name = name;
         await doc.save({ validate: false });
       } else if (reinstall || postInstall) {
         console.log([`Updating ${constructor}:${name}`]);
-        const doc = await loopar.getDocument(constructor, name, cleanEnt);
-        await doc.save({ validate: false, forceChildren: postInstall });
+        await existing.save({ validate: false, forceChildren: postInstall });
       }
     }
 

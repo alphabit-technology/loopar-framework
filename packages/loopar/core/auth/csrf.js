@@ -8,10 +8,13 @@ export function generateCsrfToken() {
 }
 
 export function validateCsrfToken(req) {
-  const fromHeader = req.headers['x-csrf-token'];
-  const fromCookie = req.cookies?.[CSRF_COOKIE_NAME];
+  const normalize = (v) => (Array.isArray(v) ? v[0] : v);
+  const fromHeader = normalize(req.headers['x-csrf-token']);
+  const fromCookie = normalize(req.cookies?.[CSRF_COOKIE_NAME]);
 
   if (!fromHeader || !fromCookie) return false;
+  if (typeof fromHeader !== 'string' || typeof fromCookie !== 'string') return false;
+  if (fromHeader.length !== fromCookie.length) return false;
 
   try {
     return crypto.timingSafeEqual(

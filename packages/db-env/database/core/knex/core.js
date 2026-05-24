@@ -279,14 +279,25 @@ export default class Core {
     return map[key];
   }
 
-  async makeTable(name, fields) {
+  /**
+   * @param {string} name
+   * @param {Array}  fields
+   * @param {object} [opts]
+   * @param {object} [opts.entityMeta] - { name, is_static, is_child,
+   *   is_single, is_audited }. Passed by callers (Entity.save) so audit-
+   *   column emission doesn't depend on loopar.getRef(), which is stale
+   *   for a freshly-installed entity (its ref isn't built until the next
+   *   buildRefs). Without this, createTable on install skips audit cols.
+   */
+  async makeTable(name, fields, opts = {}) {
+    const entityMeta = opts.entityMeta || null;
     this.invalidateColumnsCache(name);
     if (await this.hasTable(name)) {
       const dbFields = await this.getTableDescription(name);
-      await this.alterTable(name, fields, dbFields);
+      await this.alterTable(name, fields, dbFields, entityMeta);
       await this.reconcileOrphanColumns(this.tableName(name), fields, dbFields);
     } else {
-      await this.createTable(name, fields);
+      await this.createTable(name, fields, entityMeta);
     }
     this.invalidateColumnsCache(name);
   }
@@ -324,8 +335,8 @@ export default class Core {
     }
   }
 
-  async createTable(literalName, fields) {
-    const auditable = this.#isAuditableTable(literalName);
+  async createTable(literalName, fields, entityMeta = null) {
+    const auditable = this.#isAuditableTable(literalName, entityMeta);
 
     await this.qx().schema.createTable(literalName, (table) => {
       // utf8mb4 + InnoDB only matter on MySQL/MariaDB; Knex no-ops them elsewhere.
@@ -364,13 +375,16 @@ export default class Core {
     return false;
   }
 
-  #isAuditableTable(name) {
+  #isAuditableTable(name, entityMeta = null) {
+    if (entityMeta) return isAuditableEntity(entityMeta);
     const ref = loopar.getRef?.(name);
-    return isAuditableEntity(ref);
+    if (!ref) return false;
+
+    return ref.is_audited === 1 || ref.is_audited === true;
   }
 
-  async alterTable(literalName, fields, existingFields) {
-    const auditable = this.#isAuditableTable(literalName);
+  async alterTable(literalName, fields, existingFields, entityMeta = null) {
+    const auditable = this.#isAuditableTable(literalName, entityMeta);
     const existingByName = new Map(
       existingFields.map(f => [f.name.toLowerCase(), f])
     );
@@ -428,11 +442,6 @@ export default class Core {
       }
     });
 
-    // Backfill audit timestamps for rows that existed before the ALTER.
-    // The columns were added nullable to keep SQLite happy (it rejects
-    // CURRENT_TIMESTAMP as a default in ALTER ADD COLUMN); new inserts
-    // already get the value from insertRow, but pre-existing rows need
-    // an explicit UPDATE so __created_at__ / __updated_at__ aren't NULL.
     if (addAudit) {
       const needsCreated = !existingByName.has("__created_at__");
       const needsUpdated = !existingByName.has("__updated_at__");
@@ -504,11 +513,6 @@ export default class Core {
     };
 
     ensure("__created_at__", (alter) => {
-      // SQLite (and some MySQL versions) reject CURRENT_TIMESTAMP as a
-      // default in ALTER ADD COLUMN — only constants are allowed. On
-      // ADD: nullable, no default; alterTable backfills existing rows
-      // afterwards via UPDATE. On .alter(): the column already exists,
-      // SQLite emulates as table-rebuild which accepts fn defaults.
       if (alter) {
         const c = table.timestamp("__created_at__").defaultTo(knex.fn.now());
         c.alter();

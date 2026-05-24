@@ -279,7 +279,8 @@ export const elementsDefinition = {
     { element: 'particles_settings', icon: 'DotsHorizontal' },
     { element: 'example_viewer', icon: 'Scan' },
     { element: 'review', icon: "Pencil"},
-    { element: 'collection', icon: "LayoutGrid"}
+    { element: 'collection', icon: "LayoutGrid"},
+    { element: 'collection_view', icon: "LayoutGrid", show_in_design: false}
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "FormInput", type: TYPES.string },

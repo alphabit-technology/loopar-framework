@@ -11,7 +11,7 @@ export default class AuthController {
     if (workspace !== 'desk' && workspace !== 'api') return true;
 
     if (!validateCsrfToken(this.req)) {
-      loopar.throw('Invalid CSRF token');
+      loopar.throw('Invalid CSRF token', '/auth/login');
     }
 
     return true;

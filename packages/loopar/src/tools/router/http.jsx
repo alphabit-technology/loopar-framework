@@ -43,17 +43,10 @@ export default class HTTP {
   }
 
   getCsrfToken() {
-    const fromMeta =
+    const fromCookie = this.cookie?.get('csrf-token');
+    const fromGlobal =
       typeof globalThis !== 'undefined' ? globalThis.__csrfToken__ : undefined;
-    const fromWindow =
-      typeof window !== 'undefined' ? window.__csrfToken__ : undefined;
-    const fromCookie = document.cookie
-      .split('; ')
-      .find((r) => r.startsWith('csrf-token='))
-      ?.split('=')
-      .slice(1)
-      .join('=');
-    return fromMeta || fromWindow || fromCookie || '';
+    return fromCookie || fromGlobal || '';
   }
 
   get options() {

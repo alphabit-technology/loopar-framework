@@ -52,7 +52,6 @@ export default class ProjectController extends BaseController {
   }
 
   async publicActionView() {
-    console.log('publicActionView');
     return await this.publicActionPublicView();
   }
 

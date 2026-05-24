@@ -16,7 +16,7 @@ export default class AuthController extends BaseController {
   async publicActionLogin() {
     return await this.#makeAction('Login', async (form) => {
       await form.login();
-      return this.redirect('/desk/Desk/view');
+      return this.redirect('/desk/Desk/view', { hard: true });
     });
   }
 

@@ -63,7 +63,7 @@ export default function DefaultCard({ item, fields = [], variant = "default", co
 
   return (
     <Link
-      to={`${to}?collection=${collectionSlug}`}
+      to={`collection?collection=${collectionSlug}&detailSlug=${item?.slug}`}
       bare
       notControlled={isExternal}
       _target={isExternal ? "_blank" : undefined}

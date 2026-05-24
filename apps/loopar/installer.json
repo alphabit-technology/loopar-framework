@@ -287,6 +287,12 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 0
+    },
+    "Entity:Project Category": {
+      "__root__": "/apps/loopar/modules/web/entities/project-category"
+    },
+    "Entity:Service Category": {
+      "__root__": "/apps/loopar/modules/web/entities/service-category"
     }
   },
   "postInstaller": {
@@ -329,6 +335,8 @@
     "Entity:Service": "link",
     "Entity:Cloudinary": "link",
     "Entity:Resources": "link",
-    "Entity:Module": "link"
+    "Entity:Module": "link",
+    "Entity:Project Category": "link",
+    "Entity:Service Category": "link"
   }
 }

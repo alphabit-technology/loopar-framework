@@ -1,0 +1,96 @@
+import { useMemo } from "react";
+import DefaultDetail from "./collection/default-detail.jsx";
+
+const detailModules = import.meta.glob("./*-detail.jsx", { eager: true });
+
+function lookupDetail(entityName) {
+  if (!entityName) return DefaultDetail;
+  const slug = String(entityName)
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[\s_]+/g, "-")
+    .toLowerCase();
+  return detailModules[`./${slug}-detail.jsx`]?.default || DefaultDetail;
+}
+
+export default function CollectionView({ data = {} }) {
+  const entityName = data.options ? String(data.options).trim() : null;
+  const preloaded = data.preloaded;
+
+  // `page` layout always uses the generic DefaultDetail; `gallery` lets a
+  // per-entity override take over when one exists.
+  const layout = data.detail_layout || "page";
+  const Detail = useMemo(
+    () => (layout === "page" ? DefaultDetail : lookupDetail(entityName)),
+    [layout, entityName]
+  );
+
+  if (!entityName) {
+    return (
+      <section className="w-full py-16 px-4 min-h-section-min">
+        <div className="max-w-3xl mx-auto text-center text-sm text-muted-foreground">
+          Collection view has no entity configured.
+        </div>
+      </section>
+    );
+  }
+
+  const item = preloaded?.mode === "detail" ? preloaded.item : null;
+  const fields = preloaded?.fields || [];
+
+  return (
+    <Detail
+      entity={entityName}
+      fields={fields}
+      preloadedItem={item}
+      slug={item?.slug || null}
+      app={data.app}
+      layout={layout}
+      galleryMode={data.gallery_mode || "carousel"}
+      galleryColumns={data.gallery_columns || 3}
+      backLabel={data.back_label || "Back"}
+      backHref={data.back_href || "."}
+      onBack={(href, e) => {
+        if (typeof window === "undefined") return;
+        e?.preventDefault?.();
+        window.history.back();
+      }}
+    />
+  );
+}
+
+CollectionView.metaFields = () => {
+  return [
+    {
+      group: "custom",
+      elements: {
+        options: {
+          element: INPUT,
+          data: { label: "Entity", description: "Backing entity (Project / Service / …)." },
+        },
+        detail_layout: {
+          element: SELECT,
+          data: {
+            label: "Detail layout",
+            options: "page\ngallery",
+            description: "page: cover hero + metadata table + gallery. gallery: hero with carousel.",
+          },
+        },
+        gallery_mode: {
+          element: SELECT,
+          data: {
+            label: "Gallery mode",
+            options: "carousel\ngrid",
+          },
+        },
+        gallery_columns: {
+          element: INPUT,
+          data: { label: "Gallery columns (grid, 1–4)", format: "int" },
+        },
+        back_label: {
+          element: INPUT,
+          data: { label: "Back link text" },
+        },
+      },
+    },
+  ];
+};

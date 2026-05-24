@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo, u
 import { loopar } from "loopar";
 import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 import { AppSourceLoader } from "@loopar/loader";
 import {useAuth} from "@context/AuthContext"
 
@@ -72,7 +73,7 @@ export function WorkspaceProvider({
       });
   }, [Documents]);
 
-  const [openNav, setOpenNav] = useCookies(__WORKSPACE_NAME__);
+  const [openNav, setOpenNav] = usePersist(__WORKSPACE_NAME__);
   const ActiveView = useMemo(() => memoizedActiveView, [memoizedActiveView, refreshFlag]);
 
   const handleSetOpenNav = useCallback((newOpenNav) => {

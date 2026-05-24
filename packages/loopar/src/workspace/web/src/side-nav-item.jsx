@@ -1,7 +1,7 @@
 import React, {useEffect} from "react";
 import {Link} from "@link";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
-import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 import {cn} from "@cn/lib/utils";
 import { DotFilledIcon } from "@radix-ui/react-icons";
 
@@ -17,7 +17,7 @@ export const SideNavItem = (props) => {
     solid,
   } = props;
 
-  const [open, setOpen] = useCookies(path, active);
+  const [open, setOpen] = usePersist(path, active);
 
   const external = {
     href: path,

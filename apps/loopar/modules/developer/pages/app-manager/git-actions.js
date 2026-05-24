@@ -28,6 +28,17 @@ export function getCwdForApp(name) {
   return { cwd: appPath, isFramework: false };
 }
 
+export function getAppVersion(name) {
+  try {
+    const installerPath = loopar.makePath(loopar.pathRoot, 'apps', name, 'installer.json');
+    if (!fs.existsSync(installerPath)) return null;
+    const data = JSON.parse(fs.readFileSync(installerPath, 'utf8'));
+    return (data && data.App && data.App.version) || null;
+  } catch {
+    return null;
+  }
+}
+
 async function git(cwd, args) {
   const { stdout, stderr } = await execFile('git', args, { cwd, maxBuffer: 4 * 1024 * 1024 });
   return { stdout: (stdout || '').trim(), stderr: (stderr || '').trim() };
@@ -394,12 +405,16 @@ export async function getDiff(name) {
     }
   } catch {}
 
+  const version = getAppVersion(name);
+
   return {
     is_framework: isFramework,
     branch,
     clean: files.length === 0,
     files,
     recent_commits,
+    version,
+    suggested_message: version ? `Update to version ${version}` : null,
   };
 }
 

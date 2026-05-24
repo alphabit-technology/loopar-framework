@@ -1,12 +1,15 @@
 import BaseDocument from "@context/base/base-document";
 import DeskGUI from "@context/base/desk-gui";
 import { ListGrid } from "@@table/ListGrid";
-import {useCookies} from "@services/cookie";
+import {usePersist} from "@services/persist-state";
 import {GridView} from "@@table/GridView";
 import { TableProvider } from "@@table/TableContext";
 
 function ListContextMildware({content, Document, docRef, hasSearchForm = true, onlyGrid, onlyList}){
-  const [viewType, setViewType] = useCookies(Document.Entity.name + "_viewType") || Document.Entity.default_list_view || "List";
+  const [viewType, setViewType] = usePersist(
+    Document.Entity.name + "_viewType",
+    Document.Entity.default_list_view || "List"
+  );
 
   const getViewType = () => {
     return onlyGrid === true ? "Grid" : viewType;

@@ -6,7 +6,7 @@ import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import {Button} from "@cn/components/ui/button";
 import Tab from "@tab";
 import Tabs from "@tabs";
-import {useCookies} from "@services/cookie";
+import {usePersist} from "@services/persist-state";
 import {cn} from "@cn/lib/utils";
 import { isEqual } from "es-toolkit/predicate";
 import { Sidebar } from "./sidebar";
@@ -121,8 +121,8 @@ export const BaseDesigner = (props) => {
   const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
   const [dragEnabled, setDragEnable] = useState(true);
 
-  const [updatingElementName, setUpdatingElementName] = useCookies(name + "updatingElementName");
-  const [designerModeType, setDesignerModeType] = useCookies(name + "designer-mode-type");
+  const [updatingElementName, setUpdatingElementName] = usePersist(name + "updatingElementName");
+  const [designerModeType, setDesignerModeType] = usePersist(name + "designer-mode-type");
   const [sendingPrompt, setSendingPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState("Generate a form that allows me to manage inventory data");
   const [updatingFromEditor, setUpdatingFromEditor] = useState(false);

@@ -3,6 +3,7 @@
 import loopar from "loopar";
 import { useState, useEffect, useRef } from "react";
 import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 import { buildPermissions } from "../helper";
 import { PermissionTable } from "./permission-table.jsx";
 import { RoleTabs } from "./role-tabs.jsx";
@@ -12,8 +13,8 @@ import { FormWrapper } from "@context/form-provider";
 export function RolePermissionManager({ manager = "general", role: initialRole, user: initialUser }) {
   const [catalog, setCatalog] = useCookies("umCatalog", null);
   const [commonActions, setCommonActions] = useState([]);
-  const [user, setUser] = useCookies(`${manager}${initialUser || ""}user`, initialUser);
-  const [role, setRole] = useCookies(`${manager}role`, initialRole);
+  const [user, setUser] = usePersist(`${manager}${initialUser || ""}user`, initialUser);
+  const [role, setRole] = usePersist(`${manager}role`, initialRole);
   const [userRoles, setUserRoles] = useState(new Set());
   const [permissionsRefreshKey, setPermissionsRefreshKey] = useState(0);
   const formRef = useRef(null);

@@ -1,6 +1,6 @@
 import {Link} from "@link";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 import { useEffect } from "react";
 import Icon from "@icon";
 
@@ -24,7 +24,7 @@ export const SideNavItem = (props) => {
   const { collapseSidebarWidth, activeModule, award } = useWorkspace();
   if(!award(`Module.${path}`, "view")) return null;
   
-  const [active, setActive] = useCookies(path);
+  const [active, setActive] = usePersist(path);
 
   const pathname = usePathname();
 

@@ -9,6 +9,8 @@ export default class Module extends BaseDocument {
 
   async save() {
     await super.save(arguments[0] || {});
+    if (loopar.installing) return;
+
     await this.makeModuleRoute();
     await loopar.build();
   }
@@ -22,6 +24,10 @@ export default class Module extends BaseDocument {
   }
 
   async makeModuleRoute() {
+    if (!this.app_name || !this.name) {
+      console.warn(`[Module.makeModuleRoute] skipped — missing app_name or name (app_name=${this.app_name}, name=${this.name})`);
+      return;
+    }
     await fileManage.makeFolder(this.modulePath(), this.name.replaceAll(/\s+/g, '-').toLowerCase());
   }
 }

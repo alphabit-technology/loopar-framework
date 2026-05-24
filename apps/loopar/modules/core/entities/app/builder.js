@@ -379,6 +379,44 @@ class InstallerBuilder {
   }
 
   /**
+   * Snapshot a Module entry for every module this app's entities belong
+   * to. Modules are folders on disk — the filesystem is the source of
+   * truth — so we derive the module set from getEntities()' __MODULE__.
+   * If a real Module row exists in the DB we snapshot that; otherwise we
+   * synthesize a minimal one so the installer can create the row and
+   * targetApp() resolves on the target. Entries already queued by
+   * buildDocuments (DB-backed) are left untouched.
+   */
+  async queueModules() {
+    const moduleRef = loopar.getRef("Module");
+    if (!moduleRef) return;
+
+    const moduleNames = new Set(
+      loopar.getEntities(this.app)
+        .map(e => e.__MODULE__)
+        .filter(Boolean)
+    );
+
+    for (const moduleName of moduleNames) {
+      if (this.Queues[queueKey("Module", moduleName)]) continue;
+
+      const liveDoc = await loopar.getDocument(
+        "Module", moduleName, null, { ifNotFound: null }
+      );
+      const payload = liveDoc
+        ? await liveDoc.rawValues()
+        : {
+            name: moduleName,
+            description: moduleName,
+            app_name: this.app,
+            module_group: "modules",
+            in_sidebar: 1,
+          };
+      await this.queue(moduleRef, payload);
+    }
+  }
+
+  /**
    * @param {{dryRun?: boolean}} [options]
    * @returns {Promise<{App: {name: string, version: string}, documents: object, postInstaller: object}>}
    */
@@ -388,6 +426,8 @@ class InstallerBuilder {
     for (const entity of this.entities) {
       await this.queueEntity(entity);
     }
+    
+    await this.queueModules();
 
     const app = await loopar.getDocument("App", this.app, null, { ifNotFound: null });
     if (app) await this.queue(loopar.getRef("App"), await app.rawValues());

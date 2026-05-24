@@ -1,65 +1,18 @@
-import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { loopar } from "loopar";
-
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  Loader2,
-} from "lucide-react";
-
-const cardModules = import.meta.glob("./*-card.jsx", { eager: true });
-const detailModules = import.meta.glob("./*-detail.jsx", { eager: true });
+import { ChevronLeftIcon, ChevronRightIcon, Loader2 } from "lucide-react";
 
 import DefaultCard from "./collection/default-card.jsx";
-import DefaultDetail from "./collection/default-detail.jsx";
 
-function lookupView(entityName) {
-  if (!entityName) return { Card: DefaultCard, Detail: DefaultDetail };
+const cardModules = import.meta.glob("./*-card.jsx", { eager: true });
+
+function lookupCard(entityName) {
+  if (!entityName) return DefaultCard;
   const slug = String(entityName)
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .replace(/[\s_]+/g, "-")
     .toLowerCase();
-  return {
-    Card: cardModules[`./${slug}-card.jsx`]?.default || DefaultCard,
-    Detail: detailModules[`./${slug}-detail.jsx`]?.default || DefaultDetail,
-  };
-}
-
-function readDetailSlugFromUrl() {
-  if (typeof window === "undefined") return null;
-  try {
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    return parts.length >= 2 ? decodeURIComponent(parts[parts.length - 1]) : null;
-  } catch {
-    return null;
-  }
-}
-
-function buildDetailHref(slug) {
-  if (typeof window === "undefined") return `./${encodeURIComponent(slug)}`;
-  const path = window.location.pathname.replace(/\/$/, "");
-  const segments = path.split("/").filter(Boolean);
-  const base = segments.length >= 2 ? "/" + segments.slice(0, -1).join("/") : "/" + segments.join("/");
-  return `${base}/${encodeURIComponent(slug)}`;
-}
-
-function buildListHref() {
-  if (typeof window === "undefined") return ".";
-  const segments = window.location.pathname.split("/").filter(Boolean);
-  return "/" + (segments.length >= 2 ? segments.slice(0, -1).join("/") : segments.join("/"));
-}
-
-function spaNavigate(href, e) {
-  if (e?.defaultPrevented) return;
-  if (e?.button !== undefined && e.button !== 0) return;
-  if (e?.metaKey || e?.ctrlKey || e?.shiftKey || e?.altKey) return;
-  if (/^https?:\/\//i.test(href)) return;
-  if (e) e.preventDefault();
-  if (typeof window !== "undefined") {
-    window.history.pushState({}, "", href);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }
+  return cardModules[`./${slug}-card.jsx`]?.default || DefaultCard;
 }
 
 function Spinner() {
@@ -121,94 +74,9 @@ function Pagination({ page, totalPages, onChange }) {
 
 export default function Collection({ data = {} }) {
   const entityName = data.options ? String(data.options).trim() : null;
-  const { Card, Detail } = useMemo(() => lookupView(entityName), [entityName]);
+  const Card = useMemo(() => lookupCard(entityName), [entityName]);
   const preloaded = data.preloaded;
-  const isDetailOwner = preloaded?.mode === "detail";
 
-  const [activeSlug, setActiveSlug] = useState(() => {
-    if (isDetailOwner) return preloaded.item?.slug || readDetailSlugFromUrl();
-    return null;
-  });
-  
-  const [, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const sync = () => startTransition(() => {
-      setActiveSlug(isDetailOwner ? readDetailSlugFromUrl() : null);
-    });
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, [isDetailOwner]);
-
-  if (!entityName) {
-    return (
-      <section className="w-full py-12 px-4 min-h-section-min">
-        <div className="max-w-3xl mx-auto text-center text-sm text-muted-foreground">
-          Collection has no entity configured. Set the <code>options</code> field.
-        </div>
-      </section>
-    );
-  }
-
-  const schemaFields = preloaded?.fields || [];
-
-  if (activeSlug) {
-    const chosenLayout = data.detail_layout || "page";
-    const ChosenDetail = chosenLayout === "page" ? DefaultDetail : Detail;
-
-    return (
-      <DetailView
-        entityName={entityName}
-        Detail={ChosenDetail}
-        preloaded={preloaded?.mode === "detail" ? preloaded : null}
-        fields={schemaFields}
-        slug={activeSlug}
-        appOverride={data.app}
-        layout={chosenLayout}
-        galleryMode={data.gallery_mode || "carousel"}
-        galleryColumns={data.gallery_columns || 3}
-        backLabel={data.back_label || `All ${entityName.toLowerCase()}s`}
-      />
-    );
-  }
-
-  return (
-    <ListingView
-      data={data}
-      entityName={entityName}
-      Card={Card}
-      fields={schemaFields}
-      preloaded={preloaded?.mode === "list" ? preloaded : null}
-      collectionSlug={data.options}
-    />
-  );
-}
-
-function DetailView({ entityName, Detail, preloaded, fields, slug, appOverride, layout, galleryMode, galleryColumns, backLabel, collectionSlug }) {
-  const preloadedItem = preloaded?.item || null;
-  const backHref = buildListHref();
-
-  return (
-    <Detail
-      slug={slug}
-      app={appOverride}
-      collectionSlug={collectionSlug}
-      entity={entityName}
-      fields={fields}
-      layout={layout}
-      galleryMode={galleryMode}
-      galleryColumns={galleryColumns}
-      preloadedItem={preloadedItem}
-      backHref={backHref}
-      backLabel={backLabel}
-      onBack={(href, e) => spaNavigate(href, e)}
-    />
-  );
-}
-
-function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug }) {
   const {
     app: appOverride,
     page_size = 12,
@@ -219,7 +87,7 @@ function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug
     title,
     subtitle,
     card_variant = "default",
-    empty_message = `No ${entityName.toLowerCase()}s to show yet.`,
+    empty_message = `No items to show yet.`,
   } = data;
 
   const pageSize = Math.max(1, Math.min(48, parseInt(page_size, 10) || 12));
@@ -231,11 +99,13 @@ function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug
   const [loading, setLoading] = useState(!preloaded);
   const [refetching, setRefetching] = useState(false);
   const [error, setError] = useState(preloaded?.error || "");
-  const firstLoadRef = useRef(!preloaded);
+  const consumedPreloadRef = useRef(false);
+  const schemaFields = preloaded?.fields || [];
 
-  const load = useCallback(async () => {
-    if (firstLoadRef.current) setLoading(true);
-    else setRefetching(true);
+  const load = useCallback(async (asRefetch = false) => {
+    if (!entityName) return;
+    if (asRefetch) setRefetching(true);
+    else setLoading(true);
     setError("");
 
     try {
@@ -253,23 +123,36 @@ function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug
       setTotalPages(Math.max(1, parseInt(res?.total_pages, 10) || 1));
     } catch (e) {
       console.error(`Collection<${entityName}> load error:`, e);
-      setError(e?.message || `Could not load ${entityName.toLowerCase()}s.`);
-      if (firstLoadRef.current) setItems([]);
+      setError(e?.message || "Could not load items.");
+      if (!asRefetch) setItems([]);
       setTotalPages(1);
     } finally {
       setLoading(false);
       setRefetching(false);
-      firstLoadRef.current = false;
     }
   }, [entityName, appOverride, page, pageSize, featured_only, category, tag]);
 
   useEffect(() => {
-    if (preloaded && page === (preloaded.page || 1) && firstLoadRef.current) {
-      firstLoadRef.current = false;
+    if (!consumedPreloadRef.current) {
+      consumedPreloadRef.current = true;
+      if (preloaded && !preloaded.error && page === (preloaded.page || 1)) {
+        return;
+      }
+      load(false);
       return;
     }
-    load();
-  }, [load, preloaded, page]);
+    load(true);
+  }, [load]);
+
+  if (!entityName) {
+    return (
+      <section className="w-full py-12 px-4 min-h-section-min">
+        <div className="max-w-3xl mx-auto text-center text-sm text-muted-foreground">
+          Collection has no entity configured. Set the <code>options</code> field.
+        </div>
+      </section>
+    );
+  }
 
   const gridCols = {
     1: "grid-cols-1",
@@ -309,16 +192,13 @@ function ListingView({ data, entityName, Card, fields, preloaded, collectionSlug
               aria-busy={refetching || undefined}
             >
               {items.map(item => (
-                  <Card
-                    key={item.name}
-                    item={item}
-                    fields={fields}
-                    variant={card_variant}
-                    to={item.slug}
-                    buildHref={buildDetailHref}
-                    onNavigate={spaNavigate}
-                    collectionSlug={collectionSlug}
-                  />
+                <Card
+                  key={item.name}
+                  item={item}
+                  fields={schemaFields}
+                  variant={card_variant}
+                  collectionSlug={entityName}
+                />
               ))}
             </div>
             <Pagination page={page} totalPages={totalPages} onChange={setPage} />
@@ -339,7 +219,7 @@ Collection.metaFields = () => {
           data: {
             label: "Entity",
             placeholder: "Project / Service / BlogPost",
-            description: "The backing entity to fetch from (must have publicList / publicView actions).",
+            description: "The backing entity to list (must have a publicList action).",
           },
         },
         app: {
@@ -349,10 +229,10 @@ Collection.metaFields = () => {
             placeholder: "Leave empty to use current app",
           },
         },
-        title:        { element: TEXTAREA, data: { label: "Title" } },
-        subtitle:     { element: TEXTAREA, data: { label: "Subtitle" } },
-        page_size:    { element: INPUT, data: { label: "Items per page", format: "int" } },
-        columns:      { element: INPUT, data: { label: "Columns (1–4)", format: "int" } },
+        title: { element: TEXTAREA, data: { label: "Title" } },
+        subtitle: { element: TEXTAREA, data: { label: "Subtitle" } },
+        page_size: { element: INPUT, data: { label: "Items per page", format: "int" } },
+        columns: { element: INPUT, data: { label: "Columns (1–4)", format: "int" } },
         featured_only: { element: SWITCH, data: { label: "Featured only" } },
         category: {
           element: INPUT,
@@ -374,33 +254,6 @@ Collection.metaFields = () => {
             label: "Card variant",
             options: "default\ncompact",
           },
-        },
-        detail_layout: {
-          element: SELECT,
-          data: {
-            label: "Detail layout",
-            options: "page\ngallery",
-            description: "page: cover full-width + metadata table + gallery. gallery: hero with carousel.",
-          },
-        },
-        gallery_mode: {
-          element: SELECT,
-          data: {
-            label: "Gallery mode (on detail, page layout)",
-            options: "carousel\ngrid",
-            description: "carousel: cycling slides. grid: all images at once, responsive.",
-          },
-        },
-        gallery_columns: {
-          element: INPUT,
-          data: {
-            label: "Gallery columns (when grid, 1–4)",
-            format: "int",
-          },
-        },
-        back_label: {
-          element: INPUT,
-          data: { label: "Back link text (on detail)" },
         },
         empty_message: {
           element: TEXTAREA,

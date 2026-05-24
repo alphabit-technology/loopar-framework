@@ -6,7 +6,7 @@ import { cap, getOwnActions, makeGridCols, buildPermissions, expandWildcard, upd
 import { Checkbox } from "./Checkbox.jsx";
 import { OwnChip } from "./own-chip.jsx";
 import { AppTabs } from "./app-tabs.jsx";
-import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 
 export function PermissionTable({
   role,
@@ -24,8 +24,8 @@ export function PermissionTable({
   const [permissions, setPermissions] = useState({});
   const [inheritedPerms, setInheritedPerms] = useState(new Set());
   const [deniedPerms, setDeniedPerms] = useState(new Set());
-  const [currentApp, setCurrentApp] = useCookies(`${manager}currentApp`, null);
-  const [search, setSearch] = useCookies(`${manager}search`, "");
+  const [currentApp, setCurrentApp] = usePersist(`${manager}currentApp`, null);
+  const [search, setSearch] = usePersist(`${manager}search`, "");
   const [saving, setSaving] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(false);

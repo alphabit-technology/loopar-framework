@@ -30,7 +30,14 @@ export default class TenantManagerController extends BaseController {
   async beforeAction(){
     const test = await super.beforeAction();
 
-    if(!test || loopar.tenantId != "dev") loopar.throw("Access restricted")
+    // Only "control plane" tenants may administer other tenants.
+    // A tenant opts in via CONTROL_PLANE=1 in its .env (see TENANT_ENV_FIELDS
+    // in packages/loopar/bin/tenant/tenant-builder.js). `dev` is always
+    // allowed as a safety fallback so the developer tenant is never locked out.
+    const isControlPlane = ["1", "true"].includes(String(process.env.CONTROL_PLANE))
+      || loopar.tenantId === "dev";
+
+    if(!test || !isControlPlane) loopar.throw("Access restricted")
   }
 
   async getTenant(name=this.name){

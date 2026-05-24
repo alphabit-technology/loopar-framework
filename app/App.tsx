@@ -1,6 +1,7 @@
 import { cn } from "@cn/lib/utils";
 import React, {useEffect} from "react";
 import {CookiesProvider} from '@services/cookie';
+import {PersistStateProvider} from '@services/persist-state';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { useNavigate } from 'react-router';
 import { RealtimeProvider } from "@services/realtime/RealtimeContext";
@@ -127,11 +128,13 @@ const App = ({ __META__, permissions, pathname}: RootLayoutProps) => {
   return (
     <>
       <CookiesProvider manager={cookieManager} updater={setUpdate}>
-        <Main
-          __META__={__META__}
-          permissions={permissions}
-          pathname={pathname}
-        />
+        <PersistStateProvider workspace={__META__.name} cookieManager={cookieManager}>
+          <Main
+            __META__={__META__}
+            permissions={permissions}
+            pathname={pathname}
+          />
+        </PersistStateProvider>
       </CookiesProvider>
     </>
   )

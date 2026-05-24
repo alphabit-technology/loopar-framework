@@ -454,6 +454,7 @@ export default class AppManagerView extends ListContext {
             title: `Commit ${isFramework ? 'framework' : appName}`,
             label: 'Commit message',
             placeholder: 'Describe your changes',
+            initialValue: diff.suggested_message || '',
             ok: (message) => {
               dispatch('commit', { app_name: appName, message });
             },

@@ -1,5 +1,5 @@
 import { useContext, createContext, useMemo, useCallback } from 'react';
-import { useCookies } from "@services/cookie";
+import { usePersist } from "@services/persist-state";
 
 export const DocumentContext = createContext({
   toggleMode: () => {},
@@ -8,17 +8,12 @@ export const DocumentContext = createContext({
 });
 
 export const DocumentProvider = ({ children, docRef, name, title, formValues, spacing, Document, slots, ...props }) => {
-  const [sidebarOpen, setSidebarOpen] = useCookies(name + "sidebarOpen");
+  const [sidebarOpen, setSidebarOpen] = usePersist(name + "sidebarOpen");
 
-  /** Stable handler reference so the provider value does not change every render. */
   const handleSetSidebarOpen = useCallback((value) => {
     setSidebarOpen(value);
   }, [setSidebarOpen]);
 
-  /**
-   * Memoized provider value. Without `useMemo` this would be a fresh literal on
-   * every render and invalidate every downstream `useDocument()` consumer.
-   */
   const value = useMemo(() => ({
     docRef,
     name,

@@ -105,7 +105,15 @@ export default class Entity extends BaseDocument {
     if (!loopar.installing) await loopar.db.beginTransaction();
 
     if (this.isDBEntity()) {
-      await loopar.db.makeTable(this.name, this.doc_structure);
+      await loopar.db.makeTable(this.name, this.doc_structure, {
+        entityMeta: {
+          name: this.name,
+          is_static: this.is_static,
+          is_child: this.is_child,
+          is_single: this.is_single,
+          is_audited: this.is_audited,
+        },
+      });
     }
 
     args.save != false && await super.save(arguments[0] || {});
@@ -123,7 +131,9 @@ export default class Entity extends BaseDocument {
     this.is_static = 0;
    
     await this.normalizeFields(this.doc_structure);
-    await loopar.db.makeTable("Entity", this.doc_structure);
+    await loopar.db.makeTable("Entity", this.doc_structure, {
+      entityMeta: { name: "Entity", is_static: 0, is_child: 0, is_single: 0 },
+    });
   }
 
   clientFieldsList(fields = this.doc_structure) {
@@ -303,7 +313,7 @@ export default class Entity extends BaseDocument {
    * and for non-DB entities (singles, builders without storage).
    */
   #injectMetaFields() {
-    if (!this.isDBEntity() || loopar.installing) return;
+    if (!this.isDBEntity()) return;
 
     const special = this.getSpecialMetaFields();
     const containerName = special.namedContainer.data.name;

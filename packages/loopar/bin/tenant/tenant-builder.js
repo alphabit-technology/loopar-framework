@@ -16,7 +16,8 @@ export const TENANT_ENV_FIELDS = [
   { key: 'DOMAIN', default: (data) => `${data.NAME ?? data.ID}.localhost`, required: false },
   { key: 'FORCE_CONNECT', default: 0, required: false },
   { key: 'NODE_ENV', default: 'development', required: false },
-  // Redis — optional, falls back to MemoryStore if not present
+  { key: 'CONTROL_PLANE', default: 0, required: false },
+  
   //TODO: Integrate Redis
   { key: 'REDIS_HOST', default: null, required: false },
   { key: 'REDIS_PORT', default: 6379, required: false },
@@ -117,17 +118,19 @@ const tenants = () => sites().map(tenantId => {
   const port = envData.PORT || 3000;
   const domain = envData.DOMAIN || "";
   const NODE_ENV = envData.NODE_ENV || "development";
+  const controlPlane = envData.CONTROL_PLANE || "0";
 
   return {
     namespace: path.basename(process.cwd()),
-    name: tenantId, 
+    name: tenantId,
     script: 'node_modules/loopar/bin/pm2-wrapper.js',
-    env: { 
+    env: {
       NODE_ENV: NODE_ENV || "development",
       TENANT_ID: tenantId,
       TENANT_PATH: envData.TENANT_PATH,
       DOMAIN: domain || "",
       PORT: port || "",
+      CONTROL_PLANE: controlPlane,
       IS_LOOPAR: true
     }
   };
