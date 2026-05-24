@@ -113,7 +113,7 @@ export class Server extends Router {
     // of opening its own ws:// port, which a browser on an HTTPS page blocks.
     this.httpServer = http.createServer(server);
 
-    if (this.isProduction) {
+    if (this.isProduction && !isDevTenant()) {
       server.use(compression());
       server.use(zstdMiddleware({
         root: 'dist/client',
@@ -123,59 +123,20 @@ export class Server extends Router {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
+          // HMR rides on the shared HTTP server, so the browser reaches it
+          // at the same origin/protocol as the page (wss:// via Caddy,
+          // ws:// by IP).
           hmr: { server: this.httpServer },
         },
         appType: 'custom'
       });
 
-      if(isDevTenant()){
+      if (isDevTenant()) {
         this.#installDynamicModeDispatcher();
-      }else{
+      } else {
         server.use(this.vite.middlewares);
       }
     }
-
-
-    /* if (isDevTenant()) {
-      // Dev tenant gets dynamic mode switching: both Vite and the
-      // production chain are always set up. A per-request dispatcher
-      // (see #installDynamicModeDispatcher) reads the tenant's `.env`
-      // and the presence of `dist/` to decide which path to serve.
-      // This lets the admin flip Mode in the UI and have it take effect
-      // on the next request, without restarting the process.
-      this.vite = await createViteServer({
-        server: {
-          middlewareMode: true,
-          // HMR rides on the shared HTTP server, so the browser reaches it at
-          // the same origin/protocol as the page (wss:// via Caddy, ws:// by IP).
-          hmr: { server: this.httpServer },
-        },
-        appType: 'custom'
-      });
-      this.#installDynamicModeDispatcher();
-    } else if (this.isProduction) {
-      server.use(compression());
-      server.use(zstdMiddleware({
-        root: 'dist/client',
-        priority: ['zst', 'br', 'gz'],
-      }));
-    } else {
-      this.vite = await createViteServer({
-        server: {
-          middlewareMode: true,
-          // HMR rides on the shared HTTP server, so the browser reaches it at
-          // the same origin/protocol as the page (wss:// via Caddy, ws:// by IP).
-          hmr: { server: this.httpServer },
-        },
-        appType: 'custom'
-      });
-      server.use(this.vite.middlewares);
-    } */
-
-
-
-
-
 
     await this.#exposePublicDirectories();
     server.use(useragent());
