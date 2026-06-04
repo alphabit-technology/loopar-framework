@@ -292,8 +292,18 @@ export class KnexORM extends Connector {
     const auditable = this.#isAuditable(document);
     if (auditable) {
       data.__updated_at__ = this.qx().fn.now();
-      if (data.__document_status__ != null) {
-        data.__document_status__ = coerceDocStatus(data.__document_status__);
+      // `__document_status__` is NOT NULL with DOC_STATUS.ACTIVE default. If
+      // a caller sent the key with null/undefined (happens when a doc's
+      // __DATA__ has the slot but no value, e.g. valuesToSetDataBase pulled
+      // it through getParseData which canonicalises undefined → null), we
+      // strip it so the UPDATE leaves the existing row value alone instead
+      // of trying to write NULL into a NOT NULL column.
+      if ('__document_status__' in data) {
+        if (data.__document_status__ == null) {
+          delete data.__document_status__;
+        } else {
+          data.__document_status__ = coerceDocStatus(data.__document_status__);
+        }
       }
     }
 

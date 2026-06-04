@@ -184,6 +184,21 @@ export default class Installer extends BaseDocument {
       const [constructor, name] = e.split(':');
       const owner = entryAppOwner(ent, e);
 
+      // The installer.json lists entries as `Constructor:Name` (e.g.
+      // "Entity:Module"). If the meta-entity referenced by `constructor`
+      // isn't registered in refs — usually because its FS JSON carries a
+      // `__deleted_at__` tombstone and getEntities() skipped it — we can't
+      // hydrate the doc and the whole update would 404. Skip with a loud
+      // log so the operator can clear the tombstone and re-run instead of
+      // aborting the entire update mid-flight.
+      if (!loopar.getRef(constructor)) {
+        console.warn(
+          `[installer] skipping ${e}: meta-entity "${constructor}" not found in refs ` +
+          `(check apps/<app>/modules/<module>/<core>/${constructor.toLowerCase()}/${constructor.toLowerCase()}.json — is __deleted_at__ set?)`
+        );
+        return;
+      }
+
       if(!owner || owner == this.app_name){
         const entityData = await this.getDocumentData(name, entryRoot(ent, e));
         if(entityData){
