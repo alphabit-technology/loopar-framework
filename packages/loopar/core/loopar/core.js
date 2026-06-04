@@ -125,7 +125,7 @@ export class Core extends Builder {
   }
 
   getDirList(path) {
-    return fs.readdirSync(path, { withFileTypes: true });
+    return fs.readdirSync(path, { withFileTypes: true }).filter(e => e.isDirectory());
   }
 
   getFile(path) {

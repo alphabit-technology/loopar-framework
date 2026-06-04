@@ -274,6 +274,7 @@ export const elementsDefinition = {
     { element: "direct-preview-iframe", icon: "View" },
     { element: "stripe", icon: "CreditCard" },
     { element: "stripe_embebed", icon: "CreditCard" },
+    { element: "stripe_plans", icon: "LayoutGrid" },
     { element: "seo", icon: "Globe", designerOnly: true },
     { element: 'particles', icon: 'DotsHorizontal' },
     { element: 'particles_settings', icon: 'DotsHorizontal' },

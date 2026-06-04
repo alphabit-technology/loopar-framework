@@ -377,8 +377,8 @@ export class KnexORM extends Connector {
     const includeDeleted = a.includeDeleted ?? false;
 
     const ref = typeof document === "object" ? document.__REF__ : loopar.getRef(document);
-    document  = typeof document === "object" ? document.name : document;
-    document  = document === "Document" ? "Entity" : document;
+    document = typeof document === "object" ? document.name : document;
+    document = document === "Document" ? "Entity" : document;
     fields = fields[0] === "*"
       ? ref.__FIELDS__
       : fields.filter(field => ref.__FIELDS__.includes(field));
@@ -388,6 +388,17 @@ export class KnexORM extends Connector {
         f !== "__created_at__" && f !== "__updated_at__" &&
         f !== "__deleted_at__" && f !== "__document_status__"
       );
+    }
+    
+    if (!ref.is_single) {
+      try {
+        const colMap = await this.getTableColumns(document);
+        const existing = new Set();
+        for (const [, meta] of colMap) existing.add(meta.name);
+        fields = fields.filter(f => existing.has(f));
+      } catch {
+        // If we can't read columns, fall through with the raw fields.
+      }
     }
 
     return await this.getRow({

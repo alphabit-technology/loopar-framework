@@ -1,9 +1,7 @@
 
 'use strict';
 
-import {BaseController} from 'loopar';
-import {loopar} from 'loopar';
-import {getTenant, tenantList} from "./tenant-manager.js";
+import {BaseController, loopar} from 'loopar';
 import { spawn } from 'child_process';
 import crypto from 'node:crypto';
 
@@ -30,45 +28,14 @@ export default class TenantManagerController extends BaseController {
   async beforeAction(){
     const test = await super.beforeAction();
 
-    // Only "control plane" tenants may administer other tenants.
-    // A tenant opts in via CONTROL_PLANE=1 in its .env (see TENANT_ENV_FIELDS
-    // in packages/loopar/bin/tenant/tenant-builder.js). `dev` is always
-    // allowed as a safety fallback so the developer tenant is never locked out.
     const isControlPlane = ["1", "true"].includes(String(process.env.CONTROL_PLANE))
-      || loopar.tenantId === "dev";
+      || ["loopar", "dev", "cloud"].includes(loopar.tenantId);
 
     if(!test || !isControlPlane) loopar.throw("Access restricted")
   }
 
-  async getTenant(name=this.name){
-    return await getTenant(name);
-  }
-
-  async actionList(){
-    return super.render(await tenantList());
-  }
-
-  async actionCreate(){
-    if(!this.hasData()){
-      return super.actionCreate();
-    }
-
-    const tenant = await loopar.newDocument("Tenant Manager", this.data);
-    await tenant.save();
-    return this.success("Tenant created successfully");
-  }
-
-  async actionUpdate(){
-    const tenant = await this.getTenant();
-    if(this.hasData()){
-      Object.entries(this.body).forEach(([key, value]) => {
-        tenant[key] = value;
-      });
-      await tenant.save();
-      return this.success("Tenant updated successfully");
-    }else{
-      return await this.render(await tenant.__meta__());
-    }
+  async getTenant(name = this.name) {
+    return await loopar.getDocument("Tenant Manager", name, null);
   }
 
   async actionProduction(){

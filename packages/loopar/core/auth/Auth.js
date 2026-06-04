@@ -121,6 +121,7 @@ export default class Auth {
           email: userData.email,
           avatar: userData.avatar,
           profile_picture: userData.profile_picture,
+          user_type: userData.user_type,
           tenant: this.tenantId,
           csrfToken: userData.csrfToken || generateCsrfToken(),
         };
@@ -138,6 +139,7 @@ export default class Auth {
         email: userData.email,
         avatar: userData.avatar,
         profile_picture: userData.profile_picture,
+        user_type: userData.user_type,
         tenant: userData.tenant || this.tenantId,
         exp: userData.exp,
         iat: userData.iat,
@@ -156,6 +158,7 @@ export default class Auth {
       email: user.email,
       avatar: user.name.substring(0, 1).toUpperCase(),
       profile_picture: user.profile_picture,
+      user_type: user.user_type,
       tenant: this.tenantId,
       csrfToken: generateCsrfToken(),
     };

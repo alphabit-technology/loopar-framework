@@ -225,7 +225,7 @@ export default class Entity extends BaseDocument {
   }
 
   #updateOrInsertField({ field, position = null, target = null }) {
-    const fields = this.doc_structure;
+    const fields = this.doc_structure || [];
     let foundField  = false;
     let targetFound = fields;
 
@@ -435,7 +435,16 @@ export default class Entity extends BaseDocument {
   }
 
   async targetApp() {
-    return await loopar.db.getValue("Module", "app_name", this.module);
+    // During the first install of a tenant the Module table is being created
+    // and is still empty, so this lookup returns null and downstream callers
+    // build paths like `apps/modules/<module>` (missing the app segment) —
+    // ENOENT on scandir and the install aborts. Fall back to the app
+    // currently being installed so the path stays well-formed. After
+    // bootstrap the DB row exists and the fallback is never reached.
+    const fromDb = await loopar.db.getValue(
+      "Module", "app_name", this.module, { ifNotFound: null }
+    );
+    return fromDb || loopar.installingApp || null;
   }
 
   async validateAppVersion() {
@@ -474,6 +483,7 @@ export default class Entity extends BaseDocument {
 
   async modulePath() {
     const type = this.getEntityType();
+    console.log(["Traget App", await this.targetApp()]);
     return loopar.makePath("apps", await this.targetApp(), "modules", this.module, pluralize(type));
   }
 

@@ -27,7 +27,7 @@ export function MainNav() {
 export function MenuItems({ half = null, className = "" }) {
   const { webApp, activeParentMenu } = useWorkspace();
   const menuItems = useMemo(
-    () => (webApp.menu_items || []).filter(item => !item.parent_menu),
+    () => (webApp.menu_items || []).filter(item => !item.parent_menu && !item.router_only),
     [webApp.menu_items]
   );
   const solid = useMemo(() => webApp.solid, [webApp.solid]);

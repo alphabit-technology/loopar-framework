@@ -101,17 +101,46 @@ export default class AuthController {
 
     if (workspace === 'web' || workspace === 'loopar') return true;
 
+    // On the auth FORM pages (login/register/recovery), an already-logged-in
+    // user should be sent to where they belong instead of seeing the form
+    // again. This must run BEFORE the public-action short-circuit below, since
+    // `login` is itself a public action. Restricted to GET page loads of the
+    // form actions so it never interferes with the ajax helpers (me,
+    // oauthProviders) or the OAuth dance (oauth, oauthCallback) on this workspace.
+    const AUTH_FORM_ACTIONS = ['login', 'register', 'recoveryuser', 'recoverypassword', 'recoverypasswordrequest'];
+    if (
+      workspace === 'auth' &&
+      this.method === 'GET' &&
+      AUTH_FORM_ACTIONS.includes(String(action).toLowerCase())
+    ) {
+      const current = await loopar.auth.award();
+      if (current?.name) {
+        const webLanding = process.env.WEB_LANDING || '/';
+        return resolve('You are already logged in', current.user_type === 'Web' ? webLanding : '/desk');
+      }
+    }
+
     if (this.#isPublicAction(workspace)) return true;
 
     const user = await loopar.auth.award();
 
     if (user) {
+      const webLanding = process.env.WEB_LANDING || '/';
+
       if (workspace === 'auth' && action !== 'logout') {
-        return resolve('You are already logged in, refresh this page', '/desk/Desk/view');
+        // Already logged in → bounce to where this user belongs.
+        const dest = user.user_type === 'Web' ? webLanding : '/desk/Desk/view';
+        return resolve('You are already logged in, refresh this page', dest);
       }
 
       if (user.name !== 'Administrator' && user.disabled) {
         return resolve('Not permitted');
+      }
+
+      // Web users belong to the website only — no desk access, even if they
+      // navigate to /desk directly.
+      if (workspace === 'desk' && user.user_type === 'Web') {
+        return resolve('This account does not have desk access', webLanding);
       }
 
       return await this.isAuthorized(user);

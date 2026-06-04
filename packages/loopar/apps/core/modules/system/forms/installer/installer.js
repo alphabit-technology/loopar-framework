@@ -139,6 +139,7 @@ export default class Installer extends BaseDocument {
     await this.installData(reinstall);
 
     loopar.installingApp = null;
+    
     await loopar.setApp({[this.app_name]: true});
     
     await loopar.build();

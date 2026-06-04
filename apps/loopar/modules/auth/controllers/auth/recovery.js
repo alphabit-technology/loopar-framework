@@ -25,7 +25,6 @@ export async function generatePasswordResetToken(email) {
 }
 
 export async function validatePasswordResetToken(rawToken) {
-  console.log(["reset Pasword", rawToken])
   let payload;
   try {
     payload = jwt.verify(rawToken, loopar.jwtSecret);
@@ -38,7 +37,6 @@ export async function validatePasswordResetToken(rawToken) {
     return { valid: false, reason: 'invalid' };
   }
 
-  
   const user = await loopar.db.getDoc('User', { name: payload.sub });
 
   if (!user || user.reset_password_token !== hashToken(rawToken)) {
@@ -54,9 +52,13 @@ export async function resetPassword(rawToken, newPassword) {
 
   const hashedPassword = await loopar.hash(newPassword);
 
+  // Clear must_change_password — the user has chosen a password of their own,
+  // so the auto-generated-credential banner should stop showing. Safe to set
+  // unconditionally; users who never had the flag set are unaffected.
   await loopar.db.updateRow('User', user.name, {
     password: hashedPassword,
     reset_password_token: null,
+    must_change_password: 0,
   });
 
   return { ok: true };

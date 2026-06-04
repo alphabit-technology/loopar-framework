@@ -1,9 +1,74 @@
+import { useState, useEffect } from "react";
 import { buttonVariants } from "@cn/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@cn/components/ui/dropdown-menu";
+import { LogOutIcon, UserRoundCogIcon } from "lucide-react";
 import { MainNav, MenuItems } from "./main-nav";
 import { Logo } from "./logo";
 import { ThemeToggle } from "@workspace/theme-toggle";
 import { BaseIcon } from "@base-icons";
 import { useWorkspace } from "@workspace/workspace-provider";
+
+function UserMenu() {
+  const {user: me, __META__} = useWorkspace();
+  const webApp = __META__.web_app;
+
+  if(!webApp.show_user_section) return;  
+
+  if (!me) {
+    return (
+      <a href="/auth/login" className={`${buttonVariants({ size: "sm", variant: "ghost" })} hover:text-primary`}>
+        Sign in
+      </a>
+    );
+  }
+
+  const initial = (me.name || me.email || "?").trim().charAt(0).toUpperCase();
+  const isWeb = me.user_type === "Web";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={`${buttonVariants({ size: "icon", variant: "ghost" })} cursor-pointer rounded-full overflow-hidden`}
+          aria-label="User menu"
+        >
+          {me.profile_picture ? (
+            <img
+              src={me.profile_picture}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold">
+              {initial}
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="border-b px-3 py-2">
+          <div className="truncate text-sm font-medium">{me.name}</div>
+          {me.email ? <div className="truncate text-xs text-muted-foreground">{me.email}</div> : null}
+        </div>
+        <div className="grid grid-cols-1 p-1">
+          {!isWeb && (
+            <a href="/desk/Profile/update" className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}>
+              <UserRoundCogIcon className="mr-2 h-4 w-4" /> Profile
+            </a>
+          )}
+          <a href="/auth/logout" className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}>
+            <LogOutIcon className="mr-2 h-4 w-4" /> Log Out
+          </a>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function MenuActions({ menuActions = [] }) {
   return (
@@ -30,6 +95,7 @@ function MenuActions({ menuActions = [] }) {
         );
       })}
       <ThemeToggle />
+      <UserMenu />
     </nav>
   );
 }

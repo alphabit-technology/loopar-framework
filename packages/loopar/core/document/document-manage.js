@@ -17,6 +17,10 @@ class DocumentManage {
       // effects like COLLECTION preload — losing the requestContext).
       return await this.newDocument(document, { ...databaseData, ...(data || {}) }, name, parse, ENTITY);
     } else {
+      if(ENTITY.is_virtual){
+        return await this.newDocument(document, data, name, parse, ENTITY, ifNotFound);
+      }
+
       if (ifNotFound === 'new') {
         return await this.newDocument(document, data, name, parse, ENTITY);
       }
@@ -29,7 +33,7 @@ class DocumentManage {
     }
   }
 
-  async newDocument(document, data = {}, name, parse = false, preParsedEntity = null) {
+  async newDocument(document, data = {}, name, parse = false, preParsedEntity = null, ifNotFound) {
     // Reuse the ENTITY when the caller already parsed it (carrying the
     // request-scoped state in field.data.preloaded). Falls back to a
     // fresh parse for standalone callers — which is the original behaviour.
@@ -46,8 +50,8 @@ class DocumentManage {
       __SPACING__: spacing || {spacing: 2, col_padding: 2, col_margin: 0}
     });
 
-    await instance.__init__();
-    return instance;
+    const result = await instance.__init__(ifNotFound);
+    return result === undefined ? instance : result;
   }
 
   async #GET_ENTITY(document, requestContext = null) {

@@ -51,7 +51,7 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
       >
         <Activity mode={treeIsActive ? "visible" : "hidden"}>
           <div className={`pl-3 ${isChild ? '' : ''}`}>
-            {item.items.sort((a, b) => a.id - b.id).map((subItem) => (
+            {item.items.filter(item => item.router_only != 1).sort((a, b) => a.id - b.id).map((subItem) => (
               <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
             ))}
           </div>
@@ -64,7 +64,7 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
 const SideNavRender = ({ menu }) => {
   return (
     <div className="w-full">
-      {menu.map((item) => (
+      {menu.filter(item => item.router_only != 1).map((item) => (
         <MenuItemTree key={item.page} item={item}/>
       ))}
     </div>

@@ -16,6 +16,7 @@ import { shouldServeProduction, isDevTenant } from './runtime-mode.js';
 import http from "http";
 import net from "node:net";
 import { RealtimeManager } from "../realtime/RealtimeManager.js";
+import { tenant } from "../../bin/tenant/tenant-builder.js";
 
 const server = new express();
 
@@ -99,12 +100,24 @@ export class Server extends Router {
         }
         const reason = !httpFree ? `HTTP ${requestedPort}` : `HMR ${requestedPort + HMR_PORT_OFFSET}`;
         console.warn(
-          `\n⚠️  Port ${reason} is busy. Auto-shifting to ${newPort} (HMR ${newPort + HMR_PORT_OFFSET}) for this run.`
-        );
-        console.warn(
-          `   To make it persistent, edit sites/<tenant>/.env and set PORT=${newPort}\n`
+          `\n⚠️  Port ${reason} is busy. Auto-shifting to ${newPort} (HMR ${newPort + HMR_PORT_OFFSET}).`
         );
         process.env.PORT = String(newPort);
+
+        // Persist the shift to the tenant's .env so other readers (the
+        // control-plane provisioner, external scripts, the next restart)
+        // see the actual port. If the original conflict was transient and
+        // you want to revert, edit sites/<tenant>/.env back to the desired
+        // port manually.
+        try {
+          await tenant.saveTenant({ name: process.env.TENANT_ID, PORT: newPort });
+          console.warn(`   ✓ Persisted PORT=${newPort} to sites/${process.env.TENANT_ID}/.env\n`);
+        } catch (err) {
+          console.warn(
+            `   ⚠️  Could not persist PORT to sites/${process.env.TENANT_ID}/.env: ${err.message}\n` +
+            `   Edit it manually if you need other processes to see the shifted port.\n`
+          );
+        }
       }
     }
 

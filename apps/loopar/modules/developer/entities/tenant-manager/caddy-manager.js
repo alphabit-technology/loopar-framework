@@ -121,9 +121,9 @@ export default class CaddyManager {
             request: {
               set: {
                 "X-Forwarded-Proto": ["{http.request.scheme}"],
-                "X-Forwarded-Host":  [domain],
-                "X-Forwarded-Port":  ["{http.request.port}"],
-                "X-Real-IP":         ["{http.request.remote.host}"]
+                "X-Forwarded-Host": [domain],
+                "X-Forwarded-Port": ["{http.request.port}"],
+                "X-Real-IP": ["{http.request.remote.host}"]
               }
             }
           }
@@ -260,11 +260,15 @@ export default class CaddyManager {
     //   1. caddy stop — our own admin-API-driven instance
     //   2. systemctl stop — apt-installed systemd service (Linux)
     //   3. brew services stop — Homebrew-managed (macOS)
-    // All three may legitimately be no-ops; swallow errors.
+    //   4. pkill — last-resort hard kill for orphan processes the soft
+    //      signals couldn't reach (e.g. a previous run whose admin API
+    //      isn't on the default port). Without this fallback, orphan
+    //      caddy processes accumulate one per ensureReady() call.
     try { await execAsync('caddy stop'); } catch (_) {}
     try { await execAsync('sudo systemctl stop caddy'); } catch (_) {}
     try { await execAsync('brew services stop caddy'); } catch (_) {}
-    await new Promise(r => setTimeout(r, 1000));
+    try { await execAsync('sudo pkill -9 -f "caddy run"'); } catch (_) {}
+    await new Promise(r => setTimeout(r, 1500));
   }
 
   async _startCaddy(port, initialRoutes = []) {
@@ -302,16 +306,34 @@ export default class CaddyManager {
   }
 
   async _writeFullConfig(routes) {
+    const config = this._buildConfig(this.httpPort, routes);
+
     const res = await fetch(`${this.adminUrl}/config/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(this._buildConfig(this.httpPort, routes))
+      body: JSON.stringify(config),
     });
 
     if (!res.ok) {
       console.error(`❌ Caddy config write failed [${res.status}]:`, await res.text());
       return false;
     }
+
+    // Persist the live config to disk so a Caddy restart (system reboot,
+    // SIGTERM, OOM) reloads with the up-to-date routes. Without this the
+    // disk file only reflects the last `_startCaddy()` snapshot — any
+    // registerTenant/removeTenant after that was admin-API only and would
+    // be lost. Best-effort: a write failure is logged but doesn't fail the
+    // operation (the API write already succeeded).
+    try {
+      const configPath = this._getConfigPath();
+      const dir = path.dirname(configPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    } catch (e) {
+      console.warn(`⚠️  Caddy config persisted in memory but not to disk: ${e.message}`);
+    }
+
     return true;
   }
 

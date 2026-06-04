@@ -63,6 +63,22 @@ export default class SystemController extends BaseController {
 
   async publicActionInstall(reinstall = false) {
     if (this.hasData()) {
+      // When INSTALL_TOKEN is set in the tenant env (cloud-provisioned
+      // tenants), the install endpoint demands a matching `X-Install-Token`
+      // header before the first install. Tenants created by hand on a
+      // private network don't set the token and keep the legacy public
+      // behaviour — backward compatible.
+      //
+      // Once the system is installed (`loopar.__installed__`), the legacy
+      // "already installed / role check" guard inside unInstallApp takes
+      // over, so the token becomes inert and we don't gate again here.
+      const expectedToken = process.env.INSTALL_TOKEN || '';
+      if (expectedToken && !loopar.__installed__) {
+        const provided = this.req?.headers?.['x-install-token'] || '';
+        if (provided !== expectedToken) {
+          return { status: 401, success: false, message: 'Install token required' };
+        }
+      }
       await this.unInstallApp(this.getAppName(), this.data, reinstall);
       return this.redirect("view");
     } else {

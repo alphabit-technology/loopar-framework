@@ -328,8 +328,60 @@ export class Builder {
       await writeModules(data);
 
       await PermissionManager.boot();
+
+      await this.resumeProvisioningRetry();
     } else {
       await writeFile(data);
+    }
+  }
+
+  /**
+   * Truthy only inside the control-plane process. `CONTROL_PLANE=1` is
+   * written into the control tenant's `.env` (and NOT into customer
+   * tenant .envs) — same gate used by tenant-manager-controller.js. Boot
+   * hooks that mutate shared state (sweeping the cloud Subscription
+   * table, etc.) MUST guard on this so a customer tenant's PM2 process
+   * doesn't run them N times in parallel.
+   */
+  _isControlPlane() {
+    return ["1", "true"].includes(String(process.env.CONTROL_PLANE || ""));
+  }
+
+  /**
+   * Control-plane boot hook: re-run any provisioning that was mid-flight
+   * when the previous process died (or that's overdue per its persisted
+   * `retry_after`). Best-effort: errors are logged and swallowed because
+   * we never want a retry-sweep glitch to block the boot.
+   */
+  async resumeProvisioningRetry() {
+    if (this._provisioningRetryBooted) return;
+    if (!this._isControlPlane()) return;
+    // Belt-and-braces: even on the control plane, only proceed if the
+    // Subscription entity is actually installed (i.e. apps/control is in).
+    if (!this.getRef("Subscription")) return;
+
+    let runProvisioningRetrySweep;
+    try {
+      const modPath = path.join(
+        this.pathRoot,
+        'apps/control/modules/subscriptions/provisioning.js'
+      );
+      ({ runProvisioningRetrySweep } = await import(`file://${modPath}`));
+    } catch (e) {
+      console.warn(`[resumeProvisioningRetry] module not available: ${e.message}`);
+      return;
+    }
+
+    try {
+      const out = await runProvisioningRetrySweep();
+      if (out.attempted > 0) {
+        console.log(
+          `✅ Provisioning resumed (${out.succeeded}/${out.attempted} ok, ${out.failed} fail)`
+        );
+      }
+      this._provisioningRetryBooted = true;
+    } catch (e) {
+      console.warn(`[resumeProvisioningRetry] sweep failed: ${e.message}`);
     }
   }
 

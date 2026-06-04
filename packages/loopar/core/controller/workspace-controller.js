@@ -88,6 +88,15 @@ export default class WorkspaceController extends AuthController {
     HTML = await render(url, __META__, this.req, this.res, permissions);
     
     __META__.site = loopar.tenantId;
+    __META__.user = userData ? {
+      userId: userData.name,
+      name: userData.name,
+      email: userData.email,
+      name: userData.name,
+      profilePicture: userData.profile_picture,
+      user_type: userData.user_type
+    } : null;
+
     __META__.userId = userData?.name;
     __META__.csrfToken = userData?.csrfToken ?? null;
     __META__.permissions = permissions

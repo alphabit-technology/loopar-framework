@@ -1,0 +1,21 @@
+{
+  "id": "315",
+  "name": "Oauth Settings",
+  "module": "auth",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "include_in_installer": 0,
+  "is_child": 0,
+  "is_builder": 0,
+  "__document_status__": "Active",
+  "doc_structure": "[{\"element\":\"input\",\"data\":{\"label\":\"Config Name\",\"name\":\"name\",\"type\":\"text\",\"required\":1,\"unique\":1,\"set_only_time\":1,\"in_list_view\":1,\"searchable\":1,\"key\":\"oa_name\",\"id\":\"oa_name\"}},{\"element\":\"select\",\"data\":{\"label\":\"Provider\",\"name\":\"provider\",\"options\":\"google\\ngithub\",\"required\":1,\"unique\":1,\"in_list_view\":1,\"key\":\"oa_provider\",\"id\":\"oa_provider\"}},{\"element\":\"row\",\"data\":{\"name\":\"oa_row_creds\",\"id\":\"oa_row_creds\",\"label\":\"Credentials\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"oa_col_cid\",\"id\":\"oa_col_cid\",\"label\":\"Col1\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Client ID\",\"name\":\"client_id\",\"type\":\"text\",\"key\":\"oa_cid\",\"id\":\"oa_cid\"}}]},{\"element\":\"col\",\"data\":{\"name\":\"oa_col_csec\",\"id\":\"oa_col_csec\",\"label\":\"Col2\"},\"elements\":[{\"element\":\"input\",\"data\":{\"label\":\"Client Secret\",\"name\":\"client_secret\",\"type\":\"text\",\"key\":\"oa_csec\",\"id\":\"oa_csec\"}}]}]},{\"element\":\"input\",\"data\":{\"label\":\"Scopes (optional, space or comma separated)\",\"name\":\"scopes\",\"type\":\"text\",\"key\":\"oa_scopes\",\"id\":\"oa_scopes\"}},{\"element\":\"row\",\"data\":{\"name\":\"oa_row_flags\",\"id\":\"oa_row_flags\",\"label\":\"Flags\",\"layout\":\"[50,50]\"},\"elements\":[{\"element\":\"col\",\"data\":{\"name\":\"oa_col_en\",\"id\":\"oa_col_en\",\"label\":\"Col1\"},\"elements\":[{\"element\":\"switch\",\"data\":{\"label\":\"Enabled\",\"name\":\"enabled\",\"in_list_view\":1,\"key\":\"oa_enabled\",\"id\":\"oa_enabled\"}}]},{\"element\":\"col\",\"data\":{\"name\":\"oa_col_su\",\"id\":\"oa_col_su\",\"label\":\"Col2\"},\"elements\":[{\"element\":\"switch\",\"data\":{\"label\":\"Allow signup (create user on first verified login)\",\"name\":\"allow_signup\",\"key\":\"oa_signup\",\"id\":\"oa_signup\"}}]}]}]",
+  "search_fields": "name,provider",
+  "title_fields": "name",
+  "resources": [],
+  "deleted_at": null,
+  "__created_at__": null,
+  "__updated_at__": null,
+  "__deleted_at__": null,
+  "__ENTITY__": "Entity"
+}

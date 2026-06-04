@@ -346,7 +346,15 @@ export default class Connector extends Core {
 
     for (const entity of entities) {
       const ref = loopar.getRef(entity.name);
-      if (ref.is_single || ref.is_builder) continue;
+
+      // Skip is_single only — those use the EAV table (Document Single
+      // Values) and have no per-field columns to probe. Builders (Entity,
+      // Builder) DO have physical tables with their declared columns;
+      // skipping them was the bug that let drift in Entity's own schema
+      // (e.g. a new `is_virtual` field) slip past testFramework, so
+      // __installed__ stayed true and the eventual SELECT crashed
+      // instead of routing the tenant through /system/update.
+      if (ref.is_single) continue;
 
       const exists   = await this.hasTable(entity.name);
       // FORM_TABLE fields live in __FIELDS__ for the save chain but have

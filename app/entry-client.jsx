@@ -9,7 +9,8 @@ import { ErrorBoundary } from "@error-boundary";
   const __META__ = JSON.parse(__META_SCRIPT__?.textContent || "{}");
   globalThis.__INSTALLED_APPS__ = __META__.__INSTALLED_APPS__;
   globalThis.__csrfToken__ = __META__.csrfToken ?? undefined;
-  globalThis.__user__ = __META__.userId;
+  globalThis.__user__ = __META__.user?.name;
+
   const { Workspace, View } = await Loader(__META__, "client");
 
   window.lastY = 0;

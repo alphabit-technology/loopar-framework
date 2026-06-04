@@ -40,7 +40,7 @@ function escapeId(identifier, dialect) {
   return `\`${clean}\``;
 }
 
-function buildColumn(table, field, { alter = false } = {}) {
+function buildColumn(table, field, { alter = false, adding = false } = {}) {
   const data = field.data || {};
   const name = data.name;
   if (!name) return;
@@ -54,16 +54,25 @@ function buildColumn(table, field, { alter = false } = {}) {
   const builder = resolveColumnSqlBuilder(field);
   const col = builder(table, name, data);
 
-  if (data.required) col.notNullable();
-  if (data.unique && !alter) col.unique();
-
-  if (
+  const hasConstantDefault = (
     data.default_value !== undefined &&
     data.default_value !== null &&
     data.default_value !== ""
-  ) {
-    col.defaultTo(data.default_value);
-  }
+  );
+
+  // NOT NULL on ALTER ADD COLUMN requires a constant default (SQLite —
+  // and some MySQL/MariaDB versions — reject otherwise, because the
+  // pre-existing rows have no value to satisfy the constraint). When
+  // adding to an existing table without a default we drop notNullable
+  // at the DB level; the `required: 1` intent is still enforced at the
+  // save layer via validateFields(), so app-driven inserts/updates
+  // remain protected. CREATE TABLE and .alter() (table-rebuild) handle
+  // notNullable fine, so they keep the constraint.
+  if (data.required && (!adding || hasConstantDefault)) col.notNullable();
+
+  if (data.unique && !alter) col.unique();
+
+  if (hasConstantDefault) col.defaultTo(data.default_value);
 
   if (data.index && !alter) table.index(name);
 
@@ -303,27 +312,37 @@ export default class Core {
   }
 
   async hasTable(tableName) {
+    // Case-insensitive lookup. SQLite treats identifiers as
+    // case-insensitive in DDL (CREATE TABLE "Oauth Settings" collides
+    // with an existing "OAuth Settings"), but `WHERE name = ?` against
+    // sqlite_master is case-sensitive on the literal string. The
+    // mismatch caused makeTable() to route to createTable on tables
+    // that already existed under a different casing, and SQLite then
+    // raised "table already exists". MySQL is case-insensitive on most
+    // platforms but the collation can vary; Postgres stores quoted
+    // identifiers verbatim. LOWER() on both sides gives consistent
+    // behaviour across dialects.
     try {
       let rows;
       if (this.isMySQLLike) {
         rows = await this.qx().raw(
-          "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? LIMIT 1",
+          "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND LOWER(TABLE_NAME) = LOWER(?) LIMIT 1",
           [this.database, tableName]
         );
       } else if (this.isSQLiteLike) {
         rows = await this.qx().raw(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name = ? LIMIT 1",
+          "SELECT name FROM sqlite_master WHERE type='table' AND LOWER(name) = LOWER(?) LIMIT 1",
           [tableName]
         );
       } else if (this.isPostgresLike) {
         rows = await this.qx().raw(
-          "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ? LIMIT 1",
+          "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER(?) LIMIT 1",
           [tableName]
         );
       } else {
         // MSSQL / Oracle / others — generic information_schema fallback.
         rows = await this.qx().raw(
-          "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?",
+          "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE LOWER(TABLE_NAME) = LOWER(?)",
           [tableName]
         );
       }
@@ -434,7 +453,7 @@ export default class Core {
     }
 
     await this.qx().schema.alterTable(literalName, (table) => {
-      for (const field of newFields) buildColumn(table, field);
+      for (const field of newFields) buildColumn(table, field, { adding: true });
       for (const { field } of changedFields) buildColumn(table, field, { alter: true });
 
       if (addAudit) {
@@ -626,10 +645,10 @@ export default class Core {
 
     if (!orphans.length) return;
 
-    console.log([
+    /* console.log([
       `[reconcileOrphanColumns] ${orphans.length} orphan(s) in ${tableName}:`,
       orphans.map(o => o.name),
-    ]);
+    ]); */
 
     await orphanManager.reconcile(this, tableName, orphans);
   }

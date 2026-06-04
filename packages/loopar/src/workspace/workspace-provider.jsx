@@ -318,7 +318,8 @@ export function WorkspaceProvider({
     isPending,
     workspace: __WORKSPACE_NAME__,
     pathname,
-    award
+    award,
+    user: __META__.user
   }), [
     getTheme,
     __META__,

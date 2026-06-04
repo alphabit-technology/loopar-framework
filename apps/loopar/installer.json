@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.43"
+    "version": "5.0.57"
   },
   "documents": {
     "Entity:Module": {
@@ -14,7 +14,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.43",
+      "version": "5.0.57",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,
@@ -32,6 +32,7 @@
       "has_copyright": 0,
       "copyright": "\"\"",
       "fixed": 0,
+      "show_user_section": 0,
       "solid": 0,
       "opacity": "",
       "menu_items": [],
@@ -70,19 +71,19 @@
       "icon": "LucideCode",
       "in_sidebar": 1
     },
-    "Builder:Form Builder": {
-      "__root__": "/apps/loopar/modules/developer/builders/form-builder"
+    "Builder:Page Builder": {
+      "__root__": "/apps/loopar/modules/developer/builders/page-builder"
     },
-    "Module:auth": {
-      "name": "auth",
-      "description": "Auth",
+    "Module:analytics": {
+      "name": "analytics",
+      "description": "Analytics",
       "app_name": "loopar",
       "module_group": "administration",
-      "icon": "LucideCode",
+      "icon": "ChartNetwork",
       "in_sidebar": 1
     },
-    "Form Builder:Profile": {
-      "__root__": "/apps/loopar/modules/auth/forms/profile"
+    "Page Builder:Analytics Dashboard": {
+      "__root__": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
     },
     "Entity:Resources": {
       "__root__": "/apps/loopar/modules/core/entities/resources"
@@ -95,11 +96,25 @@
       "description": "Modules",
       "in_sidebar": 1
     },
+    "Builder:Form Builder": {
+      "__root__": "/apps/loopar/modules/developer/builders/form-builder"
+    },
     "Entity:Menu Item": {
       "__root__": "/apps/loopar/modules/developer/entities/menu-item"
     },
     "Entity:Menu Action": {
       "__root__": "/apps/loopar/modules/developer/entities/menu-action"
+    },
+    "Module:auth": {
+      "name": "auth",
+      "description": "Auth",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "LucideCode",
+      "in_sidebar": 1
+    },
+    "Form Builder:Profile": {
+      "__root__": "/apps/loopar/modules/auth/forms/profile"
     },
     "Form Builder:Login": {
       "__root__": "/apps/loopar/modules/auth/forms/login"
@@ -135,20 +150,6 @@
     },
     "Controller Builder:Contact": {
       "__root__": "/apps/loopar/modules/mail/controllers/contact"
-    },
-    "Builder:Page Builder": {
-      "__root__": "/apps/loopar/modules/developer/builders/page-builder"
-    },
-    "Module:analytics": {
-      "name": "analytics",
-      "description": "Analytics",
-      "app_name": "loopar",
-      "module_group": "administration",
-      "icon": "ChartNetwork",
-      "in_sidebar": 1
-    },
-    "Page Builder:Analytics Dashboard": {
-      "__root__": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
     },
     "Page Builder:Desk": {
       "__root__": "/apps/loopar/modules/core/pages/desk"
@@ -280,6 +281,15 @@
     "Entity:Cloudinary": {
       "__root__": "/apps/loopar/modules/integrations/entities/cloudinary"
     },
+    "Entity:Project Category": {
+      "__root__": "/apps/loopar/modules/web/entities/project-category"
+    },
+    "Entity:Service Category": {
+      "__root__": "/apps/loopar/modules/web/entities/service-category"
+    },
+    "Entity:Oauth Settings": {
+      "__root__": "/apps/loopar/modules/auth/entities/oauth-settings"
+    },
     "Module:loopar": {
       "name": "loopar",
       "description": "loopar",
@@ -288,11 +298,19 @@
       "icon": "Infinity",
       "in_sidebar": 0
     },
-    "Entity:Project Category": {
-      "__root__": "/apps/loopar/modules/web/entities/project-category"
+    "Module:integrations": {
+      "name": "integrations",
+      "description": "integrations",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "in_sidebar": 1
     },
-    "Entity:Service Category": {
-      "__root__": "/apps/loopar/modules/web/entities/service-category"
+    "Module:web": {
+      "name": "web",
+      "description": "web",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "in_sidebar": 1
     }
   },
   "postInstaller": {
@@ -334,9 +352,10 @@
     "Entity:Project": "link",
     "Entity:Service": "link",
     "Entity:Cloudinary": "link",
-    "Entity:Resources": "link",
-    "Entity:Module": "link",
     "Entity:Project Category": "link",
-    "Entity:Service Category": "link"
+    "Entity:Service Category": "link",
+    "Entity:Oauth Settings": "link",
+    "Entity:Resources": "link",
+    "Entity:Module": "link"
   }
 }

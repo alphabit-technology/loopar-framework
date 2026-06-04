@@ -134,9 +134,9 @@ export class OrphanManager {
       await orm.qx().raw(`ALTER TABLE ${tmpName} RENAME TO \`${literalName}\``);
       await orm.qx().raw(`RELEASE SAVEPOINT drop_col`);
 
-      console.log(`[OrphanManager] SQLite: recreated "${literalName}" without column "${columnName}"`);
+      //console.log(`[OrphanManager] SQLite: recreated "${literalName}" without column "${columnName}"`);
     } catch (e) {
-      console.error(`[OrphanManager] SQLite recreation failed:`, e.message);
+      //console.error(`[OrphanManager] SQLite recreation failed:`, e.message);
       try {
         await orm.qx().raw(`ROLLBACK TO SAVEPOINT drop_col`);
         await orm.qx().raw(`DROP TABLE IF EXISTS ${tmpName}`);
@@ -172,7 +172,7 @@ export class OrphanManager {
     await loopar.db.restoreOrphanField(document, restoredField);
     orm.invalidateColumnsCache(document);
 
-    console.log(`[OrphanManager] Queued restore of "${columnName}" into "${document}"`);
+    //console.log(`[OrphanManager] Queued restore of "${columnName}" into "${document}"`);
 
     return restoredField;
   }
@@ -193,7 +193,7 @@ export class OrphanManager {
         // refusing inserts on uniqueness; NOT NULL gets handled at insert
         // time via padOrphanColumns.
         await this.dropColumnIndexes(orm, tableName, orphan.name);
-        console.log(`[OrphanManager] "${orphan.name}": indexes dropped (NOT NULL handled via insert padding)`);
+        //console.log(`[OrphanManager] "${orphan.name}": indexes dropped (NOT NULL handled via insert padding)`);
       }
     }
   }
@@ -228,9 +228,9 @@ export class OrphanManager {
       if (patterns.some(p => p.test(idx.sql || ""))) {
         try {
           await orm.qx().raw(`DROP INDEX IF EXISTS ${orm.escapeId(idx.name)}`);
-          console.log(`[OrphanManager] SQLite: dropped index "${idx.name}" (column: "${columnName}")`);
+          //console.log(`[OrphanManager] SQLite: dropped index "${idx.name}" (column: "${columnName}")`);
         } catch (e) {
-          console.error(`[OrphanManager] Could not drop index "${idx.name}":`, e.message);
+          //console.error(`[OrphanManager] Could not drop index "${idx.name}":`, e.message);
         }
       }
     }
@@ -270,9 +270,9 @@ export class OrphanManager {
     const rawType = dbField.type || "VARCHAR(255)";
     try {
       await orm.qx().raw(`ALTER TABLE ${tableName} MODIFY COLUMN ${col} ${rawType} NULL`);
-      console.log(`[OrphanManager] MySQL relaxed "${dbField.name}"`);
+      //console.log(`[OrphanManager] MySQL relaxed "${dbField.name}"`);
     } catch (e) {
-      console.error(`[OrphanManager] Could not relax "${dbField.name}":`, e.message);
+      //console.error(`[OrphanManager] Could not relax "${dbField.name}":`, e.message);
     }
     await this.dropColumnIndexes(orm, tableName, dbField.name);
   }
@@ -287,7 +287,7 @@ export class OrphanManager {
       catch (e) { /* already nullable / no default */ }
     }
     await this.dropColumnIndexes(orm, tableName, dbField.name);
-    console.log(`[OrphanManager] Postgres relaxed "${dbField.name}"`);
+    //console.log(`[OrphanManager] Postgres relaxed "${dbField.name}"`);
   }
 
   async relaxColumnMSSQL(orm, tableName, dbField) {
@@ -296,9 +296,9 @@ export class OrphanManager {
     try {
       // MSSQL ALTER COLUMN must include the type even when only changing NULL.
       await orm.qx().raw(`ALTER TABLE ${tableName} ALTER COLUMN ${col} ${rawType} NULL`);
-      console.log(`[OrphanManager] MSSQL relaxed "${dbField.name}"`);
+      //console.log(`[OrphanManager] MSSQL relaxed "${dbField.name}"`);
     } catch (e) {
-      console.error(`[OrphanManager] Could not relax "${dbField.name}":`, e.message);
+      //console.error(`[OrphanManager] Could not relax "${dbField.name}":`, e.message);
     }
     await this.dropColumnIndexes(orm, tableName, dbField.name);
   }
@@ -307,7 +307,7 @@ export class OrphanManager {
     const col = orm.escapeId(dbField.name);
     try {
       await orm.qx().raw(`ALTER TABLE ${tableName} MODIFY (${col} NULL)`);
-      console.log(`[OrphanManager] Oracle relaxed "${dbField.name}"`);
+      //console.log(`[OrphanManager] Oracle relaxed "${dbField.name}"`);
     } catch (e) { /* already nullable */ }
     await this.dropColumnIndexes(orm, tableName, dbField.name);
   }
