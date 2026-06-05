@@ -62,20 +62,22 @@ export default class BaseForm extends BaseDocument {
    * @param {Function} [opts.success]
    * @param {Function} [opts.error]
    */
-  send({ document, action, query={}, ...options } = {}) {
+  send({ document, action, query={}, ...options } = {}, successCallback, errorCallback) {
     this.validate();
 
-    if (!this.checkChanges()) return;
+    if (!options.notRequireChanges && !this.checkChanges()) return;
 
     const handleSuccess = (r) => {
-      if (this.#Form) {
+      if (this.#Form && !options.notRequireChanges) {
         this.#Form.reset(this.#Form.getValues(), { keepValues: true });
       }
       if (options.success) options.success(r);
+      if (successCallback) successCallback(r);
     };
 
     const handleError = (r) => {
       if (options.error) options.error(r);
+      if (errorCallback) errorCallback(r);
       else loopar.throw(r);
     };
 

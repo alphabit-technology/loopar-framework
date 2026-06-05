@@ -24,28 +24,32 @@ export class EmailService {
     return this.settings;
   }
 
-  async getTransporter() {
-    const settings = await this.getSettings();
-    
-    if (!this.transporter) {
-      this.transporter = nodemailer.createTransport({
-        host: settings.host,
-        port: parseInt(settings.port),
-        secure: settings.secure == 1,
-        auth: settings.auth_enabled == 1 ? {
-          user: settings.user,
-          pass: settings.password
-        } : undefined,
-        connectionTimeout: parseInt(settings.timeout) || 5000,
-        pool: true,
-        maxConnections: parseInt(settings.max_connections) || 5,
-        rateDelta: 1000,
-        rateLimit: parseInt(settings.rate_limit) || 10,
-        debug: settings.debug == 1,
-        logger: settings.debug == 1
-      });
+  buildTransportOptions(settings) {
+    return {
+      host: settings.host,
+      port: parseInt(settings.port),
+      secure: settings.secure == 1,
+      auth: settings.auth_enabled == 1 ? {
+        user: settings.user,
+        pass: settings.password
+      } : undefined,
+      connectionTimeout: parseInt(settings.timeout) || 5000,
+      pool: true,
+      maxConnections: parseInt(settings.max_connections) || 5,
+      rateDelta: 1000,
+      rateLimit: parseInt(settings.rate_limit) || 10,
+      debug: settings.debug == 1,
+      logger: settings.debug == 1
+    };
+  }
+
+  async getTransporter(settings, force) {
+    settings ??= await this.getSettings();
+
+    if (!this.transporter || force) {
+      this.transporter = nodemailer.createTransport(this.buildTransportOptions(settings));
     }
-    
+
     return this.transporter;
   }
 
@@ -397,13 +401,18 @@ export class EmailService {
     return { success: true, deleted };
   }
 
-  async testConnection() {
+  async testConnection(data) {
+    // Use a throwaway transporter built from the supplied (possibly unsaved)
+    // settings so we never reuse or clobber the shared production transporter.
+    const settings = data ?? await this.getSettings();
+    const transporter = nodemailer.createTransport(this.buildTransportOptions(settings));
     try {
-      const transporter = await this.getTransporter();
       await transporter.verify();
       return { success: true, message: 'Connection successful' };
     } catch (error) {
       return { success: false, error: error.message };
+    } finally {
+      transporter.close();
     }
   }
 

@@ -1,6 +1,6 @@
 import Router from "@@tools/router/router";
-import * as Helpers from "@global/helper";
 import * as dateUtils from "@global/date-utils";
+import * as Helpers from "@global/helper";
 import scriptManager from "@@tools/script-manager";
 import { elementsDict, AIPrompt } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
@@ -178,21 +178,9 @@ class Loopar extends Router {
     }
   }
 
-  notify(message, type = "success") {
-    const data = typeof message === "object" ? message : { message, type };
-    this.emit('notify', data);
-  }
-
-  sidebar() {
-    return true;
-  }
-
-  initialize() {
-    return new Promise((resolve) => {
-      document.ready(() => {
-        resolve();
-      });
-    });
+  notify() {
+    const { message, type = "success", title="success" } = loopar.utils.args(["message", "type", "title"], arguments);
+    this.emit('notify', { message, type, title });
   }
 
   emit(event, data) {

@@ -307,6 +307,8 @@ export default class Installer extends BaseDocument {
         const ref = loopar.getRef(e.name);
         if (!ref) return false;
         if (ref.is_static) return false;
+        
+        if (ref.is_single) return false;
         return true;
       });
 

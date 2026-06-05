@@ -363,6 +363,38 @@ const urlInstance = (route) => {
   return hash(`${route.pathname}`.toLowerCase());
 }
 
+const args = (schema, args) => {
+  const isPlainObject = (v) =>
+    v != null && typeof v === "object" && !Array.isArray(v);
+
+  if (
+    args.length === 1 &&
+    isPlainObject(args[0]) &&
+    Object.keys(args[0]).some((k) => schema.includes(k))
+  ) {
+    return { ...args[0] };
+  }
+  
+  if (args.length === 2 && isPlainObject(args[1])) {
+    return { [schema[0]]: args[0], ...args[1] };
+  }
+
+  if (
+    args.length === schema.length + 1 &&
+    isPlainObject(args[schema.length])
+  ) {
+    const out = { ...args[schema.length] };
+    for (let i = 0; i < schema.length; i++) out[schema[i]] = args[i];
+    return out;
+  }
+
+  const out = {};
+  for (let i = 0; i < args.length && i < schema.length; i++) {
+    out[schema[i]] = args[i];
+  }
+  return out;
+};
+
 export {
   Capitalize,
   UPPERCASE,
@@ -399,5 +431,6 @@ export {
   toEntityKey,
   fixJSON,
   urlHash,
-  urlInstance
+  urlInstance,
+  args
 }

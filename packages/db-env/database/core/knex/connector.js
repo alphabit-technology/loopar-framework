@@ -86,7 +86,7 @@ export default class Connector extends Core {
    * (the maintenance DB created by initdb) instead.
    */
   async connectPostgres(database = null) {
-    const dbConfig   = this.dbConfig;
+    const dbConfig = this.dbConfig;
     const connection = dbConfig.connection || {};
 
     try {

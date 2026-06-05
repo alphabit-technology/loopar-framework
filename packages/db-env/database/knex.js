@@ -271,7 +271,7 @@ export class KnexORM extends Connector {
   }
 
   async setValue(...args) {
-    const a = this.#normArgs(["document", "field", "value", "name"], args);
+    const a = loopar.utils.args(["document", "field", "value", "name"], args);
     const { document, field, value, name } = a;
 
     const condition = typeof name === "object" && name !== null
@@ -356,7 +356,7 @@ export class KnexORM extends Connector {
   }
 
   async getValue(...args) {
-    const a = this.#normArgs(["document", "field", "name"], args);
+    const a = loopar.utils.args(["document", "field", "name"], args);
     const { document, field, name } = a;
     const ifNotFound = a.ifNotFound ?? "throw";
     const includeDeleted  = a.includeDeleted  ?? false;
@@ -380,7 +380,7 @@ export class KnexORM extends Connector {
   }
 
   async getDoc(...args) {
-    const a = this.#normArgs(["document", "name", "fields"], args);
+    const a = loopar.utils.args(["document", "name", "fields"], args);
     let document = a.document;
     const name = a.name;
     let fields = Array.isArray(a.fields) ? a.fields : ["*"];
@@ -399,7 +399,7 @@ export class KnexORM extends Connector {
         f !== "__deleted_at__" && f !== "__document_status__"
       );
     }
-    
+
     if (!ref.is_single) {
       try {
         const colMap = await this.getTableColumns(document);
@@ -421,7 +421,7 @@ export class KnexORM extends Connector {
   }
 
   async getRow(...args) {
-    const a = this.#normArgs(["table", "id", "fields"], args);
+    const a = loopar.utils.args(["table", "id", "fields"], args);
     const table  = a.table;
     const id = a.id;
     const fields = Array.isArray(a.fields) ? a.fields : ["*"];
@@ -498,40 +498,8 @@ export class KnexORM extends Connector {
     return [reconstructed];
   }
 
-  #normArgs(schema, args) {
-    const isPlainObject = (v) =>
-      v != null && typeof v === "object" && !Array.isArray(v);
-
-    if (
-      args.length === 1 &&
-      isPlainObject(args[0]) &&
-      schema[0] in args[0]
-    ) {
-      return { ...args[0] };
-    }
-    
-    if (args.length === 2 && isPlainObject(args[1])) {
-      return { [schema[0]]: args[0], ...args[1] };
-    }
-
-    if (
-      args.length === schema.length + 1 &&
-      isPlainObject(args[schema.length])
-    ) {
-      const out = { ...args[schema.length] };
-      for (let i = 0; i < schema.length; i++) out[schema[i]] = args[i];
-      return out;
-    }
-
-    const out = {};
-    for (let i = 0; i < args.length && i < schema.length; i++) {
-      out[schema[i]] = args[i];
-    }
-    return out;
-  }
-
   async getList(...args) {
-    const a = this.#normArgs(["document", "fields", "filter", "options"], args);
+    const a = loopar.utils.args(["document", "fields", "filter", "options"], args);
     const document = a.document;
     const fields = Array.isArray(a.fields) ? a.fields : ["*"];
     const filter = a.filter ?? {};
@@ -562,7 +530,7 @@ export class KnexORM extends Connector {
   }
 
   async getAll(...args) {
-    const a = this.#normArgs(["document", "fields", "filter", "options"], args);
+    const a = loopar.utils.args(["document", "fields", "filter", "options"], args);
     return await this.getList({
       ...a,
       options: { ...(a.options ?? {}), all: true },
