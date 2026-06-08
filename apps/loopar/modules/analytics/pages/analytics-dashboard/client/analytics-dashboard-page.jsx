@@ -13,17 +13,19 @@ import { useState, useEffect, useCallback } from "react";
 
 const C = {
   primary: "var(--color-primary)",
-  ring:    "var(--color-ring)",
-  muted:   "var(--color-muted-foreground)",
+  ring: "var(--color-ring)",
+  muted: "var(--color-muted-foreground)",
 };
 
 const PALETTE = [
-  "var(--color-primary)",
+  "var(--color-primary)", 
+  "var(--color-success, #1D9E75)", 
+  "var(--color-warning, #BA7517)", 
+  "var(--color-destructive)", 
+  "#3B82F6",
+  "#EC4899",
+  "#14B8A6",
   "var(--color-ring)",
-  "var(--color-success, #1D9E75)",
-  "var(--color-warning, #BA7517)",
-  "var(--color-destructive)",
-  "var(--color-secondary-foreground)",
 ];
 
 const DAYS_OPTIONS = [
@@ -35,6 +37,14 @@ const DAYS_OPTIONS = [
 function diffLabel(diff) {
   if (!diff || diff === 0) return null;
   return { text: `${diff > 0 ? "+" : ""}${diff}% vs previous period`, positive: diff > 0 };
+}
+
+function fmtDuration(seconds) {
+  const s = Math.max(0, Math.round(seconds || 0));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return rem ? `${m}m ${rem}s` : `${m}m`;
 }
 
 function ChartTooltip({ active, payload, label }) {
@@ -51,13 +61,13 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-function KpiCard({ label, value, diff }) {
+function KpiCard({ label, value, diff, display }) {
   const d = diffLabel(diff);
   return (
     <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground uppercase tracking-widest">{label}</span>
       <span className="text-3xl font-bold text-card-foreground">
-        {Number(value || 0).toLocaleString()}
+        {display != null ? display : Number(value || 0).toLocaleString()}
       </span>
       {d && (
         <span className={`text-xs font-medium ${d.positive ? "text-success" : "text-destructive"}`}>
@@ -84,7 +94,7 @@ function Panel({ children, className = "" }) {
   );
 }
 
-function HBar({ label, value, max }) {
+function HBar({ label, value, max, color }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
     <div className="mb-2.5">
@@ -94,8 +104,8 @@ function HBar({ label, value, max }) {
       </div>
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, backgroundColor: color || "var(--color-primary)" }}
         />
       </div>
     </div>
@@ -140,6 +150,13 @@ function AnalyticsDashboard({data}) {
   const maxPages     = Math.max(...pages.map(p => p.views), 1);
   const maxCountries = Math.max(...countries.map(c => c.views), 1);
   const maxReferrers = Math.max(...referrers.map(r => r.views), 1);
+  
+  const hourColor = h => {
+    if (h < 6)  return "#3B82F6";
+    if (h < 12) return "var(--color-success, #1D9E75)";
+    if (h < 18) return "var(--color-primary)";
+    return "#A855F7";
+  };
 
   return (
     <div className="p-6 space-y-4">
@@ -159,9 +176,16 @@ function AnalyticsDashboard({data}) {
 
       <>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <KpiCard label="Page Views"      value={kpis.total_views}     diff={kpis.views_diff}    />
+          <KpiCard label="Page Views" value={kpis.total_views} diff={kpis.views_diff} />
           <KpiCard label="Unique Visitors" value={kpis.unique_visitors} diff={kpis.visitors_diff} />
-          <KpiCard label="Unique Pages"    value={kpis.unique_pages}    diff={null}               />
+          <KpiCard label="Unique Pages" value={kpis.unique_pages} diff={null} />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard label="Engaged Visits" value={kpis.engaged_views} diff={kpis.engaged_diff} />
+          <KpiCard label="Engaged Rate" display={`${kpis.engaged_rate || 0}%`} />
+          <KpiCard label="Avg Active Time" display={fmtDuration(kpis.avg_active_seconds)} />
+          <KpiCard label="Bounce Rate" display={`${kpis.bounce_rate || 0}%`} />
         </div>
 
         <Panel>
@@ -179,8 +203,8 @@ function AnalyticsDashboard({data}) {
               />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line dataKey="total_views"     name="Views"    stroke={C.primary} dot={false} strokeWidth={2} />
-              <Line dataKey="unique_visitors" name="Uniques"  stroke={C.ring}    dot={false} strokeWidth={2} strokeDasharray="4 2" />
+              <Line dataKey="total_views" name="Views" stroke={C.primary} dot={false} strokeWidth={2} />
+              <Line dataKey="unique_visitors" name="Uniques" stroke={C.ring} dot={false} strokeWidth={2} strokeDasharray="4 2" />
             </LineChart>
           </ResponsiveContainer>
         </Panel>
@@ -190,14 +214,14 @@ function AnalyticsDashboard({data}) {
             <SectionTitle>Top pages</SectionTitle>
             {pages.length === 0
               ? <Empty />
-              : pages.map(p => <HBar key={p.page} label={p.page} value={p.views} max={maxPages} />)
+              : pages.map((p, i) => <HBar key={p.page} label={p.page} value={p.views} max={maxPages} color={PALETTE[i % PALETTE.length]} />)
             }
           </Panel>
           <Panel>
             <SectionTitle>Top countries</SectionTitle>
             {countries.length === 0
               ? <Empty />
-              : countries.map(c => <HBar key={c.country} label={c.country} value={c.views} max={maxCountries} />)
+              : countries.map((c, i) => <HBar key={c.country} label={c.country} value={c.views} max={maxCountries} color={PALETTE[i % PALETTE.length]} />)
             }
           </Panel>
         </div>
@@ -255,13 +279,28 @@ function AnalyticsDashboard({data}) {
             <SectionTitle>Traffic sources</SectionTitle>
             {referrers.length === 0
               ? <Empty />
-              : referrers.map(r => <HBar key={r.source} label={r.source} value={r.views} max={maxReferrers} />)
+              : referrers.map((r, i) => <HBar key={r.source} label={r.source} value={r.views} max={maxReferrers} color={PALETTE[i % PALETTE.length]} />)
             }
           </Panel>
         </div>
 
         <Panel>
-          <SectionTitle>Traffic by hour of day</SectionTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <SectionTitle>Traffic by hour of day</SectionTitle>
+            <div className="flex gap-3 text-[10px] text-muted-foreground">
+              {[
+                { c: "#3B82F6", l: "0-5h" },
+                { c: "var(--color-success, #1D9E75)", l: "6-11h" },
+                { c: "var(--color-primary)", l: "12-17h" },
+                { c: "#A855F7", l: "18-23h" },
+              ].map(b => (
+                <span key={b.l} className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-sm" style={{ backgroundColor: b.c }} />
+                  {b.l}
+                </span>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={hourly}>
               <XAxis
@@ -275,7 +314,11 @@ function AnalyticsDashboard({data}) {
                 axisLine={false} tickLine={false}
               />
               <Tooltip content={<ChartTooltip />} labelFormatter={h => `${h}:00`} />
-              <Bar dataKey="views" name="Views" fill={C.primary} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="views" name="Views" fill={C.primary} radius={[3, 3, 0, 0]}>
+                {hourly.map((h, i) => (
+                  <Cell key={i} fill={hourColor(h.hour)} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </Panel>

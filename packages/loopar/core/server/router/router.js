@@ -7,7 +7,6 @@ import { RouterUtils } from './router-utils.js';
 import { merge } from 'es-toolkit/object';
 import { Middleware } from "./middleware.js";
 import { requestContext } from './request-context.js';
-import {trackVisit} from "./track/track-visit.js"
 
 export default class Router extends Middleware {
   constructor(options) {
@@ -25,23 +24,16 @@ export default class Router extends Middleware {
     if (res.headersSent) return;
 
     if (response instanceof Error) {
-      res
-        .status(500)
-        .set('Content-Type', 'text/html')
-        .send(response.message);
+      res.status(500).set('Content-Type', 'text/html').send(response.message);
       return;
     }
 
     if (!response || typeof response !== 'object') {
-      res
-        .status(500)
-        .set('Content-Type', 'text/html')
-        .send('Invalid response');
+      res.status(500).set('Content-Type', 'text/html').send('Invalid response');
       return;
     }
 
-    res
-      .status(response.status || 200)
+    res.status(response.status || 200)
       .set('Content-Type', response.contentType || 'text/html')
       .send(response.body ?? '');
   }
@@ -144,10 +136,6 @@ export default class Router extends Middleware {
 
     params.document = ref.__NAME__;
 
-    void trackVisit(req, params).catch((error) => {
-      console.warn(["Can not updated Analytics", error]);
-    });
-    
     return await this.executeController(req, res, next, params, ref);
   }
 

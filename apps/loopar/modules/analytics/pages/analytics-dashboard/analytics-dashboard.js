@@ -5,6 +5,8 @@ import { BaseDocument, loopar } from 'loopar';
 const ENTITY = 'Page View';
 const WORKSPACE = 'web';
 
+const ENGAGED_MS = 10000;
+
 function getFromDate(days = 30) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -73,20 +75,25 @@ export default class AnalyticsDashboard extends BaseDocument {
   }
 
   async getKpis() {
+    const knex = loopar.db.knex;
     const days = this.days;
     const from = this.from;
     const prevFrom = getFromDate(days * 2);
+    const engagedExpr = knex.raw('SUM(CASE WHEN active_ms >= ? THEN 1 ELSE 0 END) AS engaged_views', [ENGAGED_MS]);
 
     const [current, previous] = await Promise.all([
       this.#baseQuery(from)
         .count('* as total_views')
         .countDistinct('ip_hash as unique_visitors')
         .countDistinct('document as unique_pages')
+        .avg('active_ms as avg_active_ms')
+        .select(engagedExpr)
         .first(),
       this.#baseQuery(prevFrom)
         .andWhere('visit_date', '<', from)
         .count('* as total_views')
         .countDistinct('ip_hash as unique_visitors')
+        .select(knex.raw('SUM(CASE WHEN active_ms >= ? THEN 1 ELSE 0 END) AS engaged_views', [ENGAGED_MS]))
         .first(),
     ]);
 
@@ -95,19 +102,31 @@ export default class AnalyticsDashboard extends BaseDocument {
       total_views: num(current?.total_views),
       unique_visitors: num(current?.unique_visitors),
       unique_pages: num(current?.unique_pages),
+      avg_active_ms: num(current?.avg_active_ms),
+      engaged_views: num(current?.engaged_views),
     };
     const prev = {
       total_views: num(previous?.total_views),
       unique_visitors: num(previous?.unique_visitors),
+      engaged_views: num(previous?.engaged_views),
     };
     const pct = (now, was) => was > 0 ? Math.round(((now - was) / was) * 100) : 0;
+    const rate = (part, whole) => whole > 0 ? Math.round((part / whole) * 100) : 0;
+
+    const engaged_rate = rate(cur.engaged_views, cur.total_views);
 
     return {
       total_views: cur.total_views,
       unique_visitors: cur.unique_visitors,
       unique_pages: cur.unique_pages,
-      views_diff: pct(cur.total_views,     prev.total_views),
+      views_diff: pct(cur.total_views, prev.total_views),
       visitors_diff: pct(cur.unique_visitors, prev.unique_visitors),
+      // Engagement
+      engaged_views: cur.engaged_views,
+      engaged_rate,
+      bounce_rate: 100 - engaged_rate,
+      avg_active_seconds: Math.round(cur.avg_active_ms / 1000),
+      engaged_diff: pct(cur.engaged_views, prev.engaged_views),
     };
   }
 

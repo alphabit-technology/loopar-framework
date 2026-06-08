@@ -4,6 +4,7 @@ import { SideNav } from './src/side-nav';
 import { TopNav } from "./src/top-nav";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { Markdown } from "@pure-html-block";
+import TrafficTracker from "./src/traffic-tracker";
 
 const SEO = () => {
   return <>
@@ -99,6 +100,7 @@ export default function WebWorkspace(props) {
 
   return (
     <BaseWorkspace activePage={activePage} webApp={getWebApp()}>
+      <TrafficTracker page={activePage} />
       <Layout {...props}>
         {ActiveView}
       </Layout>

@@ -9,8 +9,8 @@ function isPrivateIp(ip) {
 
   const cleaned = ip.replace(/^::ffff:/, "");
 
-  if (cleaned.startsWith("127."))     return true;
-  if (cleaned.startsWith("10."))      return true;
+  if (cleaned.startsWith("127.")) return true;
+  if (cleaned.startsWith("10.")) return true;
   if (cleaned.startsWith("192.168.")) return true;
   if (cleaned.startsWith("169.254.")) return true;
 
@@ -47,11 +47,11 @@ export async function geoLookup(ip) {
     if (json.status !== "success") return empty;
 
     const data = {
-      country:  json.countryCode  || "",
-      city:     json.city         || "",
-      region:   json.regionName   || "",
-      timezone: json.timezone     || "",
-      isp:      json.isp          || "",
+      country: json.countryCode || "",
+      city: json.city || "",
+      region: json.regionName || "",
+      timezone: json.timezone || "",
+      isp: json.isp || "",
     };
 
     cache.set(ip, { data, ts: Date.now() });

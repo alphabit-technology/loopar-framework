@@ -72,7 +72,7 @@ export default class SingleController extends BaseController {
     this.client = 'page';
     return await this.render({
       Entity: {
-        name: "Collection Viewer",
+        name: "Page Viewer",
         doc_structure: JSON.stringify(doc_structure),
       },
       activeParentMenu: await this.getParent(),
