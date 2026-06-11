@@ -134,7 +134,7 @@ function Empty() {
 function AnalyticsDashboard({data}) {
   const [analytics, setAnalytics] = useState(data)
   const [days, setDays] = useState(30);
-  const {kpis={},visits=[],pages=[],countries=[],devices=[],browsers=[],referrers=[],hourly=[]} = analytics || {}
+  const {kpis={},visits=[],pages=[],countries=[],devices=[],browsers=[],referrers=[],hourly=[],campaigns=[]} = analytics || {}
 
   const loadAll = useCallback((d) => {
     loopar.api.get("Analytics Dashboard", "view", {
@@ -150,6 +150,15 @@ function AnalyticsDashboard({data}) {
   const maxPages     = Math.max(...pages.map(p => p.views), 1);
   const maxCountries = Math.max(...countries.map(c => c.views), 1);
   const maxReferrers = Math.max(...referrers.map(r => r.views), 1);
+
+  // Server buckets hours in UTC; shift to the viewer's timezone (rounded to
+  // the nearest hour) and fill the full 0-23 axis.
+  const tzOffsetH = Math.round(-new Date().getTimezoneOffset() / 60);
+  const localHourly = Array.from({ length: 24 }, (_, h) => ({ hour: h, views: 0 }));
+  hourly.forEach(r => {
+    const h = ((Number(r.hour) + tzOffsetH) % 24 + 24) % 24;
+    localHourly[h].views += +r.views || 0;
+  });
   
   const hourColor = h => {
     if (h < 6)  return "#3B82F6";
@@ -175,16 +184,19 @@ function AnalyticsDashboard({data}) {
       </div>
 
       <>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard label="Page Views" value={kpis.total_views} diff={kpis.views_diff} />
           <KpiCard label="Unique Visitors" value={kpis.unique_visitors} diff={kpis.visitors_diff} />
+          <KpiCard label="Sessions" value={kpis.sessions} diff={kpis.sessions_diff} />
           <KpiCard label="Unique Pages" value={kpis.unique_pages} diff={null} />
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard label="Engaged Visits" value={kpis.engaged_views} diff={kpis.engaged_diff} />
           <KpiCard label="Engaged Rate" display={`${kpis.engaged_rate || 0}%`} />
           <KpiCard label="Avg Active Time" display={fmtDuration(kpis.avg_active_seconds)} />
+          <KpiCard label="Avg Scroll" display={`${kpis.avg_scroll_depth || 0}%`} />
+          <KpiCard label="Pages / Session" display={`${kpis.pages_per_session || 0}`} />
           <KpiCard label="Bounce Rate" display={`${kpis.bounce_rate || 0}%`} />
         </div>
 
@@ -302,7 +314,7 @@ function AnalyticsDashboard({data}) {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={hourly}>
+            <BarChart data={localHourly}>
               <XAxis
                 dataKey="hour"
                 tickFormatter={h => `${h}h`}
@@ -315,12 +327,43 @@ function AnalyticsDashboard({data}) {
               />
               <Tooltip content={<ChartTooltip />} labelFormatter={h => `${h}:00`} />
               <Bar dataKey="views" name="Views" fill={C.primary} radius={[3, 3, 0, 0]}>
-                {hourly.map((h, i) => (
+                {localHourly.map((h, i) => (
                   <Cell key={i} fill={hourColor(h.hour)} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </Panel>
+
+        <Panel>
+          <SectionTitle>Campaigns (UTM)</SectionTitle>
+          {campaigns.length === 0
+            ? <Empty />
+            : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground text-left">
+                    <th className="py-1 font-medium">Source</th>
+                    <th className="py-1 font-medium">Medium</th>
+                    <th className="py-1 font-medium">Campaign</th>
+                    <th className="py-1 font-medium text-right">Views</th>
+                    <th className="py-1 font-medium text-right">Sessions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((c, i) => (
+                    <tr key={i} className="border-t border-border text-card-foreground">
+                      <td className="py-1.5">{c.utm_source}</td>
+                      <td className="py-1.5">{c.utm_medium || "—"}</td>
+                      <td className="py-1.5">{c.utm_campaign || "—"}</td>
+                      <td className="py-1.5 text-right font-semibold">{Number(c.views).toLocaleString()}</td>
+                      <td className="py-1.5 text-right font-semibold">{Number(c.sessions).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          }
         </Panel>
       </>
     </div>

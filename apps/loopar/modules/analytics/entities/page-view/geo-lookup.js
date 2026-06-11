@@ -40,7 +40,9 @@ export async function geoLookup(ip) {
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/${ip}?fields=${FIELDS}`);
+    const res = await fetch(`${BASE_URL}/${ip}?fields=${FIELDS}`, {
+      signal: AbortSignal.timeout(2000),
+    });
     if (!res.ok) return empty;
 
     const json = await res.json();

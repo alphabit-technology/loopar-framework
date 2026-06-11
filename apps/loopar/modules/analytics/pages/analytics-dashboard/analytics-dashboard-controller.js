@@ -9,7 +9,7 @@ export default class AnalyticsDashboardController extends PageController {
 
   async actionView(){
     const view = await loopar.newDocument("Analytics Dashboard")
-    const days = this.data?.days || 30;
+    const days = Math.max(1, Math.min(365, Number(this.data?.days) || 30));
     view.days = days;
 
     if(this.method == AJAX && this.preloaded=='true'){

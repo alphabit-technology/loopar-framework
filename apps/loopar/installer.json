@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.61"
+    "version": "5.0.62"
   },
   "documents": {
     "Entity:Module": {
@@ -14,7 +14,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.61",
+      "version": "5.0.62",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,

@@ -1,11 +1,10 @@
 'use strict';
 
 import { BaseDocument, loopar } from 'loopar';
+import { ENGAGED_THRESHOLD_MS as ENGAGED_MS } from '../../entities/page-view/page-view-controller.js';
 
 const ENTITY = 'Page View';
 const WORKSPACE = 'web';
-
-const ENGAGED_MS = 10000;
 
 function getFromDate(days = 30) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
@@ -38,7 +37,7 @@ export default class AnalyticsDashboard extends BaseDocument {
   constructor(props) { super(props); }
 
   async data() {
-    const [kpis, visits, pages, countries, devices, browsers, referrers, hourly] =
+    const [kpis, visits, pages, countries, devices, browsers, referrers, hourly, campaigns] =
       await Promise.all([
         this.getKpis(),
         this.getVisitStats(),
@@ -48,9 +47,10 @@ export default class AnalyticsDashboard extends BaseDocument {
         this.getBrowsers(),
         this.getReferrers(),
         this.getHourly(),
+        this.getCampaigns(),
       ]);
 
-    return { kpis, visits, pages, countries, devices, browsers, referrers, hourly };
+    return { kpis, visits, pages, countries, devices, browsers, referrers, hourly, campaigns };
   }
 
   async __meta__() {
@@ -62,7 +62,12 @@ export default class AnalyticsDashboard extends BaseDocument {
   #baseQuery(from = this.from) {
     return loopar.db.query(ENTITY)
       .where('workspace', WORKSPACE)
-      .andWhere('visit_date', '>=', from);
+      .andWhere('visit_date', '>=', from)
+      // Exclude own/logged-in traffic; null-safe so pre-migration rows
+      // (is_internal NULL) keep counting.
+      .andWhere(function () {
+        this.whereNot('is_internal', 1).orWhereNull('is_internal');
+      });
   }
 
   async getVisitStats() {
@@ -86,13 +91,16 @@ export default class AnalyticsDashboard extends BaseDocument {
         .count('* as total_views')
         .countDistinct('ip_hash as unique_visitors')
         .countDistinct('document as unique_pages')
+        .countDistinct('session_id as sessions')
         .avg('active_ms as avg_active_ms')
+        .avg('scroll_depth as avg_scroll_depth')
         .select(engagedExpr)
         .first(),
       this.#baseQuery(prevFrom)
         .andWhere('visit_date', '<', from)
         .count('* as total_views')
         .countDistinct('ip_hash as unique_visitors')
+        .countDistinct('session_id as sessions')
         .select(knex.raw('SUM(CASE WHEN active_ms >= ? THEN 1 ELSE 0 END) AS engaged_views', [ENGAGED_MS]))
         .first(),
     ]);
@@ -102,12 +110,15 @@ export default class AnalyticsDashboard extends BaseDocument {
       total_views: num(current?.total_views),
       unique_visitors: num(current?.unique_visitors),
       unique_pages: num(current?.unique_pages),
+      sessions: num(current?.sessions),
       avg_active_ms: num(current?.avg_active_ms),
+      avg_scroll_depth: num(current?.avg_scroll_depth),
       engaged_views: num(current?.engaged_views),
     };
     const prev = {
       total_views: num(previous?.total_views),
       unique_visitors: num(previous?.unique_visitors),
+      sessions: num(previous?.sessions),
       engaged_views: num(previous?.engaged_views),
     };
     const pct = (now, was) => was > 0 ? Math.round(((now - was) / was) * 100) : 0;
@@ -121,11 +132,18 @@ export default class AnalyticsDashboard extends BaseDocument {
       unique_pages: cur.unique_pages,
       views_diff: pct(cur.total_views, prev.total_views),
       visitors_diff: pct(cur.unique_visitors, prev.unique_visitors),
+      // Sessions (rows without session_id — pre-migration — don't count)
+      sessions: cur.sessions,
+      sessions_diff: pct(cur.sessions, prev.sessions),
+      pages_per_session: cur.sessions > 0
+        ? Math.round((cur.total_views / cur.sessions) * 10) / 10
+        : 0,
       // Engagement
       engaged_views: cur.engaged_views,
       engaged_rate,
       bounce_rate: 100 - engaged_rate,
       avg_active_seconds: Math.round(cur.avg_active_ms / 1000),
+      avg_scroll_depth: Math.round(cur.avg_scroll_depth),
       engaged_diff: pct(cur.engaged_views, prev.engaged_views),
     };
   }
@@ -175,19 +193,27 @@ export default class AnalyticsDashboard extends BaseDocument {
     const rows = await this.#baseQuery()
       .select(knex.raw(`COALESCE(NULLIF(??, ''), ?) AS source`, ['referrer', 'Direct']))
       .count('* as views')
-      .groupBy('referrer')
-      .orderBy('views', 'desc')
-      .limit(8);
+      .groupBy('referrer');
 
-    return rows.map(r => ({
-      ...r,
-      source: referrerHostname(r.source),
-    })).reduce((acc, row) => {
-      const existing = acc.find(r => r.source === row.source);
-      if (existing) existing.views += row.views;
-      else acc.push(row);
+    return rows.reduce((acc, row) => {
+      const source = referrerHostname(row.source);
+      const existing = acc.find(r => r.source === source);
+      if (existing) existing.views += +row.views;
+      else acc.push({ source, views: +row.views });
       return acc;
-    }, []).sort((a, b) => b.views - a.views);
+    }, []).sort((a, b) => b.views - a.views).slice(0, 8);
+  }
+
+  async getCampaigns() {
+    return await this.#baseQuery()
+      .select('utm_source', 'utm_medium', 'utm_campaign')
+      .count('* as views')
+      .countDistinct('session_id as sessions')
+      .whereNotNull('utm_source')
+      .andWhereNot('utm_source', '')
+      .groupBy('utm_source', 'utm_medium', 'utm_campaign')
+      .orderBy('views', 'desc')
+      .limit(10);
   }
 
   async getHourly() {

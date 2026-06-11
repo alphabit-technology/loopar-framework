@@ -1,25 +1,60 @@
 import { useEffect, useRef } from "react";
 
-/**
- * Client-driven traffic tracking for the public web workspace.
- *
- * Replaces the old server-side trackVisit() that ran on every route in the
- * router. A page view is only recorded once the browser renders the page, and
- * we measure *engaged* time (visible + recent interaction) rather than raw
- * dwell time — so a bot without JS or an instant "click every menu item" self
- * test accumulates ~0ms and won't count as a real visit.
- *
- * Flow per page:
- *   1. POST /api/Page View/track  → creates the row (server adds geo/UA/ip).
- *   2. heartbeat accumulates active time while the tab is visible and the user
- *      has interacted within IDLE_MS.
- *   3. POST/sendBeacon /api/Page View/ping → updates the cumulative active_ms;
- *      the exit ping (on hide / pagehide / unmount) is the most reliable one.
- */
-
-const HEARTBEAT_MS = 15000; // how often we tick + maybe ping
-const IDLE_MS = 30000; // no interaction for this long → considered idle
+const HEARTBEAT_MS = 15000;
+const IDLE_MS = 30000;
+const SESSION_KEY = "loopar_sid";
+const SESSION_TTL_MS = 30 * 60 * 1000;
+const NOTRACK_KEY = "loopar_notrack";
 const ENDPOINT = (action) => `/api/${encodeURIComponent("Page View")}/${action}`;
+
+function optedOut() {
+  try {
+    const q = new URLSearchParams(window.location.search).get("notrack");
+    if (q === "1") localStorage.setItem(NOTRACK_KEY, "1");
+    if (q === "0") localStorage.removeItem(NOTRACK_KEY);
+    return localStorage.getItem(NOTRACK_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function sessionId() {
+  try {
+    const now = Date.now();
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.id && now - s.t < SESSION_TTL_MS) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: s.id, t: now }));
+        return s.id;
+      }
+    }
+    const id = uuid();
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id, t: now }));
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+function utmParams() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return {
+      utmSource: q.get("utm_source") || "",
+      utmMedium: q.get("utm_medium") || "",
+      utmCampaign: q.get("utm_campaign") || "",
+    };
+  } catch {
+    return { utmSource: "", utmMedium: "", utmCampaign: "" };
+  }
+}
+
+function scrollPct() {
+  const h = document.documentElement.scrollHeight;
+  if (!h) return 0;
+  return Math.min(100, Math.round(((window.scrollY + window.innerHeight) / h) * 100));
+}
 
 function uuid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -29,8 +64,8 @@ function uuid() {
   });
 }
 
-function sendPing(viewId, activeMs, { beacon = false } = {}) {
-  const payload = JSON.stringify({ viewId, activeMs: Math.round(activeMs) });
+function sendPing(viewId, activeMs, scrollDepth, { beacon = false } = {}) {
+  const payload = JSON.stringify({ viewId, activeMs: Math.round(activeMs), scrollDepth });
   if (beacon && typeof navigator !== "undefined" && navigator.sendBeacon) {
     navigator.sendBeacon(ENDPOINT("ping"), new Blob([payload], { type: "application/json" }));
     return;
@@ -48,11 +83,14 @@ export function TrafficTracker({ page }) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !page) return;
+    if (optedOut()) return;
 
     const s = {
       viewId: uuid(),
       activeMs: 0,
       sentMs: 0,
+      maxScroll: scrollPct(),
+      sentScroll: 0,
       lastTick: Date.now(),
       lastActivity: Date.now(),
     };
@@ -67,6 +105,9 @@ export function TrafficTracker({ page }) {
         document: page,
         referrer: document.referrer || "",
         language: navigator.language || "",
+        sessionId: sessionId(),
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        ...utmParams(),
       }),
     }).catch(() => {});
 
@@ -82,12 +123,18 @@ export function TrafficTracker({ page }) {
 
     const flush = ({ beacon = false } = {}) => {
       accumulate();
-      if (s.activeMs <= s.sentMs) return;
+      if (s.activeMs <= s.sentMs && s.maxScroll <= s.sentScroll) return;
       s.sentMs = s.activeMs;
-      sendPing(s.viewId, s.activeMs, { beacon });
+      s.sentScroll = s.maxScroll;
+      sendPing(s.viewId, s.activeMs, s.maxScroll, { beacon });
     };
 
     const onActivity = () => { s.lastActivity = Date.now(); };
+    const onScroll = () => {
+      s.lastActivity = Date.now();
+      const pct = scrollPct();
+      if (pct > s.maxScroll) s.maxScroll = pct;
+    };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
         flush({ beacon: true });
@@ -98,8 +145,9 @@ export function TrafficTracker({ page }) {
     };
     const onPageHide = () => flush({ beacon: true });
 
-    const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"];
+    const events = ["mousemove", "mousedown", "keydown", "touchstart", "click"];
     events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+    window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onPageHide);
 
@@ -109,6 +157,7 @@ export function TrafficTracker({ page }) {
       clearInterval(hb);
       flush({ beacon: true });
       events.forEach((e) => window.removeEventListener(e, onActivity));
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
     };

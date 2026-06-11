@@ -116,6 +116,16 @@ export const parseDocStructure = async (
         await preloadCollectionView(field, requestContext);
       }
 
+      if(field.element == GALLERY && field.data.source == "Server"){
+        const app = loopar.webApp;
+
+        const m = await loopar.newDocument("File Manager");
+        m.app = app.name;
+        loopar.session.set(m.__ENTITY__.name + "_page", 1);
+
+        field.data.images = await m.getList({ rowsOnly: true });
+      }
+
       if (field.elements) {
         field.elements = await parseDocStructure(field.elements, renderMarkdown, document_name, requestContext);
       }
