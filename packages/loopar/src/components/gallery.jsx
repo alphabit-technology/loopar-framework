@@ -67,18 +67,29 @@ export default function MetaGalery(props) {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const res = await loopar.api.call(
-        "File Manager",
-        "loadImages",
+
+      // Context-relative action: resolves against the current page URL, so
+      // PageController.publicActionLoadGalery serves it for any document.
+      const res = await loopar.sendAction(
+        "loadGalery",
         { page: nextPage },
         { freeze: false }
       );
       const rows = Array.isArray(res) ? res : (res?.rows || []);
       const pg = Array.isArray(res) ? null : res?.pagination;
-      const els = imagesToElements(rows, props.node, `p${nextPage}`);
 
+      // Guards against a misbehaving server (e.g. pagination that never
+      // advances): an empty page always stops the scroll, and we trust the
+      // page the server *confirmed* over the one we asked for.
+      const confirmedPage = pg ? Number(pg.page) || nextPage : nextPage;
+      if (!rows.length || confirmedPage <= page) {
+        setHasMore(false);
+        return;
+      }
+
+      const els = imagesToElements(rows, props.node, `p${confirmedPage}`);
       setServerElements((prev) => [...prev, ...els]);
-      setPage(nextPage);
+      setPage(confirmedPage);
       setHasMore(pg ? Number(pg.page) < Number(pg.totalPages) : false);
     } catch (e) {
       console.error("Gallery loadImages failed:", e);

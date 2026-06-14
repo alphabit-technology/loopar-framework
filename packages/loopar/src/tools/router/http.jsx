@@ -1,6 +1,39 @@
+import { buildUrl } from "@global/router-utils";
+
 export default class HTTP {
   #jsonQuery = {};
   #options = {};
+
+  makeUrl(action) {
+    if (!action || action.startsWith("http") || action.startsWith("/")) return action;
+    const currentURL =
+      (typeof global !== "undefined" && global.url) ||
+      (typeof window !== "undefined" ? window.location.pathname : "");
+    return buildUrl(action, currentURL);
+  }
+
+  /**
+   * @param {string} action - Bare action name, optionally with query.
+   * @param {Object|FormData|null} [body] - Request body.
+   * @param {Object} [options] - { method, query, success, error, always, freeze }.
+   * @returns {Promise} Resolves with the controller response.
+   */
+  sendAction(action, body = null, options = {}) {
+    const sendArgs = {
+      method: "POST",
+      ...options,
+      action: this.makeUrl(action),
+      ...(body !== null && body !== undefined ? { body } : {}),
+    };
+
+    if (sendArgs.success || sendArgs.error || sendArgs.always) {
+      return this.send(sendArgs);
+    }
+
+    return new Promise((resolve, reject) => {
+      this.send({ ...sendArgs, success: resolve, error: reject });
+    });
+  }
 
   /**
    * @param {Object} options
@@ -15,7 +48,7 @@ export default class HTTP {
    */
   send(options) {
     this.#options = options;
-    return this.#sendPetition(options);
+    return this.#sendToServer(options);
   }
 
   get __method__() { return this.#options.method || "POST" }
@@ -83,7 +116,7 @@ export default class HTTP {
     }, {});
   }
 
-  async #sendPetition(options) {
+  async #sendToServer(options) {
     const self = this;
     const freeze = options.freeze !== false;
 

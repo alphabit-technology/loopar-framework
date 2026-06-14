@@ -7,6 +7,36 @@ const CAROUSEL_LIKE_ELEMENTS = new Set([
   "gallery",
 ]);
 
+// Render-time data injected by parseDocStructure that must never persist.
+// NOTE: not every "_"-prefixed key is ephemeral (e.g. a link's `_target`
+// is authored data), so this is an explicit list, not a prefix rule.
+const EPHEMERAL_DATA_KEYS = ["_cookie_index", "preloaded", "rendered_value"];
+
+/**
+ * Inverse of parseDocStructure, for persistence: strips everything the
+ * server injects into `field.data` at render time, so an edited structure
+ * coming back from the designer doesn't round-trip render payloads into
+ * the saved document (rows from getList, markdown HTML, cookie indexes...).
+ */
+export function stripEphemeralDocStructure(fields) {
+  return (fields || []).map((field) => {
+    if (field?.data && typeof field.data === "object") {
+      for (const key of EPHEMERAL_DATA_KEYS) {
+        delete field.data[key];
+      }
+      // A server-sourced gallery gets its whole getList() payload injected
+      // under `images`; the authored value for that mode is empty anyway.
+      if (field.element === GALLERY && field.data.source === "Server") {
+        delete field.data.images;
+      }
+    }
+    if (Array.isArray(field?.elements)) {
+      field.elements = stripEphemeralDocStructure(field.elements);
+    }
+    return field;
+  });
+}
+
 function buildEntitySchema(entityName) {
   const ref = loopar.getRef(entityName);
   if (!ref) return [];
@@ -72,7 +102,8 @@ export const parseDocStructure = async (
   doc_structure,
   renderMarkdown = true,
   document_name,
-  requestContext = null
+  requestContext = null,
+  app
 ) => {
   doc_structure = loopar.utils.JSONparse(doc_structure, doc_structure);
   return Promise.all(
@@ -117,13 +148,8 @@ export const parseDocStructure = async (
       }
 
       if(field.element == GALLERY && field.data.source == "Server"){
-        const app = loopar.webApp;
-
-        const m = await loopar.newDocument("File Manager");
-        m.app = app.name;
-        loopar.session.set(m.__ENTITY__.name + "_page", 1);
-
-        field.data.images = await m.getList({ rowsOnly: true });
+        const m = await loopar.newDocument("File Manager", {app});
+        field.data.images = await m.getList();
       }
 
       if (field.elements) {

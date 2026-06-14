@@ -86,22 +86,12 @@ export default function carouselMetaFields() {
             selected: "11rem",
           },
         },
-        auto_ratio: {
-          element: SWITCH,
-          data: {
-            label: "Auto ratio (from image)",
-            description:
-              "Grid mode: size each card from the real image's natural aspect ratio (measured on load). " +
-              "Masonry/uniform use the measured height; quilted spans landscape images 2 cols and portraits 2 rows. " +
-              "Overrides the fixed card ratio below.",
-            selected: false,
-          },
-        },
         cell_aspect_ratio: {
           element: SELECT,
           data: {
             label: "Grid card ratio",
-            description: "Aspect ratio of each card in grid mode. Ignored when Auto ratio is on.",
+            description:
+              "Aspect ratio of each card in grid mode (uniform layout). Images adapt to the card (cover crop).",
             options: [
               { option: "4:3 (Standard)", value: "75%" },
               { option: "1:1 (Square)", value: "100%" },

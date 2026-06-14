@@ -297,20 +297,6 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 0
-    },
-    "Module:integrations": {
-      "name": "integrations",
-      "description": "integrations",
-      "app_name": "loopar",
-      "module_group": "modules",
-      "in_sidebar": 1
-    },
-    "Module:web": {
-      "name": "web",
-      "description": "web",
-      "app_name": "loopar",
-      "module_group": "modules",
-      "in_sidebar": 1
     }
   },
   "postInstaller": {

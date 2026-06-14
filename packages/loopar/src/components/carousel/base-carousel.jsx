@@ -49,7 +49,7 @@ const BaseCarousel = (props) => {
     return (
       <div
         className={`relative w-full overflow-hidden`}
-        style={makeContainerStyle(data)}
+        style={makeContainerStyle(data, designerMode)}
       >
         <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
           <p className="text-muted-foreground">No slides available</p>
@@ -87,7 +87,7 @@ const BaseCarousel = (props) => {
     return (
       <Droppable
         key={`${item.node || ctx.index}-${ctx.isPrev ? "prev" : "current"}`}
-        className={`absolute inset-0 w-full h-full ${ctx.isPrev ? "z-0" : "z-10"} ${designerMode ? "pt-3" : ""}`}
+        className={`${designerMode ? "relative w-full pt-3" : "absolute inset-0 w-full h-full"} ${ctx.isPrev ? "z-0" : "z-10"}`}
         data={slideData}
         index={ctx.index}
         elements={[
@@ -183,8 +183,8 @@ const BaseCarousel = (props) => {
 
   const carouselNode = (
     <div
-      className={`relative w-full overflow-hidden ${viewMode === "gallery" ? "rounded-xl bg-card" : ""} ${data.touch && !designerMode ? "cursor-grab active:cursor-grabbing" : ""}`}
-      style={makeContainerStyle(data)}
+      className={`relative w-full ${designerMode ? "overflow-visible" : "overflow-hidden"} ${viewMode === "gallery" ? "rounded-xl bg-card" : ""} ${data.touch && !designerMode ? "cursor-grab active:cursor-grabbing" : ""}`}
+      style={makeContainerStyle(data, designerMode)}
     >
       {content ? (
         <div className="absolute inset-0 w-full h-full">{content}</div>
@@ -206,7 +206,7 @@ const BaseCarousel = (props) => {
           touch={!!data.touch && !designerMode}
           exitDurationMs={CONTENT_EXIT_DURATION}
           transitionDurationMs={transitionDurationMs}
-          containerClassName="absolute inset-0 w-full h-full select-none group"
+          containerClassName={designerMode ? "relative w-full select-none group" : "absolute inset-0 w-full h-full select-none group"}
         />
       )}
 

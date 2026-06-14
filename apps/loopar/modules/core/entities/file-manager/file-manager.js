@@ -608,7 +608,7 @@ export default class FileManager extends BaseDocument {
     // Clamp the current page when filters shrink the set below it.
     if (pagination.page > pagination.totalPages) {
       pagination.page = 1;
-      await loopar.session.set(this.__ENTITY__.name + "_page", 1);
+      loopar.session.set(this.__ENTITY__.name + "_page", 1);
     }
 
     const startIndex = (pagination.page - 1) * pagination.pageSize;

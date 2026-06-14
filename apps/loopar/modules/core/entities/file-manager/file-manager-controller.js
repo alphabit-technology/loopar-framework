@@ -89,20 +89,4 @@ export default class FileManagerController extends BaseController {
       return await this.notFound(`File [${this.name}] not found`);
     }
   }
-
-  async publicActionLoadImages(){
-    const app = loopar.webApp;
-
-    const m = await loopar.newDocument("File Manager");
-    m.app = app.name;
-
-    if (this.hasData()) {
-      loopar.session.set(this.document + '_q', this.data.q || {});
-      loopar.session.set(this.document + '_page', this.data.page || 1);
-    }
-    
-    const files = await m.getList({ rowsOnly: true });
-
-    return { rows: files.rows, pagination: files.pagination };
-  }
 }

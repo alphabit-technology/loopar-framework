@@ -92,4 +92,17 @@ export default class PageController extends SingleConrtroller {
  
     return this.success("Vote registered.");
   }
+
+  async publicActionLoadGalery(){
+    const ref = loopar.getRef(this.document);
+
+    if (this.hasData()) {
+      loopar.session.set(this.document + '_page', this.data.page || 1);
+    }
+
+    const m = await loopar.newDocument("File Manager", {app: ref.__APP__});
+    const files = await m.getList();
+
+    return { rows: files.rows, pagination: files.pagination };
+  }
 }

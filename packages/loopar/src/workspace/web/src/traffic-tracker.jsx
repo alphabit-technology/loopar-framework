@@ -147,7 +147,9 @@ export function TrafficTracker({ page }) {
 
     const events = ["mousemove", "mousedown", "keydown", "touchstart", "click"];
     events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // capture:true also catches scroll from inner overflow containers
+    // (scroll events don't bubble, but they do go through the capture phase).
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onPageHide);
 
@@ -157,7 +159,7 @@ export function TrafficTracker({ page }) {
       clearInterval(hb);
       flush({ beacon: true });
       events.forEach((e) => window.removeEventListener(e, onActivity));
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll, { capture: true });
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
     };

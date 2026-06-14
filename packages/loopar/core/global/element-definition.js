@@ -253,7 +253,7 @@ export const elementsDefinition = {
     { element: "container", icon: "Dock" },
     { element: "panel", icon: "PanelBottom" },
     { element: "contact_form", icon: "Phone"},
-    { element: "form", icon: "Form"}
+    { element: "form", icon: "Form"},
   ],
   [DESIGN_ELEMENT]: [
     { element: "image", icon: "Image" },
@@ -311,7 +311,8 @@ export const elementsDefinition = {
     { element: "icon_input", icon: "Boxes", type: TYPES.text },
     { element: "radio_group", icon: "Circle", type: TYPES.text },
     { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
-    { element: "slot", icon: "Plug"}
+    { element: "slot", icon: "Plug"},
+    { element: "metadata", icon: "Code", type: TYPES.json}
   ]
 }
 

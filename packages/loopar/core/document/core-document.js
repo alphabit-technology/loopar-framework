@@ -2,7 +2,7 @@
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
-import { parseDocStructure } from './tools.js';
+import { parseDocStructure, stripEphemeralDocStructure } from './tools.js';
 import { FRAMEWORK_OWNED_COLUMN_NAMES } from '../global/audit.js';
 
 export default class CoreDocument {
@@ -71,8 +71,12 @@ export default class CoreDocument {
 
     if (this.__DATA__ && this.__DATA__.doc_structure) {
       const parsed = JSON.parse(this.__DATA__.doc_structure);
+      // stripEphemeralDocStructure: incoming structures (designer save)
+      // may carry render-injected payloads — getList rows on Server
+      // galleries, collection preloads, cookie indexes — that must not
+      // be persisted with the document.
       this.__DATA__.doc_structure = JSON.stringify(
-        parsed.filter(field => (field.data || {}).name !== ID)
+        stripEphemeralDocStructure(parsed.filter(field => (field.data || {}).name !== ID))
       );
     }
 

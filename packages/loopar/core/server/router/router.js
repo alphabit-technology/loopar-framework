@@ -166,13 +166,20 @@ export default class Router extends Middleware {
       const C = await fileManage.importClass(
         loopar.makePath(ref.__ROOT__, `${params.document}Controller.js`)
       );
+
+      const data = RouterUtils.prepareFileData(body, req.files);
       
+      if(data && (data.q || data.page)){
+        loopar.session.set(params.document + '_q', data.q || {});
+        loopar.session.set(params.document + '_page', data.page || 1);
+      }
+
       const Controller = new C({
         ...params,
         ...parsedQuery,
         query: parsedQuery,
-        data: RouterUtils.prepareFileData(body, req.files),
-        body: RouterUtils.prepareFileData(body, req.files),
+        data,
+        body: data,
         __REQ_FILES__: req.files,
         enabledActions: C.enabledActions,
         freeActions: C.freeActions

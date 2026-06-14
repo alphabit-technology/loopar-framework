@@ -1,7 +1,16 @@
-export function makeContainerStyle(data) {
+export function makeContainerStyle(data, designerMode = false) {
   const style = {};
   if (data.full_height) {
-    style.height = "100vh";
+    // In design mode use minHeight so editing chrome can grow the box; in
+    // preview/live keep a fixed full-screen height.
+    style[designerMode ? "minHeight" : "height"] = "100vh";
+  } else if (designerMode) {
+    // Use the CSS aspect-ratio property instead of the padding-top trick.
+    // aspect-ratio gives the box its proportional size when content is small,
+    // but lets it grow taller when the (taller) editing content needs it,
+    // so slide objects are no longer vertically compressed.
+    const pct = parseFloat(data.aspect_ratio) || 56.25;
+    style.aspectRatio = `${100 / pct}`;
   } else {
     style.paddingTop = data.aspect_ratio || "56.25%";
   }

@@ -5,7 +5,6 @@ import {
   parseDocument,
   isAuditableEntity,
   coerceDocStatus,
-  DOC_STATUS,
 } from "loopar";
 import EventEmitter from "events";
 import Connector from "./core/knex/connector.js";
@@ -212,6 +211,11 @@ export class KnexORM extends Connector {
     await this.#emitBefore("beforeCreate", { document, doc: data });
 
     if (isSingle) {
+      // `Document Single Values` is in EXCLUDED_AUDIT_TABLES so it doesn't
+      // own audit columns. We can't stamp __document_status__ on the
+      // payload — the column literally doesn't exist on the table and the
+      // INSERT raises "table has no column". The EAV row's "state" is the
+      // owning single-doc's responsibility, not the value row's.
       const tbl = "Document Single Values";
       for (const [field, value] of Object.entries(data)) {
         const rowName = `${document}-${field}`;
@@ -219,7 +223,6 @@ export class KnexORM extends Connector {
           document,
           field,
           value: this.#canonicalizeEavValue(value),
-          __document_status__: DOC_STATUS.ACTIVE,
         };
 
         const existing = await this.qx()(tbl).where({ name: rowName }).first();

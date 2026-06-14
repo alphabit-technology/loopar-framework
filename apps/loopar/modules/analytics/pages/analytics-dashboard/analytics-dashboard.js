@@ -95,6 +95,10 @@ export default class AnalyticsDashboard extends BaseDocument {
         .avg('active_ms as avg_active_ms')
         .avg('scroll_depth as avg_scroll_depth')
         .select(engagedExpr)
+        // Rows from before the engagement/session fields existed have NULLs;
+        // rates must be computed over measured rows only.
+        .select(knex.raw('SUM(CASE WHEN active_ms IS NOT NULL THEN 1 ELSE 0 END) AS measured_views'))
+        .select(knex.raw(`SUM(CASE WHEN session_id IS NOT NULL AND session_id <> '' THEN 1 ELSE 0 END) AS session_views`))
         .first(),
       this.#baseQuery(prevFrom)
         .andWhere('visit_date', '<', from)
@@ -114,6 +118,8 @@ export default class AnalyticsDashboard extends BaseDocument {
       avg_active_ms: num(current?.avg_active_ms),
       avg_scroll_depth: num(current?.avg_scroll_depth),
       engaged_views: num(current?.engaged_views),
+      measured_views: num(current?.measured_views),
+      session_views: num(current?.session_views),
     };
     const prev = {
       total_views: num(previous?.total_views),
@@ -124,7 +130,7 @@ export default class AnalyticsDashboard extends BaseDocument {
     const pct = (now, was) => was > 0 ? Math.round(((now - was) / was) * 100) : 0;
     const rate = (part, whole) => whole > 0 ? Math.round((part / whole) * 100) : 0;
 
-    const engaged_rate = rate(cur.engaged_views, cur.total_views);
+    const engaged_rate = rate(cur.engaged_views, cur.measured_views);
 
     return {
       total_views: cur.total_views,
@@ -136,7 +142,7 @@ export default class AnalyticsDashboard extends BaseDocument {
       sessions: cur.sessions,
       sessions_diff: pct(cur.sessions, prev.sessions),
       pages_per_session: cur.sessions > 0
-        ? Math.round((cur.total_views / cur.sessions) * 10) / 10
+        ? Math.round((cur.session_views / cur.sessions) * 10) / 10
         : 0,
       // Engagement
       engaged_views: cur.engaged_views,
