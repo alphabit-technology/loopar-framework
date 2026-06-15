@@ -217,14 +217,9 @@ export const BaseDesigner = (props) => {
 
     const fixed = parsed;
 
-    // Apply the new structure to local state + store IMMEDIATELY for an instant
-    // visual reorder (the rendered tree is driven by localMetaComponents — the
-    // drag provider syncs from it — so the change shows at once), but DEFER the
-    // heavy persistence through the debounced commit. Previously this stringified
-    // the whole tree, pushed it to the form field, and round-tripped back through
-    // JSON.parse on every drop — a synchronous freeze of ~1s on large forms,
-    // during which the dashed placeholder lingered. Persistence now catches up
-    // 300ms later, off the drop's critical path.
+    // Update local state/store now for an instant reorder; defer persistence via
+    // the debounced commit. Persisting synchronously here (stringify whole tree
+    // -> form field -> JSON.parse round-trip) froze the UI ~1s per drop.
     storeRef.current.populate(fixed);
     setLocalMetaComponents(fixed);
     scheduleCommit();

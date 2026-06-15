@@ -66,13 +66,9 @@ function DroppableContainer({ data = {}, node, children, className, Component = 
     handleSetElements(props.elements || []);
   }, [props.elements]);
 
-  // Reconcile on a no-structural-change drop. The provider bumps reconcileNonce
-  // when a drop leaves the tree deep-equal (no reorder), a case where props
-  // never change so the normal sync above never fires. Only the container that
-  // mutated its local state during the drag (injected a placeholder / removed
-  // the dragged element) will differ from props here, so it resets to the
-  // canonical props.elements and the leftover placeholder disappears. Others are
-  // already equal and skip — no extra work, no flicker.
+  // Deep-equal drop: props never change so the sync above won't fire. Only the
+  // container that mutated its local state during the drag differs from props,
+  // so it resets and drops the leftover placeholder; others are equal and skip.
   useEffect(() => {
     if (!reconcileNonce) return;
     const canonical = props.elements || [];

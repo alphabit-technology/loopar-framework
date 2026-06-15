@@ -101,6 +101,7 @@ export default function Row(props) {
   const gapSolver = useMemo(() => {
     return (_spacing * ((layout.length - 1) / layout.length)) || 0;
   }, [_spacing, layout.length]);
+  
   const horizontalAlignment = useMemo(() => {
     return {
       left: "justify-start",

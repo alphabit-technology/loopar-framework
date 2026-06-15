@@ -4,11 +4,8 @@ import { Designer } from "./designer/base-designer";
 import { useDesigner } from "@context/@/designer-context";
 
 function DesignerField({ field, node, data, designerMode }) {
-  // Memoize the parse so `metaComponents` keeps a STABLE reference between
-  // renders and is only re-parsed when the serialized value actually changes.
-  // Previously JSON.parse ran on every render, producing a fresh object that
-  // forced BaseDesigner's deep-equal sync effect (and a re-populate) to run
-  // each time — wasted work on top of every drop/edit.
+  // Memoize so metaComponents keeps a stable reference; parsing on every render
+  // produced a fresh object that re-triggered BaseDesigner's deep-equal sync.
   const metaComponents = useMemo(() => JSON.parse(field.value), [field.value]);
   const handleChange = useCallback((value) => field.onChange(value), [field]);
 

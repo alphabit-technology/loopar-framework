@@ -74,17 +74,17 @@ export const DesignElement = memo(function DesignElement(props) {
 
   const className = useMemo(() => {
     return cn(
-      "rounded p-1",
+      "rounded-sm p-1",
       designing ? [
         "border border-primary/30",
-        "bg-secondary",
+        //"bg-secondary",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),inset_0_-1px_0_0_rgba(0,0,0,0.2)]",
         //elementProps.element === MARKDOWN && "max-h-[500px] overflow-y-auto"
       ] : "",
       elementProps.className,
       disabled && "p-2",
       isDroppable && designing && [
-        "bg-input",
+        //"bg-input",
         "border-1 border-primary/40",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),inset_0_-1px_0_0_rgba(0,0,0,0.3)]",
         [COL, PANEL].includes(elementProps.element) && "h-full"
@@ -95,6 +95,7 @@ export const DesignElement = memo(function DesignElement(props) {
       // Source-of-drag visual: matches the placeholder so the transition
       // (source → placeholder when threshold is crossed) is seamless.
       isBeingDragged && "border-2 border-dashed border-primary/70 opacity-60",
+      "px-2"
     );
   }, [designing, elementProps.className, disabled, isDroppable, isBeingDragged]);
 

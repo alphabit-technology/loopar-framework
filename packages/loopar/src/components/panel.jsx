@@ -1,5 +1,6 @@
 import { cn } from "@cn/lib/utils";
 import {Droppable} from "@droppable";
+import { useDesigner } from "@context/@/designer-context";
 const DEFAULTS = {
   variant: "glass",
   rounded: "xl",
@@ -56,6 +57,7 @@ const colorVars = {
 
 export default function MetaPanel(props) {
   const data = props.data || {};
+  const { designing } = useDesigner();
 
   const config = { ...DEFAULTS, ...data };
 
@@ -113,7 +115,8 @@ export default function MetaPanel(props) {
     focusable,
     backdrop,
     "w-full h-full transition-colors",
-    config.class
+    config.class,
+    designing && "p-2"
   );
 
   return (
