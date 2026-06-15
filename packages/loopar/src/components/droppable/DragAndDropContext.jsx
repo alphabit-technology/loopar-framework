@@ -94,6 +94,11 @@ export const DragAndDropProvider = (props) => {
   const [initializedDragging, setInitializedDragging] = useState(false);
   const [elements, setElements] = useState(metaComponents || []);
   const [globalPosition, setGlobalPosition] = useState(null);
+  // Bumped when a drop produces NO structural change (deep-equal tree). The
+  // per-container re-sync cascade short-circuits in that case, so this nonce
+  // signals every DroppableContainer to reconcile its local state and drop any
+  // leftover drag placeholder.
+  const [reconcileNonce, setReconcileNonce] = useState(0);
   const [, setPortalHost] = useState(0);
 
   const elementsRef = useRef(elements);
@@ -159,7 +164,18 @@ export const DragAndDropProvider = (props) => {
 
     setDragging(false);
     onDrop?.(newElements);
-    handleSetElements(newElements);
+
+    if (isEqual(elementsRef.current, newElements)) {
+      // No structural change (released in the same place / no reorder): the tree
+      // is deep-equal, so the per-container re-sync cascade short-circuits at the
+      // first container whose props did not change and never reaches the nested
+      // container that injected a drag placeholder into its local state — leaving
+      // it stuck. Signal every container to reconcile from props directly.
+      elementsRef.current = newElements;
+      setReconcileNonce((n) => n + 1);
+    } else {
+      handleSetElements(newElements);
+    }
   }, [node, data, onDrop, handleSetElements]);
 
   const flushPendingPointerSync = useCallback(() => {
@@ -369,6 +385,7 @@ export const DragAndDropProvider = (props) => {
     verticalDirectionRef,
     ghostDomRef,
     draggingEventRef,
+    reconcileNonce,
   }), [
     metaComponents,
     dropZone,
@@ -378,6 +395,7 @@ export const DragAndDropProvider = (props) => {
     elements,
     handleDrop,
     subscribeToMovement,
+    reconcileNonce,
   ]);
 
   return (

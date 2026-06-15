@@ -194,6 +194,15 @@ export const BaseDesigner = (props) => {
     });
   }, [updatingElementName, localMetaComponents, findElement]);
 
+  const scheduleCommit = useCallback(() => {
+    if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = setTimeout(() => {
+      commitTimerRef.current = null;
+      const reconciled = storeRef.current.reconcileTree(stateRef.current.localMetaComponents);
+      stateRef.current.onChange?.(JSON.stringify(reconciled));
+    }, 300);
+  }, []);
+
   const setMeta = useCallback((meta) => {
     let parsed;
     if (Array.isArray(meta)) {
@@ -208,24 +217,18 @@ export const BaseDesigner = (props) => {
 
     const fixed = parsed;
 
-    if (commitTimerRef.current) {
-      clearTimeout(commitTimerRef.current);
-      commitTimerRef.current = null;
-    }
-
+    // Apply the new structure to local state + store IMMEDIATELY for an instant
+    // visual reorder (the rendered tree is driven by localMetaComponents — the
+    // drag provider syncs from it — so the change shows at once), but DEFER the
+    // heavy persistence through the debounced commit. Previously this stringified
+    // the whole tree, pushed it to the form field, and round-tripped back through
+    // JSON.parse on every drop — a synchronous freeze of ~1s on large forms,
+    // during which the dashed placeholder lingered. Persistence now catches up
+    // 300ms later, off the drop's critical path.
     storeRef.current.populate(fixed);
     setLocalMetaComponents(fixed);
-    stateRef.current.onChange?.(JSON.stringify(fixed));
-  }, []);
-
-  const scheduleCommit = useCallback(() => {
-    if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
-    commitTimerRef.current = setTimeout(() => {
-      commitTimerRef.current = null;
-      const reconciled = storeRef.current.reconcileTree(stateRef.current.localMetaComponents);
-      stateRef.current.onChange?.(JSON.stringify(reconciled));
-    }, 300);
-  }, []);
+    scheduleCommit();
+  }, [scheduleCommit]);
 
   const updateElements = useCallback((target, elements, current = null) => {
     const currentElements = storeRef.current.reconcileTree(stateRef.current.localMetaComponents);

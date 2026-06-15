@@ -75,7 +75,7 @@ export default function BannerImage(props){
   return (
     <div className={
       cn(
-        "p-0 lg:p-4",
+        "p-2 lg:p-4",
         data.full_height && !designerMode && "h-[calc(100vh-var(--spacing-web-header-height))] max-h-[calc(100vh-var(--spacing-web-header-height))]",
     )}>
       <Preassembled
