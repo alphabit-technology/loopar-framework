@@ -49,7 +49,7 @@ const BaseCarousel = (props) => {
     return (
       <div
         className={`relative w-full overflow-hidden`}
-        style={makeContainerStyle(data, designerMode)}
+        style={makeContainerStyle(data)}
       >
         <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
           <p className="text-muted-foreground">No slides available</p>
@@ -87,7 +87,7 @@ const BaseCarousel = (props) => {
     return (
       <Droppable
         key={`${item.node || ctx.index}-${ctx.isPrev ? "prev" : "current"}`}
-        className={`${designerMode ? "relative w-full pt-3" : "absolute inset-0 w-full h-full"} ${ctx.isPrev ? "z-0" : "z-10"}`}
+        className={`[grid-area:1/1] w-full ${ctx.isPrev ? "z-0" : "z-10"} ${designerMode ? "pt-3" : ""}`}
         data={slideData}
         index={ctx.index}
         elements={[
@@ -183,11 +183,10 @@ const BaseCarousel = (props) => {
 
   const carouselNode = (
     <div
-      className={`relative w-full ${designerMode ? "overflow-visible" : "overflow-hidden"} ${viewMode === "gallery" ? "rounded-xl bg-card" : ""} ${data.touch && !designerMode ? "cursor-grab active:cursor-grabbing" : ""}`}
-      style={makeContainerStyle(data, designerMode)}
+      className={`relative w-full ${designerMode ? "overflow-visible" : "overflow-hidden"} ${viewMode === "gallery" ? " bg-card" : ""} ${data.touch && !designerMode ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
       {content ? (
-        <div className="absolute inset-0 w-full h-full">{content}</div>
+        <div className="w-full" style={makeContainerStyle(data)}>{content}</div>
       ) : (
         <CarouselBase
           slides={items}
@@ -206,7 +205,8 @@ const BaseCarousel = (props) => {
           touch={!!data.touch && !designerMode}
           exitDurationMs={CONTENT_EXIT_DURATION}
           transitionDurationMs={transitionDurationMs}
-          containerClassName={designerMode ? "relative w-full select-none group" : "absolute inset-0 w-full h-full select-none group"}
+          containerClassName="grid grid-cols-1 [grid-template-rows:1fr] w-full select-none group"
+          containerStyle={makeContainerStyle(data)}
         />
       )}
 
