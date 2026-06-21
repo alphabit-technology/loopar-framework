@@ -8,7 +8,7 @@ export default class Login extends BaseDocument {
   }
 
   async login() {
-    const user = await loopar.getUser(this.user_name);
+    const user = await loopar.auth.getUser(this.user_name);
   
     const storedHash = user?.password ?? await loopar.hash('dummy');
     const isValidPassword = await loopar.verifyHash(this.password, storedHash);

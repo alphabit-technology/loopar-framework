@@ -105,4 +105,29 @@ export default class PageController extends SingleConrtroller {
 
     return { rows: files.rows, pagination: files.pagination };
   }
+
+  async publicActionAddComment() {
+    this.documentHistory = "Page Builder"
+    return await super.actionAddComment();
+  }
+
+  async publicActionHistory() {
+    this.documentHistory = "Page Builder"
+    if(this.req.__WORKSPACE_NAME__ == "desk"){
+      return await this.actionHistory({
+        ...this.query,
+        documentType: "Page Builder",
+        documentName: this.document
+      }, "Page Builder")
+    }
+
+    const documentName = this.document;
+    if (!documentName) return { rows: [], pagination: {} };
+
+    const ref = loopar.getRef?.("Page Builder") || {};
+    if (!ref.enable_comments) return { rows: [], pagination: {} };
+
+    const rows = await this.fetchComments(documentName, { onlyApproved: true, includeEvents: false });
+    return { rows, pagination: {} };
+  }
 }

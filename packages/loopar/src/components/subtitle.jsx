@@ -36,4 +36,3 @@ export default function SubTitle(props) {
   );
 }
 
-SubTitle.droppable = false;

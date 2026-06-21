@@ -102,7 +102,7 @@ export default function Row(props) {
     return (_spacing * ((layout.length - 1) / layout.length)) || 0;
   }, [_spacing, layout.length]);
   
-  const horizontalAlignment = useMemo(() => {
+  /* const horizontalAlignment = useMemo(() => {
     return {
       left: "justify-start",
       center: "justify-center",
@@ -116,7 +116,7 @@ export default function Row(props) {
       center: "items-center",
       bottom: "items-end",
     }[config.vertical_alignment] || "items-start";
-  }, [config.vertical_alignment]);
+  }, [config.vertical_alignment]); */
 
   const rowHeight = useMemo(() => {
     if (config.full_height) return "min-h-screen";
@@ -163,7 +163,6 @@ export default function Row(props) {
   );
 }
 
-Row.droppable = true;
 
 Row.metaFields = () => {
   return [

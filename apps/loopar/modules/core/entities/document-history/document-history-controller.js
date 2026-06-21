@@ -8,22 +8,10 @@ export default class DocumentHistoryController extends BaseController {
     super(props);
   }
 
-  async actionHistory() {
-    if (this.hasData()) {
-      loopar.session.set(this.document + '_page', this.page || 1);
-    }
-
-    const list = await loopar.getList(this.document, {
-      filters: {
-        "=": {
-          document: this.name,
-          document_id: this.query.documentId
-        }
-      },
-    });
-
-    return this.render(list);
-  }
+  // History reading / commenting / moderation now live on BaseController
+  // (inherited by every entity controller, keyed by `this.document`), so a
+  // document's history is served by its OWN controller. This controller only
+  // keeps the soft-delete restore for the Document History list view itself.
 
   async actionRestore() {
     const ref = await loopar.getDocument(this.document, this.name);

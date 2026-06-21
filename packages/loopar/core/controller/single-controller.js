@@ -20,6 +20,7 @@ export default class SingleController extends BaseController {
   async sendAction(action) {
     await this.beforeAction();
     const selfAction = `${loopar.utils.Capitalize(action)}`;
+
     if (typeof this[`publicAction${selfAction}`] == 'function') {
       return await this[`publicAction${selfAction}`]();
     }else if(typeof this[`action${selfAction}`] == 'function'){
@@ -55,6 +56,7 @@ export default class SingleController extends BaseController {
         element: "collection_view",
         data: {
           options: collection,
+          enable_comments: 1
         },
       },
     ]), true, this.document, requestContext);
@@ -73,6 +75,7 @@ export default class SingleController extends BaseController {
       Entity: {
         name: "Page Viewer",
         doc_structure: JSON.stringify(doc_structure),
+        
       },
       activeParentMenu: await this.getParent(),
       __DOCUMENT_TITLE__: preloadedItem?.title || detailSlug,
@@ -112,11 +115,16 @@ export default class SingleController extends BaseController {
       });
     }
 
+    const pageRef = loopar.getRef(document.__ENTITY__?.name) || {};
+
     return await this.render({
       Entity: {
         name: document.__ENTITY__?.name,
         background_image: document.__ENTITY__?.background_image,
         doc_structure: document.__ENTITY__?.doc_structure || "[{}]",
+        enable_history: pageRef.enable_history ? 1 : 0,
+        enable_comments: pageRef.enable_comments ? 1 : 0,
+        require_login_to_comment: pageRef.require_login_to_comment ? 1 : 0,
       },
       activeParentMenu: await this.getParent(),
       __DOCUMENT_TITLE__: menu?.link || this.document,

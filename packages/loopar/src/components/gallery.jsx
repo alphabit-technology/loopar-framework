@@ -132,7 +132,6 @@ export default function MetaGalery(props) {
   );
 }
 
-MetaGalery.designerClasses = "pt-3";
 
 MetaGalery.metaFields = () => {
   return [

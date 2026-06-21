@@ -727,7 +727,11 @@ export default class CoreDocument {
 
     const __ENTITY__ = entity;
     delete __ENTITY__.__REF__;
-    
+
+    // Document-history flags travel to the client so forms can auto-mount
+    // the timeline. Sourced from the registry ref (single source of truth).
+    const __REF__ = loopar.getRef(__ENTITY__.name) || {};
+
     return {
       name: this.__DOCUMENT_NAME__,
       isNew: this.__IS_NEW__,
@@ -737,7 +741,10 @@ export default class CoreDocument {
         module: __ENTITY__.module,
         doc_structure: __ENTITY__.doc_structure,
         ...(this.is_builder ? {is_builder: true} : {}),
-        is_single: __ENTITY__.is_single
+        is_single: __ENTITY__.is_single,
+        enable_history: __REF__.enable_history ? 1 : 0,
+        enable_comments: __REF__.enable_comments ? 1 : 0,
+        require_login_to_comment: __REF__.require_login_to_comment ? 1 : 0
       },
       ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
       //data: await this.rawValues(),

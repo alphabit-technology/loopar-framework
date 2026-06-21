@@ -9,6 +9,6 @@ export default class ResetPassword extends BaseDocument {
     }
 
     async resetPassword() {
-        const user = await loopar.getUser(this.user_name);
+        const user = await loopar.auth.getUser(this.user_name);
     }
 }

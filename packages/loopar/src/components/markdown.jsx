@@ -296,7 +296,6 @@ export default function MDXEditorWithTabs(props) {
   );
 }
 
-MDXEditorWithTabs.droppable = false;
 
 export { 
   EditorTabs,

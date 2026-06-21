@@ -67,5 +67,4 @@ export default function Carousel(props){
   );
 }
 
-Carousel.designerClasses = "pt-2";
 Carousel.metaFields = BaseCarousel.metaFields;

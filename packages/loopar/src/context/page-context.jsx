@@ -7,6 +7,7 @@ export default class PageContext extends BaseDocument {
       <>
         <MetaComponent elements={this.__STRUCTURE__} parent={this}/>
         {content}
+        {this.getDocumentHistory?.(true)}
       </>,
       slots
     );

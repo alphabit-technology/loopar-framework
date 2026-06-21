@@ -35,6 +35,7 @@ export default function TextArea(props) {
 
  TextArea.metaFields = () => {
   return [
+    ...BaseInput.metaFields(),
     {
       group: "form",
       elements: {

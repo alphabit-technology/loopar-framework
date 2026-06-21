@@ -56,4 +56,3 @@ export default function MetaParagraph(props) {
   )
 }
 
-MetaParagraph.droppable = false

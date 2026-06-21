@@ -152,7 +152,6 @@ const Metadata = (props) => {
   );
 };
 
-Metadata.droppable = false;
 
 Metadata.metaFields = () => {
   return [

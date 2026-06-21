@@ -3,22 +3,8 @@ import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@cn/lib/utils";
 import { useDesigner } from "@context/@/designer-context";
 import { getNodeKey } from "@global/prune-doc-structure";
-
-const ComponentTag = memo(({ name }) => {
-  const displayName = (name || "")
-    .split(/[_\-\s]+/)
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
-
-  return (
-    <span className="text-blue-400 font-bold text-sm italic">
-      {displayName}
-    </span>
-  );
-});
-
-ComponentTag.displayName = "ComponentTag";
+import {elementsDict} from "@global/element-definition"
+import Icon from "@icon";
 
 export const ElementTitle = memo(function ElementTitle({ 
   element, 
@@ -44,11 +30,15 @@ export const ElementTitle = memo(function ElementTitle({
 
   if (!title) return null;
 
+  const icon = elementsDict[element.element]?.def?.icon || "code"
+
   return (
     <span
       className={cn(
-        "absolute z-10 flex items-center rounded-bl px-1",
-        isDroppable ? "top-0 right-0" : "top-0 right-0 opacity-90",
+        "absolute z-11 flex items-center gap-0.5 rounded px-1.5 py-0.5 top-0 right-0",
+        "bg-zinc-800/95 border border-zinc-600/60 shadow-md backdrop-blur-sm",
+        "transition-opacity duration-150",
+        active ? "opacity-100" : "opacity-0 pointer-events-none",
         props.className
       )}
       {...props}
@@ -60,12 +50,6 @@ export const ElementTitle = memo(function ElementTitle({
         )}
       >
         <div
-          className="px-2 py-0.5 hover:bg-primary/70 cursor-pointer"
-          onClick={handleEditElement}
-        >
-          <PencilIcon className="h-4 w-4 text-gray-400" strokeWidth={2} />
-        </div>
-        <div
           className="px-2 py-0.5 hover:bg-destructive/70 cursor-pointer"
           onClick={handleDeleteElement}
         >
@@ -74,10 +58,10 @@ export const ElementTitle = memo(function ElementTitle({
       </div>
 
       <span
-        className="text-primary font-semibold italic cursor-pointer leading-none"
+        className="text-primary font-semibold cursor-pointer leading-none"
         onClick={handleEditElement}
       >
-        <ComponentTag name={title} />
+        <Icon data={{icon}} className="w-5 h-5"/>
       </span>
     </span>
   );

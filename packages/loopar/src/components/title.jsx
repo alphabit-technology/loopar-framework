@@ -29,11 +29,11 @@ export default function Title(props) {
         {...(
           designing ? {
             style: {
-                maxHeight: "3em",
-                overflow: "auto",
+                ...(props.style || {}),
                 display: "-webkit-box",
-                "-webkit-line-clamp": 5,
-                "-webkit-box-orient": "vertical",
+                WebkitLineClamp: 5,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
               },
             }
           : {
@@ -46,4 +46,3 @@ export default function Title(props) {
   )
 }
 
-Title.droppable = false;

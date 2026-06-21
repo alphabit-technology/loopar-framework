@@ -238,79 +238,79 @@ const { LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML_ELEMENT } = ELEMENT_G
 export const elementsDefinition = {
   [LAYOUT_ELEMENT]: [
     { element: "section", icon: "GalleryVertical" },
-    { element: "div", icon: "Code" },
+    { element: "div", icon: "Box" },
     { element: "row", icon: "Columns2" },
-    { element: "col", icon: "Columns" },
+    { element: "col", icon: "RectangleVertical" },
     { element: "card", icon: "PanelTop" },
-    { element: "feature_card", icon: "PanelBoottom" },
-    { element: "banner", icon: "GalleryHorizontalEnd" },
+    { element: "feature_card", icon: "BadgeCheck" },
+    { element: "banner", icon: "GalleryHorizontalEnd", designerClasses: "h-full w-full p-3 py-6" },
     { element: "banner_image", icon: "ImagePlus" },
     { element: "tabs", icon: "AppWindow" },
-    { element: "tab", icon: "Table2", show_in_design: false  },
+    { element: "tab", icon: "PanelTop", show_in_design: false  },
     { element: "generic", icon: "Code" },
-    { element: "menu_content", icon: "PanelRight" },
+    { element: "menu_content", icon: "Menu" },
     { element: "fragment", icon: "Scan" },
-    { element: "container", icon: "Dock" },
-    { element: "panel", icon: "PanelBottom" },
-    { element: "contact_form", icon: "Phone"},
-    { element: "form", icon: "Form"},
+    { element: "container", icon: "Container" },
+    { element: "panel", icon: "PanelBottom", designerClasses: "min-h-[100px] w-full" },
+    { element: "contact_form", icon: "Contact"},
+    { element: "form", icon: "ClipboardList"},
   ],
   [DESIGN_ELEMENT]: [
-    { element: "image", icon: "Image" },
-    { element: "slider", icon: "SlidersHorizontal" },
-    { element: "carousel", icon: "GalleryHorizontalEnd" },
-    { element: "gallery", icon: "ImagePlus" },
-    { element: "text_block", icon: "AlignJustify" },
-    { element: "text_block_icon", icon: "Outdent" },
-    { element: "button", icon: "MousePointer" },
-    { element: "link", icon: "MousePointerClick" },
-    { element: "icon", icon: "Boxes" },
-    { element: "markdown", icon: "BookOpenCheck", designerOnly: true  },
+    { element: "image", icon: "Image", droppable: false },
+    { element: "slider", icon: "GalleryHorizontal" },
+    { element: "carousel", icon: "GalleryHorizontalEnd", designerClasses: "pt-2" },
+    { element: "gallery", icon: "Images", designerClasses: "pt-3" },
+    { element: "text_block", icon: "Type" },
+    { element: "text_block_icon", icon: "MessageSquareText" },
+    { element: "button", icon: "SquareMousePointer" },
+    { element: "link", icon: "Link", droppable: false },
+    { element: "icon", icon: "Shapes" },
+    { element: "markdown", icon: "BookOpenCheck", designerOnly: true, droppable: false },
     { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
-    { element: "title", icon: "Heading1" },
-    { element: "subtitle", icon: "Heading2" },
-    { element: "paragraph", icon: "Pilcrow" },
+    { element: "title", icon: "Heading1", droppable: false },
+    { element: "subtitle", icon: "Heading2", droppable: false },
+    { element: "paragraph", icon: "Pilcrow", droppable: false },
     { element: "direct-preview", icon: "View" },
     { element: "direct-preview-iframe", icon: "View" },
     { element: "stripe", icon: "CreditCard" },
     { element: "stripe_embebed", icon: "CreditCard" },
     { element: "stripe_plans", icon: "LayoutGrid" },
-    { element: "seo", icon: "Globe", designerOnly: true },
-    { element: 'particles', icon: 'DotsHorizontal' },
-    { element: 'particles_settings', icon: 'DotsHorizontal' },
+    { element: "seo", icon: "Search", designerOnly: true },
+    { element: 'particles', icon: 'Sparkles' },
+    { element: 'particles_settings', icon: 'Settings2' },
     { element: 'example_viewer', icon: 'Scan' },
-    { element: 'review', icon: "Pencil"},
+    { element: 'review', icon: "Star"},
     { element: 'collection', icon: "LayoutGrid"},
     { element: 'collection_view', icon: "LayoutGrid", show_in_design: false}
   ],
   [FORM_ELEMENT]: [
-    { element: "input", icon: "FormInput", type: TYPES.string },
-    { element: "password", icon: "Asterisk", type: TYPES.text },
+    { element: "input", icon: "RectangleEllipsis", type: TYPES.string },
+    { element: "password", icon: "KeyRound", type: TYPES.text },
     { element: "date", icon: "Calendar", type: TYPES.date, format: 'YYYY-MM-DD' },
     { element: "date_time", icon: "CalendarClock", type: TYPES.dateTime, format: 'YYYY-MM-DD HH:mm:ss' },
     { element: "time", icon: "Clock10", type: TYPES.time, format: 'HH:mm:ss' },
     { element: "currency", icon: "Currency", type: TYPES.decimal, show_in_design: false },
-    { element: "integer", icon: "fa-duotone fa-input-numeric", type: TYPES.integer, show_in_design: false },
-    { element: "decimal", icon: "fa fa-00", type: TYPES.decimal, show_in_design: false },
+    { element: "integer", icon: "Binary", type: TYPES.integer, show_in_design: false },
+    { element: "decimal", icon: "Hash", type: TYPES.decimal, show_in_design: false },
     { element: "select", icon: "ChevronDown", type: TYPES.text },
     { element: "padding", icon: "Shrink", type: TYPES.text },
     { element: "margin", icon: "Expand", type: TYPES.text },
     { element: "textarea", icon: "FileText", type: TYPES.longtext },
     { element: "tailwind", icon: "SiTailwindcss", type: TYPES.longtext },
     { element: "text_editor", icon: "TextCursorInput", type: TYPES.longtext, clientOnly: true },
-    { element: "checkbox", icon: "CheckSquare", type: TYPES.integer },
+    { element: "checkbox", icon: "SquareCheck", type: TYPES.integer },
     { element: "switch", icon: "ToggleLeft", type: TYPES.integer },
     { element: "id", icon: "BookKey", type: TYPES.increments, show_in_design: false },
-    { element: "form_table", icon: "Sheet", type: TYPES.string },
+    { element: "form_table", icon: "Table", type: TYPES.string },
     { element: "markdown_input", icon: "BookOpenCheck", type: TYPES.text, clientOnly: true },
     { element: "designer", icon: "Brush", type: TYPES.longtext },
     { element: "file_input", icon: "FileInput", type: TYPES.longtext },
     { element: "file_uploader", icon: "FileUp", type: TYPES.longtext },
     { element: "image_input", icon: "FileImage", type: TYPES.longtext },
     { element: "color_picker", icon: "Palette", type: TYPES.text },
-    { element: "icon_input", icon: "Boxes", type: TYPES.text },
-    { element: "radio_group", icon: "Circle", type: TYPES.text },
-    { element: "radio_item", icon: "Circle", type: TYPES.integer, show_in_design: false },
+    { element: "icon_input", icon: "Shapes", type: TYPES.text },
+    { element: "radio_group", icon: "CircleDot", type: TYPES.text },
+    { element: "radio_item", icon: "CircleDot", type: TYPES.integer, show_in_design: false },
     { element: "slot", icon: "Plug"},
     { element: "metadata", icon: "Code", type: TYPES.json}
   ]
@@ -318,11 +318,25 @@ export const elementsDefinition = {
 
 export const elementsDict = Object.freeze(Object.entries(elementsDefinition).reduce((acc, [key, value]) => {
   value.forEach(element => {
-    acc[element.element] = { def: { ...element, ...{ group: key, isWritable: key === FORM_ELEMENT } } };
+    acc[element.element] = {
+      def: {
+        ...element,
+        group: key,
+        isWritable: key === FORM_ELEMENT,
+        droppable: element.droppable,
+        designerClasses: element.designerClasses ?? null,
+      }
+    };
   });
 
   return acc;
 }, {}));
+
+global.elementIsDroppable = (element) => {
+  const def = elementsDict[element]?.def;
+  if (!def) return false;
+  return !def.isWritable && def.droppable !== false;
+};
 
 export const elementsNames = Object.freeze(Object.values(elementsDefinition).reduce((acc, current) => {
   acc = [...acc, ...current.map(element => {

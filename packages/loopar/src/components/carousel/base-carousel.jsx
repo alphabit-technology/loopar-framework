@@ -280,5 +280,4 @@ const BaseCarousel = (props) => {
 
 export default BaseCarousel;
 
-BaseCarousel.droppable = true;
 BaseCarousel.metaFields = carouselMetaFields;

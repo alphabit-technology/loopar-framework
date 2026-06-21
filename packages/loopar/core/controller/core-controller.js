@@ -143,7 +143,7 @@ export default class CoreController extends AuthController {
       key: this.getKey(),
       instance: this.getInstance(),
       meta: {
-        title: titleize(meta.title || this.name || this.document || "Document"),
+        title: titleize((meta.title || this.name || this.document || "Document").toString()),
         action: this.action,
       },
       entryPoint: this.clientImporter(meta),

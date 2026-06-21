@@ -76,8 +76,9 @@ export default class Router extends Middleware {
       res.status(200).set(headers).json({ status: 200, success: true, message: response });
       return;
     }
-
-    const status = Number(response.status) || Number(response.code) || 200;
+    
+    const raw = Number(response.status) || Number(response.code) || 200;
+    const status = (raw >= 100 && raw <= 599) ? raw : 200;
     res.status(status).set(headers).json(response);
   }
 

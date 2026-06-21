@@ -178,8 +178,8 @@ function DroppableContainer({ data = {}, node, children, className, Component = 
   const renderizableProps = loopar.utils.renderizableProps(props);
 
   const ClassNames = cn(
-    "rounded",
-    "bg-card h-full min-h-20 w-full p-2 space-y-3 py-3 pt-4",
+    //"rounded",
+    "h-full min-h-20 w-full p-1 space-y-3 py-3 pt-4",
     dragOver ? 'bg-gradient-to-r from-slate-400/30 to-slate-600/60 shadow' : "",
     className,
     renderizableProps.className
@@ -205,12 +205,12 @@ function DroppableContainer({ data = {}, node, children, className, Component = 
 
 export function Droppable(props) {
   const {node, children, className, elements, Component = "div"} = props;
-  const { designerMode, designerModeType } = useDesigner();
+  const { designerMode, designerModeType, dragEnabled } = useDesigner();
   const hidden = useHidden();
   const renderizableProps = loopar.utils.renderizableProps(props);
   const C = (designerMode && hidden) ? "div" : Component === "fragment" ? React.Fragment : Component;
 
-  if(designerMode && designerModeType != "preview" && !hidden && !fieldIsWritable(props)) return (
+  if(designerMode && (designerModeType != "preview" || dragEnabled) && !hidden && !fieldIsWritable(props)) return (
     <DroppableContextProvider {...props}>
       <DroppableContainer {...props} />
     </DroppableContextProvider>

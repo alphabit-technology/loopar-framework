@@ -88,7 +88,6 @@ export default function BannerImage(props){
   );
 }
 
-BannerImage.droppable = true;
 BannerImage.metaFields = () => {
   return [
     {

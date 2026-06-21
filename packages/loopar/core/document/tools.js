@@ -106,6 +106,7 @@ export const parseDocStructure = async (
   app
 ) => {
   doc_structure = loopar.utils.JSONparse(doc_structure, doc_structure);
+
   return Promise.all(
     doc_structure.map(async (field) => {
       field.data ??= {};

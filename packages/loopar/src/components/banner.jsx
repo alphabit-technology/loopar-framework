@@ -146,7 +146,6 @@ export default function MetaBanner(props){
   )
 }
 
-MetaBanner.designerClasses = "h-full w-full p-3 py-6";
 
 MetaBanner.metaFields =()=>{
   return [{

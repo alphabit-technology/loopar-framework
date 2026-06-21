@@ -1,5 +1,5 @@
 import loopar from "loopar";
-import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, HandGrab, BrushCleaning } from "lucide-react";
+import { BrushIcon, BracesIcon, EyeIcon, SparkleIcon, HandGrab, BrushCleaning, Undo2, Redo2 } from "lucide-react";
 import { BaseFormContext } from "@context/form-provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
@@ -93,6 +93,12 @@ const fixMeta = (structure) => {
   }
 }
 
+const hashStr = (s) => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+};
+
 const DesignerButton = () => {
   const { designerMode, designerModeType } = useDesigner();
   const { sidebarOpen, name } = useDocument();
@@ -126,14 +132,57 @@ export const BaseDesigner = (props) => {
   const [sendingPrompt, setSendingPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState("Generate a form that allows me to manage inventory data");
   const [updatingFromEditor, setUpdatingFromEditor] = useState(false);
-  const [localMetaComponents, setLocalMetaComponents] = useState(() => fixMeta(metaComponents || []));
-  const commitTimerRef = useRef(null);
   const selfKey = node || data.key;
+
+  const draftKey = `loopar-designer-draft:${name || ""}:${selfKey}`;
+  const readDraft = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      const d = raw ? JSON.parse(raw) : null;
+      return (d && Array.isArray(d.meta)) ? d : null;
+    } catch { return null; }
+  };
+
+  const serverBaseHashRef = useRef(null);
+  const draftRestoredRef = useRef(false);
+  const [localMetaComponents, setLocalMetaComponents] = useState(() => {
+    const base = fixMeta(metaComponents || []);
+    const serverHash = hashStr(JSON.stringify(base));
+    serverBaseHashRef.current = serverHash;
+    const draft = readDraft();
+
+    if (draft && draft.baseHash === serverHash && !isEqual(draft.meta, base)) {
+      draftRestoredRef.current = true;
+      return fixMeta(draft.meta);
+    }
+    return base;
+  });
+  const commitTimerRef = useRef(null);
   const storeRef = useRef(null);
+
+  const historyRef = useRef(null);
   if (storeRef.current === null) {
     storeRef.current = new ElementStore();
-    storeRef.current.populate(fixMeta(metaComponents || []));
+    const base = fixMeta(metaComponents || []);
+    storeRef.current.populate(base);
+    const baseJson = JSON.stringify(storeRef.current.reconcileTree(base));
+    if (draftRestoredRef.current) {
+      storeRef.current.populate(localMetaComponents);
+      const draftJson = JSON.stringify(storeRef.current.reconcileTree(localMetaComponents));
+      historyRef.current = { stack: [baseJson, draftJson], index: 1 };
+    } else {
+      historyRef.current = { stack: [baseJson], index: 0 };
+    }
   }
+
+  const [canUndo, setCanUndo] = useState(() => historyRef.current.index > 0);
+  const [canRedo, setCanRedo] = useState(() => historyRef.current.index < historyRef.current.stack.length - 1);
+  const syncHistory = useCallback(() => {
+    const h = historyRef.current;
+    setCanUndo(h.index > 0);
+    setCanRedo(h.index < h.stack.length - 1);
+  }, []);
 
   const stateRef = useRef({});
   stateRef.current.localMetaComponents = localMetaComponents;
@@ -147,6 +196,11 @@ export const BaseDesigner = (props) => {
   stateRef.current.setDesignerModeType = setDesignerModeType;
 
   useEffect(() => {
+    if (draftRestoredRef.current) {
+      draftRestoredRef.current = false;
+      stateRef.current.onChange?.(JSON.stringify(localMetaComponents));
+      return;
+    }
     if (commitTimerRef.current !== null) return;
     if (!isEqual(localMetaComponents, metaComponents || [])) {
       const next = fixMeta(metaComponents || []);
@@ -199,9 +253,59 @@ export const BaseDesigner = (props) => {
     commitTimerRef.current = setTimeout(() => {
       commitTimerRef.current = null;
       const reconciled = storeRef.current.reconcileTree(stateRef.current.localMetaComponents);
-      stateRef.current.onChange?.(JSON.stringify(reconciled));
+      const json = JSON.stringify(reconciled);
+
+      const h = historyRef.current;
+      if (h.stack[h.index] !== json) {
+        h.stack = h.stack.slice(0, h.index + 1);
+        h.stack.push(json);
+        if (h.stack.length > 100) h.stack.shift();
+        h.index = h.stack.length - 1;
+        syncHistory();
+      }
+      if (typeof window !== "undefined") {
+        try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: reconciled, baseHash: serverBaseHashRef.current })); } catch {}
+      }
+      stateRef.current.onChange?.(json);
     }, 300);
-  }, []);
+  }, [syncHistory, draftKey]);
+
+  const applyHistory = useCallback((json) => {
+    if (commitTimerRef.current) { clearTimeout(commitTimerRef.current); commitTimerRef.current = null; }
+    const state = JSON.parse(json);
+    storeRef.current.populate(state);
+    setLocalMetaComponents(state);
+    if (typeof window !== "undefined") { try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: state, baseHash: serverBaseHashRef.current })); } catch {} }
+    stateRef.current.onChange?.(json);
+
+    const selKey = stateRef.current.updatingElementName;
+    if (selKey && selKey !== "null") {
+      const found = findElement("node", selKey, state);
+      if (found) {
+        const nodeKey = getNodeKey(found);
+        const liveData = storeRef.current.get(nodeKey) || found.data;
+        setUpdatingElement({ ...found, node: nodeKey, data: liveData, __version__: Date.now() });
+      } else {
+        setUpdatingElement(null);
+      }
+    }
+  }, [findElement, draftKey]);
+
+  const undo = useCallback(() => {
+    const h = historyRef.current;
+    if (h.index <= 0) return;
+    h.index -= 1;
+    applyHistory(h.stack[h.index]);
+    syncHistory();
+  }, [applyHistory, syncHistory]);
+
+  const redo = useCallback(() => {
+    const h = historyRef.current;
+    if (h.index >= h.stack.length - 1) return;
+    h.index += 1;
+    applyHistory(h.stack[h.index]);
+    syncHistory();
+  }, [applyHistory, syncHistory]);
 
   const setMeta = useCallback((meta) => {
     let parsed;
@@ -217,9 +321,6 @@ export const BaseDesigner = (props) => {
 
     const fixed = parsed;
 
-    // Update local state/store now for an instant reorder; defer persistence via
-    // the debounced commit. Persisting synchronously here (stringify whole tree
-    // -> form field -> JSON.parse round-trip) froze the UI ~1s per drop.
     storeRef.current.populate(fixed);
     setLocalMetaComponents(fixed);
     scheduleCommit();
@@ -326,7 +427,7 @@ export const BaseDesigner = (props) => {
 
   const handleEditElement = useCallback((element) => {
     stateRef.current.setUpdatingElementName(element);
-    handleChangeMode("editor");
+    handleChangeMode(element ? "editor" : "designer");
   }, [handleChangeMode]);
 
   const handleDeleteElement = useCallback((element) => {
@@ -334,6 +435,37 @@ export const BaseDesigner = (props) => {
       deleteElement(element);
     });
   }, [deleteElement]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (stateRef.current.designerModeType === "preview") return;
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        e.shiftKey ? redo() : undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      const selKey = stateRef.current.updatingElementName;
+      if (!selKey || selKey === "null") return;
+
+      if (e.key === "Escape") {
+        handleEditElement(null);
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        handleDeleteElement(selKey);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleEditElement, handleDeleteElement, undo, redo]);
 
   useEffect(() => {
     if (designerMode) return;
@@ -386,6 +518,10 @@ export const BaseDesigner = (props) => {
     updatingFromEditor,
     dragEnabled,
     setDragEnable,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   }), [
     isDesigner,
     designerModeType,
@@ -394,6 +530,10 @@ export const BaseDesigner = (props) => {
     updatingElement,
     updateElement,
     designing,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     handleEditElement,
     handleDeleteElement,
     activeId,
@@ -419,14 +559,20 @@ export const BaseDesigner = (props) => {
               <h2 className="text-3xl">{data.label}</h2>
             </div>
             <div className="space-x-1">
-              <Button 
+              <Button variant="secondary" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}>
+                <Undo2/>
+              </Button>
+              <Button variant="secondary" title="Redo (Ctrl+Shift+Z)" disabled={!canRedo} onClick={redo}>
+                <Redo2/>
+              </Button>
+              {/* <Button
                 className={dragEnabled ? 'bg-red-500' : 'bg-secondary'}
                 onClick={() => {
                   setDragEnable && setDragEnable(!dragEnabled);
                 }}
               >
                 <HandGrab/>
-              </Button>
+              </Button> */}
               <Button
                 variant="secondary"
                 onClick={(e) => {

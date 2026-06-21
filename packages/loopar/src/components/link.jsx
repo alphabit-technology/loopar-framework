@@ -221,7 +221,6 @@ export default function MetaLink({...props}) {
   );
 }
 
-MetaLink.droppable = false;
 MetaLink.metaFields = () => [{
   group: "form",
   elements: {

@@ -1,0 +1,19 @@
+{
+  "name": "Comment Manage",
+  "module": "Web",
+  "default_list_view": "List",
+  "is_single": 0,
+  "is_static": 0,
+  "is_virtual": 1,
+  "include_in_installer": 0,
+  "is_child": 0,
+  "is_builder": 0,
+  "enable_history": 0,
+  "enable_comments": 0,
+  "require_login_to_comment": 0,
+  "doc_structure": "[{\"node\":\"cmn_name\",\"element\":\"input\",\"data\":{\"name\":\"name\",\"label\":\"ID\",\"type\":\"VARCHAR\",\"required\":1,\"unique\":1,\"hidden\":1}},{\"node\":\"cmn_row1\",\"element\":\"row\",\"data\":{\"layout\":\"[60,40]\"},\"elements\":[{\"node\":\"cmn_c1\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"cmn_author\",\"element\":\"input\",\"data\":{\"name\":\"author\",\"label\":\"Author\",\"in_list_view\":1,\"searchable\":1}},{\"node\":\"cmn_doc\",\"element\":\"input\",\"data\":{\"name\":\"document\",\"label\":\"Document\",\"in_list_view\":1,\"searchable\":1}},{\"node\":\"cmn_docname\",\"element\":\"input\",\"data\":{\"name\":\"document_name\",\"label\":\"Record\",\"in_list_view\":1,\"searchable\":1}}]},{\"node\":\"cmn_c2\",\"element\":\"col\",\"data\":{},\"elements\":[{\"node\":\"cmn_when\",\"element\":\"date_time\",\"data\":{\"name\":\"event_at\",\"label\":\"When\",\"in_list_view\":1}},{\"node\":\"cmn_status\",\"element\":\"input\",\"data\":{\"name\":\"status\",\"label\":\"Status\",\"type\":\"integer\",\"in_list_view\":1}}]}]},{\"node\":\"cmn_comment\",\"element\":\"textarea\",\"data\":{\"animation_duration\":1000,\"label\":\"Comment\",\"name\":\"comment\"}}]",
+  "search_fields": "document_name,author",
+  "title_fields": "document_name",
+  "resources": [],
+  "__ENTITY__": "Entity"
+}

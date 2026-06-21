@@ -4,18 +4,26 @@ import { isAuditableEntity, Helpers } from "../../index.js";
 
 const HISTORY_TABLE = "Document History";
 
+// Entities that ARE auditable (they get framework columns: __deleted_at__,
+// __document_status__, …) but must NOT be logged here — logging a comment's
+// own create/update would be noise and risks history-of-comments recursion.
+// (Decoupled from isAuditableEntity, which gates the columns.)
+const NO_HISTORY_LOG = new Set(["Comment"]);
+
+// Pure audit actions. Comments are NOT here — they live in the `Comment`
+// entity (see core/document/comment.js), keeping this log immutable.
 const ACTIONS = Object.freeze({
   CREATED: "Created",
   UPDATED: "Updated",
   DELETED: "Deleted",
   RESTORED: "Restored",
-  COMMENTED: "Commented",
 });
 
 
 function isTrackable(loopar, document) {
   if (!document) return false;
-  if (document === HISTORY_TABLE) return false;        // no self-recursion
+  if (document === HISTORY_TABLE) return false; // no self-recursion
+  if (NO_HISTORY_LOG.has(document)) return false; // auditable, but not logged
   const ref = loopar.getRef?.(document);
   return isAuditableEntity(ref);
 }
@@ -56,7 +64,6 @@ function buildHistoryRow(loopar, { document, doc, action, extras = {} }) {
     user: loopar.currentUser?.name ?? null,
     event_at: new Date().toISOString(),
     diff: extras.diff ? JSON.stringify(extras.diff)     : null,
-    comment: extras.comment ?? null,
     metadata: extras.metadata ? JSON.stringify(extras.metadata) : null,
   };
 }
@@ -70,21 +77,6 @@ async function writeHistory(loopar, payload) {
       `${payload.document_name}: ${err.message}`
     );
   }
-}
-
-async function addComment(loopar, document, documentName, text, { metadata } = {}) {
-  if (!text || !documentName) return;
-  await writeHistory(loopar, {
-    name: Helpers.randomString(15),
-    document,
-    document_name: documentName,
-    action: ACTIONS.COMMENTED,
-    user: loopar.currentUser?.name ?? null,
-    event_at: new Date().toISOString(),
-    diff: null,
-    comment: text,
-    metadata: metadata ? JSON.stringify(metadata) : null,
-  });
 }
 
 /**
@@ -128,8 +120,6 @@ export function setupDocumentHistory(loopar, KnexORM) {
   });
 
   loopar.history = {
-    addComment: (document, documentName, text, opts) =>
-      addComment(loopar, document, documentName, text, opts),
     ACTIONS,
   };
 }

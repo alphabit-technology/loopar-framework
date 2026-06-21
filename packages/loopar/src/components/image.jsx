@@ -69,7 +69,6 @@ export default function MetaImage(props) {
   )
 }
 
-MetaImage.droppable = false
 MetaImage.metaFields = () => {
   return [[
     {

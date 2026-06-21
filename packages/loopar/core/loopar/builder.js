@@ -54,6 +54,7 @@ export class Builder {
   
       const isBuilder = (doc.build || ['Builder', 'Entity'].includes(doc.name)) ? 1 : 0;
       const isChild = doc.is_child ? 1 : 0;
+      const isVirtual = doc.is_virtual ? 1 : 0;
       const isSingle = this.entityIsSingle(doc);
       const fields = this.utils.JSONparse(doc.doc_structure, []);
 
@@ -64,8 +65,9 @@ export class Builder {
       const auditable = isAuditableEntity({
         name: doc.name,
         is_static: doc.is_static,
-        is_child:  isChild,
+        is_child: isChild,
         is_single: isSingle,
+        is_virtual: isVirtual,
         is_audited: doc.is_audited,
       });
 
@@ -79,7 +81,11 @@ export class Builder {
         is_single: isSingle,
         is_builder: isBuilder,
         is_child: isChild,
+        is_virtual: isVirtual,
         is_audited: auditable ? 1 : 0,
+        enable_history: doc.enable_history ? 1 : 0,
+        enable_comments: doc.enable_comments ? 1 : 0,
+        require_login_to_comment: doc.require_login_to_comment ? 1 : 0,
         __MODULE__: doc.__MODULE__,
         __TYPE__: doc.type,
         __FIELDS__: getEntityFields(fields, { auditable }),

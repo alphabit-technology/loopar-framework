@@ -128,7 +128,6 @@ export default function MetaPanel(props) {
   );
 }
 
-MetaPanel.designerClasses = "min-h-[100px] w-full";
 
 MetaPanel.metaFields = () => {
   const colorOptions = [

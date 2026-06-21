@@ -1,11 +1,27 @@
 {
   "App": {
     "name": "loopar",
-    "version": "5.0.62"
+    "version": "5.0.85"
   },
   "documents": {
     "Entity:Module": {
       "__root__": "/apps/loopar/modules/core/entities/module"
+    },
+    "Entity:Module Group": {
+      "__root__": "/apps/loopar/modules/core/entities/module-group"
+    },
+    "Module Group:administration": {
+      "name": "administration",
+      "description": "Administration",
+      "in_sidebar": 1
+    },
+    "Module:core": {
+      "name": "core",
+      "description": "Core",
+      "app_name": "loopar",
+      "module_group": "administration",
+      "icon": "Settings",
+      "in_sidebar": 1
     },
     "Entity:App": {
       "__root__": "/apps/loopar/modules/core/entities/app"
@@ -14,7 +30,7 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "5.0.62",
+      "version": "5.0.85",
       "autor": "Administrator",
       "icon": "Infinity",
       "spacing": 1,
@@ -39,41 +55,6 @@
       "menu_actions": [],
       "info": "Loopar Javascript Drag and Drop Framework"
     },
-    "Entity:Module Group": {
-      "__root__": "/apps/loopar/modules/core/entities/module-group"
-    },
-    "Module Group:administration": {
-      "name": "administration",
-      "description": "Administration",
-      "in_sidebar": 1
-    },
-    "Module:core": {
-      "name": "core",
-      "description": "Core",
-      "app_name": "loopar",
-      "module_group": "administration",
-      "icon": "Settings",
-      "in_sidebar": 1
-    },
-    "Entity:Builder": {
-      "__root__": "/apps/loopar/modules/core/entities/builder"
-    },
-    "Module Group:developer": {
-      "name": "developer",
-      "description": "Developer",
-      "in_sidebar": 1
-    },
-    "Module:developer": {
-      "name": "developer",
-      "description": "Developer",
-      "app_name": "loopar",
-      "module_group": "developer",
-      "icon": "LucideCode",
-      "in_sidebar": 1
-    },
-    "Builder:Page Builder": {
-      "__root__": "/apps/loopar/modules/developer/builders/page-builder"
-    },
     "Module:analytics": {
       "name": "analytics",
       "description": "Analytics",
@@ -82,8 +63,8 @@
       "icon": "ChartNetwork",
       "in_sidebar": 1
     },
-    "Page Builder:Analytics Dashboard": {
-      "__root__": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
+    "Entity:Page View": {
+      "__root__": "/apps/loopar/modules/analytics/entities/page-view"
     },
     "Entity:Resources": {
       "__root__": "/apps/loopar/modules/core/entities/resources"
@@ -91,9 +72,25 @@
     "Entity:Entity": {
       "__root__": "/apps/loopar/modules/core/entities/entity"
     },
+    "Module Group:developer": {
+      "name": "developer",
+      "description": "Developer",
+      "in_sidebar": 1
+    },
     "Module Group:modules": {
       "name": "modules",
       "description": "Modules",
+      "in_sidebar": 1
+    },
+    "Entity:Builder": {
+      "__root__": "/apps/loopar/modules/core/entities/builder"
+    },
+    "Module:developer": {
+      "name": "developer",
+      "description": "Developer",
+      "app_name": "loopar",
+      "module_group": "developer",
+      "icon": "LucideCode",
       "in_sidebar": 1
     },
     "Builder:Form Builder": {
@@ -150,6 +147,12 @@
     },
     "Controller Builder:Contact": {
       "__root__": "/apps/loopar/modules/mail/controllers/contact"
+    },
+    "Builder:Page Builder": {
+      "__root__": "/apps/loopar/modules/developer/builders/page-builder"
+    },
+    "Page Builder:Analytics Dashboard": {
+      "__root__": "/apps/loopar/modules/analytics/pages/analytics-dashboard"
     },
     "Page Builder:Desk": {
       "__root__": "/apps/loopar/modules/core/pages/desk"
@@ -248,9 +251,6 @@
     "Entity:Contact Message": {
       "__root__": "/apps/loopar/modules/mail/entities/contact-message"
     },
-    "Entity:Page View": {
-      "__root__": "/apps/loopar/modules/analytics/entities/page-view"
-    },
     "Entity:Role": {
       "__root__": "/apps/loopar/modules/auth/entities/role"
     },
@@ -290,6 +290,12 @@
     "Entity:Oauth Settings": {
       "__root__": "/apps/loopar/modules/auth/entities/oauth-settings"
     },
+    "Entity:Comment Manage": {
+      "__root__": "/apps/loopar/modules/web/entities/comment-manage"
+    },
+    "Entity:Comment": {
+      "__root__": "/apps/loopar/modules/core/entities/comment"
+    },
     "Module:loopar": {
       "name": "loopar",
       "description": "loopar",
@@ -297,6 +303,20 @@
       "module_group": "modules",
       "icon": "Infinity",
       "in_sidebar": 0
+    },
+    "Module:integrations": {
+      "name": "integrations",
+      "description": "integrations",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "in_sidebar": 1
+    },
+    "Module:web": {
+      "name": "web",
+      "description": "web",
+      "app_name": "loopar",
+      "module_group": "modules",
+      "in_sidebar": 1
     }
   },
   "postInstaller": {
@@ -327,7 +347,6 @@
     "Entity:Email Template": "link",
     "Entity:Email Queue": "link",
     "Entity:Contact Message": "link",
-    "Entity:Page View": "link",
     "Entity:Role": "link",
     "Entity:Permission": "link",
     "Entity:Role Permission": "link",
@@ -341,7 +360,10 @@
     "Entity:Project Category": "link",
     "Entity:Service Category": "link",
     "Entity:Oauth Settings": "link",
+    "Entity:Comment Manage": "link",
+    "Entity:Comment": "link",
     "Entity:Resources": "link",
-    "Entity:Module": "link"
+    "Entity:Module": "link",
+    "Entity:Page View": "link"
   }
 }

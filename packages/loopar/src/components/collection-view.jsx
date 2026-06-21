@@ -15,9 +15,6 @@ function lookupDetail(entityName) {
 export default function CollectionView({ data = {} }) {
   const entityName = data.options ? String(data.options).trim() : null;
   const preloaded = data.preloaded;
-
-  // `page` layout always uses the generic DefaultDetail; `gallery` lets a
-  // per-entity override take over when one exists.
   const layout = data.detail_layout || "page";
   const Detail = useMemo(
     () => (layout === "page" ? DefaultDetail : lookupDetail(entityName)),
@@ -36,6 +33,7 @@ export default function CollectionView({ data = {} }) {
 
   const item = preloaded?.mode === "detail" ? preloaded.item : null;
   const fields = preloaded?.fields || [];
+  const enableComments = [1, "1", true, "true"].includes(data.enable_comments);
 
   return (
     <Detail
@@ -45,6 +43,7 @@ export default function CollectionView({ data = {} }) {
       slug={item?.slug || null}
       app={data.app}
       layout={layout}
+      enableComments={enableComments}
       galleryMode={data.gallery_mode || "carousel"}
       galleryColumns={data.gallery_columns || 3}
       backLabel={data.back_label || "Back"}
@@ -89,6 +88,13 @@ CollectionView.metaFields = () => {
         back_label: {
           element: INPUT,
           data: { label: "Back link text" },
+        },
+        enable_comments: {
+          element: SWITCH,
+          data: {
+            label: "Enable comments",
+            description: "Show a public comments section on the detail page. Guest comments are held for approval.",
+          },
         },
       },
     },

@@ -1,7 +1,8 @@
 {
-  "__document_status__": "Active",
   "name": "Analytics Dashboard",
   "module": "analytics",
+  "enable_history": 0,
+  "enable_comments": 0,
   "doc_structure": "[]",
   "__ENTITY__": "Page Builder"
 }

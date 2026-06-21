@@ -1,6 +1,7 @@
 import loopar from "loopar";
 import {DocumentProvider} from "@context/@/document-context";
 import React from "react";
+import DocumentHistory from "../../components/document-history.jsx";
 
 export default class BaseDocument extends React.Component {
   dontHaveContainer = true;
@@ -64,6 +65,44 @@ export default class BaseDocument extends React.Component {
           {content}
         </>
       </DocumentProvider>
+    );
+  }
+
+  /**
+   * Auto-mounted document timeline. Shared across every context (form, view,
+   * page) — the subclass decides WHERE to render it (calls this in its render),
+   * BaseDocument decides HOW. Opt-in per entity via the `enable_history` /
+   * `enable_comments` flags carried in the client meta (Document.Entity).
+   * The flags + entity + record name are all already client-side, so the
+   * component only fetches rows from the server (which re-gates by flag).
+   * Skipped for unsaved (new) docs and entities that didn't opt in.
+   */
+  getDocumentHistory(isPage) {
+    //if (this.__IS_NEW__) return null;
+
+    const entity = this.Document?.Entity || {};
+    //console.log(["Entity", entity])
+    const enableHistory = !!entity.enable_history;
+    const enableComments = !!entity.enable_comments;
+    if (!enableHistory && !enableComments) return null;
+
+    const documentType = entity.name;
+    const documentName = isPage ? documentType : (this.__DOCUMENT_NAME__ || this.Document?.name);
+
+    console.log(["DocumentType", documentType, documentName, isPage])
+    if (!documentType && !documentName) return null;
+
+    return (
+      <section className="mt-10 pt-6 border-t border-border w-full max-w-3xl">
+        <DocumentHistory
+          document={documentType}
+          documentName={documentName}
+          enableHistory={enableHistory}
+          enableComments={enableComments}
+          requireLogin={!!entity.require_login_to_comment}
+          canModerate
+        />
+      </section>
     );
   }
 

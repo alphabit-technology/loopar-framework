@@ -13,10 +13,12 @@ export const DesignElement = memo(function DesignElement(props) {
   const [hover, setHover] = useState(false);
   const debouncedHover = useRef(null);
 
-  const { 
+  const {
     designerModeType,
     designing,
-    dragEnabled
+    dragEnabled,
+    updatingElement,
+    handleEditElement
   } = useDesigner();
 
   const { 
@@ -32,7 +34,7 @@ export const DesignElement = memo(function DesignElement(props) {
   const draggableRef = useRef(null);
   const { node: elementNode, ...elementProps } = element;
 
-  const isDroppable = !fieldIsWritable(elementProps) && Comp.droppable !== false;
+  const isDroppable = global.elementIsDroppable(elementProps.element);
 
   const nodeKey = elementNode ?? getNodeKey(element);
   useEffect(() => {
@@ -76,7 +78,6 @@ export const DesignElement = memo(function DesignElement(props) {
     return cn(
       "rounded-sm p-1",
       designing ? [
-        "border border-primary/30",
         //"bg-secondary",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),inset_0_-1px_0_0_rgba(0,0,0,0.2)]",
         //elementProps.element === MARKDOWN && "max-h-[500px] overflow-y-auto"
@@ -85,7 +86,6 @@ export const DesignElement = memo(function DesignElement(props) {
       disabled && "p-2",
       isDroppable && designing && [
         //"bg-input",
-        "border-1 border-primary/40",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),inset_0_-1px_0_0_rgba(0,0,0,0.3)]",
         [COL, PANEL].includes(elementProps.element) && "h-full"
       ],
@@ -141,7 +141,7 @@ export const DesignElement = memo(function DesignElement(props) {
   ]);
 
   const handleDragStart = useCallback((e) => {
-    if (!dragEnabled || e.button !== 0 || designerModeType === "preview") return;
+    if (!dragEnabled || e.button !== 0) return;
 
     const interactive = e.target.closest(
       'input, textarea, [contenteditable], .mdx-editor, .ProseMirror, .no-drag'
@@ -150,19 +150,51 @@ export const DesignElement = memo(function DesignElement(props) {
     if (interactive) return;
 
     e.stopPropagation();
-    setInitializedDragging(true);
-    dragStart(e);
-  }, [dragEnabled, designerModeType, setInitializedDragging, dragStart]);
+
+    const downX = e.clientX;
+    const downY = e.clientY;
+    const THRESHOLD = 6;
+    let dragStarted = false;
+
+    const onMove = (me) => {
+      if (Math.abs(me.clientX - downX) <= THRESHOLD && Math.abs(me.clientY - downY) <= THRESHOLD) return;
+      dragStarted = true;
+      cleanup();
+      setInitializedDragging(true);
+      dragStart({ clientX: downX, clientY: downY });
+    };
+    const onUp = () => {
+      cleanup();
+      if (dragStarted || !designing) return;
+
+      const alreadySelected = updatingElement && getNodeKey(updatingElement) === nodeKey;
+      handleEditElement(alreadySelected ? null : nodeKey);
+    };
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [dragEnabled, setInitializedDragging, dragStart, designing, handleEditElement, nodeKey, updatingElement]);
 
   // The being-dragged opacity moved into `className` (opacity-60) so it
   // unifies with the placeholder visual. Inline style would override class
   // opacity, which would split the source's appearance from the placeholder.
   const isActive = hover && !dragging;
 
+  const isSelected = designing && updatingElement && getNodeKey(updatingElement) === nodeKey;
+
   return (
     <HiddenContext.Provider value={disabled}>
       <div
-        className={cn("relative w-full h-auto", className)}
+        className={cn(
+          "relative w-full h-auto",
+          className,
+          designing && isDroppable && "outline outline-1 outline-dashed outline-primary/25 outline-offset-2",
+          designing && !isDroppable && isActive && "outline outline-1 outline-dashed outline-primary/30 outline-offset-2",
+          isSelected && "outline outline-2 outline-primary outline-offset-2"
+        )}
         ref={draggableRef}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -174,7 +206,7 @@ export const DesignElement = memo(function DesignElement(props) {
         {designerModeType !== "preview" && (
           <ElementTitle
             element={element}
-            active={isActive}
+            active={isActive || isSelected}
             isDroppable={isDroppable}
             onDragStart={handleDragStart}
           />

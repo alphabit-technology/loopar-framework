@@ -18,6 +18,7 @@ import { cacheManager } from './cache/cache-manager.js';
 import { RealtimeManager } from './realtime/RealtimeManager.js';
 import { HookManager } from "./HookManager.js";
 import { setupDocumentHistory } from "./document/document-history.js";
+import { setupComments } from "./document/comment.js";
 import { StorageManager } from "./global/storage/index.js";
 import argon2 from 'argon2';
 
@@ -42,6 +43,7 @@ export class Loopar extends Document {
     this.storage = new StorageManager();
 
     setupDocumentHistory(this, KnexORM);
+    setupComments(this);
   }
 
   hook(document, event, callback) {
@@ -74,8 +76,6 @@ export class Loopar extends Document {
 
     this.auth = new Auth(
       this.authTokenName,
-      this.getUser.bind(this),
-      this.disabledUser.bind(this)
     );
     
     await this.initialize();
@@ -258,37 +258,8 @@ export class Loopar extends Document {
     throw err;
   }
 
-  async getUser(user_id=null) {
-    if (!this.__installed__ && this.installing) {
-      return {
-        name: "Administrator"
-      }
-    }
-
-    return await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
-      .select('name', 'email', 'password', 'disabled', 'profile_picture').first();
-  }
-
-  async disabledUser(user_id) {
-    if ((!this.__installed__ || this.installing) || (user_id === "Administrator")) return false;
-
-    const status = await this.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
-      .select('disabled').first();
-    
-    return !status || status.disabled === 1 || status.disabled === '1'
-  }
-
   get currentUser() {
-    try {
-      const token = this.cookie.get(this.authTokenName);
-      
-      if (!token) return {};
-      
-      return jwt.verify(token, this.jwtSecret);
-    } catch (error) {
-      console.error(['[currentUser] Error:', error.message]);
-      return {};
-    }
+    return this.auth.authUser();
   }
 
   async getSettings() {

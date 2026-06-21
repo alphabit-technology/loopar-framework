@@ -95,7 +95,6 @@ export default function Section(props) {
   );
 }
 
-Section.droppable = true;
 
 Section.metaFields = () => {
   return [

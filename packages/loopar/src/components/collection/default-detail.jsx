@@ -5,6 +5,24 @@ import { ArrowLeftIcon, Loader2, ExternalLinkIcon } from "lucide-react";
 import ImageCarousel from "./image-carousel.jsx";
 import ImageGrid from "./image-grid.jsx";
 import { Preview as MarkdownPreview } from "@markdown";
+import DocumentHistory from "../document-history.jsx";
+
+function CommentsBlock({ entity, item }) {
+  if (!entity || !item?.name) return null;
+  return (
+    <section className="border-t pt-10">
+      <DocumentHistory
+        document={entity}
+        documentName={item.name}
+        enableComments
+        historyApi={{ entity, action: "comments" }}
+        title="Comments"
+        className="border-0 bg-transparent"
+        emptyMessage="No comments yet. Be the first."
+      />
+    </section>
+  );
+}
 
 const SKIP_FIELDS = new Set([
   "slug", "name", "app", "published",
@@ -79,6 +97,7 @@ export default function DefaultDetail(props) {
     layout = "page",
     galleryMode = "carousel",
     galleryColumns = 3,
+    enableComments = false,
   } = props;
 
   const [item, setItem] = useState(preloadedItem);
@@ -143,12 +162,12 @@ export default function DefaultDetail(props) {
     );
   }
 
-  const shared = { item, fields, backHref, backLabel, showBack, handleBack, galleryMode, galleryColumns };
+  const shared = { item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack, galleryMode, galleryColumns };
   if (layout === "gallery") return <DetailGallery {...shared} />;
   return <DetailPage {...shared} />;
 }
 
-function DetailPage({ item, fields, backHref, backLabel, showBack, handleBack, galleryMode = "carousel", galleryColumns = 3 }) {
+function DetailPage({ item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack, galleryMode = "carousel", galleryColumns = 3 }) {
   const coverField = useMemo(() => firstField(fields, f => f.element === "image_input" && !f.multiple), [fields]);
   const galleryField = useMemo(() => firstField(fields, f => f.element === "image_input" && f.multiple), [fields]);
   const descField = useMemo(() =>
@@ -305,12 +324,18 @@ function DetailPage({ item, fields, backHref, backLabel, showBack, handleBack, g
           </section>
         ) : null}
 
+        {enableComments ? (
+          <div className="max-w-3xl w-full">
+            <CommentsBlock entity={entity} item={item} />
+          </div>
+        ) : null}
+
       </div>
     </article>
   );
 }
 
-function DetailGallery({ item, fields, backHref, backLabel, showBack, handleBack }) {
+function DetailGallery({ item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack }) {
   const coverField = useMemo(() => firstField(fields, f => f.element === "image_input" && !f.multiple), [fields]);
   const galleryField = useMemo(() => firstField(fields, f => f.element === "image_input" && f.multiple), [fields]);
   const descField = useMemo(() =>
@@ -416,6 +441,8 @@ function DetailGallery({ item, fields, backHref, backLabel, showBack, handleBack
             </div>
           </section>
         ))}
+
+        {enableComments ? <CommentsBlock entity={entity} item={item} /> : null}
       </div>
     </article>
   );

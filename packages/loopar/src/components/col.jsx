@@ -22,4 +22,3 @@ export default function Col(props) {
 }
 
 Col.dontHaveMetaElements = ["label", "text"];
-Col.droppable = true;

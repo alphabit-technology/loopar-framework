@@ -17,12 +17,30 @@ function setCsrfCookie(token) {
 }
 
 export default class Auth {
-  constructor(tenantId, getUser, disabledUser) {
+  constructor(tenantId, getUser) {
     this.tenantId = tenantId;
     this.tokenName = `loopar_token_${tenantId}`;
     this.loggedCookieName = `logged_${tenantId}`;
-    this.getUser = getUser;
-    this.disabledUser = disabledUser;
+  }
+
+  async disabledUser(user_id) {
+    if ((!loopar.__installed__ || loopar.installing) || (user_id === "Administrator")) return false;
+
+    const status = await loopar.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
+      .select('disabled').first();
+    
+    return !status || status.disabled === 1 || status.disabled === '1'
+  }
+
+  async getUser(user_id=null) {
+    if (!loopar.__installed__ && loopar.installing) {
+      return {
+        name: "Administrator"
+      }
+    }
+
+    return await loopar.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
+      .select('name', 'email', 'password', 'disabled', 'profile_picture').first();
   }
 
   authUser() {

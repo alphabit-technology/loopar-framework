@@ -197,7 +197,7 @@ export default class Entity extends BaseDocument {
   }
 
   isDBEntity(){
-    return ["Entity", "Builder"].includes(this.getEntityType()) && !this.entityIsSingle();
+    return ["Entity", "Builder"].includes(this.getEntityType()) && !this.entityIsSingle() && this.is_virtual != 1;
   }
 
   /**

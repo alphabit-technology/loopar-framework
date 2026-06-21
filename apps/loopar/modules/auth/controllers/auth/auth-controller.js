@@ -8,8 +8,8 @@ import {getProvider, providerKeys, providerLabel, generateState, generateCodeVer
 import {setOauthTx, readOauthTx, clearOauthTx, oauthRedirectUri, loadProviderConfig, parseScopes, linkUser} from "./oauth.js"
 
 export default class AuthController extends BaseController {
-  static publicActions = ['login', 'register', 'recoveryUser', 'recoveryPassword', 'logout'];
-  static actionsEnabled = ['login', 'logout', 'requestReset'];
+  static publicActions = ['login', 'register', 'recoveryUser', 'recoveryPassword', 'logout', 'oauthCallback'];
+  static actionsEnabled = ['login', 'logout', 'requestReset', 'oauthCallback'];
   
   constructor(props){
     super(props);

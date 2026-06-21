@@ -254,7 +254,6 @@ export default function ExampleViewer(props) {
 }
 
 ExampleViewer.dontHaveMetaElements = ["label", "text"];
-ExampleViewer.droppable = true;
 
 ExampleViewer.metaFields = () => {
   return [

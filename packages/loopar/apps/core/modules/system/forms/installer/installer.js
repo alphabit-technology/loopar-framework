@@ -305,10 +305,7 @@ export default class Installer extends BaseDocument {
       .filter(e => !e.__deleted_at__)
       .filter(e => {
         const ref = loopar.getRef(e.name);
-        if (!ref) return false;
-        if (ref.is_static) return false;
-        
-        if (ref.is_single) return false;
+        if (!ref || ref.is_static || ref.is_single || ref.is_virtual) return false;
         return true;
       });
 
