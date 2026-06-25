@@ -1,8 +1,26 @@
-import { buildUrl } from "@global/router-utils";
+import { buildUrl, getWorkspaceName, workspaceRequiresAuth } from "@global/router-utils";
 
 export default class HTTP {
   #jsonQuery = {};
   #options = {};
+
+  /**
+   * When an auth-protected action bounces us to /auth/login (e.g. an
+   * authenticated surface's session expired mid-action), remember where we were
+   * so login can return us there. Only augments login redirects coming from an
+   * auth-required workspace (desk, portal, …) that don't already carry a
+   * `redirect=` param. No-op for every other redirect.
+   */
+  #withReturnUrl(redirect) {
+    if (typeof redirect !== 'string' || typeof window === 'undefined') return redirect;
+    if (!/^\/auth\/login(\/|\?|$)/.test(redirect)) return redirect;
+    if (/[?&]redirect=/.test(redirect)) return redirect;
+
+    const here = window.location.pathname + window.location.search;
+    if (!workspaceRequiresAuth(getWorkspaceName(window.location.pathname))) return redirect;
+
+    return redirect + (redirect.includes('?') ? '&' : '?') + 'redirect=' + encodeURIComponent(here);
+  }
 
   makeUrl(action) {
     if (!action || action.startsWith("http") || action.startsWith("/")) return action;
@@ -184,10 +202,11 @@ export default class HTTP {
       return await withFreeze(fetchPromise);
     } catch (error) {
       if (error?.redirect) {
+        const dest = self.#withReturnUrl(error.redirect);
         if (error.hardRedirect) {
-          window.location.replace(error.redirect);
+          window.location.replace(dest);
         } else {
-          self.navigate(error.redirect, { replace: true });
+          self.navigate(dest, { replace: true });
         }
         return;
       }

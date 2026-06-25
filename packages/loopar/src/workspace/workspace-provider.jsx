@@ -5,6 +5,21 @@ import { useCookies } from "@services/cookie";
 import { usePersist } from "@services/persist-state";
 import { AppSourceLoader } from "@loopar/loader";
 import {useAuth} from "@context/AuthContext"
+import Emitter from "@services/emitter/emitter";
+
+/** Read the current public session (JWT is httpOnly → ask the server). */
+async function fetchSession() {
+  try {
+    const r = await fetch("/auth/me", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+      body: "{}",
+    }).then((x) => x.json());
+    return r?.logged ? r : null;
+  } catch {
+    return null;
+  }
+}
 
 const initialState = {
   theme: "system",
@@ -52,6 +67,16 @@ export function WorkspaceProvider({
   const [pathname, setPathname] = useState(
     props.pathname || (typeof window !== "undefined" ? window.location.pathname + window.location.search : "")
   );
+
+  // Reactive session. Seeded from SSR (__META__.user); refreshed in place when
+  // auth changes (login modal / logout) so the chrome AND in-page components
+  // (e.g. comments) flip between guest/logged-in without a full reload.
+  const [user, setUser] = useState(__META__.user || null);
+  useEffect(() => {
+    const onAuthChanged = () => { fetchSession().then(setUser); };
+    Emitter.on("auth:changed", onAuthChanged);
+    return () => Emitter.off("auth:changed", onAuthChanged);
+  }, []);
 
   const metaCacheRef = useRef({});
   const lastFetchedPath = useRef(null);
@@ -319,7 +344,7 @@ export function WorkspaceProvider({
     workspace: __WORKSPACE_NAME__,
     pathname,
     award,
-    user: __META__.user
+    user
   }), [
     getTheme,
     __META__,
@@ -335,7 +360,8 @@ export function WorkspaceProvider({
     refresh,
     isPending,
     pathname,
-    award
+    award,
+    user
   ]);
 
   return (

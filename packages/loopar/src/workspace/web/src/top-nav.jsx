@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { buttonVariants } from "@cn/components/ui/button";
+import { Profile, Login } from "./UserSecction.jsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +13,30 @@ import { ThemeToggle } from "@workspace/theme-toggle";
 import { BaseIcon } from "@base-icons";
 import { useWorkspace } from "@workspace/workspace-provider";
 
-function UserMenu() {
+function UserMenu({ onOpenLogin, onOpenProfile }) {
+  // `user` is reactive (WorkspaceProvider refreshes it on `auth:changed`), so
+  // the menu flips between Sign in / avatar after a modal login with no reload.
   const {user: me, __META__} = useWorkspace();
   const webApp = __META__.web_app;
 
-  if(!webApp.show_user_section) return;  
+  const handleLogout = () => {
+    fetch("/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+      body: "{}",
+    }).finally(() => window.location.reload());
+  };
+
+  if(!webApp.show_user_section) return;
 
   if (!me) {
     return (
-      <a href="/auth/login" className={`${buttonVariants({ size: "sm", variant: "ghost" })} hover:text-primary`}>
+      <button
+        onClick={onOpenLogin}
+        className={`${buttonVariants({ size: "sm", variant: "ghost" })} hover:text-primary`}
+      >
         Sign in
-      </a>
+      </button>
     );
   }
 
@@ -57,20 +71,26 @@ function UserMenu() {
         </div>
         <div className="grid grid-cols-1 p-1">
           {!isWeb && (
-            <a href="/desk/Profile/update" className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}>
+            <button
+              onClick={onOpenProfile}
+              className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}
+            >
               <UserRoundCogIcon className="mr-2 h-4 w-4" /> Profile
-            </a>
+            </button>
           )}
-          <a href="/auth/logout" className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}>
+          <button
+            onClick={handleLogout}
+            className={`${buttonVariants({ size: "sm", variant: "ghost" })} justify-start`}
+          >
             <LogOutIcon className="mr-2 h-4 w-4" /> Log Out
-          </a>
+          </button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function MenuActions({ menuActions = [] }) {
+function MenuActions({ menuActions = [], onOpenLogin, onOpenProfile }) {
   return (
     <nav className="flex items-center space-x-1">
       {menuActions.map((action, i) => {
@@ -95,26 +115,36 @@ function MenuActions({ menuActions = [] }) {
         );
       })}
       <ThemeToggle />
-      <UserMenu />
+      <UserMenu onOpenLogin={onOpenLogin} onOpenProfile={onOpenProfile} />
     </nav>
   );
 }
 
 export function TopNav({ menuActions }) {
   const { webApp } = useWorkspace();
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [login, setLogin] = useState(false);
   const logoPosition = ["left", "center", "right"].includes(webApp.logo_position)
     ? webApp.logo_position
     : "left";
+
+  const actionProps = {
+    menuActions,
+    onOpenLogin: () => setLogin(true),
+    onOpenProfile: () => setUpdatingProfile(true),
+  };
 
   return (
     <header
       className="fixed top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
     >
+      {login && <Login onClose={() => setLogin(false)} />}
+      {updatingProfile && <Profile onClose={() => setUpdatingProfile(false)} />}
       <div className="flex items-center px-2 h-web-header-height">
         <div className="flex lg:hidden flex-1 items-center">
           <MainNav />
           <div className="ml-auto flex items-center space-x-4">
-            <MenuActions menuActions={menuActions} />
+            <MenuActions {...actionProps} />
           </div>
         </div>
 
@@ -125,7 +155,7 @@ export function TopNav({ menuActions }) {
               <Logo variant="desktop" />
               <MenuItems className="ml-2" />
               <div className="ml-auto">
-                <MenuActions menuActions={menuActions} />
+                <MenuActions {...actionProps} />
               </div>
             </>
           )}
@@ -134,7 +164,7 @@ export function TopNav({ menuActions }) {
             <>
               <MenuItems />
               <div className="ml-auto flex items-center space-x-4">
-                <MenuActions menuActions={menuActions} />
+                <MenuActions {...actionProps} />
                 <Logo variant="desktop" />
               </div>
             </>
@@ -148,7 +178,7 @@ export function TopNav({ menuActions }) {
               </div>
               <div className="flex items-center justify-between">
                 <MenuItems half="second" />
-                <MenuActions menuActions={menuActions} />
+                <MenuActions {...actionProps} />
               </div>
             </div>
           )}

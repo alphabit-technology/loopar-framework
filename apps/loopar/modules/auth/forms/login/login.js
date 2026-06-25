@@ -16,7 +16,9 @@ export default class Login extends BaseDocument {
     if (user && isValidPassword && !(user.disabled && user.name !== 'Administrator') &&
       (this.user_name === user.name || this.user_name === user.email)
     ) {
-      loopar.auth.login(user);
+      // Return the session payload (name, user_type, profile_picture, ...) so
+      // the controller can decide where to land the user post-login.
+      return loopar.auth.login(user);
     } else {
       loopar.auth.killSession();
       loopar.throw({ code: 401, trow: 'Login Error', message: 'Invalid user or password' });

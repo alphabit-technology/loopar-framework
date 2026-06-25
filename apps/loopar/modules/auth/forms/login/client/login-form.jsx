@@ -3,6 +3,7 @@
 import React, {useImperativeHandle, useEffect, useState} from 'react';
 import AuthContext from '@context/auth-context';
 import {useNavigate} from 'react-router';
+import loopar from 'loopar';
 
 /** Inline brand logos, keyed by provider. Avoids any icon-package dependency. */
 const ProviderIcons = {
@@ -87,9 +88,19 @@ function OAuthButtons() {
 function Login(props){
   const {children, ref} = props;
   const navigate = useNavigate();
+
   const afterLogin = async () => {
-    navigate('/desk/Desk/view', {replace: true});
-    window.location.reload();
+    if (props.inModal) {
+      // In-place login: close the modal and flip the session reactively
+      // (chrome + comment form switch to logged-in) WITHOUT reloading the
+      // document, so anything the user already typed (e.g. a draft comment)
+      // is preserved.
+      props.onClose?.();
+      loopar.emit('auth:changed');
+      return;
+    }
+    // Full-page login: the server returns a hard redirect to the right place
+    // (?redirect= or user-type landing); http handles the navigation.
   };
 
   useImperativeHandle(ref, () => ({
@@ -97,7 +108,11 @@ function Login(props){
   }));
 
   useEffect(() => {
-    navigate('/auth/login', {replace: true});
+    // Normalize to /auth/login WITHOUT stripping the ?redirect= return URL.
+    if (props.inModal) return;
+    if (window.location.pathname !== '/auth/login') {
+      navigate('/auth/login' + window.location.search, {replace: true});
+    }
   }, []);
 
   return children
@@ -114,6 +129,7 @@ export default class LoginForm extends AuthContext {
   async login() {
     await this.send({
       action: 'login',
+      query: this.props.inModal ? { inModal: 1 } : {},
       error: () => {
         setTimeout(() => {
           this.setError("user_name", { message: "Invalid user name or password" });
@@ -135,7 +151,7 @@ export default class LoginForm extends AuthContext {
 
   render() {
     return (
-      <Login ref={this.afterLogin}>
+      <Login ref={this.afterLogin} {...this.props}>
         {super.render()}
         <OAuthButtons />
       </Login>

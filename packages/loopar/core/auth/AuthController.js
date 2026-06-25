@@ -1,5 +1,6 @@
 import { loopar, PermissionManager } from "loopar";
 import { validateCsrfToken } from './csrf.js';
+import { workspaceCapabilities, workspaceRequiresAuth, getWorkspaceName } from "../global/router-utils.js";
 
 export default class AuthController {
   async validateCsrf() {
@@ -8,7 +9,7 @@ export default class AuthController {
     if (this.#isPublicAction(this.req.__WORKSPACE_NAME__)) return true;
 
     const workspace = this.req.__WORKSPACE_NAME__;
-    if (workspace !== 'desk' && workspace !== 'api') return true;
+    if (!workspaceCapabilities(workspace).enforceCsrf) return true;
 
     if (!validateCsrfToken(this.req)) {
       loopar.throw('Invalid CSRF token', '/auth/login');
@@ -93,13 +94,16 @@ export default class AuthController {
     const action = this.action;
     const workspace = this.req.__WORKSPACE_NAME__;
 
+    const cap = workspaceCapabilities(workspace);
+
     const isAjax = this.method === 'POST' || workspace === 'api';
     const resolve = (message, url) => loopar.throw(
       message,
       isAjax ? null : (url || '/auth/login')
     );
 
-    if (workspace === 'web' || workspace === 'loopar') return true;
+    // Fully public surfaces (web, loopar): no auth gate at all.
+    if (cap.public) return true;
 
     // On the auth FORM pages (login/register/recovery), an already-logged-in
     // user should be sent to where they belong instead of seeing the form
@@ -109,7 +113,7 @@ export default class AuthController {
     // oauthProviders) or the OAuth dance (oauth, oauthCallback) on this workspace.
     const AUTH_FORM_ACTIONS = ['login', 'register', 'recoveryuser', 'recoverypassword', 'recoverypasswordrequest'];
     if (
-      workspace === 'auth' &&
+      cap.isAuth &&
       this.method === 'GET' &&
       AUTH_FORM_ACTIONS.includes(String(action).toLowerCase())
     ) {
@@ -127,7 +131,7 @@ export default class AuthController {
     if (user) {
       const webLanding = process.env.WEB_LANDING || '/';
 
-      if (workspace === 'auth' && action !== 'logout') {
+      if (cap.isAuth && action !== 'logout') {
         // Already logged in → bounce to where this user belongs.
         const dest = user.user_type === 'Web' ? webLanding : '/desk/Desk/view';
         return resolve('You are already logged in, refresh this page', dest);
@@ -137,18 +141,27 @@ export default class AuthController {
         return resolve('Not permitted');
       }
 
-      // Web users belong to the website only — no desk access, even if they
-      // navigate to /desk directly.
-      if (workspace === 'desk' && user.user_type === 'Web') {
+      // Audience guard: e.g. desk blocks `user_type === "Web"` accounts.
+      if (cap.blockWebUsers && user.user_type === 'Web') {
         return resolve('This account does not have desk access', webLanding);
       }
 
       return await this.isAuthorized(user);
     }
 
-    if (workspace === 'auth') return true;
-    if (workspace === 'desk') {
-      return resolve('You must be logged in to access this page', '/auth/login');
+    if (cap.isAuth) return true;
+    if (cap.requiresAuth) {
+      // On a full page load of a protected surface, the requested URL IS the
+      // page the user was on — carry it as ?redirect= so login can return them
+      // there. Generalized to any auth-required workspace (desk, portal, …).
+      let url = '/auth/login';
+      if (!isAjax) {
+        const back = this.req?.originalUrl || '';
+        if (back && workspaceRequiresAuth(getWorkspaceName(back))) {
+          url += `?redirect=${encodeURIComponent(back)}`;
+        }
+      }
+      return resolve('You must be logged in to access this page', url);
     }
 
     return resolve('You must be logged in to access this page');

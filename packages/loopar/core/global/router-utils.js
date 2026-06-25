@@ -24,6 +24,36 @@ export const ASSET_EXTENSIONS = new Set([
 
 export const VALID_WORKSPACES = ['desk', 'auth', 'loopar', 'api'];
 
+/**
+ * Per-workspace capabilities — the single source of truth for auth/CSRF/audience
+ * behavior, so the rest of the codebase stops branching on hardcoded workspace
+ * names (`if (workspace === 'desk')`). Adding a new authenticated surface (e.g.
+ * a `portal`) becomes a matter of adding an entry here.
+ *
+ *  - public:        no auth gate at all (every action allowed; see #award).
+ *  - requiresAuth:  must be logged in; unauthenticated → redirect to login.
+ *  - enforceCsrf:   POST/mutations validate the CSRF double-submit token.
+ *  - blockWebUsers: `user_type === "Web"` accounts are not allowed in.
+ *  - isAuth:        the auth surface itself (login/register/recovery pages).
+ */
+export const WORKSPACE_CAPABILITIES = {
+  web:    { public: true,  requiresAuth: false, enforceCsrf: false, blockWebUsers: false, isAuth: false },
+  loopar: { public: true,  requiresAuth: false, enforceCsrf: false, blockWebUsers: false, isAuth: false },
+  auth:   { public: false, requiresAuth: false, enforceCsrf: false, blockWebUsers: false, isAuth: true  },
+  desk:   { public: false, requiresAuth: true,  enforceCsrf: true,  blockWebUsers: true,  isAuth: false },
+  api:    { public: false, requiresAuth: true,  enforceCsrf: true,  blockWebUsers: false, isAuth: false },
+};
+
+/** Capabilities for a workspace name. Unknown names fall back to `web` (matches getWorkspaceName). */
+export function workspaceCapabilities(name) {
+  return WORKSPACE_CAPABILITIES[name] || WORKSPACE_CAPABILITIES.web;
+}
+
+/** True when the workspace requires a logged-in user. */
+export function workspaceRequiresAuth(name) {
+  return !!workspaceCapabilities(name).requiresAuth;
+}
+
 export const SYSTEM_PATHS = {
   CONNECT: '/loopar/system/connect',
   UPDATE: '/loopar/system/update',
@@ -197,11 +227,14 @@ export const RouteParsing = {
 export const RouterUtils = {
   ASSET_EXTENSIONS,
   VALID_WORKSPACES,
+  WORKSPACE_CAPABILITIES,
   SYSTEM_PATHS,
 
   generateErrorTemplate,
   isAssetUrl,
   getWorkspaceName,
+  workspaceCapabilities,
+  workspaceRequiresAuth,
   setDefaultParams,
   buildUrl,
 

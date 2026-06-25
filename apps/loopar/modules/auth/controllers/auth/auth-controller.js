@@ -17,13 +17,50 @@ export default class AuthController extends BaseController {
 
   async publicActionLogin() {
     return await this.#makeAction('Login', async (form) => {
-      await form.login();
-      return this.redirect('/desk/Desk/view', { hard: true });
+      const session = await form.login();
+
+      // In-place login (web modal): no navigation. The client soft-refreshes
+      // the current document + chrome with the new session.
+      if (this.query.inModal || this.req.__WORKSPACE_NAME__ === 'web') {
+        return this.success('Welcome', { user: session || null, notify: false });
+      }
+
+      // Full-page login: honor a safe return URL (e.g. desk session expiry),
+      // else land by user type.
+      return this.redirect(this.#postLoginDestination(session), { hard: true });
     });
+  }
+
+  /**
+   * Where to send the user after a full-page login.
+   * Priority: validated `?redirect=` (same-origin path) → user-type landing.
+   */
+  #postLoginDestination(session) {
+    const webLanding = process.env.WEB_LANDING || '/';
+    const back = this.#safeReturnUrl(this.query.redirect);
+    if (back) return back;
+    return session?.user_type === 'Web' ? webLanding : '/desk/Desk/view';
+  }
+
+  /**
+   * Guards against open redirects: only same-origin absolute paths are allowed,
+   * and never back to the auth workspace (would loop).
+   */
+  #safeReturnUrl(url) {
+    if (typeof url !== 'string' || !url) return null;
+    if (!url.startsWith('/') || url.startsWith('//')) return null;
+    if (url.toLowerCase().startsWith('/auth')) return null;
+    return url;
   }
 
   async publicActionLogout() {
     loopar.auth.logout();
+
+    // Web/ajax logout (POST) → no navigation; the client reloads the current
+    // public page, now logged out. Desk/page-load logout (GET link) → login.
+    if (this.method === 'POST') {
+      return this.success('Logged out', { notify: false });
+    }
     return this.redirect('/auth/login');
   }
 

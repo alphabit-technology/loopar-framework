@@ -36,6 +36,7 @@ const UserInfo = ({user}) => {
 
 export default class ProfileForm extends FormContext {
   canUpdate = false;
+  hasHeader = false;
   constructor(props){
     super(props);
   }

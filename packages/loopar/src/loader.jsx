@@ -141,7 +141,7 @@ function _Import(source) {
 export function Entity({ name, action, entityName, fallback, ...props }) {
   const [model, setModel] = useState(null);
   useEffect(() => {
-    loopar.getMeta("Viewer", action, { document: name, name: entityName }).then((meta) => {
+    loopar.getMeta(name, action).then((meta) => {
       if (meta) setModel({ Component: _Import(meta), meta });
     });
   }, []);

@@ -271,7 +271,7 @@ export const elementsDefinition = {
     { element: "subtitle", icon: "Heading2", droppable: false },
     { element: "paragraph", icon: "Pilcrow", droppable: false },
     { element: "direct-preview", icon: "View" },
-    { element: "direct-preview-iframe", icon: "View" },
+    //{ element: "direct-preview-iframe", icon: "View" },
     { element: "stripe", icon: "CreditCard" },
     { element: "stripe_embebed", icon: "CreditCard" },
     { element: "stripe_plans", icon: "LayoutGrid" },

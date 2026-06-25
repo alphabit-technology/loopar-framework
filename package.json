@@ -22,6 +22,7 @@
     "logs": "node bin/loopar-cli.js logs",
     "list": "node bin/loopar-cli.js list",
     "build": "yarn install --immutable --inline-builds && node bin/build-prepare.js && npm-run-all build:client build:server && node bin/build-activate.js",
+    "build:app": "node bin/build-prepare.js && npm-run-all build:client build:server && node bin/build-activate.js",
     "build:client": "node bin/run-vite.js client",
     "build:server": "node bin/run-vite.js server"
   },

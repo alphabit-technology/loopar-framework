@@ -80,7 +80,7 @@ export function ListGrid(props) {
               className="justify-left flex gap-3 align-middle justify-start"
             >
               <Avatar className={`rounded-3 h-11 w-11`} style={{ backgroundColor: color }}>
-                <AvatarFallback className={`bg-transparent text-xl font-bold`}>{loopar.utils.avatar(row.name)}</AvatarFallback>
+                <AvatarFallback className={`bg-transparent text-xl font-bold`}>{loopar.utils.avatar(row.name || "")}</AvatarFallback>
               </Avatar>
               <div className="h-ful items-left flex flex-col justify-center">
                 <h2>{row.name}</h2>

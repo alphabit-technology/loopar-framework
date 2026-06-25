@@ -2,22 +2,9 @@
 'use strict';
 
 import {BaseController, loopar} from 'loopar';
-import { spawn } from 'child_process';
-import crypto from 'node:crypto';
+import { enqueueBuild, getBuildStatus, setEmitter } from '../../build-service.js';
 
-let buildState = { state: 'idle' };
-let buildChild = null;
-
-function emitBuildStatus() {
-  loopar.emit("buildStatus", { build: buildState });
-}
-
-function finalizeBuild(next) {
-  if (buildState.state !== 'running') return;
-  buildState = { ...buildState, ...next };
-  buildChild = null;
-  emitBuildStatus();
-}
+setEmitter((event, payload) => loopar.emit(event, payload));
 
 export default class TenantManagerController extends BaseController {
   unRestrictedActions = ["list", "create", "update"]
@@ -63,66 +50,38 @@ export default class TenantManagerController extends BaseController {
   }
 
   async actionBuild() {
-    if (buildState.state === 'running') {
-      return {
-        status: 200,
-        success: true,
-        build: buildState,
-        notify: { type: "warning", message: "A build is already in progress." },
-      };
-    }
+    const scope =
+      (this.body && this.body.app) ||
+      (this.query && this.query.app) ||
+      'all';
 
-    buildState = {
-      id: crypto.randomUUID(),
-      state: 'running',
-      startedAt: Date.now(),
-    };
-    emitBuildStatus();
-
-    buildChild = spawn('npm', ['run', 'build'], {
+    const res = enqueueBuild({
+      scope,
       cwd: loopar.pathRoot,
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        BUILD_INITIATOR: loopar.tenantId,
-        FORCE_COLOR: '0',
-        TENANT_ID: undefined,
-        TENANT_PATH: undefined,
-        PORT: undefined,
-        DOMAIN: undefined,
-        HMR_PORT: undefined,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
+      initiator: loopar.tenantId,
     });
 
-    buildChild.stdout.on('data', (chunk) => {
-      process.stdout.write(`[build] ${chunk}`);
-    });
-    buildChild.stderr.on('data', (chunk) => {
-      process.stderr.write(`[build] ${chunk}`);
-    });
-
-    buildChild.on('exit', (code) => {
-      finalizeBuild({
-        state: code === 0 ? 'completed' : 'failed',
-        finishedAt: Date.now(),
-        exitCode: code,
-      });
-    });
-
-    buildChild.on('error', (err) => {
-      finalizeBuild({
-        state: 'failed',
-        finishedAt: Date.now(),
-        error: err.message,
-      });
-    });
+    let type = 'info';
+    let message;
+    if (res.queued) {
+      message = scope === 'all'
+        ? "Build started — you'll be notified when it finishes."
+        : `Build for "${scope}" queued — you'll be notified when it finishes.`;
+    } else {
+      type = 'warning';
+      message = {
+        ALREADY_RUNNING: 'A build is already in progress.',
+        ALREADY_QUEUED: `A build for "${scope}" is already queued.`,
+        COVERED_BY_FULL: 'A full build is already in progress; it covers this app.',
+      }[res.reason] || 'A build is already in progress.';
+    }
 
     return {
       status: 200,
       success: true,
-      build: buildState,
-      notify: { type: "info", message: "Build started — you'll be notified when it finishes." },
+      build: res.build,
+      queue: res.queue,
+      notify: { type, message },
     };
   }
 
@@ -130,7 +89,7 @@ export default class TenantManagerController extends BaseController {
     return {
       status: 200,
       success: true,
-      build: buildState,
+      ...getBuildStatus(),
     };
   }
 

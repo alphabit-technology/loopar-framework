@@ -66,11 +66,11 @@ function TabFn(props){
   }
 
   useEffect(() => {
-    if((!checkIfTabExists(currentTab))){
-      selectFirstTab();
-    }else{
-      elementsDict.length === 0 && !asChild && designerMode && addTab();
+    if (elementsDict.length === 0) {
+      !asChild && designerMode && addTab();
+      return;
     }
+    if (!checkIfTabExists(currentTab)) selectFirstTab();
   }, [designerMode, id, currentTab, elementsDict]);
 
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function MetaTabs(props){
     <div className={`p-2 my-3 pt-0 mt-0 border border-separate ${props.className} ${data.class}`}id={data.id}>
       {data.label && <h4 className="p-2">{data.label}</h4>}
       <TabFn
-        id={data.id || data.name || data.key}
+        id={data.id || data.name || data.key || key}
         data={data}
         elementsDict={elementsDict}
         asChild={props.asChild}

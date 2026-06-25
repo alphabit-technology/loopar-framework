@@ -117,6 +117,7 @@ export default class Router extends Middleware {
 
     if (req.__WORKSPACE_NAME__ === "web") {
       const menu = RouterUtils.RouteParsing.findWebAppMenu(params.document, loopar);
+      
       if (!menu) {
         return loopar.throw({
           code: 404,

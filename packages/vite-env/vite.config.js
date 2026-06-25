@@ -10,6 +10,9 @@ import svgr from 'vite-plugin-svgr';
 const framework = process.cwd();
 const loopar = 'node_modules/loopar';
 
+const BROTLI_QUALITY = Number(process.env.BUILD_BROTLI_QUALITY ?? 10);
+const GZIP_LEVEL = Number(process.env.BUILD_GZIP_LEVEL ?? 6);
+
 const resRoot = (...args) => resolve(framework, ...args);
 const resLoopar = (...args) => resRoot(loopar, ...args);
 
@@ -61,17 +64,17 @@ export default defineConfig(({ command }) => {
 
     plugins: [
       tailwindcss(),
-      react({ 
+      react({
         devTarget: "esnext",
       }),
       svgr(),
 
       !isDev && compression({
         algorithms: [
-          defineAlgorithm('gzip', { level: 9 }),
+          defineAlgorithm('gzip', { level: GZIP_LEVEL }),
           defineAlgorithm('brotliCompress', {
             params: {
-              [constants.BROTLI_PARAM_QUALITY]: 11,
+              [constants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY,
             }
           }),
         ],

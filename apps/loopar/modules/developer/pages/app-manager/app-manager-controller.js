@@ -6,6 +6,9 @@ import fs from "fs";
 import path from 'path';
 
 import { pullApp, pushApp, commitApp, discardApp, publishApp, statusApp, getDiff, getRemoteUrl, getCwdForApp } from './git-actions.js';
+import { enqueueBuild, setEmitter } from '../../build-service.js';
+
+setEmitter((event, payload) => loopar.emit(event, payload));
 
 export default class AppManagerController extends SystemController {
   constructor(props) {
@@ -109,10 +112,31 @@ export default class AppManagerController extends SystemController {
       ? ` ${result.files_changed} file(s) changed.`
       : ' Already up to date.';
 
+    let buildNote = '';
+    const buildOnPull = !['0', 'false'].includes(String(process.env.LOOPAR_BUILD_ON_PULL ?? '1'));
+    const changed = result.files_changed > 0 || result.needs_restart;
+
+    if (buildOnPull && changed) {
+      const scope = result.is_framework ? 'all' : app_name;
+      const q = enqueueBuild({
+        scope,
+        cwd: loopar.pathRoot,
+        initiator: loopar.tenantId,
+      });
+      result.build_scope = scope;
+      result.build_queued = q.queued;
+      result.build_reason = q.reason;
+      buildNote = q.queued
+        ? (scope === 'all'
+            ? ' Full build started.'
+            : ` Build for "${scope}" started.`)
+        : ' A build covering this change is already in progress.';
+    }
+
     return await this.success(result, {
       notify: {
         type: 'success',
-        message: `Pulled ${app_name}.${changesNote}${restartNote}`
+        message: `Pulled ${app_name}.${changesNote}${restartNote}${buildNote}`
       }
     });
   }

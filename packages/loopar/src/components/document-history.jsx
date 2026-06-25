@@ -278,7 +278,6 @@ export default function DocumentHistory({
   const [activeKey, setActiveKey] = useState(null);
 
   const load = useCallback(async () => {
-    console.log(["Document", document])
     if (!document || !documentName) return;
     setLoading(true);
     setError("");
