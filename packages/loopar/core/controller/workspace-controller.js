@@ -24,6 +24,8 @@ export default class WorkspaceController extends AuthController {
       WORKSPACE.menu_data =  await WorkspaceController.sidebarData();
     } else if (workspace === "web") {
       WORKSPACE.web_app = loopar.webApp;
+    } else if (workspace === "portal") {
+      WORKSPACE.menu_data = await WorkspaceController.portalMenuData(loopar.auth.user());
     }
 
     return {
@@ -157,5 +159,38 @@ export default class WorkspaceController extends AuthController {
 
   static async sidebarData() {
     return loopar.modulesGroup;
+  }
+
+  /**
+   * Portal navigation — unlike the desk sidebar (which ships the full module
+   * tree and gates access only at the route), the portal menu is filtered by
+   * permission here on the server, so a user only ever receives the entities
+   * they may actually open. Built from the same `modulesGroup` catalog, flattened
+   * to entity links (`/portal/<Entity>/<action>`). `Profile` is the baseline
+   * everyone gets, so a user with no other permission still sees just that.
+   */
+  static async portalMenuData(username) {
+    username = username || loopar.auth.user();
+    const can = (doc, action) => PermissionManager.can(doc, action, username);
+
+    const groups = [];
+    for (const g of (loopar.modulesGroup || [])) {
+      const routes = [];
+      for (const m of (g.modules || [])) {
+        for (const r of (m.routes || [])) {
+          const entity = r.description;
+          const action = r.link === 'update' ? 'update' : 'list';
+          if (can(entity, action) || can(entity, 'view')) {
+            routes.push({ label: entity, icon: m.icon, link: `/portal/${entity}/${action}` });
+          }
+        }
+      }
+      if (routes.length) groups.push({ name: g.name, routes });
+    }
+
+    return {
+      groups,
+      profile: { label: 'Profile', link: '/portal/Profile/update' },
+    };
   }
 }

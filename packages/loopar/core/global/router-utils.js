@@ -22,7 +22,7 @@ export const ASSET_EXTENSIONS = new Set([
   'json', 'xml', 'txt', 'yaml',                                // Data
 ]);
 
-export const VALID_WORKSPACES = ['desk', 'auth', 'loopar', 'api'];
+export const VALID_WORKSPACES = ['desk', 'auth', 'loopar', 'api', 'portal'];
 
 /**
  * Per-workspace capabilities — the single source of truth for auth/CSRF/audience
@@ -42,6 +42,10 @@ export const WORKSPACE_CAPABILITIES = {
   auth:   { public: false, requiresAuth: false, enforceCsrf: false, blockWebUsers: false, isAuth: true  },
   desk:   { public: false, requiresAuth: true,  enforceCsrf: true,  blockWebUsers: true,  isAuth: false },
   api:    { public: false, requiresAuth: true,  enforceCsrf: true,  blockWebUsers: false, isAuth: false },
+  // End-user authenticated app ("desk for any logged-in user"). Same auth/CSRF
+  // as desk, but does NOT block Web users — its audience is everyone logged in,
+  // with visibility governed by permissions (Profile as the baseline).
+  portal: { public: false, requiresAuth: true,  enforceCsrf: true,  blockWebUsers: false, isAuth: false },
 };
 
 /** Capabilities for a workspace name. Unknown names fall back to `web` (matches getWorkspaceName). */
@@ -115,6 +119,19 @@ export function getWorkspaceName(pathname) {
  * is preserved as `params.name` so subsequent middlewares can disambiguate.
  */
 export function setDefaultParams(params, workspaceName) {
+  // Portal routes desk-like (Entity/action) but with its own defaults and no
+  // "single segment => Module name" convention. Bare /portal lands on the
+  // user's Profile (the baseline everyone can reach); a lone Entity defaults
+  // to `view`.
+  if (workspaceName === 'portal') {
+    if (!params.document) {
+      params.document = 'Profile';
+      params.action = 'update';
+    }
+    params.action ??= 'view';
+    return params;
+  }
+
   if (!params.document && !params.action && workspaceName === 'desk') {
     params.document = 'Desk';
     params.action = 'view';

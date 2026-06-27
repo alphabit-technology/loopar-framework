@@ -3,6 +3,8 @@ import { MetaComponentsLoader } from "@loopar/components-loader";
 import { useEffect, lazy, useState } from "react";
 import { loopar } from "loopar";
 import { LoaderCircleIcon } from "lucide-react";
+import { getAppRegistry } from "./app-registry.js";
+import "./shared-runtime.js";
 
 const Fallback = () => (
   <div className="flex flex-row justify-center items-center h-full">
@@ -84,39 +86,42 @@ const ErrorMessage = (props) => {
 };
 
 
-export async function AppSourceLoader(Document) {
+export async function AppSourceLoader(Document, ENVIRONMENT = 'client') {
   const appSources = Object.entries(import.meta.glob([
     '/apps/**/modules/**/**/**/client/*.jsx',
     '../apps/core/modules/**/**/**/client/*.jsx',
     './context/*.jsx',
+    // Migrated to standalone per-app builds (loaded via the runtime registry):
+    '!/apps/couple/**',
   ], )).reduce((acc, [path, module]) => {
     acc[path.split('/').pop().replace('.jsx', '')] = module;
     return acc;
   }, {});
 
   const source = Document?.entryPoint;
+  const moduleImport = appSources[source];
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      const moduleImport = appSources[source];
+  if (moduleImport) return moduleImport();
 
-      if(!appSources[source]) {
-       resolve({
-        default: () => <ErrorMessage Document={Document}/>
-       });
-      }
-      return resolve(moduleImport ? await moduleImport() : null)
+  const fromRegistry = await loadFromRegistry(source, ENVIRONMENT);
+  if (fromRegistry) return fromRegistry;
 
-    } catch (error) {
-      reject(error);
-    }
-  })
+  return { default: () => <ErrorMessage Document={Document} /> };
+}
+
+async function loadFromRegistry(source, ENVIRONMENT) {
+  if (!source) return null;
+  const registry = await getAppRegistry(ENVIRONMENT);
+  const entry = registry[source];
+  if (!entry) return null;
+  const spec = ENVIRONMENT === 'server' ? entry.server : entry.client;
+  return spec ? import(/* @vite-ignore */ spec) : null;
 }
 
 export const Loader = (__META__, ENVIRONMENT) => {
   return new Promise((resolve) => {
     WorkspaceLoader(__META__.name).then(Workspace => {
-      __META__.Document ? AppSourceLoader(__META__.Document).then(Document => {
+      __META__.Document ? AppSourceLoader(__META__.Document, ENVIRONMENT).then(Document => {
         MetaComponentsLoader(__META__, ENVIRONMENT).then(() => {
           
           resolve({ Workspace: Workspace.default, View: Document.default });
