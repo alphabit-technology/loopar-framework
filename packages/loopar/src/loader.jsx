@@ -3,8 +3,6 @@ import { MetaComponentsLoader } from "@loopar/components-loader";
 import { useEffect, lazy, useState } from "react";
 import { loopar } from "loopar";
 import { LoaderCircleIcon } from "lucide-react";
-import { getAppRegistry } from "./app-registry.js";
-import "./shared-runtime.js";
 
 const Fallback = () => (
   <div className="flex flex-row justify-center items-center h-full">
@@ -86,14 +84,12 @@ const ErrorMessage = (props) => {
 };
 
 
-export async function AppSourceLoader(Document, ENVIRONMENT = 'client') {
+export async function AppSourceLoader(Document) {
   const appSources = Object.entries(import.meta.glob([
     '/apps/**/modules/**/**/**/client/*.jsx',
     '../apps/core/modules/**/**/**/client/*.jsx',
     './context/*.jsx',
-    // Migrated to standalone per-app builds (loaded via the runtime registry):
-    '!/apps/couple/**',
-  ], )).reduce((acc, [path, module]) => {
+  ])).reduce((acc, [path, module]) => {
     acc[path.split('/').pop().replace('.jsx', '')] = module;
     return acc;
   }, {});
@@ -103,19 +99,7 @@ export async function AppSourceLoader(Document, ENVIRONMENT = 'client') {
 
   if (moduleImport) return moduleImport();
 
-  const fromRegistry = await loadFromRegistry(source, ENVIRONMENT);
-  if (fromRegistry) return fromRegistry;
-
   return { default: () => <ErrorMessage Document={Document} /> };
-}
-
-async function loadFromRegistry(source, ENVIRONMENT) {
-  if (!source) return null;
-  const registry = await getAppRegistry(ENVIRONMENT);
-  const entry = registry[source];
-  if (!entry) return null;
-  const spec = ENVIRONMENT === 'server' ? entry.server : entry.client;
-  return spec ? import(/* @vite-ignore */ spec) : null;
 }
 
 export const Loader = (__META__, ENVIRONMENT) => {

@@ -42,17 +42,27 @@ function runNext() {
   current = { ...job, state: 'running', startedAt: Date.now() };
   emit();
 
-  const isScoped = job.scope && job.scope !== 'all';
-  const args = isScoped ? ['run', 'build:app'] : ['run', 'build'];
-  const tag = isScoped ? `build:${job.scope}` : 'build';
+  const isInstall = job.kind === 'install';
 
-  child = spawn('npm', args, {
+  // install → yarn install; otherwise → full monorepo build.
+  let cmd, args, tag;
+  if (isInstall) {
+    cmd = 'yarn';
+    args = ['install', '--immutable', '--inline-builds'];
+    tag = 'install';
+  } else {
+    cmd = 'npm';
+    args = ['run', 'build'];
+    tag = 'build';
+  }
+
+  child = spawn(cmd, args, {
     cwd: job.cwd,
     env: {
       ...process.env,
-      NODE_ENV: 'production',
+      // Don't force NODE_ENV=production for install (Yarn must keep devDeps).
+      ...(isInstall ? {} : { NODE_ENV: 'production' }),
       BUILD_INITIATOR: job.initiator || undefined,
-      BUILD_APP: isScoped ? job.scope : undefined,
       FORCE_COLOR: '0',
       TENANT_ID: undefined,
       TENANT_PATH: undefined,
@@ -67,13 +77,13 @@ function runNext() {
   child.stderr.on('data', (c) => process.stderr.write(`[${tag}] ${c}`));
 
   const finish = (patch) => {
-    const done = { ...current, ...patch, finishedAt: Date.now() };
-    history.unshift(done);
+    current = { ...current, ...patch, finishedAt: Date.now() };
+    history.unshift(current);
     history = history.slice(0, 10);
+    emit();            // emit the terminal state (completed/failed) so listeners react
     current = null;
     child = null;
-    emit();
-    runNext();
+    runNext();         // starts the next job (emits running) or leaves idle
   };
 
   child.on('exit', (code) =>
@@ -104,6 +114,20 @@ export function enqueueBuild({ scope = 'all', cwd, initiator } = {}) {
   }
 
   const job = { id: crypto.randomUUID(), scope, cwd, initiator };
+  queue.push(job);
+  emit();
+  runNext();
+  return { queued: true, jobId: job.id, ...snapshot() };
+}
+
+export function enqueueInstall({ cwd, initiator } = {}) {
+  const installPending =
+    (current && current.kind === 'install') ||
+    queue.some((j) => j.kind === 'install');
+  if (installPending) {
+    return { queued: false, reason: 'ALREADY_QUEUED', ...snapshot() };
+  }
+  const job = { id: crypto.randomUUID(), kind: 'install', scope: 'install', cwd, initiator };
   queue.push(job);
   emit();
   runNext();

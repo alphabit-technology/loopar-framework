@@ -10,8 +10,16 @@ import svgr from 'vite-plugin-svgr';
 const framework = process.cwd();
 const loopar = 'node_modules/loopar';
 
-const BROTLI_QUALITY = Number(process.env.BUILD_BROTLI_QUALITY ?? 10);
+const BUILD_COMPRESS = (process.env.BUILD_COMPRESS ?? 'brotli').toLowerCase();
+const BROTLI_QUALITY = Number(process.env.BUILD_BROTLI_QUALITY ?? 9);
 const GZIP_LEVEL = Number(process.env.BUILD_GZIP_LEVEL ?? 6);
+
+const compressionAlgorithms = [
+  (BUILD_COMPRESS === 'gzip' || BUILD_COMPRESS === 'both') &&
+    defineAlgorithm('gzip', { level: GZIP_LEVEL }),
+  (BUILD_COMPRESS === 'brotli' || BUILD_COMPRESS === 'both') &&
+    defineAlgorithm('brotliCompress', { params: { [constants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY } }),
+].filter(Boolean);
 
 const resRoot = (...args) => resolve(framework, ...args);
 const resLoopar = (...args) => resRoot(loopar, ...args);
@@ -69,15 +77,8 @@ export default defineConfig(({ command }) => {
       }),
       svgr(),
 
-      !isDev && compression({
-        algorithms: [
-          defineAlgorithm('gzip', { level: GZIP_LEVEL }),
-          defineAlgorithm('brotliCompress', {
-            params: {
-              [constants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY,
-            }
-          }),
-        ],
+      !isDev && compressionAlgorithms.length > 0 && compression({
+        algorithms: compressionAlgorithms,
         threshold: 512,
         include: /\.(js|mjs|css|html|json|svg)$/,
         exclude: [/\.map$/, /stats\.html$/],

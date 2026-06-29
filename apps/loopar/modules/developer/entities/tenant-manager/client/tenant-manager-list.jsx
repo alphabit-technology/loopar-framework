@@ -13,7 +13,7 @@ import {
 
 import {Link} from "@link"
 import {Button} from "@cn/components/ui/button";
-import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer } from 'lucide-react';
+import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer, PackageIcon } from 'lucide-react';
 
 import {cn} from "@cn/lib/utils";
 
@@ -194,6 +194,7 @@ const BuildButton = () => {
   useRealtime("buildStatus", (payload) => {
     if (!payload?.build) return;
     const next = payload.build;
+    if (next.scope === 'install') return; // install has its own button
     setBuild(next);
 
     if (next.state !== 'completed' && next.state !== 'failed') return;
@@ -257,6 +258,52 @@ const BuildButton = () => {
   );
 };
 
+const InstallButton = () => {
+  const [running, setRunning] = useState(false);
+
+  useRealtime("buildStatus", (payload) => {
+    const b = payload?.build;
+    if (!b || b.scope !== 'install') return;
+    setRunning(b.state === 'running');
+    if (b.state === 'completed') {
+      loopar.notify({ message: "Dependencies installed. You can build now.", type: "success" });
+    } else if (b.state === 'failed') {
+      loopar.notify({
+        message: `Install failed${b.exitCode != null ? ` (exit ${b.exitCode})` : ''}. Check server logs.`,
+        type: "error",
+      });
+    }
+  });
+
+  const onClick = (e) => {
+    e.preventDefault();
+    if (running) return;
+    loopar.confirm(
+      "Run 'yarn install' now? Installs new/updated dependencies from the lockfile. Run this when libraries changed, before building.",
+      () => {
+        setRunning(true);
+        loopar.api.post("Tenant Manager", "install", {
+          freeze: false,
+          success: () => {},
+          error: (msg) => { setRunning(false); loopar.throw(msg); },
+        });
+      }
+    );
+  };
+
+  return (
+    <Button
+      variant={running ? "outline" : "secondary"}
+      onClick={onClick}
+      disabled={running}
+      title="Install dependencies (yarn install) — run when libraries changed, before building"
+    >
+      <PackageIcon className={`mr-2 ${running ? "animate-pulse" : ""}`} />
+      {running ? "Installing…" : "Install"}
+    </Button>
+  );
+};
+
 class TenantManagerListBase extends ListContext {
   onlyList=true;
   constructor(props){
@@ -265,6 +312,7 @@ class TenantManagerListBase extends ListContext {
 
   setCustomActions() {
     super.setCustomActions();
+    this.setCustomAction('install', <InstallButton />);
     this.setCustomAction('build', <BuildButton />);
   }
 

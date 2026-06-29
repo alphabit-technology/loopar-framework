@@ -117,20 +117,15 @@ export default class AppManagerController extends SystemController {
     const changed = result.files_changed > 0 || result.needs_restart;
 
     if (buildOnPull && changed) {
-      const scope = result.is_framework ? 'all' : app_name;
       const q = enqueueBuild({
-        scope,
+        scope: 'all',
         cwd: loopar.pathRoot,
         initiator: loopar.tenantId,
       });
-      result.build_scope = scope;
       result.build_queued = q.queued;
-      result.build_reason = q.reason;
       buildNote = q.queued
-        ? (scope === 'all'
-            ? ' Full build started.'
-            : ` Build for "${scope}" started.`)
-        : ' A build covering this change is already in progress.';
+        ? ' Full build started.'
+        : ' A build is already in progress.';
     }
 
     return await this.success(result, {
