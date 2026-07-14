@@ -1,6 +1,7 @@
 import session from 'express-session';
 import { FileSessionStore } from './lib/FileSessionStorage.js';
 import path from 'path';
+import crypto from 'node:crypto';
 import { loopar } from '../loopar.js';
 
 /**
@@ -36,9 +37,18 @@ function buildMiddleware() {
     reapInterval: 3600,
   });
 
+  // SECURITY: the old fallback was `loopar-secret-${tenantId}` — derivable
+  // from the (public) tenant name, so session cookies could be forged.
+  // Now: explicit SESSION_SECRET from the tenant .env wins; otherwise derive
+  // a session-scoped key from the tenant's random JWT_SECRET (domain-
+  // separated so the same key isn't reused across JWT HMAC and cookie
+  // signing).
+  const sessionSecret = process.env.SESSION_SECRET ||
+    crypto.createHash('sha256').update(`${loopar.jwtSecret}:session`).digest('hex');
+
   return session({
     name: `loopar_${tenantId}`,
-    secret: process.env.SESSION_SECRET || `loopar-secret-${tenantId}`,
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

@@ -21,6 +21,8 @@ import { setupDocumentHistory } from "./document/document-history.js";
 import { setupComments } from "./document/comment.js";
 import { StorageManager } from "./global/storage/index.js";
 import argon2 from 'argon2';
+import crypto from 'node:crypto';
+import { tenant } from '../bin/tenant/tenant-builder.js';
 
 
 export class Loopar extends Document {
@@ -74,10 +76,12 @@ export class Loopar extends Document {
     this.id = "loopar-"+sha1(tenantId);
     this.appsBasePath = appsBasePath;
 
+    await this.#resolveJwtSecret();
+
     this.auth = new Auth(
       this.authTokenName,
     );
-    
+
     await this.initialize();
 
     await this.server.initialize();
@@ -139,8 +143,58 @@ export class Loopar extends Document {
     return this.id;
   }
 
+  #jwtSecret = null;
+
+  /**
+   * Per-tenant JWT signing secret.
+   *
+   * SECURITY: this used to be `sha1(this.id)`, and `this.id` derives solely
+   * from the tenant name — which is public (it's in the domain/URL). Anyone
+   * could recompute the secret offline and forge valid tokens for any user.
+   *
+   * The secret is now random (256 bits), generated once per tenant and
+   * persisted to `sites/<tenant>/.env` as JWT_SECRET so it survives restarts
+   * (PM2 injects the tenant .env into process.env on start). Rotating or
+   * first-generating it invalidates active sessions — users just log in
+   * again.
+   */
   get jwtSecret() {
-    return sha1(this.id);
+    if (!this.#jwtSecret) {
+      throw new Error('[loopar] jwtSecret requested before init() resolved it');
+    }
+    return this.#jwtSecret;
+  }
+
+  async #resolveJwtSecret() {
+    // 1) Already in the process env (PM2 loads the tenant .env on start).
+    if (process.env.JWT_SECRET) {
+      this.#jwtSecret = process.env.JWT_SECRET;
+      return;
+    }
+
+    // 2) Present in sites/<tenant>/.env but this process started before the
+    //    variable existed (e.g. first boot after upgrading to this version).
+    try {
+      const envData = tenant.readEnvFile(this.tenantId);
+      if (envData.JWT_SECRET) {
+        this.#jwtSecret = envData.JWT_SECRET;
+        return;
+      }
+    } catch (err) {
+      console.warn('[loopar] Could not read tenant .env for JWT_SECRET:', err.message);
+    }
+
+    // 3) First boot for this tenant: generate and persist.
+    const secret = crypto.randomBytes(32).toString('hex');
+    try {
+      await tenant.saveTenant({ name: this.tenantId, JWT_SECRET: secret });
+      console.log(`[loopar] Generated JWT_SECRET for tenant "${this.tenantId}" (persisted to .env)`);
+    } catch (err) {
+      // Worst case the secret lives only for this process lifetime — still
+      // strictly better than a publicly derivable one.
+      console.warn('[loopar] Could not persist JWT_SECRET to tenant .env:', err.message);
+    }
+    this.#jwtSecret = secret;
   }
 
   #server = {};

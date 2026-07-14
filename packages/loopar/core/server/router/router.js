@@ -8,6 +8,38 @@ import { merge } from 'es-toolkit/object';
 import { Middleware } from "./middleware.js";
 import { requestContext } from './request-context.js';
 
+/**
+ * Collects every plain-method name defined anywhere on a controller's
+ * prototype chain. Setters/getters and the constructor are intentionally
+ * left out — setters (e.g. `document`, `action`, `name` on AuthController)
+ * are the standard way properties from `params` get assigned via
+ * `Object.assign(this, props)`, so filtering them would break the framework.
+ *
+ * Results are cached per-class because the prototype chain is static.
+ */
+const __prototypeMethodsCache = new WeakMap();
+function collectPrototypeMethods(cls) {
+  if (!cls || typeof cls !== 'function') return new Set();
+  const cached = __prototypeMethodsCache.get(cls);
+  if (cached) return cached;
+
+  const methods = new Set();
+  let proto = cls.prototype;
+  while (proto && proto !== Object.prototype) {
+    for (const name of Object.getOwnPropertyNames(proto)) {
+      if (name === 'constructor') continue;
+      const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+      if (descriptor && typeof descriptor.value === 'function') {
+        methods.add(name);
+      }
+    }
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  __prototypeMethodsCache.set(cls, methods);
+  return methods;
+}
+
 export default class Router extends Middleware {
   constructor(options) {
     super(options);
@@ -35,6 +67,11 @@ export default class Router extends Middleware {
 
     res.status(response.status || 200)
       .set('Content-Type', response.contentType || 'text/html')
+      // The HTML references hashed asset URLs from the current release. On a
+      // release swap the old hashed chunks are pruned, so a cached HTML would
+      // point at deleted files. no-cache forces revalidation; the hashed assets
+      // themselves stay cacheable.
+      .set('Cache-Control', 'no-cache')
       .send(response.body ?? '');
   }
 
@@ -55,11 +92,14 @@ export default class Router extends Middleware {
       return;
     }
 
+    // No CORS headers on purpose. The previous wildcard
+    // `Access-Control-Allow-Origin: *` exposed every JSON/API response to
+    // any origin on the internet. Same-origin clients (Desk, web workspace)
+    // don't need CORS, and server-to-server calls (provision/install) ignore
+    // it. If a third-party BROWSER client ever needs /api/*, add an explicit
+    // per-tenant origin allowlist here instead of the wildcard.
     const headers = {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Content-Type': 'application/json'
     };
 
     if (response instanceof Error) {
@@ -83,7 +123,9 @@ export default class Router extends Middleware {
   }
 
   route() {
-    this.App = null;
+    // NOTE: the per-request WorkspaceController lives on `req.__APP__`
+    // (set in setupWorkspaceMiddleware) — never on `this`, which is shared
+    // across concurrent requests.
     this.baseUrl = null;
 
     this.server.use(
@@ -151,7 +193,7 @@ export default class Router extends Middleware {
     errControlled.dictUrl = req._parsedUrl;
     const e = await errControlled.servePrivateFile("logo-test.png");
     req.__WORKSPACE__.Document = e;
-    return this.render(req, res, await this.App.render(req.__WORKSPACE__, true));
+    return this.render(req, res, await req.__APP__.render(req.__WORKSPACE__, true));
   }
 
   /**
@@ -170,21 +212,36 @@ export default class Router extends Middleware {
       );
 
       const data = RouterUtils.prepareFileData(body, req.files);
-      
+
       if(data && (data.q || data.page)){
-        loopar.session.set(params.document + '_q', data.q || {});
-        loopar.session.set(params.document + '_page', data.page || 1);
+        loopar.session.set(`${req.__WORKSPACE_NAME__}${params.document}q`, data.q || {});
+        loopar.session.set(`${req.__WORKSPACE_NAME__}${params.document}page`, data.page || 1);
+
+        loopar.session.set(`${params.document}q`, data.q || {});
+        loopar.session.set(`${params.document}page`, data.page || 1);
+      }
+
+      // Filter parsedQuery to avoid shadowing controller methods. A URL like
+      // `?redirect=/desk` would otherwise assign `this.redirect = "/desk"` and
+      // clobber the `CoreController.redirect()` method that actions rely on.
+      // The full raw query is still available on `this.query` so callers can
+      // read `this.query.redirect` when they need the URL value.
+      const reservedNames = collectPrototypeMethods(C);
+      const safeSpreadQuery = {};
+      for (const [k, v] of Object.entries(parsedQuery)) {
+        if (!reservedNames.has(k)) safeSpreadQuery[k] = v;
       }
 
       const Controller = new C({
         ...params,
-        ...parsedQuery,
+        ...safeSpreadQuery,
         query: parsedQuery,
         data,
         body: data,
         __REQ_FILES__: req.files,
         enabledActions: C.enabledActions,
-        freeActions: C.freeActions
+        freeActions: C.freeActions,
+        __WORKSPACE__: req.__WORKSPACE_NAME__
       });
 
       const action = params.action?.length > 0 ? params.action : Controller.defaultAction;

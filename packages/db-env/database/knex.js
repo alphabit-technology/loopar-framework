@@ -51,6 +51,12 @@ export class KnexORM extends Connector {
   }
 
   async #emitBefore(event, payload) {
+    // Stamp the tenant on every event payload. The bus is STATIC (process-
+    // global): today each process serves one tenant so this is redundant,
+    // but any future shared-process mode needs listeners to be able to
+    // filter by tenant — and having it now means handlers can already be
+    // written tenant-aware.
+    payload = { tenant: loopar.tenantId, ...payload };
     const document = payload?.document;
     const events = [event, document ? `${event}:${document}` : null].filter(Boolean);
 
@@ -63,6 +69,8 @@ export class KnexORM extends Connector {
   }
 
   #emitAfter(event, payload) {
+    // Same tenant stamp as #emitBefore — see comment there.
+    payload = { tenant: loopar.tenantId, ...payload };
     const document = payload?.document;
     KnexORM._bus.emit(event, payload);
     if (document) KnexORM._bus.emit(`${event}:${document}`, payload);

@@ -47,19 +47,31 @@ export class Middleware {
       const currentUrl = req._parsedUrl.pathname;
       const status = RouterUtils.SystemValidation.getStatus(loopar);
 
-      // /api/System/* is the AJAX counterpart of the bootstrap pages under
-      // /loopar/system/* — the form submits its payload there. Never redirect
-      // those, otherwise fetch follows the 302 and the browser navigates,
-      // killing the POST and producing a stray GET on the original page.
-      const isApiToSystem = currentUrl.startsWith('/api/System/');
+      // Any request that will route to the System controller during the
+      // install/connect/update bootstrap must be let through. Two shapes
+      // reach this middleware:
+      //   - Browser-typed:   /loopar/system/connect (lowercase)
+      //   - RPC-generated:   /loopar/System/connect  (PascalCase, from
+      //     loopar.rpc.post which builds the URL with the Document name)
+      //   - Third-party API: /api/System/connect
+      // Case-insensitive comparison covers all three without redirecting.
+      const currentUrlLower = currentUrl.toLowerCase();
+      const isSystemBootstrap =
+        currentUrl.startsWith('/api/System/') ||
+        currentUrlLower.startsWith('/loopar/system/');
 
-      if (status.needsConnect && currentUrl !== status.connectPath && !isApiToSystem) {
+      const matchesBootstrapPath = (target) =>
+        currentUrlLower === target.toLowerCase();
+
+      if (status.needsConnect
+          && !matchesBootstrapPath(status.connectPath)
+          && !isSystemBootstrap) {
         return this.redirect(req, res, status.connectPath);
       }
 
       if (status.needsInstallOrUpdate) {
         const redirectPath = status.needsUpdate ? status.updatePath : status.installPath;
-        if (currentUrl !== redirectPath && !isApiToSystem) {
+        if (!matchesBootstrapPath(redirectPath) && !isSystemBootstrap) {
           return this.redirect(req, res, redirectPath);
         }
       }
@@ -91,7 +103,12 @@ export class Middleware {
       Controller.dictUrl = req._parsedUrl;
       Controller.workspace = req.__WORKSPACE_NAME__;
 
-      this.App = Controller;
+      // Per-request, NOT `this.App`: the Middleware/Router instance is shared
+      // by every request in the process, and there are awaits between here
+      // and the final render. Storing the controller on `this` let two
+      // concurrent HTML requests swap each other's App (render A with B's
+      // workspace). `req` is the only safe home for per-request state.
+      req.__APP__ = Controller;
       req.__WORKSPACE__ = await Controller.getWorkspace();
       next();
     };
@@ -166,7 +183,7 @@ export class Middleware {
    */
   setupFinalMiddleware() {
     return async (req, res) => {
-      this.render(req, res, await this.App.render(req.__WORKSPACE__));
+      this.render(req, res, await req.__APP__.render(req.__WORKSPACE__));
     };
   }
 
@@ -328,7 +345,12 @@ export class Middleware {
           }
         );
 
-        return this.render(req, res, await this.App.render(req.__WORKSPACE__, true));
+        // The error can fire before the workspace middleware ran (asset 404s,
+        // body-parser failures…), in which case there is no per-request App
+        // to render with — fall back to the bare HTML error template.
+        if (!req.__APP__) return this.throw(err, res);
+
+        return this.render(req, res, await req.__APP__.render(req.__WORKSPACE__, true));
       } catch (renderErr) {
         console.log(["Internal Server Error", renderErr])
         return this.throw(renderErr, res);
