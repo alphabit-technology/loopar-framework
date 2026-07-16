@@ -2,9 +2,10 @@
 
 /**
  * Shared build orchestrator: one build process at a time, behind a queue.
- * Jobs carry a `scope`: 'all' runs `npm run build`; '<app>' runs
- * `npm run build:app` with BUILD_APP set. Imported by both the Tenant Manager
- * and App Manager controllers, which share this module's singleton state.
+ * Jobs carry a `kind`: 'install' runs yarn install, 'activate' deploys the
+ * build/staging snapshot, anything else runs the full `build` script.
+ * Imported by both the Tenant Manager and App Manager controllers, which
+ * share this module's singleton state.
  */
 
 import { spawn } from 'child_process';
@@ -43,13 +44,18 @@ function runNext() {
   emit();
 
   const isInstall = job.kind === 'install';
+  const isActivate = job.kind === 'activate';
 
-  // install → yarn install; otherwise → full monorepo build.
+  // install → yarn; activate → deploy build/staging snapshot; else → full build.
   let cmd, args, tag;
   if (isInstall) {
     cmd = 'yarn';
     args = ['install', '--immutable', '--inline-builds'];
     tag = 'install';
+  } else if (isActivate) {
+    cmd = 'node';
+    args = ['bin/build/activate-staging.js'];
+    tag = 'activate';
   } else {
     cmd = 'npm';
     args = ['run', 'build'];
@@ -128,6 +134,20 @@ export function enqueueInstall({ cwd, initiator } = {}) {
     return { queued: false, reason: 'ALREADY_QUEUED', ...snapshot() };
   }
   const job = { id: crypto.randomUUID(), kind: 'install', scope: 'install', cwd, initiator };
+  queue.push(job);
+  emit();
+  runNext();
+  return { queued: true, jobId: job.id, ...snapshot() };
+}
+
+export function enqueueActivate({ cwd, initiator } = {}) {
+  const pending =
+    (current && current.kind === 'activate') ||
+    queue.some((j) => j.kind === 'activate');
+  if (pending) {
+    return { queued: false, reason: 'ALREADY_QUEUED', ...snapshot() };
+  }
+  const job = { id: crypto.randomUUID(), kind: 'activate', scope: 'activate', cwd, initiator };
   queue.push(job);
   emit();
   runNext();

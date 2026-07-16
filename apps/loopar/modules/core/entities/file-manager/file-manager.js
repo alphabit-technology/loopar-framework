@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { BaseDocument, loopar } from 'loopar';
+import { BaseDocument, loopar, getRequest } from 'loopar';
 import mime from "mime-types";
 import fs from "fs";
 import path from 'pathe';
@@ -453,6 +453,7 @@ export default class FileManager extends BaseDocument {
             // (avoid double-listing).
             if (file.endsWith('.meta.json')) {
               const baseName = file.slice(0, -'.meta.json'.length);
+              
               if (binarySet.has(baseName)) return;
               if (rows.findIndex(r => r.name === baseName) !== -1) return;
 
@@ -475,6 +476,7 @@ export default class FileManager extends BaseDocument {
                   previewSrc: meta.previewSrc,
                 });
               } catch {}
+              
               return;
             }
 
@@ -582,9 +584,11 @@ export default class FileManager extends BaseDocument {
     q ??= {};
     q.visible = this.visible || "public";
 
+    const workspace = getRequest()?.__WORKSPACE_NAME__;
+
     const pagination = {
-      page: loopar.session.get(this.__ENTITY__.name + "_page") || 1,
-      pageSize: 10,
+      page: loopar.session.get(`${workspace}${this.__ENTITY__.name}page`) || 1,
+      pageSize: this.pageSize || 10,
       totalPages: 1,
       totalRecords: 0,
       sortBy: "id",
@@ -608,7 +612,7 @@ export default class FileManager extends BaseDocument {
     // Clamp the current page when filters shrink the set below it.
     if (pagination.page > pagination.totalPages) {
       pagination.page = 1;
-      loopar.session.set(this.__ENTITY__.name + "_page", 1);
+      loopar.session.set(`${this.__ENTITY__.name}page`, 1);
     }
 
     const startIndex = (pagination.page - 1) * pagination.pageSize;

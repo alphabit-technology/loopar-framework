@@ -145,17 +145,15 @@ export const BaseDesigner = (props) => {
   };
 
   const serverBaseHashRef = useRef(null);
-  const draftRestoredRef = useRef(false);
+
+  // IMPORTANT: the first client render must match the server, and the server
+  // never has localStorage. So we ALWAYS seed from the server base here and
+  // defer any draft restore to a mount effect below. Reading the draft in this
+  // initializer is exactly what caused the SSR hydration mismatch (server =
+  // base, client = restored draft → divergent undo state, gallery slides, etc.).
   const [localMetaComponents, setLocalMetaComponents] = useState(() => {
     const base = fixMeta(metaComponents || []);
-    const serverHash = hashStr(JSON.stringify(base));
-    serverBaseHashRef.current = serverHash;
-    const draft = readDraft();
-
-    if (draft && draft.baseHash === serverHash && !isEqual(draft.meta, base)) {
-      draftRestoredRef.current = true;
-      return fixMeta(draft.meta);
-    }
+    serverBaseHashRef.current = hashStr(JSON.stringify(base));
     return base;
   });
   const commitTimerRef = useRef(null);
@@ -167,14 +165,16 @@ export const BaseDesigner = (props) => {
     const base = fixMeta(metaComponents || []);
     storeRef.current.populate(base);
     const baseJson = JSON.stringify(storeRef.current.reconcileTree(base));
-    if (draftRestoredRef.current) {
-      storeRef.current.populate(localMetaComponents);
-      const draftJson = JSON.stringify(storeRef.current.reconcileTree(localMetaComponents));
-      historyRef.current = { stack: [baseJson, draftJson], index: 1 };
-    } else {
-      historyRef.current = { stack: [baseJson], index: 0 };
-    }
+    historyRef.current = { stack: [baseJson], index: 0 };
   }
+
+  // Draft UX state — client-only, both start false so SSR and the first client
+  // render agree. `hasUnsavedChanges` drives the "unsaved" badge; `draftConflict`
+  // surfaces a stale draft whose base no longer matches the server.
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [draftConflict, setDraftConflict] = useState(false);
+  const conflictDraftRef = useRef(null);
+  const draftHandledRef = useRef(false);
 
   const [canUndo, setCanUndo] = useState(() => historyRef.current.index > 0);
   const [canRedo, setCanRedo] = useState(() => historyRef.current.index < historyRef.current.stack.length - 1);
@@ -195,17 +195,62 @@ export const BaseDesigner = (props) => {
   stateRef.current.setUpdatingElementName = setUpdatingElementName;
   stateRef.current.setDesignerModeType = setDesignerModeType;
 
+  // Apply a saved draft AFTER mount (never during the first render — see the
+  // localMetaComponents initializer). Also reused by "restore anyway" on a
+  // conflicting draft.
+  const applyDraft = useCallback((draftMeta) => {
+    const restored = fixMeta(draftMeta);
+    storeRef.current.populate(restored);
+    const draftJson = JSON.stringify(storeRef.current.reconcileTree(restored));
+    historyRef.current = { stack: [historyRef.current.stack[0], draftJson], index: 1 };
+    setLocalMetaComponents(restored);
+    syncHistory();
+    setDraftConflict(false);
+    setHasUnsavedChanges(true);
+    stateRef.current.onChange?.(JSON.stringify(restored));
+  }, [syncHistory]);
+
+  const discardDraft = useCallback(() => {
+    if (typeof window !== "undefined") { try { window.localStorage.removeItem(draftKey); } catch {} }
+    conflictDraftRef.current = null;
+    setDraftConflict(false);
+  }, [draftKey]);
+
+  // Once, on mount: decide what to do with any persisted draft.
   useEffect(() => {
-    if (draftRestoredRef.current) {
-      draftRestoredRef.current = false;
-      stateRef.current.onChange?.(JSON.stringify(localMetaComponents));
+    if (draftHandledRef.current) return;
+    draftHandledRef.current = true;
+    const draft = readDraft();
+    if (!draft) return;
+    const base = fixMeta(metaComponents || []);
+    // Server base changed since the draft was saved → the draft is stale. Don't
+    // silently apply it over newer content; tell the client so the user decides.
+    if (draft.baseHash !== serverBaseHashRef.current) {
+      conflictDraftRef.current = draft.meta;
+      setDraftConflict(true);
       return;
     }
+    if (isEqual(draft.meta, base)) return;
+    applyDraft(draft.meta);
+  }, [applyDraft]);
+
+  // Re-sync to the server meta only when the prop actually changes AFTER mount
+  // (reload / navigation), never on the initial mount — that would race the
+  // draft-restore effect above and clobber the restored draft.
+  const initialMetaSyncRef = useRef(true);
+  useEffect(() => {
+    if (initialMetaSyncRef.current) { initialMetaSyncRef.current = false; return; }
     if (commitTimerRef.current !== null) return;
     if (!isEqual(localMetaComponents, metaComponents || [])) {
       const next = fixMeta(metaComponents || []);
       storeRef.current.populate(next);
+      const baseJson = JSON.stringify(storeRef.current.reconcileTree(next));
+      serverBaseHashRef.current = hashStr(JSON.stringify(next));
+      historyRef.current = { stack: [baseJson], index: 0 };
       setLocalMetaComponents(next);
+      syncHistory();
+      setHasUnsavedChanges(false);
+      setDraftConflict(false);
     }
   }, [metaComponents]);
 
@@ -266,6 +311,7 @@ export const BaseDesigner = (props) => {
       if (typeof window !== "undefined") {
         try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: reconciled, baseHash: serverBaseHashRef.current })); } catch {}
       }
+      setHasUnsavedChanges(json !== h.stack[0]);
       stateRef.current.onChange?.(json);
     }, 300);
   }, [syncHistory, draftKey]);
@@ -276,6 +322,7 @@ export const BaseDesigner = (props) => {
     storeRef.current.populate(state);
     setLocalMetaComponents(state);
     if (typeof window !== "undefined") { try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: state, baseHash: serverBaseHashRef.current })); } catch {} }
+    setHasUnsavedChanges(json !== historyRef.current.stack[0]);
     stateRef.current.onChange?.(json);
 
     const selKey = stateRef.current.updatingElementName;
@@ -557,6 +604,18 @@ export const BaseDesigner = (props) => {
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>
               <h2 className="text-3xl">{data.label}</h2>
+              {draftConflict ? (
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-destructive">
+                  <span>A local draft from an earlier version was found (the server content has changed).</span>
+                  <button type="button" className="underline" onClick={() => applyDraft(conflictDraftRef.current)}>Restore anyway</button>
+                  <button type="button" className="underline" onClick={discardDraft}>Discard</button>
+                </div>
+              ) : hasUnsavedChanges ? (
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  <span>Unsaved changes</span>
+                </div>
+              ) : null}
             </div>
             <div className="space-x-1">
               <Button variant="secondary" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}>

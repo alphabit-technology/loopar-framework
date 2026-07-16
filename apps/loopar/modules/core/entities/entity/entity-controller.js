@@ -31,12 +31,7 @@ export default class EntityController extends BaseController {
   }
 
   async actionList() {
-    if (this.hasData()) {
-      await loopar.session.set(this.document + '_q', this.data.q || {});
-      await loopar.session.set(this.document + '_page', this.data.page || 1);
-    }
-
-    const data = Object.entries({ ...loopar.session.get(this.document + '_q') || {} }).reduce((acc, [key, value]) => {
+    const data = Object.entries({ ...loopar.session.get(this.document + 'q') || {} }).reduce((acc, [key, value]) => {
       if (value && (value.toString()).length > 0 && value !== 0) {
         acc[key] = `${value}`;
       }

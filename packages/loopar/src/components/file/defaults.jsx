@@ -1,10 +1,8 @@
 import {ImageIcon} from "lucide-react";
-import { FaFileZipper } from "react-icons/fa6";
-import { RiFileExcel2Fill } from "react-icons/ri";
-import { BsFillFileEarmarkPdfFill } from "react-icons/bs";
-import { FaFile, FaFileAudio, FaFolder, FaFilePowerpoint } from "react-icons/fa";
-import { IoVideocamSharp } from "react-icons/io5";
-import { RiFileWord2Fill } from "react-icons/ri";
+import {
+  FaFileZipper, RiFileExcel2Fill, RiFileWord2Fill, BsFillFileEarmarkPdfFill,
+  FaFile, FaFileAudio, FaFolder, FaFilePowerpoint, IoVideocamSharp,
+} from "./file-type-icons.jsx";
 import fileManager, {getExtention} from "./file-manager";
 import loopar from "loopar";
 

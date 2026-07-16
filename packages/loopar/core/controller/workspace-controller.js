@@ -87,27 +87,32 @@ export default class WorkspaceController extends AuthController {
 
     const permissions = PermissionManager.getPermissions(username);
 
-    HTML = await render(url, __META__, this.req, this.res, permissions);
-    
-    __META__.site = loopar.tenantId;
+    const avatarUrl = (() => {
+      const raw = userData?.profile_picture;
+      if (typeof raw === "string" && /^https?:\/\//i.test(raw.trim())) {
+        return raw.trim();
+      }
+      const f = loopar.utils.JSONparse(raw, null);
+      const first = Array.isArray(f) ? f[0] : f;
+      return (first && typeof first === "object" ? first.src : first) || null;
+    })();
+
     __META__.user = userData ? {
       userId: userData.name,
       name: userData.name,
       email: userData.email,
-      name: userData.name,
-      profilePicture: userData.profile_picture,
+      profilePicture: avatarUrl,
       user_type: userData.user_type
     } : null;
-
     __META__.userId = userData?.name;
+
+    HTML = await render(url, __META__, this.req, this.res, permissions);
+
+    __META__.site = loopar.tenantId;
     __META__.csrfToken = userData?.csrfToken ?? null;
     __META__.permissions = permissions
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
-    // The cookie now stores a resolved value ("light" | "dark"). Older clients
-    // may still have the legacy "system" value; fall back to "dark" in that
-    // case — the inline FOUC script in main.html will correct it client-side
-    // before the first paint if the OS preference is actually light.
     const cookieTheme = loopar.cookie.get('vite-ui-theme');
     const ssrTheme =
       cookieTheme === 'light' || cookieTheme === 'dark' ? cookieTheme : 'dark';
@@ -132,9 +137,6 @@ export default class WorkspaceController extends AuthController {
         window.process = ${JSON.stringify({
           env: {
             TENANT_ID: process.env.TENANT_ID,
-            // Reflects the *runtime* mode the client is being served with,
-            // not the cached process.env.NODE_ENV — so the dev tenant's
-            // client matches what the server actually decided this render.
             NODE_ENV: isProduction ? 'production' : 'development',
           }
         })};

@@ -111,7 +111,7 @@ export default class BaseDocument extends CoreDocument {
     }
 
     const pagination = {
-      page: loopar.session.get(this.__ENTITY__.name + "_page") || 1,
+      page: loopar.session.get(this.__ENTITY__.name + "page") || 1,
       pageSize: 10,
       totalPages: 4,
       totalRecords: 1,
@@ -139,7 +139,7 @@ export default class BaseDocument extends CoreDocument {
     const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
 
     if (rows.length === 0 && pagination.page > 1) {
-      await loopar.session.set(this.__ENTITY__.name + "_page", 1);
+      await loopar.session.set(this.__ENTITY__.name + "page", 1);
       return await this.getList({ fields, filters, q, rowsOnly });
     }
 
@@ -162,7 +162,7 @@ export default class BaseDocument extends CoreDocument {
     }
 
     const pagination = {
-      page: loopar.session.get(this.__ENTITY__.name + "_page") || 1,
+      page: loopar.session.get(this.__ENTITY__.name + "page") || 1,
       pageSize: 10,
       totalPages: 4,
       totalRecords: 1,
@@ -187,7 +187,7 @@ export default class BaseDocument extends CoreDocument {
     const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
 
     if (rows.length === 0 && pagination.page > 1) {
-      await loopar.session.set(this.__ENTITY__.name + "_page", 1);
+      await loopar.session.set(this.__ENTITY__.name + "page", 1);
       return await this.getList({ fields, filters, q, rowsOnly });
     }
 

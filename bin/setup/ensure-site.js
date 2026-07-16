@@ -1,6 +1,9 @@
 import { existsSync } from 'fs';
 import path from 'path';
-import { tenant } from "loopar";
+// tenant-builder directly — NOT the "loopar" core index. Importing the full
+// core here cost seconds of boot for what is a pure fs operation, and this
+// script runs as a child on every start (and as postinstall).
+import { tenant } from "loopar/bin/tenant/tenant-builder.js";
 
 const DEV_SITE = path.join(process.cwd(), 'sites', 'dev');
 

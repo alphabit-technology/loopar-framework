@@ -16,7 +16,7 @@ const VIEW_MODES = ["slides", "gallery", "grid"];
 const CONTENT_EXIT_DURATION = 300;
 
 const BaseCarousel = (props) => {
-  const { data = {}, node, elements, children, content, onLoadMore, hasMore = false, isLoadingMore = false } = props;
+  const { data = {}, node, elements, children, content, onLoadMore, hasMore = false, isLoadingMore = false, onLoadPrev, hasPrev = false, isLoadingPrev = false, page } = props;
   const { designerMode } = useDesigner();
   const [index, setIndex] = useState(() => {
     const fromData = data?._cookie_index;
@@ -238,13 +238,14 @@ const BaseCarousel = (props) => {
       exitDurationMs={CONTENT_EXIT_DURATION}
       transitionDurationMs={transitionDurationMs}
     />
-  ) : null;
+  ) : null
 
   if (viewMode === "grid") {
     return (
       <>
         <GridView
           items={items}
+          page={page}
           data={data}
           node={node}
           designerMode={designerMode}
@@ -253,6 +254,9 @@ const BaseCarousel = (props) => {
           onLoadMore={onLoadMore}
           hasMore={hasMore}
           isLoadingMore={isLoadingMore}
+          onLoadPrev={onLoadPrev}
+          hasPrev={hasPrev}
+          isLoadingPrev={isLoadingPrev}
           addSlide={props.addSlide}
         />
         {lightboxNode}

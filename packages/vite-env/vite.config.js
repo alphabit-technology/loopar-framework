@@ -47,6 +47,8 @@ const Alias = (dir, dirOnly = false) => {
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve';
   const isServerBuild = process.env.BUILD_TARGET === 'server';
+  const isWatch = process.env.WATCH === '1';
+  const target = isServerBuild ? 'server' : 'client';
 
   return {
     resolve: {
@@ -77,7 +79,7 @@ export default defineConfig(({ command }) => {
       }),
       svgr(),
 
-      !isDev && compressionAlgorithms.length > 0 && compression({
+      !isDev && !isWatch && compressionAlgorithms.length > 0 && compression({
         algorithms: compressionAlgorithms,
         threshold: 512,
         include: /\.(js|mjs|css|html|json|svg)$/,
@@ -90,25 +92,30 @@ export default defineConfig(({ command }) => {
         "react",
         "react-dom",
         "lucide-react",
-        "react-icons/pi",
       ],
       exclude: [
         '@uiw/react-codemirror',
-        '@uiw/codemirror-extensions-basic-setup'
+        '@uiw/codemirror-extensions-basic-setup',
       ]
     },
     
     ssr: {
       external: true,
-      noExternal: ['lucide-react', 'react-icons/pi'],
+      noExternal: ['lucide-react'],
     },
 
     build: {
-      outDir: resRoot(isServerBuild ? 'dist/server' : 'dist/client'),
+      outDir: resRoot(isWatch ? 'build/staging' : 'dist', target),
       ssr: isServerBuild,
       manifest: true,
       target: 'esnext',
-      
+
+      // Only changes under apps/**/client/** trigger a rebuild. This narrows the
+      // trigger to where you iterate (app views) — it does NOT change what gets
+      // built: every rebuild still bundles the full graph. Framework edits
+      // (packages/loopar) won't auto-rebuild; use a full Build for those.
+      ...(isWatch && { watch: { include: ['**/apps/**/client/**'] } }),
+
       minify: !isDev,
       
       cssCodeSplit: true,
@@ -142,6 +149,11 @@ export default defineConfig(({ command }) => {
         usePolling: process.env.VITE_USE_POLLING === 'true',
         ignored: [
           '**/sites/**/config/**',
+          // Build outputs — never watched/scanned by the dev server. The
+          // background watcher writes large bundles into build/staging; if the
+          // dev server tries to parse those, its WASM scanner runs out of memory.
+          '**/dist/**',
+          '**/build/**',
         ],
       },
       fs: {

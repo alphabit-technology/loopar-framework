@@ -1,7 +1,7 @@
 /**
  * Build step 3/3 — Activate the staged release.
  *
- *   1. Atomically swap `dist` → `releases/<tag>` via rename(2).
+ *   1. Atomically swap `dist` → `build/releases/<tag>` via rename(2).
  *      Existing PM2 workers keep serving the OLD bundle until reload — their
  *      ESM module cache still holds the previous dist/server/entry-server.js.
  *      Static file lookups (main.html, client assets) flip instantly because
@@ -15,7 +15,7 @@
  *
  *   3. Prune old releases.
  *      Keep the last N timestamped releases so rollback is just
- *      `ln -sfn releases/<previous> dist && pm2 reload all`.
+ *      `ln -sfn build/releases/<previous> dist && pm2 reload all`.
  */
 import "loopar/bin/pm2-home.js";
 import fs from 'fs';
@@ -23,18 +23,13 @@ import path from 'pathe';
 import { promisify } from 'util';
 import pm2 from 'pm2';
 import { tenant } from 'loopar';
+import { ROOT, RELEASES_DIR, readTag, clearTag } from './lib/release.js';
 
-const ROOT = process.cwd();
-const KEEP_RELEASES = 3;
+const KEEP_RELEASES = 2;
 
-const tagFile = path.join(ROOT, '.release-tag');
-if (!fs.existsSync(tagFile)) {
-  console.error('❌ Missing .release-tag — build-prepare did not run.');
-  process.exit(1);
-}
-const tag = fs.readFileSync(tagFile, 'utf8').trim();
+const tag = readTag({ requiredBy: 'activate' });
 
-const releaseTarget = `releases/${tag}`;            // relative — symlink stays portable
+const releaseTarget = `build/releases/${tag}`;      // relative — symlink stays portable
 const distPath = path.join(ROOT, 'dist');
 const tmpLink = path.join(ROOT, '.dist.swap');
 
@@ -54,7 +49,7 @@ if (existing && existing.isDirectory() && !existing.isSymbolicLink()) {
   // so we move the legacy dist aside first. After this run, dist is always
   // a symlink and future swaps are a single atomic rename.
   console.log('⚠️  Legacy dist/ detected (real directory). Moving aside…');
-  fs.renameSync(distPath, path.join(ROOT, 'releases', `_legacy_${tag}`));
+  fs.renameSync(distPath, path.join(RELEASES_DIR, `_legacy_${tag}`));
 }
 
 // Atomic on POSIX — replaces the existing symlink (or creates fresh) in a
@@ -118,8 +113,7 @@ try {
 // 3. Prune old releases (keep last N, never touch the active one)
 // ────────────────────────────────────────────────────────────────────────────
 
-const releasesDir = path.join(ROOT, 'releases');
-const allReleases = fs.readdirSync(releasesDir)
+const allReleases = fs.readdirSync(RELEASES_DIR)
   .filter(name => name !== tag && !name.startsWith('_legacy_'))
   .sort() // ISO timestamps sort chronologically
   .reverse(); // newest first
@@ -128,15 +122,15 @@ const toKeep = allReleases.slice(0, KEEP_RELEASES - 1); // newest N-1 prior + cu
 const toPrune = allReleases.slice(KEEP_RELEASES - 1);
 
 for (const old of toPrune) {
-  fs.rmSync(path.join(releasesDir, old), { recursive: true, force: true });
-  console.log(`🗑  pruned releases/${old}`);
+  fs.rmSync(path.join(RELEASES_DIR, old), { recursive: true, force: true });
+  console.log(`🗑  pruned build/releases/${old}`);
 }
 
 if (toKeep.length > 0) {
   console.log(`\n   kept for rollback: ${toKeep.join(', ')}`);
 }
 
-// Clean the marker so a fresh build-prepare must run next time
-fs.unlinkSync(tagFile);
+// Clean the marker so a fresh build/prepare must run next time
+clearTag();
 
 console.log(`\n✅ Deploy ${tag} activated\n`);

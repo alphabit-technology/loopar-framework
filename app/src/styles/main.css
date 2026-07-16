@@ -6,7 +6,16 @@
 
 @plugin "@tailwindcss/typography";
 
-@source "../../../apps/**/*.{tsx,jsx,json}";
+/*
+ * Do NOT use a glob @source for /apps here: /apps/* is gitignored and
+ * Tailwind's scanner (Oxide) honors .gitignore even for explicit glob
+ * patterns, so "../../../apps/**\/*.{tsx,jsx,json}" silently matched nothing —
+ * classes that only live in app docs (page doc_structure, designer `class`
+ * fields) never reached the compiled CSS. tailwind-apps.css is generated at
+ * server init (tailwinInit → generateAppsTailwindSources) with one per-app
+ * @source directory, which does bypass the ignore.
+ */
+@import "../../auto/tailwind-apps.css";
 
 @variant dark (&:where(.dark, .dark *));
 

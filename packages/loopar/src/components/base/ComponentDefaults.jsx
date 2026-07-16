@@ -82,9 +82,9 @@ export function ComponentDefaults(props) {
     function removeDuplicates(array) {
       const seen = new Set();
       return array.filter(obj => {
-        // getNodeKey resuelve {node, key, data.key} todos los formatos —
-        // crítico para compat con cols auto-creadas y nodos legacy aún sin
-        // migrar a la propiedad `node` canónica.
+        // getNodeKey resolves {node, key, data.key} across all formats —
+        // critical for compatibility with auto-created cols and legacy nodes
+        // not yet migrated to the canonical `node` property.
         const value = getNodeKey(obj);
         if (!seen.has(value)) {
           seen.add(value);

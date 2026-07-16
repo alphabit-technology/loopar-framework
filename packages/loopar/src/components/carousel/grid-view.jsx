@@ -62,24 +62,102 @@ function useImageReady(src, enabled = true) {
   return ready;
 }
 
-function useInfiniteScroll({ hasMore, onLoadMore, isLoadingMore, itemCount }) {
+const DOWN_KEYS = new Set(["ArrowDown", "PageDown", "End", " ", "Spacebar"]);
+const UP_KEYS = new Set(["ArrowUp", "PageUp", "Home"]);
+
+function isTyping(t) {
+  return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+}
+
+function useInfiniteScroll({ hasMore, onLoadMore, isLoadingMore }) {
   const sentinelRef = useRef(null);
+  const s = useRef({ interacted: false, intersecting: false, scrollReady: false });
+  const loadingRef = useRef(isLoadingMore);
+  loadingRef.current = isLoadingMore;
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
 
   useEffect(() => {
-    if (!hasMore || !onLoadMore) return;
+    const t = setTimeout(() => { s.current.scrollReady = true; }, 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMore || typeof window === "undefined") return;
     const el = sentinelRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
+    const st = s.current;
+
+    const maybeLoad = () => {
+      if (st.interacted && st.intersecting && !loadingRef.current) {
+        st.interacted = false;
+        onLoadMoreRef.current?.();
+      }
+    };
+
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) onLoadMore();
-      },
+      (entries) => { st.intersecting = entries[0].isIntersecting; maybeLoad(); },
       { rootMargin: "200px", threshold: 0 }
     );
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, onLoadMore, isLoadingMore, itemCount]);
+
+    const mark = () => { st.interacted = true; maybeLoad(); };
+    const onScroll = () => { if (st.scrollReady) mark(); };
+    const onKeyDown = (e) => { if (!isTyping(e.target) && DOWN_KEYS.has(e.key)) mark(); };
+
+    window.addEventListener("wheel", mark, { passive: true });
+    window.addEventListener("touchmove", mark, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("wheel", mark);
+      window.removeEventListener("touchmove", mark);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [hasMore]);
 
   return sentinelRef;
+}
+
+function useReverseScrollIntent({ hasPrev, onLoadPrev, isLoadingPrev, threshold = 40, atTopPx = 2 }) {
+  const acc = useRef(0);
+  const touchY = useRef(null);
+
+  useEffect(() => {
+    if (!hasPrev || !onLoadPrev || typeof window === "undefined") return;
+
+    const atTop = () => window.scrollY <= atTopPx;
+    const trigger = () => { if (!isLoadingPrev) onLoadPrev(); };
+
+    const onWheel = (e) => {
+      if (e.deltaY >= 0 || !atTop()) { acc.current = 0; return; }
+      acc.current += -e.deltaY;
+      if (acc.current >= threshold) { acc.current = 0; trigger(); }
+    };
+    const onTouchStart = (e) => { touchY.current = e.touches[0].clientY; };
+    const onTouchMove = (e) => {
+      if (touchY.current == null || !atTop()) return;
+      const dy = e.touches[0].clientY - touchY.current;
+      if (dy >= threshold) { touchY.current = null; trigger(); }
+    };
+    const onKeyDown = (e) => {
+      if (!isTyping(e.target) && atTop() && UP_KEYS.has(e.key)) trigger();
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [hasPrev, onLoadPrev, isLoadingPrev, threshold, atTopPx]);
 }
 
 function GridCell({
@@ -92,7 +170,6 @@ function GridCell({
   designerMode,
   openLightbox,
 }) {
-  // Hooks run unconditionally (item may be null), so probe before bailing.
   const imageReady = useImageReady(getSlideThumbnail(item), !designerMode);
 
   if (!item) return null;
@@ -189,6 +266,7 @@ function GridCell({
 export default function GridView({
   items = [],
   data = {},
+  //page,
   node,
   designerMode = false,
   lightboxAvailable = false,
@@ -196,6 +274,9 @@ export default function GridView({
   onLoadMore,
   hasMore = false,
   isLoadingMore = false,
+  onLoadPrev,
+  hasPrev = false,
+  isLoadingPrev = false,
   addSlide,
 }) {
   const gridLayout = GRID_LAYOUTS.includes(data.grid_layout) ? data.grid_layout : "uniform";
@@ -203,8 +284,8 @@ export default function GridView({
     hasMore,
     onLoadMore,
     isLoadingMore,
-    itemCount: items.length,
   });
+  useReverseScrollIntent({ hasPrev, onLoadPrev, isLoadingPrev });
 
   const cols = String(data.grid_columns || "3");
 
@@ -258,6 +339,22 @@ export default function GridView({
 
   return (
     <div className="flex flex-col gap-3 w-full">
+      {onLoadPrev && hasPrev ? (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); if (!isLoadingPrev) onLoadPrev(); }}
+          disabled={isLoadingPrev}
+          className="w-full py-2 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+          style={{ minHeight: 32 }}
+          aria-label="Load previous items"
+        >
+          {isLoadingPrev ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : (
+            <span className="text-xs text-muted-foreground hover:text-foreground">↑ Load previous</span>
+          )}
+        </button>
+      ) : null}
       {gridNode}
       {onLoadMore && hasMore ? (
         <div

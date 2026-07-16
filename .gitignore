@@ -41,7 +41,6 @@ test/
 # -----------------------------------
 dist
 build/
-releases/
 
 # -----------------------------------
 # ⚙️ CONFIGURATION FILES (Auto-generated)

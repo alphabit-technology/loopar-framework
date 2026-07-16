@@ -19,6 +19,7 @@ import FormController from "./core/controller/form-controller.js";
 import SystemController from "./apps/core/modules/system/controllers/system/system-controller.js";
 import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.js";
 import * as Helpers from "./core/global/helper.js";
+import { getRequest, getResponse } from "./core/server/router/request-context.js";
 import {
   elementsNames,
   elementsNameByType,
@@ -106,4 +107,6 @@ export {
   isAuditableEntity,
   addAuditColumns,
   addPrimaryKey,
+  getRequest,
+  getResponse
 };

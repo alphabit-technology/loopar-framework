@@ -37,7 +37,7 @@ export default class CommentManage extends BaseDocument {
 
   async getList({ fields = null, q = null, rowsOnly = false } = {}) {
     const entityName = this.__ENTITY__.name;
-    const page = parseInt(loopar.session.get(entityName + '_page')) || 1;
+    const page = parseInt(loopar.session.get(entityName + 'page')) || 1;
 
     const totalRow = await this.#applyScope(loopar.db.qx()(COMMENT_TABLE), q)
       .count({ count: 'id' })
@@ -46,7 +46,7 @@ export default class CommentManage extends BaseDocument {
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
     const safePage = page > totalPages ? 1 : page;
-    if (safePage !== page) loopar.session.set(entityName + '_page', safePage);
+    if (safePage !== page) loopar.session.set(entityName + 'page', safePage);
 
     const raw = await this.#applyScope(loopar.db.qx()(COMMENT_TABLE), q)
       .select(['name', 'user', 'guest_name', 'comment', 'document', 'document_name', 'parent', 'status', 'created_at'])

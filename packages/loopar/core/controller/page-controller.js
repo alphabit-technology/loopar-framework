@@ -97,7 +97,7 @@ export default class PageController extends SingleConrtroller {
     const ref = loopar.getRef(this.document);
 
     if (this.hasData()) {
-      loopar.session.set(this.document + '_page', this.data.page || 1);
+      loopar.session.set(`webFile Managerpage`, this.data.page || 1);
     }
 
     const m = await loopar.newDocument("File Manager", {app: ref.__APP__});

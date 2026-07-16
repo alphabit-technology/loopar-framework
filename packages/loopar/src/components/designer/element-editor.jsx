@@ -103,7 +103,14 @@ export function ElementEditor() {
       Object.entries(elements).forEach(([field, props]) => {
         if (dontHaveMetaElements.includes(field)) return null;
         if (!props.element) return props;
-        formFields[elementKey + field] = (data[field] || props?.data?.default_value)
+        // Same "missing" semantics as applyMetaDefaults (@@tools/meta-defaults):
+        // only undefined/null/"" fall back to the default, so explicit falsy
+        // values (false, 0) set by the user are not overwritten in the form.
+        const value = data[field];
+        formFields[elementKey + field] =
+          (value === undefined || value === null || value === "")
+            ? props?.data?.default_value
+            : value;
       });
     });
 
@@ -111,6 +118,13 @@ export function ElementEditor() {
   }, [metaFieldsData, dontHaveMetaElements, data, elementKey]);
 
   const prevData = useRef(__FORM_FIELDS__);
+  const editingKey = useRef(elementKey);
+
+  if (editingKey.current !== elementKey) {
+    editingKey.current = elementKey;
+    prevData.current = __FORM_FIELDS__;
+  }
+
   const saveData = (_data) => {
     if(!prevData.current || isEqual(prevData.current, _data)) return;
 
@@ -118,7 +132,9 @@ export function ElementEditor() {
 
     function cleanObject(obj) {
       return Object.fromEntries(
-        Object.entries({...obj}).filter(([_, value]) => value ?? false)
+        // Drop only truly empty values; false/0 are legitimate user values
+        // (the old `value ?? false` filter made switches impossible to turn off).
+        Object.entries({...obj}).filter(([_, value]) => value !== undefined && value !== null && value !== "")
       );
     }
 
@@ -166,9 +182,6 @@ export function ElementEditor() {
                   {Object.entries(elements).map(([field, props]) => {
                     if (dontHaveMetaElements.includes(field)) return null;
                     if (!props.element) {
-                      // props es un ReactElement (caso del Separator del
-                      // default_value). Necesita key explícito para no
-                      // colisionar con sus hermanos.
                       return <div key={`${elementKey}-${group}-${field}`}>{props}</div>;
                     }
 

@@ -2,7 +2,7 @@
 'use strict';
 
 import {BaseController, loopar} from 'loopar';
-import { enqueueBuild, enqueueInstall, getBuildStatus, setEmitter } from '../../build-service.js';
+import { enqueueBuild, enqueueInstall, enqueueActivate, getBuildStatus, setEmitter } from '../../build-service.js';
 
 setEmitter((event, payload) => loopar.emit(event, payload));
 
@@ -47,6 +47,25 @@ export default class TenantManagerController extends BaseController {
 
   async actionReload(){
     return await this.makeAction("reload");
+  }
+
+  async actionActivate() {
+    const res = enqueueActivate({
+      cwd: loopar.pathRoot,
+      initiator: loopar.tenantId,
+    });
+    return {
+      status: 200,
+      success: true,
+      build: res.build,
+      queue: res.queue,
+      notify: {
+        type: res.queued ? 'info' : 'warning',
+        message: res.queued
+          ? 'Activating latest build (deploying staging snapshot)…'
+          : 'An activation is already in progress.',
+      },
+    };
   }
 
   async actionInstall() {

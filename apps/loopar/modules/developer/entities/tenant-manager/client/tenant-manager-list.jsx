@@ -13,7 +13,13 @@ import {
 
 import {Link} from "@link"
 import {Button} from "@cn/components/ui/button";
-import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer, PackageIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@cn/components/ui/dropdown-menu";
+import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer, PackageIcon, RocketIcon, ChevronDown } from 'lucide-react';
 
 import {cn} from "@cn/lib/utils";
 
@@ -168,24 +174,57 @@ const Buttons = ({row}) => {
 }
 
 
-const BuildButton = () => {
+// One deploy control. Primary click deploys the watcher's latest build (from
+// build/staging — fast). The dropdown offers the same, plus a full rebuild +
+// deploy (compressed, from scratch). Both are self-contained deploys — neither
+// is a step that needs the other.
+const DeployButton = () => {
   const [build, setBuild] = useState({ state: 'idle' });
   const notifiedRef = useRef(new Set());
+
+  const notifyResult = (job) => {
+    if (!job || (job.state !== 'completed' && job.state !== 'failed')) return;
+    if (!job.id || notifiedRef.current.has(job.id)) return;
+    notifiedRef.current.add(job.id);
+
+    const what = job.scope === 'activate' ? 'Deploy' : 'Build';
+    if (job.state === 'completed') {
+      loopar.notify({ message: `${what} completed. Production tenants reloaded.`, type: "success" });
+    } else {
+      loopar.notify({
+        message: `${what} failed${job.exitCode != null ? ` (exit ${job.exitCode})` : ''}. Check server logs.`,
+        type: "error",
+      });
+    }
+  };
+
+  // Sync from an actionBuildStatus response. Used on mount and as a polling
+  // fallback: if the realtime socket drops mid-build (e.g. the dev server
+  // chokes while a deploy floods build/releases with files), the completion
+  // event is lost and the button would hang on "Deploying…" forever.
+  const applyStatus = (res, { notify = true } = {}) => {
+    if (!res || typeof res !== 'object') return;
+    const b = res.build;
+    if (b && b.state === 'running' && b.scope !== 'install') {
+      setBuild(b);
+      return;
+    }
+    const last = Array.isArray(res.history)
+      ? res.history.find((h) => h.scope !== 'install')
+      : null;
+    if (last) {
+      if (notify) notifyResult(last);
+      else if (last.id) notifiedRef.current.add(last.id);
+    }
+    setBuild({ state: 'idle' });
+  };
 
   useEffect(() => {
     let mounted = true;
     loopar.api.post("Tenant Manager", "buildStatus", {
       freeze: false,
-      success: (res) => {
-        if (!mounted) return;
-        const build = (res && typeof res === 'object') ? res.build : null;
-        if (!build) return;
-
-        setBuild(build);
-        if (build.id && build.state !== 'running' && build.state !== 'idle') {
-          notifiedRef.current.add(build.id);
-        }
-      },
+      // Don't replay results that finished before this page loaded.
+      success: (res) => { if (mounted) applyStatus(res, { notify: false }); },
       error: () => {},
     });
     return () => { mounted = false; };
@@ -195,85 +234,137 @@ const BuildButton = () => {
     if (!payload?.build) return;
     const next = payload.build;
     if (next.scope === 'install') return; // install has its own button
-    setBuild(next);
-
-    if (next.state !== 'completed' && next.state !== 'failed') return;
-    if (!next.id || notifiedRef.current.has(next.id)) return;
-    notifiedRef.current.add(next.id);
-
-    if (next.state === 'completed') {
-      loopar.notify({
-        message: "Build completed. Click 'Reload' on the dev tenant to apply.",
-        type: "success",
-      });
-    } else {
-      loopar.notify({
-        message: `Build failed${next.exitCode != null ? ` (exit ${next.exitCode})` : ''}. Check server logs.`,
-        type: "error",
-      });
-    }
+    setBuild(next.state === 'running' ? next : { state: 'idle' });
+    notifyResult(next);
   });
 
+  // Polling fallback while a job runs — heals missed realtime events.
+  useEffect(() => {
+    if (build.state !== 'running') return;
+    const timer = setInterval(() => {
+      loopar.api.post("Tenant Manager", "buildStatus", {
+        freeze: false,
+        success: (res) => applyStatus(res),
+        error: () => {},
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [build.state]);
+
   const isRunning = build.state === 'running';
+  const isBuilding = isRunning && build.scope !== 'activate';
 
-  const onClick = (e) => {
-    e.preventDefault();
+  const post = (action, scope) => {
+    setBuild({ state: 'running', scope, startedAt: Date.now() });
+    loopar.api.post("Tenant Manager", action, {
+      freeze: false,
+      success: (res) => { if (res && res.build) setBuild(res.build); },
+      error: (msg) => { setBuild({ state: 'idle' }); loopar.throw(msg); },
+    });
+  };
+
+  const deployStaging = () => {
     if (isRunning) return;
-
     loopar.confirm(
-      "Run a full build now? Client + server bundles will be rebuilt and every production tenant (except this one) will be reloaded.",
-      () => {
-        setBuild((prev) => ({
-          ...prev,
-          state: 'running',
-          startedAt: Date.now(),
-        }));
-
-        loopar.api.post("Tenant Manager", "build", {
-          freeze: false,
-          success: (res) => {
-            if (res && typeof res === 'object' && res.build) {
-              setBuild(res.build);
-            }
-          },
-          error: (msg) => {
-            setBuild({ state: 'idle' });
-            loopar.throw(msg);
-          },
-        });
-      }
+      "Deploy the latest build (from staging) and reload production tenants?",
+      () => post('activate', 'activate')
     );
   };
 
+  const fullRebuild = () => {
+    if (isRunning) return;
+    loopar.confirm(
+      "Full rebuild (compressed) and deploy? Slower — rebuilds everything from scratch.",
+      () => post('build', 'all')
+    );
+  };
+
+  const variant = isRunning ? "outline" : "primeblue";
+  const label = isRunning ? (isBuilding ? 'Building…' : 'Deploying…') : 'Deploy';
+
   return (
-    <Button
-      variant={isRunning ? "outline" : "primeblue"}
-      onClick={onClick}
-      disabled={isRunning}
-      title="Build the framework (versioned release + reload production tenants)"
-    >
-      <Hammer className={`mr-2 ${isRunning ? "animate-pulse" : ""}`} />
-      {isRunning ? "Building…" : "Build"}
-    </Button>
+    <div className="flex items-center">
+      <Button
+        variant={variant}
+        onClick={deployStaging}
+        disabled={isRunning}
+        className="rounded-r-none"
+        title="Deploy the latest watcher build (from staging) and reload tenants"
+      >
+        <RocketIcon className={`mr-2 ${isRunning ? "animate-pulse" : ""}`} />
+        {label}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant={variant}
+            disabled={isRunning}
+            className="rounded-l-none border-l border-white/20 px-2"
+            title="Deploy options"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuItem onClick={deployStaging}>
+            <RocketIcon className="mr-2 h-4 w-4" /> Deploy (from staging — fast)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={fullRebuild}>
+            <Hammer className="mr-2 h-4 w-4" /> Full rebuild &amp; deploy
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
 
 const InstallButton = () => {
   const [running, setRunning] = useState(false);
+  const notifiedRef = useRef(new Set());
+
+  const notifyResult = (job) => {
+    if (!job || job.scope !== 'install') return;
+    if (!job.id || notifiedRef.current.has(job.id)) return;
+    if (job.state === 'completed') {
+      notifiedRef.current.add(job.id);
+      loopar.notify({ message: "Dependencies installed. You can build now.", type: "success" });
+    } else if (job.state === 'failed') {
+      notifiedRef.current.add(job.id);
+      loopar.notify({
+        message: `Install failed${job.exitCode != null ? ` (exit ${job.exitCode})` : ''}. Check server logs.`,
+        type: "error",
+      });
+    }
+  };
 
   useRealtime("buildStatus", (payload) => {
     const b = payload?.build;
     if (!b || b.scope !== 'install') return;
     setRunning(b.state === 'running');
-    if (b.state === 'completed') {
-      loopar.notify({ message: "Dependencies installed. You can build now.", type: "success" });
-    } else if (b.state === 'failed') {
-      loopar.notify({
-        message: `Install failed${b.exitCode != null ? ` (exit ${b.exitCode})` : ''}. Check server logs.`,
-        type: "error",
-      });
-    }
+    notifyResult(b);
   });
+
+  // Polling fallback — same rationale as DeployButton: don't hang on
+  // "Installing…" if the completion event is missed.
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(() => {
+      loopar.api.post("Tenant Manager", "buildStatus", {
+        freeze: false,
+        success: (res) => {
+          const b = res?.build;
+          if (b && b.state === 'running' && b.scope === 'install') return; // still going
+          const last = Array.isArray(res?.history)
+            ? res.history.find((h) => h.scope === 'install')
+            : null;
+          if (last) notifyResult(last);
+          setRunning(false);
+        },
+        error: () => {},
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [running]);
 
   const onClick = (e) => {
     e.preventDefault();
@@ -313,7 +404,7 @@ class TenantManagerListBase extends ListContext {
   setCustomActions() {
     super.setCustomActions();
     this.setCustomAction('install', <InstallButton />);
-    this.setCustomAction('build', <BuildButton />);
+    this.setCustomAction('deploy', <DeployButton />);
   }
 
   customColumns(baseColumns) {

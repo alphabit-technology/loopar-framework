@@ -150,7 +150,9 @@ export const parseDocStructure = async (
 
       if(field.element == GALLERY && field.data.source == "Server"){
         const m = await loopar.newDocument("File Manager", {app});
-        field.data.images = await m.getList();
+        m.pageSize = field.data.page_size || 10;
+        const list = await m.getList();
+        field.data.images = list;
       }
 
       if (field.elements) {

@@ -10,6 +10,7 @@ import { MetaRender } from "./MetaRender";
 import { DesignElement } from "./DesignElement";
 import { useElementData } from "../../designer/element-store.js";
 import { getNodeKey } from "@global/prune-doc-structure";
+import { applyMetaDefaults } from "@@tools/meta-defaults";
 
 export const Meta = memo(function Meta(props) {
   const { meta, parent, parentKey, className } = props;
@@ -70,7 +71,11 @@ export const Meta = memo(function Meta(props) {
   }, []);
 
   if (Comp || [HTML_BLOCK, MARKDOWN, SEO].includes(meta.element)) {
-    const data = metaProps.data || {};
+    // Hydrate metaFields defaults here — the common point for SSR, the public
+    // page and the designer — so the base render no longer depends on the
+    // element editor mounting to see values like feature-card's default icon.
+    const data = applyMetaDefaults(Comp, metaProps.data || {});
+    metaProps.data = data;
 
     metaProps.className = cn("relative", def.designerClasses, metaProps.className, meta.className, className, (!isDesigner || !designer.designing) && 'space-y-4 gap-4', data?.class);
 

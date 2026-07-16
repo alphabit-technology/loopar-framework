@@ -229,8 +229,10 @@ export class Builder {
       lines.push(`export { ${lucideIconNames.join(', ')} } from "lucide-react";`);
     }
   
-    if (simpleIconNames.length) {
-      lines.push(`export { ${simpleIconNames.join(', ')} } from "@icons-pack/react-simple-icons";`);
+    // Per-icon imports (not the barrel) so dev only loads the icons actually
+    // used — importing from the barrel pulls all ~3000 simple-icons in dev.
+    for (const name of simpleIconNames) {
+      lines.push(`export { default as ${name} } from "@icons-pack/react-simple-icons/icons/${name}.mjs";`);
     }
   
     await fileManage.makeFile(

@@ -30,6 +30,21 @@
     <script>
       window.global = window;
     </script>
+    <script>
+      window.addEventListener('vite:preloadError', function () {
+        try {
+          var k = 'vite:preloadError:last';
+          var now = Date.now();
+          var last = Number(sessionStorage.getItem(k) || 0);
+          if (now - last > 10000) {
+            sessionStorage.setItem(k, String(now));
+            window.location.reload();
+          }
+        } catch (e) {
+          window.location.reload();
+        }
+      });
+    </script>
     <!--__loopar-meta-data__-->
     <!--__loopar-env__-->
   </head>

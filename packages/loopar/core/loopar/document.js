@@ -41,7 +41,7 @@ export class Document extends Console {
     return await doc.getList({ 
       fields, 
       filters, 
-      orderBy, limit, offset, page: parseInt(loopar.session.get(document + "_page", 1)),
+      orderBy, limit, offset, page: parseInt(loopar.session.get(document + "page", 1)),
       rowsOnly,
       q 
     });
@@ -53,7 +53,7 @@ export class Document extends Console {
       fields, 
       filters, 
       orderBy, 
-      limit, offset, page: parseInt(loopar.session.get(document + "_page", 1)),
+      limit, offset, page: parseInt(loopar.session.get(document + "page", 1)),
       rowsOnly,
       q
     });

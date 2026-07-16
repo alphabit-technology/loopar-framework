@@ -11,9 +11,12 @@ export default function FeatureCard(props) {
     overlay_intensity = "medium",
     hover_effect = true,
     content_position = "outside",
-    icon,
-    icon_size = "96",
-    icon_opacity = "20",
+    // Fallbacks below mirror the metaFields default_value declarations —
+    // metaFields is the source of truth (hydrated centrally in Meta.jsx via
+    // applyMetaDefaults); these only guard direct/legacy renders.
+    icon = "BadgeCheck",
+    icon_size = "lg",
+    icon_opacity = "soft",
     variant = "default"
   } = data;
 
@@ -181,7 +184,8 @@ FeatureCard.metaFields = () => {
         element: ICON_INPUT,
         data: {
           label: "Icon",
-          description: "Lucide icon name (e.g., Network, Database, Zap)"
+          description: "Lucide icon name (e.g., Network, Database, Zap)",
+          default_value: "BadgeCheck"
         }
       },
       icon_size: {

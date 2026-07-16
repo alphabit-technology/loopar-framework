@@ -51,7 +51,6 @@ export function Paragraph(props) {
 export default function MetaParagraph(props) {
   const {getText} = BaseText(props);
 
-  return <></>
   return (
     <Paragraph {...props}>{getText()}</Paragraph>
   )

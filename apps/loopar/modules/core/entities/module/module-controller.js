@@ -37,7 +37,7 @@ export default class ModuleController extends BaseController {
     if (queryData.module) await loopar.getDocument("Module", queryData.module);
 
     loopar.session.set(eType, queryData);
-    loopar.session.set(`${type}_page`, this.data.page || 1);
+    loopar.session.set(`${type}page`, this.data.page || 1);
 
     const list = await loopar.getList(type, { q: queryData, rowsOnly: this.preloaded === 'true'});
 

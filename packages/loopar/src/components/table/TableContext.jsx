@@ -108,10 +108,11 @@ export const TableProvider = ({
     if(isEqual(searchData, lastSearch.current) && !force) return;
     lastSearch.current = searchData;
 
-    loopar.api.post(
+    loopar.rpc.post(
       Document.Entity.name,
       docRef.action || Document.meta.action,
       {
+        query: { preloaded: true },
         body: {
           q: searchData,
           page: (pagination && pagination.page) || 1,
@@ -137,16 +138,11 @@ export const TableProvider = ({
   }, [rowsCount, selectedCount]);
 
   const deleteOnServer = async (row) => {
-    loopar.dialog({
-      type: "confirm",
-      title: "Confirm",
-      message: `Are you sure you want to delete ${row.name}?`,
-      ok: async () => {
-        await loopar.api.delete(Document.Entity.name, "delete", {
-          query: { name: row.name },
-        });
-      },
-    });
+    loopar.confirm(`Are you sure you want to delete ${row.name}?`, async () => {
+      await loopar.api.delete(Document.Entity.name, "delete", {
+        query: { name: row.name },
+      });
+    })
   }
 
   const deleteRow = (row, onServer=false) => {
@@ -178,16 +174,14 @@ export const TableProvider = ({
   };
 
   const bulkRemoveOnServer = () =>{
-    loopar.dialog({
-      type: "confirm",
-      title: "Confirm",
-      message: `Are you sure you want to delete [${selectedRows.join(", ")}] ${Document.Entity?.name || "documents"}?`,
-      ok: async () => {
+    loopar.confirm(
+      `Are you sure you want to delete [${selectedRows.join(", ")}] ${Document.Entity?.name || "documents"}?`,
+      async () => {
         await loopar.api.delete(Document.Entity.name, "bulkDelete", {
           body: { names: selectedRows },
         });
       },
-    });
+    )
   }
 
   const selectorCol = ({ colSpan, deleteOnServer }={}) => {

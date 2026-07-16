@@ -10,7 +10,7 @@ const SEO = () => {
   return <>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:type" content="website"/>
-  <meta charset="utf-8"/>
+  <meta charSet="utf-8"/>
   <meta name="generator" content="Loopar"/>
   <meta name="framework" content="Loopar"/>
   <meta name="cms" content="Loopar CMS"/>

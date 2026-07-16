@@ -50,9 +50,9 @@ function UserMenu({ onOpenLogin, onOpenProfile }) {
           className={`${buttonVariants({ size: "icon", variant: "ghost" })} cursor-pointer rounded-full overflow-hidden`}
           aria-label="User menu"
         >
-          {me.profile_picture ? (
+          {me.profilePicture ? (
             <img
-              src={me.profile_picture}
+              src={me.profilePicture}
               alt=""
               referrerPolicy="no-referrer"
               className="h-8 w-8 rounded-full object-cover"

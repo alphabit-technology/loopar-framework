@@ -4,7 +4,7 @@
   "type": "module",
   "devDependencies": {
     "@vitejs/plugin-react": "6.0.2",
-    "vite": "8.1.0",
+    "vite": "8.1.4",
     "vite-plugin-compression2": "2.5.3",
     "vite-plugin-preload": "0.7.0",
     "vite-plugin-svgr": "5.2.0"

@@ -25,12 +25,7 @@ export default class BaseController extends CoreController {
   static enabledActions = []
 
   async actionList() {
-    if (this.hasData()) {
-      loopar.session.set(this.document + '_q', this.data.q || {});
-      loopar.session.set(this.document + '_page', this.data.page || 1);
-    }
-
-    const data = Object.entries({ ...loopar.session.get(this.document + '_q') || {} }).reduce((acc, [key, value]) => {
+    const data = Object.entries({ ...loopar.session.get(this.document + 'q') || {} }).reduce((acc, [key, value]) => {
       if (value && (value.toString()).length > 0 && value !== 0) {
         acc[key] = `${value}`;
       }
@@ -39,7 +34,7 @@ export default class BaseController extends CoreController {
 
     const list = await loopar.getList(this.document, { data, q: (data && Object.keys(data).length > 0) ? data : null });
 
-    if(this.preloaded == 'true') {
+    if(this.preloaded == true) {
       return {
         instance: this.getInstance(),
         rows: list.rows,
@@ -64,7 +59,7 @@ export default class BaseController extends CoreController {
       await document.save();
       return this.redirect('update?name=' + document.name);
     } else {
-      if(this.preloaded == 'true') {
+      if(this.preloaded == true) {
         return await document.values();
       }
       
@@ -85,7 +80,7 @@ export default class BaseController extends CoreController {
         `${(Entity.name === "Entity") ? document.type || "Entity" : (isSingle ? "" : Entity.name)} ${isSingle ? Entity.name : document.name} saved successfully`, { name: document.name }
       );
     } else {
-      if(this.preloaded == 'true') {
+      if(this.preloaded == true) {
         return {
           instance: this.getInstance(),
           data: await document.values()
@@ -136,7 +131,7 @@ export default class BaseController extends CoreController {
 
   async fetchAudit(documentName) {
     const filters = { document: this.commentTarget(), document_name: documentName };
-    loopar.session.set(HISTORY_TABLE + '_page', parseInt(this.query?.page) || 1);
+    loopar.session.set(HISTORY_TABLE + 'page', parseInt(this.query?.page) || 1);
     const list = await loopar.getList(HISTORY_TABLE, { fields: AUDIT_FIELDS, filters });
     return list.rows || [];
   }
