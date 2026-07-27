@@ -1,43 +1,21 @@
 /**
  * Logs tab — realtime log stream, pm2-logs style. Two scopes:
- *
- *   openLogs(name)  → one tenant: file-tail history (stdout block, stderr
- *                     block), then live lines via the pm2 event bus.
- *   openLogs(null)  → ALL processes merged (what `pm2 logs` / the old
- *                     `yarn dev` showed): per-process history blocks, then
- *                     live lines interleaved in real order, each prefixed
- *                     with its process name (colored per process).
- *
- * Two layers:
- *   1. HISTORY — tail the pm2 log FILES. Exact per-process paths come from
- *      pm2.describe / pm2.list (files carry the pm_id suffix, e.g.
- *      <name>-out-12.log, so guessing is not reliable); fallback =
- *      newest-mtime match on disk, which also lets you read the last run of
- *      a stopped tenant.
- *   2. LIVE — subscribe to the pm2 event bus (launchBus → log:out/log:err),
- *      the same mechanism `pm2 logs` uses. Zero polling; lines arrive the
- *      instant the process writes them. If the bus can't connect (NO_PM2,
- *      daemon down), we degrade to re-tailing the files every POLL_MS.
- *
- * Entries are { s: "out"|"err"|"meta", text, at?, p? } — render() colors
- * them (stderr red, meta dim, timestamps on live lines, `p` = process-name
- * prefix in all-processes scope).
  */
 import fs from "fs";
 import path from "path";
 import pm2 from "pm2";
-import { withPm2Bus } from "loopar/bin/tenant/tenant-service.js";
+import { withPm2 } from "../cli/pm2.js";
 import { silenced } from "./term.js";
 import { state, NO_PM2 } from "./state.js";
 import { render } from "./render.js";
 
 const LOGS_DIR = () => path.join(process.env.PM2_HOME || path.join(process.cwd(), ".pm2"), "logs");
 const TAIL_BYTES = 64 * 1024;
-const HIST_LINES = 300;   // per stream, single-tenant scope
-const HIST_ALL = 12;      // stdout lines per process, all-processes scope
-const HIST_ALL_ERR = 4;   // stderr lines per process, all-processes scope
-const MAX_LINES = 2000;   // total buffer
-const POLL_MS = 700;      // fallback only
+const HIST_LINES = 300;
+const HIST_ALL = 12;
+const HIST_ALL_ERR = 4;
+const MAX_LINES = 2000;
+const POLL_MS = 700;
 
 let pollTimer = null;
 let bus = null;
@@ -47,7 +25,6 @@ let lastSig = "";
 
 const meta = (text) => ({ s: "meta", text });
 
-/** Coalesce packet floods into at most one frame every 80ms. */
 function scheduleRender() {
   if (renderQueued) return;
   renderQueued = true;
@@ -60,7 +37,7 @@ function scheduleRender() {
 async function describePaths(name) {
   if (NO_PM2) return null;
   try {
-    return await silenced(() => withPm2Bus(() => new Promise((res) =>
+    return await silenced(() => withPm2(() => new Promise((res) =>
       pm2.describe(name, (err, desc) => {
         const env = !err && desc?.[0]?.pm2_env;
         res(env ? { out: env.pm_out_log_path || null, err: env.pm_err_log_path || null } : null);
@@ -75,7 +52,7 @@ async function describePaths(name) {
 async function listProcs() {
   if (NO_PM2) return [];
   try {
-    return await silenced(() => withPm2Bus(() => new Promise((res) =>
+    return await silenced(() => withPm2(() => new Promise((res) =>
       pm2.list((err, list) => res(err ? [] : (list || []).map((p) => ({
         name: p.name,
         out: p.pm2_env?.pm_out_log_path || null,
@@ -181,8 +158,6 @@ function startBus() {
   });
 }
 
-// ─── File-poll fallback (bus unavailable) ───────────────────────────────────
-
 function pollFallback() {
   const L = state.logs;
   if (!L || state.view !== "logs") return;
@@ -198,18 +173,17 @@ function pollFallback() {
   render();
 }
 
-// ─── Public API ─────────────────────────────────────────────────────────────
 
 /** name = one tenant; null = every pm2 process, merged. */
 export async function openLogs(name = null) {
   closeLogs();
   state.view = "logs";
   state.logs = {
-    name,            // null = all-processes scope
+    name, // null = all-processes scope
     lines: [meta("resolving log files...")],
-    follow: true,    // pinned to the tail; scrolling pauses, [f] resumes
+    follow: true, // pinned to the tail; scrolling pauses, [f] resumes
     scroll: 0,
-    viewH: 10,       // render() keeps this in sync with the real window
+    viewH: 10, // render() keeps this in sync with the real window
     paths: { out: null, err: null },
     procs: [],
     live: false,

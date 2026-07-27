@@ -46,7 +46,7 @@ export default class BaseForm extends BaseDocument {
    *   1. `opts.document` passed to `send()` (caller wins)
    *   2. `this.controller` (subclass declaration)
    *   3. `this.Document.Entity.name` (regular Document forms)
-   *   4. legacy fallback to `loopar.send` with the relative URL
+   * No fallback: a form without a resolvable controller is an error.
    */
   controller = null;
 
@@ -85,24 +85,21 @@ export default class BaseForm extends BaseDocument {
     const body = this.#getFormData(true);
 
     // Resolve target controller (see `controller` field above for resolution
-    // order). If none is known we keep the old "URL is the router" pattern.
+    // order). Every submission MUST name its controller — the RPC channel is
+    // /{Document}/{action}, so a relative "URL is the router" fallback can't
+    // be routed anymore. Fail loudly instead of sending a broken request.
     const targetDocument = document || this.controller || this.Document?.Entity?.name;
 
-    if (targetDocument) {
-      return loopar.call(targetDocument, action, body, {
-        query: mergedQuery,
-        success: handleSuccess,
-        error: handleError,
-        freeze: true,
+    if (!targetDocument) {
+      return loopar.throw({
+        title: "Form without target controller",
+        message: `Cannot send action "${action}": declare \`controller\` on the form class or pass \`document\` to send().`,
       });
     }
 
-    // Legacy fallback — form-on-page pattern (login, install, etc. when the
-    // subclass hasn't declared its target document yet).
-    loopar.send({
-      action,
-      query: mergedQuery,
+    return loopar.call(targetDocument, action, {
       body,
+      query: mergedQuery,
       success: handleSuccess,
       error: handleError,
       freeze: true,

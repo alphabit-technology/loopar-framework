@@ -7,8 +7,16 @@ class RequestContextStorage {
     return this.#storage.getStore();
   }
 
-  run({ req, res } = {}, next) {
-    return this.#storage.run({ req, res }, next);
+  /**
+   * Run `next` inside a request-scoped context.
+   *
+   * The store carries `{ req, res, tenant }` — `tenant` is the TenantRegistry
+   * entry resolved once per request by the first middleware in server.js, and
+   * is THE tenant identity for everything downstream. That's why it lives in
+   * AsyncLocalStorage and not on a singleton.
+   */
+  run({ req, res, tenant } = {}, next) {
+    return this.#storage.run({ req, res, tenant }, next);
   }
 }
 
@@ -16,10 +24,18 @@ export const requestContext = new RequestContextStorage();
 
 /**
  * Get the current request context
- * @returns {{ req: Object, res: Object } | undefined}
+ * @returns {{ req: Object, res: Object, tenant: Object } | undefined}
  */
 export function getContext() {
   return requestContext.getStore();
+}
+
+/**
+ * Get the tenant resolved for the current request.
+ * @returns {{ name: string, domain: string, port: number|null } | undefined}
+ */
+export function getTenant() {
+  return getContext()?.tenant;
 }
 
 /**

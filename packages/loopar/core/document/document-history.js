@@ -1,6 +1,6 @@
 'use strict';
 
-import { isAuditableEntity, Helpers } from "../../index.js";
+import { Helpers, loopar } from "../../index.js";
 
 const HISTORY_TABLE = "Document History";
 
@@ -25,7 +25,14 @@ function isTrackable(loopar, document) {
   if (document === HISTORY_TABLE) return false; // no self-recursion
   if (NO_HISTORY_LOG.has(document)) return false; // auditable, but not logged
   const ref = loopar.getRef?.(document);
-  return isAuditableEntity(ref);
+  if (!ref) return false;
+  // The ref already carries the auditability decision computed at build time
+  // (builder.js runs isAuditableEntity with the correct {name, is_audited}
+  // shape, so exclusions like "Page View" are already applied → is_audited:0).
+  // Passing the ref BACK into isAuditableEntity was the bug: it reads e.name
+  // (ref has __NAME__) and e.is_audited === false (ref has 0|1), so nothing
+  // was ever excluded and every Page View was logged. Trust the ref flag.
+  return ref.is_audited === 1;
 }
 
 /**
@@ -84,29 +91,23 @@ async function writeHistory(loopar, payload) {
  * instantiated. The KnexORM bus is static, so we register against
  * the constructor (KnexORM.on, not this.db.on).
  */
-export function setupDocumentHistory(loopar, KnexORM) {
-  // afterCreate: rows that come in fresh, plus the restore path that
-  // insertRow fires when reviving a soft-deleted name. We tell them
-  // apart by the row data:
-  //   - restore: __deleted_at__ was just set back to null, the existing
-  //     id is reused. We mark it as Restored.
-  //   - regular: a brand-new id was allocated. Created.
-  // The shape of `doc` differs by source; we fall back to Created when
-  // the marker isn't there.
+let __historyWired = false;
+
+export function setupDocumentHistory(_boot, KnexORM) {
+  if (!__historyWired) {
+    __historyWired = true;
+
   KnexORM.on("afterCreate", async ({ document, doc }) => {
     if (!isTrackable(loopar, document)) return;
     const action = doc?.__restored__ ? ACTIONS.RESTORED : ACTIONS.CREATED;
-    delete doc.__restored__;          // internal flag, don't persist
+    delete doc.__restored__;
     await writeHistory(loopar, buildHistoryRow(loopar, { document, doc, action }));
   });
 
-  // afterUpdate gets both `before` (snapshot pre-write) and `doc`
-  // (incoming payload). The diff is computed here, not at the ORM
-  // level, so history-specific concerns stay out of the ORM.
   KnexORM.on("afterUpdate", async ({ document, doc, before }) => {
     if (!isTrackable(loopar, document)) return;
     const diff = buildDiff(before, doc?.data ?? doc);
-    if (!diff) return;                // no real change, skip
+    if (!diff) return;
     await writeHistory(loopar, buildHistoryRow(loopar, {
       document, doc: doc?.data ?? doc, action: ACTIONS.UPDATED, extras: { diff },
     }));
@@ -118,8 +119,9 @@ export function setupDocumentHistory(loopar, KnexORM) {
       document, doc, action: ACTIONS.DELETED,
     }));
   });
-
-  loopar.history = {
+  }
+  
+  _boot.history = {
     ACTIONS,
   };
 }

@@ -34,7 +34,7 @@ export default class AppForm extends FormContext {
           onClick={(e) => {
             e.preventDefault();
             loopar.confirm(`Are you sure you want to increment the ${type} version of the app ${this.getValue("name")}?`, () => {
-              loopar.api.post("App", `increment${type}`, {
+              loopar.call("App", `increment${type}`, {
                 query: { name: this.getValue('name') },
                 success: (result) => {
                   this.setValue('version', result.version);

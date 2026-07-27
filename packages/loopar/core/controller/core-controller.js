@@ -112,7 +112,7 @@ export default class CoreController extends AuthController {
     return { refresh: 'hard' };
   }
 
-  async getError(code, { title = "Error", message = "An error occurred.." } = {}) {
+  async getError(code, { title = "Error", message = "An error occurred..", frame = null, stack = null } = {}) {
     const document = await loopar.newDocument("Error");
 
     return await this.render({
@@ -121,6 +121,8 @@ export default class CoreController extends AuthController {
         code,
         title,
         message,
+        ...(frame ? { frame } : {}),
+        ...(stack ? { stack } : {}),
       }
     });
   }

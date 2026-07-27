@@ -23,7 +23,7 @@ export function RolePermissionManager({ manager = "general", role: initialRole, 
   useEffect(() => { setRole(initialRole); }, [initialRole]);
 
   useEffect(() => {
-    loopar.api.get("Role Permission Manager", "getAllPerms", {
+    loopar.call("Role Permission Manager", "getAllPerms", {
       success: (data) => {
         setCommonActions(data.commonActions);
         setCatalog(data.grouped);
@@ -33,7 +33,7 @@ export function RolePermissionManager({ manager = "general", role: initialRole, 
 
   useEffect(() => {
     if (!user) { setUserRoles(new Set()); return; }
-    loopar.api.get("Role Permission Manager", "getUserRoles", {
+    loopar.call("Role Permission Manager", "getUserRoles", {
       query: { user },
       success: (data) => setUserRoles(new Set(data.map(r => r.role)))
     });
@@ -49,7 +49,7 @@ export function RolePermissionManager({ manager = "general", role: initialRole, 
       assign ? next.add(roleName) : next.delete(roleName);
       return next;
     });
-    loopar.api.post("Role Permission Manager", "toggleUserRole", {
+    loopar.call("Role Permission Manager", "toggleUserRole", {
       body: { user, role: roleName, assign },
       success: () => setPermissionsRefreshKey(v => v + 1),
       error: () => setUserRoles(prev => {

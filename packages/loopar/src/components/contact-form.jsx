@@ -73,7 +73,7 @@ export default function ContactForm(props) {
     e.preventDefault();
     setLoading(true);
 
-    loopar.api.post("Contact Message", "submit", {
+    loopar.call("Contact Message", "submit", {
       body: {
         ...form,
         source_page: window.location.pathname

@@ -68,7 +68,7 @@ const ResetPassword = ({ children }) => {
         return;
       }
 
-      const res = await loopar.api.get("Auth", "validateResetToken", { query: { token } });
+      const res = await loopar.call("Auth", "validateResetToken", { query: { token } });
 
       setStatus(res.valid ? "valid" : res.reason);
     };

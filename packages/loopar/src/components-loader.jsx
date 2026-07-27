@@ -1,63 +1,77 @@
 const __META_COMPONENTS__ = {};
 import loopar from "loopar";
 import {MetaComponents} from "@global/require-components";
+import { MetaLoadError } from "./components/meta/meta-load-error";
 
 const components = Object.entries(import.meta.glob(['./components/*.jsx'])).reduce((acc, [path, module]) => {
   acc['src/' + path.split('/').pop().replace('.jsx', '')] = module;
   return acc;
 }, {});
 
+function makeFailedComponent(component, error) {
+  const Failed = () => <MetaLoadError element={component} error={error} />;
+  return { default: Failed, __loadFailed: true };
+}
+
 function getComponent(component) {
   if(!component) return null;
   const cParse = component.replaceAll(/_/g, "-");
 
   return new Promise((resolve) => {
-    if (__META_COMPONENTS__[component]) {
-      resolve(__META_COMPONENTS__[component]);
-    } else {
-      const moduleImport = components[`src/${cParse}`] || components[`src/generic`] || null;
-      if(!moduleImport) {
-        console.warn("Component not found: " + component);
-        resolve(null);
-        return;
-      }
-      moduleImport().then((c) => {
-        const promises = [];
+    const cached = __META_COMPONENTS__[component];
+    if (cached && !cached.__loadFailed) {
+      resolve(cached);
+      return;
+    }
 
-        if (c?.default?.prototype?.requires && typeof window !== "undefined") {
-          const requires = c.default.prototype.requires;
+    const moduleImport = components[`src/${cParse}`] || components[`src/generic`] || null;
+    if(!moduleImport) {
+      console.warn("Component not found: " + component);
+      resolve(null);
+      return;
+    }
 
-          if (requires.css) {
-            for (const css of requires.css) {
-              promises.push(loopar.includeCSS(css));
-            }
-          }
+    const onFailure = (error) => {
+      console.error(`Failed to load component "${component}"`, error);
+      const failed = makeFailedComponent(component, error);
+      __META_COMPONENTS__[component] = failed;
+      resolve(failed);
+    };
 
-          if (requires.js) {
-            for (const js of requires.js) {
-              promises.push(loopar.require(js));
-            }
-          }
+    moduleImport().then((c) => {
+      const promises = [];
 
-          if (requires.modules) {
-            promises.push(
-              ComponentsLoader(requires.modules.filter((m) => m !== component))
-            );
+      if (c?.default?.prototype?.requires && typeof window !== "undefined") {
+        const requires = c.default.prototype.requires;
+
+        if (requires.css) {
+          for (const css of requires.css) {
+            promises.push(loopar.includeCSS(css));
           }
         }
 
-        Promise.all(promises).then(() => {
-          if(c.default) {
-            __META_COMPONENTS__[component] = c;
-            resolve(c);
-          }else{
-            resolve(null)
+        if (requires.js) {
+          for (const js of requires.js) {
+            promises.push(loopar.require(js));
           }
-        }).catch((error) => {
-          console.error("Err on load Resourse: " + component, error);
-        });
-      });
-    }
+        }
+
+        if (requires.modules) {
+          promises.push(
+            ComponentsLoader(requires.modules.filter((m) => m !== component))
+          );
+        }
+      }
+
+      Promise.all(promises).then(() => {
+        if(c.default) {
+          __META_COMPONENTS__[component] = c;
+          resolve(c);
+        }else{
+          resolve(null)
+        }
+      }).catch(onFailure);
+    }).catch(onFailure);
   });
 }
 

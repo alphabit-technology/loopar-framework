@@ -55,7 +55,7 @@ function VoteButtons({ review, entity }) {
     setLoading(true);
 
     try {
-      await loopar.api.post(entity, "voteReview", {
+      await loopar.call(entity, "voteReview", {
         body: { review_id: review.name, vote: type }
       });
 
@@ -135,9 +135,8 @@ function ReviewForm({ requireCity, requireRating, entity }) {
     setError("");
     setLoading(true);
 
-    console.log(["entity", Document]);
     try {
-      await loopar.api.call(Document.Entity.name, "addReview", {
+      await loopar.call(Document.Entity.name, "addReview", {
         body: {
           author_name: name.trim(),
           rating,
@@ -239,7 +238,7 @@ export default function MetaReview({
     : null;
 
   const loadReviews = async () => {
-    setReviews(await loopar.api.get(entity, "getReviews"))
+    setReviews(await loopar.call(entity, "getReviews"))
   }
 
   useRealtime(`Review.changed`, () => {

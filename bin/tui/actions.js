@@ -1,36 +1,20 @@
 /**
- * Tenant actions + the wizard/confirm flows. All orchestration comes from
- * tenant-service.js — the SAME module the TenantManager entity (Desk UI /
- * loopar.build) delegates to — so every surface manages tenants identically.
+ * Tenant actions + the wizard/confirm flows. Orchestration comes from
+ * tenant-ops.js — the SAME shared lifecycle the TenantManager entity (Desk UI /
+ * control plane) uses — so every surface manages tenants identically.
  */
 import { spawn } from "child_process";
 import "loopar/bin/pm2-home.js";
-import {
-  tenants,
-  getTenantData,
-  saveTenant,
-  allocateFreePort,
-  tenantUrl,
-} from "loopar/bin/tenant/tenant-builder.js";
-import {
-  withPm2Bus,
-  pm2Action,
-  tenantStatus as pm2Status,
-  destroy as destroyTenant,
-} from "loopar/bin/tenant/tenant-service.js";
-import CaddyManager from "loopar/bin/tenant/caddy-manager.js";
+import { tenantList } from "loopar/bin/tenant/tenant-builder.js";
+import * as tenantOps from "loopar/bin/tenant/tenant-ops.js";
+import { coreEnv, setCoreMode } from "loopar/core/config/core-config.js";
+import { distIsReady } from "loopar/core/server/runtime-mode.js";
+import { withPm2, restartCoreProcess, coreProcessStatus } from "../cli/pm2.js";
 import { silenced, quit } from "./term.js";
 import { state, NO_PM2 } from "./state.js";
 import { render } from "./render.js";
 import { openLogs } from "./logs.js";
 
-// ─── Caddy route probe ──────────────────────────────────────────────────────
-
-// One cheap call to the local Caddy admin API per refresh: which domains have
-// a route, and on which HTTP port Caddy listens. Lets local URLs drop the
-// tenant port (http://dev.localhost instead of :3003) whenever Caddy actually
-// routes them. Bounded by an abort timer so a stopped Caddy never stalls the
-// UI; on failure we keep the last known answer to avoid URL flicker.
 let caddyState = null;
 
 async function probeCaddy() {
@@ -54,38 +38,28 @@ async function probeCaddy() {
   return caddyState;
 }
 
-// ─── Data ───────────────────────────────────────────────────────────────────
-
 export async function loadRows(withStatus = true) {
   const caddy = withStatus ? await probeCaddy() : caddyState;
 
-  const all = tenants()
+  if (withStatus && !NO_PM2) {
+    try { state.coreStatus = await coreProcessStatus(); }
+    catch { /* keep last known */ }
+  }
+
+  const all = tenantList()
     .map((t) => {
-      const domain = t.env.DOMAIN || `${t.name}.localhost`;
-      // Same URL logic the provisioning flow uses (localhost:port vs https)...
-      const direct = tenantUrl(t.name, { domain, port: t.env.PORT });
-      // ...but when Caddy routes a LOCAL domain, prefer the portless URL
-      // (Caddy proxies to the tenant port). Real domains stay https://.
-      const viaCaddy = caddy?.hosts.has(domain) && direct?.startsWith("http://")
-        ? (caddy.port === 80 ? `http://${domain}` : `http://${domain}:${caddy.port}`)
-        : null;
+      // All tenant domains route to the CORE via Caddy's catch-all.
+      const viaCaddy = caddy?.hosts.has(t.domain) && caddy.port !== 80
+        ? `http://${t.domain}:${caddy.port}/desk`
+        : `http://${t.domain}/desk`;
       return {
         name: t.name,
-        port: t.env.PORT || "",
-        domain: t.env.DOMAIN || "",
-        env: t.env.NODE_ENV || "development",
-        url: viaCaddy || direct,
+        domain: t.domain,
+        url: viaCaddy,
+        status: t.online ? "online" : "stopped",
       };
     })
     .sort((a, b) => (b.name === "dev") - (a.name === "dev") || a.name.localeCompare(b.name));
-
-  if (withStatus && !NO_PM2) {
-    await silenced(() => withPm2Bus(async () => {
-      for (const row of all) row.status = await pm2Status(row.name);
-    })).catch(() => { for (const row of all) row.status ??= "stopped"; });
-  } else {
-    for (const row of all) row.status = NO_PM2 ? "n/a" : "…";
-  }
 
   state.rows = all;
   if (state.selected >= all.length) state.selected = Math.max(0, all.length - 1);
@@ -93,9 +67,7 @@ export async function loadRows(withStatus = true) {
 
 // ─── Open in browser ────────────────────────────────────────────────────────
 
-// The TUI owns the mouse (SGR tracking), so plain clicks never reach the
-// terminal's own link handling — we open the browser ourselves instead.
-// (Cmd/Ctrl+click still works for the OSC 8 links where supported.)
+// The TUI owns the mouse (SGR tracking).
 export function openUrl(url) {
   const [cmd, args] =
     process.platform === "darwin" ? ["open", [url]] :
@@ -109,61 +81,33 @@ export function openUrl(url) {
   }
 }
 
-// ─── Tenant actions (thin wrappers over tenant-service) ─────────────────────
-
-// Caddy parity with the UI's initInstance(): when the tenant has a DOMAIN,
-// register the reverse-proxy route after PM2 brings it up. Best-effort — a
-// Caddy failure never blocks the tenant (port access still works), it just
-// shows up in the status message. registerTenant() dedups by domain, so
-// calling it on every start/restart is safe.
-async function caddyRegister(name) {
-  const env = getTenantData(name, null)?.env || {};
-  const domain = (env.DOMAIN || "").trim();
-  if (!domain) return "";
-  try {
-    const caddy = new CaddyManager();
-    await caddy.ensureReady();
-    const ok = await caddy.registerTenant(domain, env.PORT);
-    return ok
-      ? ` · http://${domain}`
-      : ` · caddy register failed (port access still works)`;
-  } catch (err) {
-    return ` · caddy: ${err.message} (port access still works)`;
-  }
-}
-
 export const actions = {
   start: (name) => silenced(async () => {
-    const ok = await withPm2Bus(() => pm2Action(name, "start"));
-    if (!ok) return "PM2 start failed";
-    return `${name} started${await caddyRegister(name)}`;
+    const suffix = await tenantOps.activate(name);
+    return `${name} turned on${suffix}`;
   }),
 
-  stop: (name) => silenced(() => withPm2Bus(async () =>
-    (await pm2Action(name, "stop")) ? `${name} stopped` : "PM2 stop failed")),
+  stop: (name) => silenced(async () => {
+    await tenantOps.suspend(name);
+    return `${name} suspended`;
+  }),
 
-  // service "restart" for non-self targets = delete + fresh start, so .env
-  // changes apply (same as CLI restart <site> and the UI's external restart).
-  // Caddy route is re-registered after, mirroring the entity's restart().
   restart: (name) => silenced(async () => {
-    const ok = await withPm2Bus(() => pm2Action(name, "restart"));
-    if (!ok) return "PM2 restart failed";
-    return `${name} restarted${await caddyRegister(name)}`;
+    await tenantOps.reload(name);
+    return `${name} reloaded (applies on next request)`;
   }),
 
-  // Remove from the PM2 registry only — sites/<name>/ stays on disk.
-  unregister: (name) => silenced(() => withPm2Bus(async () =>
-    (await pm2Action(name, "delete")) ? `${name} removed from PM2` : "PM2 delete failed")),
+  // Suspend alias kept for the old "unregister" keybinding.
+  unregister: (name) => silenced(async () => {
+    await tenantOps.suspend(name);
+    return `${name} suspended`;
+  }),
 
-  // Full teardown: PM2 stop+delete, Caddy route, rm -rf sites/<name>.
   async destroy(name) {
-    const domain = getTenantData(name, null)?.env?.DOMAIN || null;
-    await silenced(() => destroyTenant(name, { domain, removePath: true }));
+    await silenced(() => tenantOps.destroyTenant(name, { removePath: true }));
     return `${name} destroyed (sites/${name} removed)`;
   },
 };
-
-// ─── Dispatcher ─────────────────────────────────────────────────────────────
 
 async function execute(action, name) {
   state.busy = true; render();
@@ -191,18 +135,13 @@ export async function run(action) {
     return render();
   }
   if (action === "new") {
-    let port = "3100";
-    try { port = String(allocateFreePort()); } catch (_) { /* keep fallback */ }
     return openWizard("New tenant", [
       { key: "name", label: "name", value: "", validate: (v) => /^[a-z0-9][a-z0-9-]*$/.test(v) || "Invalid name (a-z, 0-9, dashes)" },
-      { key: "port", label: "port", value: port, validate: (v) => /^\d{2,5}$/.test(v) || "Invalid port" },
       { key: "domain", label: "domain", default: (d) => `${d.name}.localhost`, validate: (v) => v === "" || /^[a-z0-9][a-z0-9.-]*$/.test(v) || "Invalid domain" },
     ], (data) => {
-      // Last question doubles as the final confirmation:
-      // Yes = create + start, No = create only, Esc = abort entirely.
       state.mode = "confirm";
       state.confirm = {
-        question: `Create "${data.name}" (port ${data.port}) — start it now?`,
+        question: `Create "${data.name}" — turn it on now?`,
         onYes: () => createTenant(data, true),
         onNo: () => createTenant(data, false),
       };
@@ -214,9 +153,25 @@ export async function run(action) {
     state.mode = "destroy"; state.input = ""; state.message = "";
     return render();
   }
-  // Merged live stream of EVERY pm2 process (pm2-logs style, name-prefixed).
-  // Works even with nothing selected.
+
   if (action === "logs-all") return openLogs(null);
+
+  // GLOBAL: bring the core (generator) up / restart it — the header's "press c".
+  // Not tied to a selected tenant; the core serves them all.
+  if (action === "core") {
+    state.busy = true; render();
+    try {
+      await silenced(() => withPm2(() => restartCoreProcess()));
+      state.message = "core (re)started";
+      state.messageKind = "ok";
+    } catch (err) {
+      state.message = err.message || String(err);
+      state.messageKind = "error";
+    }
+    await loadRows();
+    state.busy = false;
+    return render();
+  }
 
   if (!sel) return;
 
@@ -229,10 +184,10 @@ export async function run(action) {
     }
     // Clicking a dead tenant's URL would only show a connection error in the
     // browser — offer to bring it up first, then open. One click + Enter.
-    if ((sel.status === "stopped" || sel.status === "errored") && !NO_PM2) {
+    if (sel.status === "stopped" || sel.status === "errored") {
       state.mode = "confirm";
       state.confirm = {
-        question: `"${sel.name}" is ${sel.status} — start it and open?`,
+        question: `"${sel.name}" is off — turn it on and open?`,
         onYes: async () => {
           state.busy = true; render();
           try {
@@ -257,28 +212,26 @@ export async function run(action) {
     return render();
   }
 
-  // Per-tenant prod/dev switch: write NODE_ENV to sites/<name>/.env and — if
-  // the tenant is running — delete + fresh start so the new mode actually
-  // applies (exec_mode cluster/fork and the Vite middleware are decided at
-  // process start; only the dev tenant dispatches modes dynamically).
+  // GLOBAL core mode switch (dev/prod). Writes config/core.json and restarts
+  // the core process — every tenant disconnects briefly.
   if (action === "mode") {
-    const next = sel.env === "production" ? "development" : "production";
-    const willRestart = sel.status === "online" && !NO_PM2;
+    const cur = coreEnv();
+    const next = cur === "production" ? "development" : "production";
+    if (next === "production" && !distIsReady()) {
+      state.message = "No build found — run `yarn build` (or Deploy) before production";
+      state.messageKind = "error";
+      return render();
+    }
     state.mode = "confirm";
     state.confirm = {
-      question: `Switch "${sel.name}" ${sel.env} → ${next}${willRestart ? " and restart" : ""}?`,
+      question: `Switch the CORE ${cur} → ${next} and restart? All tenants disconnect briefly.`,
       onYes: async () => {
         state.busy = true; render();
         try {
-          await saveTenant({ NAME: sel.name, NODE_ENV: next });
-          if (willRestart) {
-            const msg = await actions.restart(sel.name);
-            state.message = `${sel.name} → ${next} · ${msg}`;
-            state.messageKind = /fail/i.test(msg) ? "error" : "ok";
-          } else {
-            state.message = `${sel.name} → ${next} (applies on next start)`;
-            state.messageKind = "ok";
-          }
+          setCoreMode(next);
+          await silenced(() => withPm2(() => restartCoreProcess()));
+          state.message = `core → ${next} (restarted)`;
+          state.messageKind = "ok";
         } catch (err) {
           state.message = err.message || String(err);
           state.messageKind = "error";
@@ -291,12 +244,7 @@ export async function run(action) {
     return render();
   }
 
-  if (NO_PM2 && ["start", "stop", "restart", "unregister"].includes(action)) {
-    state.message = "PM2 disabled (LOOPAR_TUI_NO_PM2=1)"; state.messageKind = "error";
-    return render();
-  }
-
-  // stop/restart/unregister interrupt a running tenant — ask first.
+  // stop/restart/unregister change a serving tenant — ask first.
   // start is additive and runs directly.
   if (["stop", "restart", "unregister"].includes(action)) {
     state.mode = "confirm";
@@ -309,8 +257,6 @@ export async function run(action) {
 
   return execute(action, sel.name);
 }
-
-// ─── Wizard (multi-step text input) ─────────────────────────────────────────
 
 export function openWizard(title, steps, onDone) {
   state.mode = "create";
@@ -350,21 +296,14 @@ export function advanceWizard() {
 async function createTenant(data, startAfter) {
   state.busy = true; render();
   try {
-    if (getTenantData(data.name, null)) throw new Error(`Tenant "${data.name}" already exists`);
-    await saveTenant({
-      ID: data.name,
-      NAME: data.name,
-      PORT: data.port,
-      DOMAIN: data.domain || undefined,
-      NODE_ENV: "development",
-    });
-    state.message = `${data.name} created on port ${data.port}`;
+    await tenantOps.createTenant(
+      { name: data.name, port: data.port, domain: data.domain || undefined },
+      { activate: startAfter }
+    );
+    state.message = startAfter
+      ? `${data.name} created and turned on`
+      : `${data.name} created (off — press Start to turn on)`;
     state.messageKind = "ok";
-    if (startAfter) {
-      state.message = NO_PM2
-        ? `${data.name} created — PM2 disabled, not started`
-        : `${data.name} created — ${await actions.start(data.name)}`;
-    }
   } catch (err) {
     state.message = err.message || String(err);
     state.messageKind = "error";

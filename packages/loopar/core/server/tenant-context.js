@@ -7,26 +7,14 @@ import { loopar } from '../loopar.js';
 /**
  * Tenant-scoped session middleware.
  *
- * The session store and the express-session middleware are constructed ONCE
- * per process — lazily, the first time a request arrives, so we can be sure
- * `loopar.tenantId` is populated by then. Subsequent requests reuse the same
- * middleware instance.
+ * Built lazily and cached PER TENANT (Map keyed by tenant id). Each entry is
+ * an express-session middleware whose store, cookie name and secret are the
+ * tenant's own.
  *
- * Why lazy + module-level cache:
- *   - A single tenant process always serves exactly one tenant (TENANT_ID is
- *     baked in at PM2 start), so the store config is stable for the process
- *     lifetime. No need to keep a Map keyed by tenant.
- *   - FileSessionStore registers a `setInterval` for the reaper in its
- *     constructor. Instantiating it per request leaks one timer per request
- *     forever — the previous version of this file did that, which made the
- *     process accumulate timers until it eventually died under load.
- *   - Behavior observable to the client (cookie name, secret, TTL, samesite)
- *     is unchanged. Only the timing of construction moves.
  */
-let cachedMiddleware = null;
+const middlewareByTenant = new Map();
 
-function buildMiddleware() {
-  const tenantId = loopar.tenantId;
+function buildMiddleware(tenantId) {
   if (!tenantId) return null;
 
   const sessionsPath = path.join(loopar.pathRoot, 'sites', tenantId, 'sessions');
@@ -37,14 +25,7 @@ function buildMiddleware() {
     reapInterval: 3600,
   });
 
-  // SECURITY: the old fallback was `loopar-secret-${tenantId}` — derivable
-  // from the (public) tenant name, so session cookies could be forged.
-  // Now: explicit SESSION_SECRET from the tenant .env wins; otherwise derive
-  // a session-scoped key from the tenant's random JWT_SECRET (domain-
-  // separated so the same key isn't reused across JWT HMAC and cookie
-  // signing).
-  const sessionSecret = process.env.SESSION_SECRET ||
-    crypto.createHash('sha256').update(`${loopar.jwtSecret}:session`).digest('hex');
+  const sessionSecret = crypto.createHash('sha256').update(`${loopar.jwtSecret}:session`).digest('hex');
 
   return session({
     name: `loopar_${tenantId}`,
@@ -65,12 +46,16 @@ function buildMiddleware() {
 }
 
 export default function tenantContextMiddleware(req, res, next) {
-  if (!cachedMiddleware) {
-    cachedMiddleware = buildMiddleware();
-    if (!cachedMiddleware) {
+  const tenantId = loopar.requestTenantId;
+
+  let mw = middlewareByTenant.get(tenantId);
+  if (!mw) {
+    mw = buildMiddleware(tenantId);
+    if (!mw) {
       return res.status(400).json({ error: 'Tenant not identified' });
     }
+    middlewareByTenant.set(tenantId, mw);
   }
 
-  return cachedMiddleware(req, res, next);
+  return mw(req, res, next);
 }

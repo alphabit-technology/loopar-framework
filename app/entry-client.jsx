@@ -9,6 +9,8 @@ import { ErrorBoundary } from "@error-boundary";
   const __META__ = JSON.parse(__META_SCRIPT__?.textContent || "{}");
   globalThis.__INSTALLED_APPS__ = __META__.__INSTALLED_APPS__;
   globalThis.__csrfToken__ = __META__.csrfToken ?? undefined;
+  // Signed workspace identity — echoed back on every RPC as X-Workspace-Token.
+  globalThis.__wsToken__ = __META__.wsToken ?? undefined;
   globalThis.__user__ = __META__.user?.name;
 
   const { Workspace, View } = await Loader(__META__, "client");

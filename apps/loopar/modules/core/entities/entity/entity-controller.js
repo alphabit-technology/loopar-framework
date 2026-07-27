@@ -31,7 +31,7 @@ export default class EntityController extends BaseController {
   }
 
   async actionList() {
-    const data = Object.entries({ ...loopar.session.get(this.document + 'q') || {} }).reduce((acc, [key, value]) => {
+    const data = Object.entries({ ...loopar.getQ(this.document)}).reduce((acc, [key, value]) => {
       if (value && (value.toString()).length > 0 && value !== 0) {
         acc[key] = `${value}`;
       }

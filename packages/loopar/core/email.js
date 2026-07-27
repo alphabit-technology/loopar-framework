@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { loopar } from './loopar.js';
+import { shouldRunJobs } from './config/core-config.js';
 
 export class EmailService {
   transporter = null;
@@ -307,6 +308,12 @@ export class EmailService {
   }
 
   startQueueProcessor(intervalMs = 60000) {
+    // Cluster: only the jobs worker runs the processor so N workers don't each
+    // send the same queued mail. Single process -> always runs.
+    if (!shouldRunJobs()) {
+      console.log('[Email] queue processor skipped (not the jobs worker)');
+      return;
+    }
     if (this.processorInterval) {
       console.log('Queue processor already running');
       return;

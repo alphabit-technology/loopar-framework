@@ -1,32 +1,19 @@
 
 import fs from 'fs';
 import path from 'pathe';
-import { loopar } from '../loopar.js';
+import { coreEnv } from '../config/core-config.js';
+
+/**
+ * Runtime mode is a CORE-level setting now (config/core.json → nodeEnv), not
+ * per-tenant: one process serves every tenant, so it runs a single mode —
+ * Vite (development) or the prebuilt dist (production).
+ */
 
 const TTL_MS = 1000;
-
-let modeCache = { value: null, at: 0 };
 let distCache = { value: null, at: 0 };
 
 export function readRuntimeMode() {
-  const now = Date.now();
-  if (modeCache.value !== null && now - modeCache.at < TTL_MS) {
-    return modeCache.value;
-  }
-
-  let value;
-  try {
-    const envPath = path.join(loopar.tenantPath, '.env');
-    const content = fs.readFileSync(envPath, 'utf-8');
-    const match = content.match(/^NODE_ENV\s*=\s*(.+)$/m);
-    const raw = match?.[1]?.trim().replace(/^["'](.*)["']$/, '$1');
-    value = raw || process.env.NODE_ENV || 'development';
-  } catch {
-    value = process.env.NODE_ENV || 'development';
-  }
-
-  modeCache = { value, at: now };
-  return value;
+  return coreEnv();
 }
 
 export function distIsReady() {
@@ -35,8 +22,8 @@ export function distIsReady() {
     return distCache.value;
   }
 
-  const clientHtml = path.join(loopar.pathRoot, 'dist/client/main.html');
-  const serverBundle = path.join(loopar.pathRoot, 'dist/server/entry-server.js');
+  const clientHtml = path.join(process.cwd(), 'dist/client/main.html');
+  const serverBundle = path.join(process.cwd(), 'dist/server/entry-server.js');
   const value = fs.existsSync(clientHtml) && fs.existsSync(serverBundle);
 
   distCache = { value, at: now };
@@ -45,8 +32,4 @@ export function distIsReady() {
 
 export function shouldServeProduction() {
   return readRuntimeMode() === 'production' && distIsReady();
-}
-
-export function isDevTenant() {
-  return process.env.TENANT_ID === 'dev';
 }

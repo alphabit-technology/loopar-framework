@@ -4,11 +4,54 @@ import { Op } from "db-env";
 import { loopar } from "loopar";
 import { ActionScanner } from "./ActionScanner.js";
 
+/**
+ * Process-wide singleton, but the CORE model runs one process for every tenant,
+ * so all state MUST be namespaced per tenant. Previously #store/#deniedStore
+ * were keyed by username alone and #publicActions was a single Set: the same
+ * username in two tenants collided (last boot() won) and one tenant's public
+ * actions applied to all — a cross-tenant authorization leak. Now every
+ * container is nested under the request tenant (loopar.requestTenantId), the
+ * same pattern cacheManager already uses for its keys.
+ *
+ * The ORM hooks (registered via the `loopar` proxy) resolve to the request's
+ * tenant at fire time, and #reload/#emitUpdate are tenant-scoped, so wiring
+ * them per boot stays correct.
+ */
 class PermissionManagerClass {
-  #store = new Map();
-  #publicActions = new Set();
-  #deniedStore = new Map();
-  #allActions = [];
+  // tenant -> Map(username -> Set(permKey))
+  #storesByTenant = new Map();
+  // tenant -> Map(username -> Set(permKey))
+  #deniedByTenant = new Map();
+  // tenant -> Set(permKey)
+  #publicByTenant = new Map();
+  // tenant -> string[]
+  #allActionsByTenant = new Map();
+
+  /** Tenant namespace for the current request (falls back to core outside one). */
+  #tenant() {
+    return loopar.requestTenantId ?? '__core__';
+  }
+
+  #store() {
+    const t = this.#tenant();
+    let m = this.#storesByTenant.get(t);
+    if (!m) { m = new Map(); this.#storesByTenant.set(t, m); }
+    return m;
+  }
+
+  #denied() {
+    const t = this.#tenant();
+    let m = this.#deniedByTenant.get(t);
+    if (!m) { m = new Map(); this.#deniedByTenant.set(t, m); }
+    return m;
+  }
+
+  #public() {
+    const t = this.#tenant();
+    let s = this.#publicByTenant.get(t);
+    if (!s) { s = new Set(); this.#publicByTenant.set(t, s); }
+    return s;
+  }
 
   #buildKey(document, action) {
     return `${document.toLowerCase().replaceAll(" ", "")}:${action.toLowerCase()}`;
@@ -21,8 +64,8 @@ class PermissionManagerClass {
     });
 
     loopar.hook("User Role", "afterDelete", async ({doc}) => {
-      this.#store.delete(doc.user);
-      this.#deniedStore.delete(doc.user);
+      this.#store().delete(doc.user);
+      this.#denied().delete(doc.user);
       this.#emitUpdate(doc.user);
     });
 
@@ -44,8 +87,8 @@ class PermissionManagerClass {
       }
     });
 
-    loopar.hook("Module", "afterSave", async () => { this.#allActions = []; });
-    loopar.hook("Module", "afterDelete", async () => { this.#allActions = []; });
+    loopar.hook("Module", "afterSave", async () => { this.#allActionsByTenant.delete(this.#tenant()); });
+    loopar.hook("Module", "afterDelete", async () => { this.#allActionsByTenant.delete(this.#tenant()); });
   }
 
   can(document, action, username) {
@@ -54,12 +97,12 @@ class PermissionManagerClass {
 
     const key = this.#buildKey(document, action);
 
-    if (this.#publicActions.has(key)) return true;
+    if (this.#public().has(key)) return true;
 
-    const denied = this.#deniedStore.get(username);
+    const denied = this.#denied().get(username);
     if (denied?.has(key)) return false;
 
-    const set = this.#store.get(username);
+    const set = this.#store().get(username);
     if (!set) return false;
 
     return (
@@ -72,11 +115,11 @@ class PermissionManagerClass {
 
   invalidate(username) {
     if (username) {
-      this.#store.delete(username);
-      this.#deniedStore.delete(username);
+      this.#store().delete(username);
+      this.#denied().delete(username);
     } else {
-      this.#store.clear();
-      this.#deniedStore.clear();
+      this.#store().clear();
+      this.#denied().clear();
     }
   }
 
@@ -117,8 +160,8 @@ class PermissionManagerClass {
       if (!deniedSet.has(key)) merged.add(key);
     }
 
-    this.#store.set(username, merged);
-    this.#deniedStore.set(username, deniedSet);
+    this.#store().set(username, merged);
+    this.#denied().set(username, deniedSet);
   }
 
   async #reloadRole(roleName) {
@@ -144,30 +187,31 @@ class PermissionManagerClass {
 
   async loadPublicActions() {
     const raw = await ActionScanner.getPublicActions();
-    this.#publicActions = new Set(
+    this.#publicByTenant.set(this.#tenant(), new Set(
       raw.map(({ document, action }) => this.#buildKey(document, action))
-    );
+    ));
   }
 
   async refreshAllActions() {
-    this.#allActions = await ActionScanner.getAllActions();
+    this.#allActionsByTenant.set(this.#tenant(), await ActionScanner.getAllActions());
   }
 
   async getAllActions() {
-    if (!this.#allActions.length) await this.refreshAllActions();
-    return [...this.#allActions];
+    const t = this.#tenant();
+    if (!this.#allActionsByTenant.get(t)?.length) await this.refreshAllActions();
+    return [...(this.#allActionsByTenant.get(t) ?? [])];
   }
 
   getPermissions(username) {
     username = username ?? loopar.auth.user() ?? 'Guest';
     return {
-      public:  [...this.#publicActions],
+      public:  [...this.#public()],
       private: username === 'Administrator'
         ? null
-        : [...(this.#store.get(username) ?? [])],
+        : [...(this.#store().get(username) ?? [])],
       denied: username === 'Administrator'
         ? []
-        : [...(this.#deniedStore.get(username) ?? [])],
+        : [...(this.#denied().get(username) ?? [])],
     };
   }
 }

@@ -366,12 +366,50 @@ const httpErrors = {
  *   { status, code, title, message }
  *
  * - status: numeric HTTP status (always a Number)
- * - code:   original error code (HTTP number or symbolic string like "ERR_FILE_NOT_FOUND")
- * - title:  short human label for the error class
+ * - code: original error code (HTTP number or symbolic string like "ERR_FILE_NOT_FOUND")
+ * - title: short human label for the error class
  * - message: the actionable description shown to the user
  *
  * Always returns a fresh object — never mutates the catalog.
  */
+/** Strip terminal color/style escapes that Vite bakes into transform errors. */
+function stripAnsi(s) {
+  return String(s).replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+/**
+ * Human-readable message for the error page. Cleans ANSI codes, and collapses a
+ * Vite/oxc transform (parse) error into ONE actionable line: reason + file:line:col.
+ * The full code-frame stays in the server logs and the Vite overlay.
+ */
+function formatMessage(input) {
+  const raw = input && input.message;
+  if (!raw) return null;
+  const clean = stripAnsi(String(raw));
+  const isTransform =
+    /Transform failed|PARSE_ERROR/.test(clean) ||
+    String(input.plugin || '').startsWith('vite:');
+  if (!isTransform) return clean;
+  const reason = ((clean.match(/\[?PARSE_ERROR\]?\s*([^\n\[]+)/) || [])[1]
+    || clean.split('\n')[0].replace(/^Transform failed[^:]*:\s*/i, ''))
+    .replace(/[\u2502\u256d\u2570\u2500\u252c\u256f]/g, '').trim();
+  const loc = clean.match(/([^\s\[\]()]+\.(?:jsx?|tsx?|m[jt]s|cjs)):(\d+):(\d+)/);
+  const where = loc ? `${loc[1]}:${loc[2]}:${loc[3]}` : (input.id ? String(input.id) : '');
+  return `Parse error \u2014 ${reason}${where ? `  (${where})` : ''}`;
+}
+
+function errorFrame(input) {
+  if (!input) return null;
+  if (input.frame) return stripAnsi(String(input.frame));
+  const raw = input.message;
+  if (!raw) return null;
+  const clean = stripAnsi(String(raw));
+  const isTransform =
+    /Transform failed|PARSE_ERROR/.test(clean) ||
+    String(input.plugin || '').startsWith('vite:');
+  return isTransform ? clean.replace(/\n{3,}/g, '\n\n').trim() : null;
+}
+
 export function getHttpError(err) {
   const input = (err && typeof err === "object") ? err : { code: err };
   const rawCode = input.code ?? 500;
@@ -385,7 +423,13 @@ export function getHttpError(err) {
   const status = Number.isFinite(numericCode) ? numericCode : 500;
   const code = rawCode;
   const title = input.title || `${catalogEntry.code} Error`;
-  const message = input.message || catalogEntry.message;
+  const message = formatMessage(input) || catalogEntry.message;
+  const frame = errorFrame(input);
+  
+  const dev = process.env.NODE_ENV !== 'production';
+  const stack = (dev && !frame && status >= 500 && input.stack)
+    ? stripAnsi(String(input.stack)).split('\n').slice(0, 24).join('\n')
+    : null;
 
-  return { status, code, title, message };
+  return { status, code, title, message, ...(frame ? { frame } : {}), ...(stack ? { stack } : {}) };
 }

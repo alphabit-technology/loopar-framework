@@ -3,29 +3,17 @@
 /**
  * Loopar CLI — lifecycle for the project-local pm2 daemon.
  *
- * One module per command under commands/; shared pm2 plumbing in pm2.js.
- * Tenants resolve through tenant-builder.js — the same physical source the
- * Tenant Manager UI and the TUI use — so every surface manages the same
- * processes interchangeably. Prod/dev is a per-tenant switch (the tenant's
- * .env / the UI), never a separate command.
- *
- * Boot-time discipline: this entry imports NOTHING heavy. Bare `start` /
- * `tui` hand over to the TUI immediately (its spinner is on screen within
- * ~100ms); every other command is dynamically imported on demand, so a
- * `yarn stop x` never pays for the modules `start` needs.
  */
 import { existsSync } from 'fs';
 import { spawnSync, execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
-const [,, command, siteName] = process.argv;
+const [, , command, siteName, extraArg] = process.argv;
 
-// ─── Fast path: bare `start` / `tui` → the interactive TUI ─────────────────
-if ((command === 'start' && !siteName) || command === 'tui') {
+// ─── `start` / `tui` → the interactive manager (the local entrypoint) ───────
+if (command === 'tui' || command === 'start') {
   if (process.stdout.isTTY && process.stdin.isTTY) {
-    // ensure-site only matters on a fresh install — cheap fs check here, and
-    // the child process only runs when sites/dev/.env is actually missing.
-    if (!existsSync('sites/dev/.env')) {
+    if (!existsSync('sites/dev/config.json')) {
       const ensure = fileURLToPath(new URL('../setup/ensure-site.js', import.meta.url));
       try { execFileSync(process.execPath, [ensure], { stdio: 'inherit' }); } catch (_) { /* TUI still opens */ }
     }
@@ -33,32 +21,36 @@ if ((command === 'start' && !siteName) || command === 'tui') {
     const { status } = spawnSync(process.execPath, [tui], { stdio: 'inherit' });
     process.exit(status ?? 0);
   }
-  console.error('No interactive terminal — cannot open the TUI.');
-  console.error('Headless usage: `yarn start all` (every production tenant) or `yarn start <site>`.');
+  console.error('No interactive terminal — cannot open the TUI. Use `serve` for a headless boot.');
   process.exit(1);
 }
 
-// ─── Everything else: load only the requested command ──────────────────────
+const c = await import('./commands.js');
+
 const registry = {
-  start:   () => import('./commands/start.js'),
-  stop:    () => import('./commands/stop.js'),
-  restart: () => import('./commands/restart.js'),
-  delete:  () => import('./commands/delete.js'),
-  kill:    () => import('./commands/kill.js'),
-  watch:   () => import('./commands/watch.js'),
-  startup: () => import('./commands/startup.js'),
-  logs:    () => import('./commands/logs.js'),
-  help:    () => import('./commands/help.js'),
+  serve:   () => c.host(),
+  core:    () => c.host(),
+  dev:     () => c.dev(),
+  prod:    () => c.prod(),
+  tenant:  () => c.tenantCmd(siteName, extraArg), // on | off | list [name]
+  migrate: () => c.migrate(),
+  stop:    () => c.stop(siteName),
+  restart: () => c.restart(),
+  delete:  () => c.del(siteName),
+  kill:    () => c.kill(),
+  watch:   () => c.watch(),
+  startup: () => c.startup(),
+  logs:    () => c.logs(siteName),
+  help:    () => c.help(),
 };
 
 const name = (!command || command === '--help' || command === '-h') ? 'help' : command;
+const run = registry[name];
 
-if (!registry[name]) {
+if (!run) {
   console.error(`\n❌ Unknown command: ${command}\n`);
-  const { default: help } = await registry.help();
-  help();
+  c.help();
   process.exit(1);
 }
 
-const { default: cmd } = await registry[name]();
-await cmd(siteName);
+await run();

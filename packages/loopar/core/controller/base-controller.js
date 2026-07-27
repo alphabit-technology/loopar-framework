@@ -6,15 +6,11 @@ import CoreController from './core-controller.js';
 const HISTORY_TABLE = 'Document History';
 const COMMENT_TABLE = 'Comment';
 
-// Audit log = pure events (no comments). diff/metadata are textareas, so a
-// default getList wouldn't return them — fetch an explicit field set.
 const AUDIT_FIELDS = ['name', 'user', 'action', 'event_at', 'diff', 'metadata'];
 const COMMENT_FIELDS = ['name', 'document', 'document_name', 'parent', 'user', 'guest_name', 'guest_email', 'comment', 'status', 'created_at'];
 
 const MAX_COMMENT_LEN = 2000;
 
-// Public-facing commenter label: authenticated users carry `user`; guests
-// carry guest_name. The email is never exposed.
 function commenterName(row) {
   return row.user || row.guest_name || 'Guest';
 }
@@ -25,7 +21,7 @@ export default class BaseController extends CoreController {
   static enabledActions = []
 
   async actionList() {
-    const data = Object.entries({ ...loopar.session.get(this.document + 'q') || {} }).reduce((acc, [key, value]) => {
+    const data = Object.entries({ ...loopar.getQ(this.document)}).reduce((acc, [key, value]) => {
       if (value && (value.toString()).length > 0 && value !== 0) {
         acc[key] = `${value}`;
       }
@@ -131,7 +127,7 @@ export default class BaseController extends CoreController {
 
   async fetchAudit(documentName) {
     const filters = { document: this.commentTarget(), document_name: documentName };
-    loopar.session.set(HISTORY_TABLE + 'page', parseInt(this.query?.page) || 1);
+    loopar.setPage(HISTORY_TABLE, parseInt(this.query?.page) || 1);
     const list = await loopar.getList(HISTORY_TABLE, { fields: AUDIT_FIELDS, filters });
     return list.rows || [];
   }

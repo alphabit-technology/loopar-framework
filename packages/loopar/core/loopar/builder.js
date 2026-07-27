@@ -12,6 +12,7 @@ import {PermissionManager} from "../auth/PermissionManager.js"
 import { existsSync, readdirSync, readFileSync } from "fs";
 
 import inflection from "inflection";
+import { shouldRunJobs } from "../config/core-config.js";
 
 export class Builder {
   async buildRefs() {
@@ -343,14 +344,6 @@ export class Builder {
     }
   }
 
-  /**
-   * Truthy only inside the control-plane process. `CONTROL_PLANE=1` is
-   * written into the control tenant's `.env` (and NOT into customer
-   * tenant .envs) — same gate used by tenant-manager-controller.js. Boot
-   * hooks that mutate shared state (sweeping the cloud Subscription
-   * table, etc.) MUST guard on this so a customer tenant's PM2 process
-   * doesn't run them N times in parallel.
-   */
   _isControlPlane() {
     return ["1", "true"].includes(String(process.env.CONTROL_PLANE || ""));
   }
@@ -362,6 +355,7 @@ export class Builder {
    * we never want a retry-sweep glitch to block the boot.
    */
   async resumeProvisioningRetry() {
+    if (!shouldRunJobs()) return;
     if (this._provisioningRetryBooted) return;
     if (!this._isControlPlane()) return;
     // Belt-and-braces: even on the control plane, only proceed if the

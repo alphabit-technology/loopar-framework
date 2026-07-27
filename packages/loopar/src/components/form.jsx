@@ -21,7 +21,7 @@ export default function MetaForm(props) {
 
     if (!submited) return;
 
-    const res = await loopar.api.post(document, action, {
+    const res = await loopar.call(document, action, {
       body: buildFormData(submited)
     });
 

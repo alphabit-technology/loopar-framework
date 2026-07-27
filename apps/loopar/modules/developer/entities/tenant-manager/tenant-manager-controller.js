@@ -1,10 +1,16 @@
 
 'use strict';
 
+import 'loopar/bin/pm2-home.js';
 import {BaseController, loopar} from 'loopar';
+import pm2 from 'pm2';
+import { coreEnv, setCoreMode } from 'loopar/core/config/core-config.js';
+import { distIsReady } from 'loopar/core/server/runtime-mode.js';
 import { enqueueBuild, enqueueInstall, enqueueActivate, getBuildStatus, setEmitter } from '../../build-service.js';
 
 setEmitter((event, payload) => loopar.emit(event, payload));
+
+const CORE_PROCESS_NAME = 'loopar-core';
 
 export default class TenantManagerController extends BaseController {
   unRestrictedActions = ["list", "create", "update"]
@@ -25,12 +31,34 @@ export default class TenantManagerController extends BaseController {
     return await loopar.getDocument("Tenant Manager", name, null);
   }
 
-  async actionProduction(){
-    return await this.makeAction("setOnProduction");
+  async actionCoreStatus() {
+    return { status: 200, success: true, mode: coreEnv() };
   }
 
-  async actionDevelopment(){
-    return await this.makeAction("setOnDevelopment");
+  async actionCoreDev()  { return this.#applyCoreMode('development'); }
+  async actionCoreProd() { return this.#applyCoreMode('production'); }
+
+  #applyCoreMode(mode) {
+    if (mode === 'production' && !distIsReady()) {
+      return loopar.throw('No production build found. Deploy (or run `yarn build`) before switching to production.');
+    }
+    const applied = setCoreMode(mode).nodeEnv;
+
+    // Deferred restart so THIS response reaches the browser before the core
+    // reloads (the Desk itself is served by the core). The daemon performs the
+    // restart, so the current process can safely schedule its own.
+    setTimeout(() => {
+      try {
+        pm2.connect((err) => {
+          if (err) return;
+          pm2.restart(CORE_PROCESS_NAME, () => { try { pm2.disconnect(); } catch (_) {} });
+        });
+      } catch (_) { /* best-effort */ }
+    }, 600);
+
+    return this.success(`Core → ${applied}. Restarting… (tenants briefly disconnect)`, {
+      notify: { type: 'warning' },
+    });
   }
 
   async actionStart(){
@@ -129,10 +157,6 @@ export default class TenantManagerController extends BaseController {
       success: true,
       ...getBuildStatus(),
     };
-  }
-
-  async actionSetOnProduction(){
-    return await this.makeAction("setOnProduction");
   }
 
   async makeAction(action){

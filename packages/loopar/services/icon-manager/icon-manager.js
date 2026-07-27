@@ -39,7 +39,7 @@ class IconManager {
 
     const promise = (async () => {
       try {
-        const r = await loopar.api.get("Icon Manager", "getSvg", {
+        const r = await loopar.call("Icon Manager", "getSvg", {
           query: { name },
           freeze: false,
         });

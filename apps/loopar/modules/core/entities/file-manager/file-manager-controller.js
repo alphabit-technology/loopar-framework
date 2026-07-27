@@ -27,7 +27,7 @@ export default class FileManagerController extends BaseController {
   }
 
   async actionUpdate() {
-    const document = loopar.newDocument("File Manager", this.hasData() ? this.data : null);
+    const document = await loopar.newDocument("File Manager", this.hasData() ? this.data : null);
 
     const file = this.__REQ_FILES__ ? this.__REQ_FILES__[0] : null
 

@@ -137,7 +137,7 @@ function AnalyticsDashboard({data}) {
   const {kpis={},visits=[],pages=[],countries=[],devices=[],browsers=[],referrers=[],hourly=[],campaigns=[]} = analytics || {}
 
   const loadAll = useCallback((d) => {
-    loopar.api.get("Analytics Dashboard", "view", {
+    loopar.call("Analytics Dashboard", "view", {
       query: { days },
       success: r => {
         setAnalytics(r.data)

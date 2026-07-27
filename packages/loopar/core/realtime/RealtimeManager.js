@@ -27,15 +27,21 @@ class _RealtimeManager {
   /**
    * @param {import("http").Server} httpServer
    * @param {object} options
-   * @param {string} options.tenantId        Active tenant id (namespace must match).
-   * @param {() => string} options.getJwtSecret  Resolver for the JWT signing secret.
+   * @param {string} [options.tenantId]  Legacy pinned tenant id (unused by the tenant-less core).
+   * @param {() => string} [options.getJwtSecret]  Legacy pinned-tenant secret resolver (fallback).
+   * @param {(siteName: string) => string|null} [options.getJwtSecretFor]
+   *   Per-namespace secret resolver — each `/{tenant}` signs with its OWN secret.
+   * @param {(siteName: string) => boolean} [options.isKnownTenant]
+   *   Namespace gate: accept only namespaces of tenants this host serves.
    */
   attach(httpServer, options = {}) {
     if (this.io) return this;
 
-    const { tenantId, getJwtSecret, ...ioOptions } = options;
+    const { tenantId, getJwtSecret, getJwtSecretFor, isKnownTenant, ...ioOptions } = options;
     this._tenantId = tenantId || null;
     this._getJwtSecret = typeof getJwtSecret === "function" ? getJwtSecret : null;
+    this._getJwtSecretFor = typeof getJwtSecretFor === "function" ? getJwtSecretFor : null;
+    this._isKnownTenant = typeof isKnownTenant === "function" ? isKnownTenant : null;
 
     this.io = new Server(httpServer, {
       path: "/ws/socket.io",
@@ -86,9 +92,10 @@ class _RealtimeManager {
   _authMiddleware(socket, next) {
     const siteName = socket.nsp.name.slice(1);
 
-    if (this._tenantId && siteName !== this._tenantId) {
-      return next(new Error("invalid namespace"));
-    }
+    // Accept a namespace only if this host serves that tenant (isKnownTenant
+    // consults the registry); legacy pinned mode also accepted its own id.
+    const served = this._isKnownTenant?.(siteName) || (this._tenantId && siteName === this._tenantId);
+    if (!served) return next(new Error("invalid namespace"));
 
     socket.data.siteName = siteName;
     socket.data.userId = null;
@@ -96,7 +103,9 @@ class _RealtimeManager {
 
     const cookies = parseCookies(socket.handshake.headers?.cookie);
     const token = cookies[`loopar_token_${siteName}`];
-    const secret = this._getJwtSecret?.();
+    // Per-namespace secret wins; legacy pinned resolver is the fallback. No
+    // secret (tenant not initialized) → connect as guest (auth rooms denied).
+    const secret = this._getJwtSecretFor?.(siteName) ?? this._getJwtSecret?.();
 
     if (token && secret) {
       try {

@@ -111,7 +111,7 @@ export default function DefaultDetail(props) {
     try {
       const query = { slug };
       if (app) query.app = String(app).trim();
-      const res = await loopar.api.get(entity, "publicView", { query, freeze: false });
+      const res = await loopar.call(entity, "publicView", { query, freeze: false });
       setItem(res && res.name ? res : null);
     } catch (e) {
       console.error(`DefaultDetail<${entity}> load error:`, e);

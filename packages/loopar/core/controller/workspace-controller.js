@@ -1,8 +1,9 @@
 'use strict'
 
 import AuthController from "../auth/AuthController.js";
+import { signWorkspaceToken } from "../auth/workspace-token.js";
 import { loopar, fileManager, PermissionManager } from "loopar";
-import { shouldServeProduction, isDevTenant } from "../server/runtime-mode.js";
+import { shouldServeProduction } from "../server/runtime-mode.js";
 import fs from 'fs';
 
 export default class WorkspaceController extends AuthController {
@@ -59,30 +60,24 @@ export default class WorkspaceController extends AuthController {
     }
 
     const url = this.req.originalUrl;
-    // For the dev tenant, the mode decision is dynamic per-render: if the
-    // tenant's .env says production AND a built dist exists, serve from
-    // the bundle; otherwise fall back to Vite's source-file rendering.
-    // For all other tenants, stick with the startup decision (process env).
-    const isProduction = isDevTenant()
-      ? shouldServeProduction()
-      : process.env.NODE_ENV == 'production';
+    const isProduction = shouldServeProduction();
     let HTML;
 
     const _p = (path) => loopar.makePath(loopar.pathRoot, path);
+    const vite = loopar.server.vite
 
     const [{ render }, template] = await Promise.all([
       isProduction
         ? import(_p("dist/server/entry-server.js"))
-        : loopar.server.vite.ssrLoadModule(_p("app/entry-server.jsx")),
-
+        : vite.ssrLoadModule(_p("app/entry-server.jsx")),
       isProduction
         ? fs.readFileSync("dist/client/main.html", "utf-8")
-        : loopar.server.vite.transformIndexHtml(
+        : vite.transformIndexHtml(
             url,
             fs.readFileSync(_p("main.html"), "utf-8")
           ),
     ]);
-    const userData = await loopar.auth.award(false);
+        const userData = await loopar.auth.award(false);
     const username = userData?.name || "Guest";
 
     const permissions = PermissionManager.getPermissions(username);
@@ -105,11 +100,16 @@ export default class WorkspaceController extends AuthController {
       user_type: userData.user_type
     } : null;
     __META__.userId = userData?.name;
+    __META__.site = loopar.tenantId;
 
     HTML = await render(url, __META__, this.req, this.res, permissions);
 
-    __META__.site = loopar.tenantId;
     __META__.csrfToken = userData?.csrfToken ?? null;
+    // Signed workspace identity (see core/auth/workspace-token.js). The
+    // workspace of a real navigation IS trustworthy (it came from the URL of
+    // this GET) — sign it so the client can prove its browsing context on
+    // every subsequent RPC via the X-Workspace-Token header.
+    __META__.wsToken = signWorkspaceToken(__META__.name || this.workspace) ?? null;
     __META__.permissions = permissions
     
     let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
@@ -136,7 +136,11 @@ export default class WorkspaceController extends AuthController {
       <script>
         window.process = ${JSON.stringify({
           env: {
-            TENANT_ID: process.env.TENANT_ID,
+            // The tenant identity the client needs is __META__.site (set above);
+            // process.env.TENANT_ID no longer exists in the tenant-less core, so
+            // injecting it produced `undefined`. Expose the resolved tenant name
+            // here too for any legacy reader, plus NODE_ENV for error-boundary.
+            TENANT_ID: loopar.tenantId,
             NODE_ENV: isProduction ? 'production' : 'development',
           }
         })};
@@ -163,14 +167,6 @@ export default class WorkspaceController extends AuthController {
     return loopar.modulesGroup;
   }
 
-  /**
-   * Portal navigation — unlike the desk sidebar (which ships the full module
-   * tree and gates access only at the route), the portal menu is filtered by
-   * permission here on the server, so a user only ever receives the entities
-   * they may actually open. Built from the same `modulesGroup` catalog, flattened
-   * to entity links (`/portal/<Entity>/<action>`). `Profile` is the baseline
-   * everyone gets, so a user with no other permission still sees just that.
-   */
   static async portalMenuData(username) {
     username = username || loopar.auth.user();
     const can = (doc, action) => PermissionManager.can(doc, action, username);

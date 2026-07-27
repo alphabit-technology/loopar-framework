@@ -5,16 +5,6 @@ import { BaseDocument, loopar } from 'loopar';
 const COMMENT_TABLE = 'Comment';
 const PAGE_SIZE = 10;
 
-/**
- * Virtual entity — no table of its own. A moderation view over the `Comment`
- * entity, surfacing every comment (all statuses) across the whole site so an
- * admin can approve / reject from one place.
- *
- * Same pattern as File Manager: override getList, pull rows from a custom
- * source, paginate, return the standard list shape. Moderation reuses the
- * inherited BaseController.actionModerate (operates on Comment by name — the
- * rows here ARE Comment rows, so the switch just works).
- */
 export default class CommentManage extends BaseDocument {
   constructor(props) {
     super(props);
@@ -37,7 +27,7 @@ export default class CommentManage extends BaseDocument {
 
   async getList({ fields = null, q = null, rowsOnly = false } = {}) {
     const entityName = this.__ENTITY__.name;
-    const page = parseInt(loopar.session.get(entityName + 'page')) || 1;
+    const page = loopar.getPage(entityName);
 
     const totalRow = await this.#applyScope(loopar.db.qx()(COMMENT_TABLE), q)
       .count({ count: 'id' })
@@ -46,7 +36,7 @@ export default class CommentManage extends BaseDocument {
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
     const safePage = page > totalPages ? 1 : page;
-    if (safePage !== page) loopar.session.set(entityName + 'page', safePage);
+    if (safePage !== page) loopar.setPage(entityName, safePage);
 
     const raw = await this.#applyScope(loopar.db.qx()(COMMENT_TABLE), q)
       .select(['name', 'user', 'guest_name', 'comment', 'document', 'document_name', 'parent', 'status', 'created_at'])
@@ -55,7 +45,7 @@ export default class CommentManage extends BaseDocument {
       .offset((safePage - 1) * PAGE_SIZE);
 
     const rows = raw.map((r) => ({
-      name: r.name,                       // Comment row id — used to moderate
+      name: r.name,
       author: r.user || r.guest_name || 'Guest',
       comment: r.comment,
       document: r.document,

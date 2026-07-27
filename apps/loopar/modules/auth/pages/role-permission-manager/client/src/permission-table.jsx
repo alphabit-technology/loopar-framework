@@ -47,7 +47,7 @@ export function PermissionTable({
       return;
     }
 
-    const resolved = await loopar.api.get(
+    const resolved = await loopar.call(
       "Role Permission Manager",
       "getResolvedPermissions",
       { query: { role, user } }
@@ -119,7 +119,7 @@ export function PermissionTable({
         }
       });
     } else {
-      loopar.api.post("Role Permission Manager", "toggle", {
+      loopar.call("Role Permission Manager", "toggle", {
         body: { mode: user ? "User" : "Role", entity: user || role, document, action, assign },
         success: async () => {
           setSaving(null);
@@ -139,7 +139,7 @@ export function PermissionTable({
     if (onToggleAll) {
       onToggleAll(document, assign);
     } else {
-      loopar.api.post("Role Permission Manager", "toggleAll", {
+      loopar.call("Role Permission Manager", "toggleAll", {
         body: { mode: user ? "User" : "Role", entity: user || role, document, assign },
         success: () => refreshResolved(),
         error: () => refreshResolved()
@@ -157,7 +157,7 @@ export function PermissionTable({
     if (onToggleCol) {
       onToggleCol(action, assign);
     } else {
-      loopar.api.post("Role Permission Manager", "toggleCol", {
+      loopar.call("Role Permission Manager", "toggleCol", {
         body: { mode: user ? "User" : "Role", entity: user || role, app: currentApp, action, assign },
         success: () => refreshResolved(),
         error: () => refreshResolved()

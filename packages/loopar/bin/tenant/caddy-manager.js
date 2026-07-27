@@ -11,17 +11,12 @@ const execAsync = promisify(exec);
 /**
  * CaddyManager — reverse proxy manager.
  *
- * Port strategy:
- *   1. Try :80 first (works in production, fails on dev if port is taken)
- *   2. Fallback to first available port from 12000
- *   3. If not on :80, set up OS-level redirect :80 → actual port
- *      so domains always work without specifying a port in the URL.
+ * Port strategy: try :80, else first free port from 12000 + OS-level :80→port
+ * redirect so domains work without a port in the URL.
  *
- * Config write strategy:
- *   All writes go through _writeFullConfig() — a single atomic POST /config/.
- *   Partial Caddy API endpoints (POST /routes, DELETE /routes/N, etc.)
- *   trigger a hot-reload that can resurrect ghost servers with :80/:443
- *   from previous Homebrew/system starts → EADDRINUSE.
+ * Config writes ALL go through _writeFullConfig() (single atomic POST /config/).
+ * Partial Caddy API endpoints (POST/DELETE /routes) hot-reload and can resurrect
+ * ghost :80/:443 servers from prior Homebrew/system starts → EADDRINUSE.
  */
 export default class CaddyManager {
   constructor() {
@@ -35,12 +30,10 @@ export default class CaddyManager {
       if (!installed) throw new Error("Could not install Caddy.");
     }
 
-    // If Caddy is already running and its admin API answers, do NOT restart
-    // it. A stop/start drops every in-flight connection proxied through it —
-    // including the very request that triggered this action when the Desk
-    // itself is served through Caddy (the response would never reach the
-    // browser). Route changes go through the admin API; no restart needed.
-    // Just adopt the running instance's port so _writeFullConfig preserves it.
+    // If Caddy is already running, do NOT restart: a stop/start drops in-flight
+    // connections — including the request that triggered this when the Desk is
+    // served through Caddy. Route changes use the admin API; no restart needed.
+    // Adopt the running instance's port so _writeFullConfig preserves it.
     if (await this.isRunning()) {
       try {
         const res = await fetch(`${this.adminUrl}/config/apps/http/servers/srv0`);
@@ -87,16 +80,15 @@ export default class CaddyManager {
       const platform = os.platform();
       if (platform === 'darwin') {
         await execAsync('brew install caddy');
-        // brew may have started Caddy as a service — stop it so Loopar can manage
+        // brew may auto-start Caddy as a service — stop it so Loopar manages it
         try { await execAsync('brew services stop caddy'); } catch (_) {}
       } else if (platform === 'linux') {
         await execAsync('sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl');
         await execAsync('curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/gpg.key" | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg');
         await execAsync('curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt" | sudo tee /etc/apt/sources.list.d/caddy-stable.list');
         await execAsync('sudo apt update && sudo apt install -y caddy');
-        // apt enables and starts caddy.service by default with the stock Caddyfile.
-        // That competes with Loopar's CaddyManager (different config, no admin
-        // API). Disable it so only the Loopar-managed Caddy runs.
+        // apt auto-starts caddy.service (stock Caddyfile, no admin API) which
+        // competes with Loopar's CaddyManager. Disable so only Loopar's runs.
         try { await execAsync('sudo systemctl stop caddy');    } catch (_) {}
         try { await execAsync('sudo systemctl disable caddy'); } catch (_) {}
       } else {
@@ -110,71 +102,50 @@ export default class CaddyManager {
     }
   }
 
-  async registerTenant(domain, tenantPort) {
+  /**
+   * Single execution model: ONE host process serves every tenant. Install one
+   * route matching ALL tenant domains → the host port (not one route/port each).
+   *
+   * @param {number}   hostPort  The single host process's HTTP port.
+   * @param {string[]} domains   Every tenant domain to route to the host.
+   */
+  async registerHostCatchAll(hostPort, domains = []) {
     try {
-      const routes  = await this._readCurrentRoutes();
-      const updated = routes.filter(r =>
-        !r.match?.some(m => m.host?.includes(domain)) &&
-        r['@id'] !== `tenant_${domain}`
-      );
+      const hosts = [...new Set(domains.filter(Boolean))];
+      if (!hosts.length) return true;
 
-      updated.push({
-        "@id": `tenant_${domain}`,
-        match: [{ host: [domain] }],
+      const route = {
+        "@id": "loopar_host",
+        match: [{ host: hosts }],
         handle: [{
           handler: "reverse_proxy",
-          upstreams: [{ dial: `localhost:${tenantPort}` }],
-          // Inform the upstream app of the real scheme/host so it builds URLs
-          // correctly. Use Caddy placeholders so HTTP and HTTPS both report
-          // accurately — hardcoding "http"/"80" breaks HTTPS because the
-          // upstream thinks the connection is plain HTTP and can issue
-          // self-redirects to HTTPS that the browser is already on.
+          upstreams: [{ dial: `localhost:${hostPort}` }],
           headers: {
             request: {
               set: {
                 "X-Forwarded-Proto": ["{http.request.scheme}"],
-                "X-Forwarded-Host": [domain],
+                "X-Forwarded-Host": ["{http.request.host}"],
                 "X-Forwarded-Port": ["{http.request.port}"],
-                "X-Real-IP": ["{http.request.remote.host}"]
-              }
-            }
-          }
-        }]
-      });
+                "X-Real-IP": ["{http.request.remote.host}"],
+              },
+            },
+          },
+        }],
+      };
 
-      const ok = await this._writeFullConfig(updated);
-      if (ok) console.log(`✅ ${domain} → localhost:${tenantPort}`);
+      // Replace ALL per-tenant routes with the single host route.
+      const ok = await this._writeFullConfig([route]);
+      if (ok) console.log(`✅ Caddy host route: [${hosts.join(", ")}] → localhost:${hostPort}`);
       return ok;
     } catch (e) {
-      console.error("Failed to register tenant:", e);
-      return false;
-    }
-  }
-
-  async removeTenant(domain) {
-    try {
-      const routes  = await this._readCurrentRoutes();
-      const updated = routes.filter(r =>
-        !r.match?.some(m => m.host?.includes(domain)) &&
-        !r['@id']?.includes(domain)
-      );
-
-      if (updated.length === routes.length) return true; // wasn't registered
-
-      const ok = await this._writeFullConfig(updated);
-      if (ok) console.log(`✅ Tenant ${domain} removed`);
-      return ok;
-    } catch (e) {
-      console.error(`Failed to remove tenant ${domain}:`, e.message);
+      console.error("Failed to register host catch-all:", e);
       return false;
     }
   }
 
   /**
-   * Port selection strategy:
-   *   - Try :80 first  → works in production, clean setup
-   *   - Try :443 skip  → Caddy handles SSL internally, no need to bind manually
-   *   - Fallback 12000+→ dev environments where :80 is taken
+   * Port selection: try :80 (production); fall back to 12000+ when :80 is taken
+   * (dev). :443 is skipped — Caddy handles SSL internally.
    */
   async findAvailablePort() {
     const net = await import('net');
@@ -203,13 +174,10 @@ export default class CaddyManager {
   }
 
   /**
-   * When Caddy can't bind :80 (dev environment), set up an OS-level
-   * redirect :80 → actualPort so domains work without specifying a port.
+   * When Caddy can't bind :80 (dev), set up an OS redirect :80 → actualPort so
+   * domains work without a port. macOS: pfctl, Linux: iptables (both need sudo).
    *
-   * macOS: uses pfctl (built-in, requires sudo)
-   * Linux: uses iptables (requires sudo)
-   *
-   * To avoid sudo prompts, add a sudoers rule once:
+   * Avoid sudo prompts with a one-time sudoers rule:
    *   macOS: echo "$(whoami) ALL=(ALL) NOPASSWD: /sbin/pfctl" | sudo tee /etc/sudoers.d/loopar-pfctl
    *   Linux: echo "$(whoami) ALL=(ALL) NOPASSWD: /sbin/iptables" | sudo tee /etc/sudoers.d/loopar-iptables
    */
@@ -268,18 +236,10 @@ export default class CaddyManager {
   }
 
   async _stopCaddy() {
-    // Try every shutdown path because we don't know how this Caddy was started:
-    //   1. caddy stop — our own admin-API-driven instance
-    //   2. systemctl stop — apt-installed systemd service (Linux)
-    //   3. brew services stop — Homebrew-managed (macOS)
-    //   4. pkill — last-resort hard kill for orphan processes the soft
-    //      signals couldn't reach (e.g. a previous run whose admin API
-    //      isn't on the default port). Without this fallback, orphan
-    //      caddy processes accumulate one per ensureReady() call.
     try { await execAsync('caddy stop'); } catch (_) {}
     if (os.platform() === 'linux') {
-      // sudo -n = non-interactive: fail instead of leaving a sudo process
-      // hanging forever waiting for a password on a tty nobody watches.
+      // sudo -n = non-interactive: fail rather than hang forever waiting for a
+      // password on a tty nobody watches.
       try { await execAsync('sudo -n systemctl stop caddy'); } catch (_) {}
       try { await execAsync('sudo -n pkill -9 -f "caddy run"'); } catch (_) {}
     } else {
@@ -338,12 +298,10 @@ export default class CaddyManager {
       return false;
     }
 
-    // Persist the live config to disk so a Caddy restart (system reboot,
-    // SIGTERM, OOM) reloads with the up-to-date routes. Without this the
-    // disk file only reflects the last `_startCaddy()` snapshot — any
-    // registerTenant/removeTenant after that was admin-API only and would
-    // be lost. Best-effort: a write failure is logged but doesn't fail the
-    // operation (the API write already succeeded).
+    // Persist live config to disk so a Caddy restart (reboot, SIGTERM, OOM)
+    // reloads current routes. Otherwise the disk file only reflects the last
+    // _startCaddy() snapshot and admin-API route changes (registerHostCatchAll)
+    // would be lost. Best-effort: the API write already succeeded.
     try {
       const configPath = this._getConfigPath();
       const dir = path.dirname(configPath);
@@ -363,30 +321,19 @@ export default class CaddyManager {
   }
 
   /**
-   * Single source of truth for the Caddy config object.
+   * Single source of truth for the Caddy config object. Two modes by httpPort:
    *
-   * Two modes, picked from the chosen httpPort:
+   *   port === 80 (PRODUCTION): listen :80 + :443, automatic_https at defaults —
+   *     real domains get Let's Encrypt certs (stored ~/.local/share/caddy/),
+   *     .localhost/.home/.lan get internal-CA self-signed (browser warns),
+   *     HTTP auto-redirects to HTTPS.
    *
-   *   port === 80 → PRODUCTION
-   *     Caddy listens on both :80 and :443. automatic_https is left at its
-   *     defaults, which means:
-   *       - Real domains (alphabit.technology, etc.) get Let's Encrypt certs
-   *         on first request. Storage at ~/.local/share/caddy/, persists
-   *         across reboots.
-   *       - .localhost / .home / .lan get self-signed certs from Caddy's
-   *         internal CA (browser will warn — fine for dev-on-prod hybrid).
-   *       - HTTP requests are redirected to HTTPS automatically.
+   *   port !== 80 (DEV FALLBACK): on a high port because :80 was taken. Disable
+   *     automatic_https entirely so it won't bind :443, append :12000 to
+   *     redirects, or provision certs for domains that may not resolve here.
    *
-   *   port !== 80 → DEV FALLBACK
-   *     Caddy is on a high port (12xxx) because :80 was taken. We disable
-   *     automatic_https entirely so it doesn't try to bind :443 (which we
-   *     also probably can't), doesn't append :12000 to redirect URLs, and
-   *     doesn't attempt cert provisioning for domains that may not even
-   *     resolve to this machine.
-   *
-   * Optional: set CADDY_ACME_EMAIL to receive Let's Encrypt renewal/expiry
-   * notifications. Without it, Caddy still works but ACME registration is
-   * anonymous.
+   * Optional CADDY_ACME_EMAIL enables Let's Encrypt renewal/expiry notices;
+   * without it ACME registration is anonymous.
    */
   _buildConfig(port, routes) {
     const isProduction = port === 80;
@@ -429,9 +376,7 @@ export default class CaddyManager {
       '/opt/homebrew/etc/caddy/config.json',
       path.join(process.cwd(), 'caddy-config.json')
     ];
-    // An existing candidate only counts if we can actually write it — a
-    // root-owned config.json (left behind by an old sudo run) would make
-    // _writeConfigFile throw EACCES and abort the whole tenant start.
+
     for (const p of candidates) {
       if (fs.existsSync(p) && this.#isWritable(p)) return p;
     }
@@ -441,9 +386,6 @@ export default class CaddyManager {
       fs.accessSync(dir, fs.constants.W_OK);
       return path.join(dir, 'config.json');
     } catch (_) {
-      // System dir not writable — fall back to a project-local config.
-      // Caddy doesn't care where the file lives; it's only the snapshot
-      // passed to `caddy start --config`.
       return path.join(process.cwd(), 'caddy-config.json');
     }
   }

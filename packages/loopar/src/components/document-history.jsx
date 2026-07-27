@@ -264,7 +264,6 @@ export default function DocumentHistory({
   const showGuestFields = enableComments && !loggedIn && !requireLogin;
   const showSignIn = enableComments && !loggedIn && requireLogin;
   const effGuestIdentity = guestIdentity ?? showGuestFields;
-  const readAction = historyApi?.action ?? "history";
   const writeAction = commentApi?.action ?? "addComment";
   const heading = title ?? (commentsOnly ? "Comments" : "History");
 
@@ -282,18 +281,12 @@ export default function DocumentHistory({
     setLoading(true);
     setError("");
     try {
-      let res
-      if(document){
-        res = await loopar.api.get(document, "comments", {
-          query: { documentType: document, documentName },
-          freeze: false,
-        });
-      }else {
-        res = await loopar.sendAction(readAction, null, {
-          query: { documentType: document, documentName },
-          freeze: false,
-        });
-      }
+      // `document` is guaranteed here (guard above) — RPC straight to the
+      // entity's controller (publicActionComments on BaseController).
+      const res = await loopar.call(document, "comments", {
+        query: { documentType: document, documentName },
+        freeze: false,
+      });
       setRows(Array.isArray(res?.rows) ? res.rows : []);
     } catch (e) {
       console.error("DocumentHistory load error:", e);
@@ -302,7 +295,7 @@ export default function DocumentHistory({
     } finally {
       setLoading(false);
     }
-  }, [document, documentName, readAction]);
+  }, [document, documentName]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -324,11 +317,7 @@ export default function DocumentHistory({
         freeze: false,
       };
 
-      if(document){
-        loopar.api.post(document, writeAction, options)
-      }else{
-        await loopar.sendAction(writeAction, null, options);
-      }
+      await loopar.call(document, writeAction, options);
 
       setNotice(effGuestIdentity ? "Comment submitted — it will appear once approved." : "Comment submitted.");
       setActiveKey(null);
@@ -346,7 +335,9 @@ export default function DocumentHistory({
   const onModerate = useCallback(async (node, status) => {
     setModeratingName(node.name);
     try {
-      await loopar.sendAction("moderate", null, { body: { name: node.name, status }, freeze: false });
+      // RPC to the entity's controller (actionModerate is inherited from
+      // BaseController) — replaces the relative-URL sendAction pattern.
+      await loopar.call(document, "moderate", { body: { name: node.name, status }, freeze: false });
       await load();
     } catch (e) {
       console.error("DocumentHistory moderate error:", e);
@@ -354,7 +345,7 @@ export default function DocumentHistory({
     } finally {
       setModeratingName(null);
     }
-  }, [load]);
+  }, [document, load]);
 
   const { feed, childrenOf, eventCommentsOf } = useMemo(() => {
     const audit = rows.filter(r => r.action !== "Commented");

@@ -20,11 +20,6 @@ function statusLabel(s) {
   return 'Pending';
 }
 
-/**
- * Segmented approve / reject switch. Holds its own optimistic state and
- * posts to the inherited moderation action; the row id is the Document
- * History row name. Pending rows show neither side active until acted on.
- */
 function ModerationSwitch({ row }) {
   const [status, setStatus] = useState(Number(row.status));
   const [loading, setLoading] = useState(false);
@@ -33,7 +28,7 @@ function ModerationSwitch({ row }) {
     if (loading || status === next) return;
     setLoading(true);
     try {
-      await loopar.api.post('Comment Manage', 'moderate', {
+      await loopar.call('Comment Manage', 'moderate', {
         body: { name: row.name, status: next },
         freeze: false,
       });

@@ -119,7 +119,7 @@ export default function MetaSelect(props) {
     setError(null);
     
     return new Promise((resolve, reject) => {
-      loopar.api.get(getModel(), "search", {
+      loopar.call(getModel(), "search", {
         query: {
           q,
           page,

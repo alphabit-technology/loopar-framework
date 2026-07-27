@@ -60,8 +60,8 @@ export function quit(code = 0) {
 }
 
 /**
- * tenant-service logs progress with console.log (fine for the CLI, corrupts
- * an alt-screen TUI) — mute the console while service calls run.
+ * tenant-ops logs progress with console.log (fine for the CLI, corrupts an
+ * alt-screen TUI) — mute the console while those calls run.
  */
 export async function silenced(fn) {
   const { log, error } = console;

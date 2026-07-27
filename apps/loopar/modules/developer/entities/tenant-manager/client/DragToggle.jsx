@@ -11,7 +11,8 @@ function DragToggle({
   onColor = 'green',
   offColor = 'red',
   disabled = false,
-  site
+  site,
+  className
 }) {
   const {updateRows} = useContext(TenantManagerListContext);
   const [isOn, setIsOn] = useState(value);
@@ -75,19 +76,27 @@ function DragToggle({
     handleMove(e.touches[0].clientX);
   };
 
+  /**
+   * Optimistic flip with explicit rollback: the knob moves immediately for
+   * instant feedback, and the parent receives a `revert` callback as second
+   * argument of `onChange` to snap it back when the change is rejected
+   * (confirm cancelled/dismissed, action failed). Without it, a cancelled
+   * confirm left the toggle showing a state that never happened.
+   */
+  const commit = (newValue) => {
+    setIsOn(newValue);
+    onChange?.(newValue, () => setIsOn(!newValue));
+  };
+
   const handleEnd = () => {
     if (!isDragging) return;
 
     const threshold = 30;
-    
+
     if (dragOffset > threshold && !isOn) {
-      const newValue = true;
-      setIsOn(newValue);
-      if (onChange) onChange(newValue);
+      commit(true);
     } else if (dragOffset < -threshold && isOn) {
-      const newValue = false;
-      setIsOn(newValue);
-      if (onChange) onChange(newValue);
+      commit(false);
     }
 
     setIsDragging(false);
@@ -118,7 +127,7 @@ function DragToggle({
     <div
       ref={sliderRef}
       disabled={isDisabled}
-      className={`relative inline-flex h-8 w-40 items-center rounded-full bg-gray-300/50 dark:bg-gray-800/50 dark:border-gray-700 cursor-grab active:cursor-grabbing select-none ${isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none disabled' : ''}`}
+      className={`relative inline-flex h-8 w-40 items-center rounded-full bg-gray-300/50 dark:bg-gray-800/50 dark:border-gray-700 cursor-grab active:cursor-grabbing select-none ${className} ${isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none disabled' : ''}`}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >

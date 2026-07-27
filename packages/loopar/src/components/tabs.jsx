@@ -1,18 +1,32 @@
-import { ComponentDefaults } from "./base/ComponentDefaults";
+"use strict";
+
 import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
 import { useDesigner } from "@context/@/designer-context";
 import { useEffect, useMemo, useId } from "react";
 import {usePersist} from "@services/persist-state";
+import { useDocument } from "@context/@/document-context";
+import { useWorkspace } from "@workspace/workspace-provider";
 import { Droppable } from "@droppable";
 import { Trash2Icon, PlusIcon } from "lucide-react";
 import {Button} from "@cn/components/ui/button";
 import { getNodeKey } from "@global/prune-doc-structure";
+import React from "react";
+import { ComponentDefaults, DEFAULTS, colPadding } from "./base/ComponentDefaults.jsx";
 
 const TabContent = ({element, parent, onDrop}) => {
+  
+  const { spacing = {} } = useDocument();
+  const { webApp = {} } = useWorkspace();
+  const config = useMemo(() => ({
+    ...DEFAULTS,
+    spacing: spacing.spacing || webApp.spacing || DEFAULTS.spacing,
+  }), [spacing, webApp]);
+
   if(element.type === "dynamic.component"){
     return (
       <Droppable 
+        Component={React.Fragment}
         {...element}
         key={null}
       />

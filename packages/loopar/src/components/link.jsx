@@ -174,11 +174,14 @@ export function Link({
   }
 
   if (isAbsolute || notControlled) {
+    // `_target` is the designer's field name (see metaFields) — translate it
+    // to the real DOM attribute instead of leaking `_target` into the <a>.
+    const target = props.target || props._target;
     return (
       <a
         {...commonProps}
         href={to}
-        _target={props._target}
+        {...(target ? { target } : {})}
         key={renderizableProps.key || to}
       >
         {children}

@@ -4,7 +4,6 @@
 import ListContext from '@context/list-context';
 import loopar, { useRealtime } from "loopar";
 import DragToggle from "./DragToggle.jsx";
-import { Code, Star } from 'lucide-react';
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 
 import {
@@ -19,15 +18,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@cn/components/ui/dropdown-menu";
-import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCcwDot, RefreshCw, Hammer, PackageIcon, RocketIcon, ChevronDown } from 'lucide-react';
+import { Settings2Icon, EllipsisIcon, HardDrive, RefreshCw, Hammer, PackageIcon, RocketIcon, ChevronDown } from 'lucide-react';
 
 import {cn} from "@cn/lib/utils";
 
 import { useDialogContext} from "@dialog";
 import { useTable } from "@@table/TableContext"
+import { useWorkspace } from "@workspace/workspace-provider";
 
-const tenantStatus = (row) => {
-  return row.status != "online" || process.env.TENANT_ID == row.name;
+const tenantStatus = (row, site) => {
+  return row.status != "online" || site == row.name;
 }
 
 export const TenantManagerListContext = createContext();
@@ -51,8 +51,9 @@ const TenantManagerListProvider = ({children}) => {
 const NameRender = ({row}) => {
   const {inDialog} = useDialogContext();
   const {toggleRowSelect} = useTable();
+  const { __META__ } = useWorkspace();
   const Com = inDialog ? "a" : Link;
-  const disabled = tenantStatus(row);
+  const disabled = tenantStatus(row, __META__?.site);
 
   const compPropperties = inDialog ? {
     onClick: (e) => {
@@ -67,7 +68,7 @@ const NameRender = ({row}) => {
     <Com 
       className={cn(
         //"flex flex-row items-left",
-        disabled && "opacity-50 cursor-not-allowed pointer-events-none disabled"
+        disabled && "opacity-50 "
       )}
       to={to}
       target="_blank"
@@ -79,6 +80,7 @@ const NameRender = ({row}) => {
             className={
               cn(
                 `w-8 h-8 transition-all ease-in duration-300 hover:scale-105 aspect-square`,
+                //"text-green-500/70" 
                 row.status == "online" ? "text-green-500/70" : "text-red-500/70"
               )
             }
@@ -95,7 +97,7 @@ const NameRender = ({row}) => {
 
 const sendAction = (action, name, confirm=true, onComplete) => {
   const doAction = () => {
-    loopar.api.post("Tenant Manager", action, {
+    loopar.call("Tenant Manager", action, {
       query: { name },
       success: () => {
         onComplete?.(true);
@@ -131,36 +133,22 @@ const Buttons = ({row}) => {
   }
 
   const status = row.status;
-  
+
   return (
     <div className="flex flex-row items-center gap-0">
       <Button
         variant="outline"
-        title="Reload — graceful, picks up code changes (no env refresh)"
+        title="Restart — re-initializes the tenant (fresh re-init, picks up code/env changes)"
         disabled={status != "online" || loading}
         onClick={(e) => {
           e.preventDefault();
-          setUpdateRows([...updateRows, row.name]);
-          sendAction("reload", row.name, true, () => {
-            setUpdateRows(updateRows.filter(name => name != row.name));
+          setUpdateRows(prev => [...prev, row.name]);
+          sendAction("restart", row.name, true, () => {
+            setUpdateRows(prev => prev.filter(name => name != row.name));
           });
         }}
       >
         <RefreshCw className={`text-blue-500/70 ${loading && "animate-spin"}`} />
-      </Button>
-      <Button
-        variant="outline"
-        title="Restart — hard, refreshes env (port/domain/NODE_ENV). Disabled for the active dev tenant."
-        disabled={row.name == process.env.TENANT_ID || row.name == "dev" || status != "online" || loading}
-        onClick={(e) => {
-          e.preventDefault();
-          setUpdateRows([...updateRows, row.name]);
-          sendAction("restart", row.name, true, () => {
-            setUpdateRows(updateRows.filter(name => name != row.name));
-          });
-        }}
-      >
-        <RefreshCcwDot className={`text-orange-500/50 ${loading && "animate-spin"}`} />
       </Button>
       <Link
         to={`update?name=${row.name}&app=${row.app}`}
@@ -221,9 +209,8 @@ const DeployButton = () => {
 
   useEffect(() => {
     let mounted = true;
-    loopar.api.post("Tenant Manager", "buildStatus", {
+    loopar.call("Tenant Manager", "buildStatus", {
       freeze: false,
-      // Don't replay results that finished before this page loaded.
       success: (res) => { if (mounted) applyStatus(res, { notify: false }); },
       error: () => {},
     });
@@ -233,7 +220,7 @@ const DeployButton = () => {
   useRealtime("buildStatus", (payload) => {
     if (!payload?.build) return;
     const next = payload.build;
-    if (next.scope === 'install') return; // install has its own button
+    if (next.scope === 'install') return;
     setBuild(next.state === 'running' ? next : { state: 'idle' });
     notifyResult(next);
   });
@@ -242,7 +229,7 @@ const DeployButton = () => {
   useEffect(() => {
     if (build.state !== 'running') return;
     const timer = setInterval(() => {
-      loopar.api.post("Tenant Manager", "buildStatus", {
+      loopar.call("Tenant Manager", "buildStatus", {
         freeze: false,
         success: (res) => applyStatus(res),
         error: () => {},
@@ -256,7 +243,7 @@ const DeployButton = () => {
 
   const post = (action, scope) => {
     setBuild({ state: 'running', scope, startedAt: Date.now() });
-    loopar.api.post("Tenant Manager", action, {
+    loopar.call("Tenant Manager", action, {
       freeze: false,
       success: (res) => { if (res && res.build) setBuild(res.build); },
       error: (msg) => { setBuild({ state: 'idle' }); loopar.throw(msg); },
@@ -349,7 +336,7 @@ const InstallButton = () => {
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(() => {
-      loopar.api.post("Tenant Manager", "buildStatus", {
+      loopar.call("Tenant Manager", "buildStatus", {
         freeze: false,
         success: (res) => {
           const b = res?.build;
@@ -373,7 +360,7 @@ const InstallButton = () => {
       "Run 'yarn install' now? Installs new/updated dependencies from the lockfile. Run this when libraries changed, before building.",
       () => {
         setRunning(true);
-        loopar.api.post("Tenant Manager", "install", {
+        loopar.call("Tenant Manager", "install", {
           freeze: false,
           success: () => {},
           error: (msg) => { setRunning(false); loopar.throw(msg); },
@@ -395,6 +382,60 @@ const InstallButton = () => {
   );
 };
 
+const CoreModeToggle = () => {
+  const [mode, setMode] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    loopar.call("Tenant Manager", "coreStatus", {
+      freeze: false,
+      success: (res) => { if (mounted) setMode(res?.mode || 'development'); },
+      error: () => {},
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  if (mode === null) return null;
+
+  const flip = (isProd, revert) => {
+    const target = isProd ? 'production' : 'development';
+    loopar.confirm(
+      `Switch the CORE to ${target} and restart? Every tenant disconnects for a moment.` +
+      (isProd ? ' Production serves the built dist — make sure you deployed.' : ''),
+      () => {
+        setBusy(true);
+        loopar.call("Tenant Manager", isProd ? "coreProd" : "coreDev", {
+          freeze: false,
+          success: () => { 
+            setMode(target); 
+            setTimeout(() => {
+              setBusy(false); setBusy(false); 
+              window.location.reload()
+            }, 2000)
+          },
+          error: (msg) => { setBusy(false); revert?.(); loopar.throw(msg); },
+        });
+      },
+      () => revert?.()
+    );
+  };
+
+  return (
+    <DragToggle
+      value={mode === 'production'}
+      site="__core__"
+      disabled={busy}
+      onChange={flip}
+      offLabel="Dev"
+      onLabel="Prod"
+      offColor="amber"
+      onColor="blue"
+      className="h-10"
+    />
+  );
+};
+
 class TenantManagerListBase extends ListContext {
   onlyList=true;
   constructor(props){
@@ -403,6 +444,7 @@ class TenantManagerListBase extends ListContext {
 
   setCustomActions() {
     super.setCustomActions();
+    this.setCustomAction('coremode', <CoreModeToggle />);
     this.setCustomAction('install', <InstallButton />);
     this.setCustomAction('deploy', <DeployButton />);
   }
@@ -417,41 +459,6 @@ class TenantManagerListBase extends ListContext {
         render: row => (
           <NameRender row={row} />
         ),
-      },
-      {
-        data: {
-          name: "node_env:",
-          label: "Mode"
-        },
-        headProps: {
-          className: "w-10 p-2 text-center",
-        },
-        cellProps: {
-          className: "w-10 p-2 text-center",
-        },
-        render: row => {
-          const mode = row.node_env;
-  
-          return (
-            <DragToggle
-              value={mode == "production"}
-              site={row.name}
-              disabled={updateRows.includes(row.name)}
-              onChange={(isProduction) => {
-                setUpdateRows([...updateRows, row.name]);
-                sendAction(isProduction ? "production" : "development", row.name, false, () => {
-                  setUpdateRows(updateRows.filter(name => name != row.name))
-                });
-              }}
-              offLabel="Dev"
-              onLabel="Prod"
-              OffIcon={Code}
-              OnIcon={Star}
-              offColor="amber"
-              onColor="blue"
-            />
-          )
-        }
       },
       {
         data: {
@@ -472,10 +479,11 @@ class TenantManagerListBase extends ListContext {
               value={status=="online"}
               site={row.name}
               disabled={updateRows.includes(row.name)}
-              onChange={(isOnline) => {
-                setUpdateRows([...updateRows, row.name]);
-                sendAction(isOnline ? "start" : "stop", row.name, false, () => {
-                  setUpdateRows(updateRows.filter(name => name != row.name))
+              onChange={(isOnline, revert) => {
+                setUpdateRows(prev => [...prev, row.name]);
+                sendAction(isOnline ? "start" : "stop", row.name, false, (ok) => {
+                  if (!ok) revert?.();
+                  setUpdateRows(prev => prev.filter(name => name != row.name))
                 });
               }}
             />

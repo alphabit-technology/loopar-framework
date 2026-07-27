@@ -118,7 +118,7 @@ export default function Collection({ data = {} }) {
       if (category) query.category = String(category).trim();
       if (tag) query.tag = String(tag).trim();
 
-      const res = await loopar.api.get(entityName, "publicList", { query, freeze: false });
+      const res = await loopar.call(entityName, "publicList", { query, freeze: false });
       setItems(Array.isArray(res?.items) ? res.items : []);
       setTotalPages(Math.max(1, parseInt(res?.total_pages, 10) || 1));
     } catch (e) {

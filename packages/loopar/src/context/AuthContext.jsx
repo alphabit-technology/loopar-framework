@@ -40,7 +40,7 @@ export function AuthProvider({ permissions: initialPermissions, userId, children
 
   const refreshPermissions = useCallback(async () => {
     try {
-      const data = await loopar.api.get(
+      const data = await loopar.call(
         "Role Permission Manager",
         "getOwnPermissions",
         { query: { user: userId } }

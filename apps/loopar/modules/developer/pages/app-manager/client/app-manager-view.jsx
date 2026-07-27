@@ -88,10 +88,6 @@ function AppCard({app, action}) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            {/* Identity tile: real icon (DynamicIcon from installer.json
-                metadata) when available, fallback to letter avatar. The
-                icon comes from the FS, not DB, so it works even for apps
-                that aren't installed yet. */}
             <div
               className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg"
               style={{ backgroundColor: color }}
@@ -326,7 +322,7 @@ export default class AppManagerView extends ListContext {
       label: "Enter the Github URL of the app you want to install",
       placeholder: "Github URL",
       ok: (gitRepo) => {
-        loopar.api.post('App Manager', 'clone', { body: { git_repo: gitRepo } });
+        loopar.call('App Manager', 'clone', { body: { git_repo: gitRepo } });
       },
       validate: (gitRepo) => {
         if (!gitRepo || gitRepo.length === 0) return loopar.throw("Please enter a valid Github URL");
@@ -378,7 +374,8 @@ export default class AppManagerView extends ListContext {
 
     const GIT_VERBS = ['pull', 'push', 'commit', 'discard', 'publish'];
     const dispatch = (verb, body, ctx = {}) => {
-      const result = loopar.call("App Manager", verb, body, {
+      const result = loopar.call("App Manager", verb, {
+        body,
         query: { app_name: appName },
       });
       if (!GIT_VERBS.includes(verb)) return;
@@ -397,7 +394,7 @@ export default class AppManagerView extends ListContext {
     };
 
     if (action === 'commit') {
-      return loopar.api.post('App Manager', 'diff', {
+      return loopar.call('App Manager', 'diff', {
         body: { app_name: appName },
         query: { app_name: appName },
       }).then((res) => {

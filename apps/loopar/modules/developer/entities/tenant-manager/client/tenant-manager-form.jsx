@@ -13,7 +13,7 @@ export default class TenantManagerForm extends FormContext {
 
   async setOnProduction(){
     loopar.confirm(`Are you sure you want to set ${this.name} on production?`, () => {
-      loopar.api.post("Tenant Manager", "setOnProduction", {
+      loopar.call("Tenant Manager", "setOnProduction", {
         query: { name: this.name },
         success: () => {
           loopar.refresh();

@@ -5,13 +5,12 @@ import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
 import { simpleGit, CleanOptions } from 'simple-git';
-import jwt from 'jsonwebtoken';
 import Auth from './auth/Auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit } from './loopar/tailwindbase.js';
 import { Server } from './server/server.js';
 import { fileManage } from './file-manage.js';
-import { cookieManager, sessionManager } from './server/router/request-context.js';
+import { cookieManager, sessionManager, getTenant, getRequest, requestContext } from './server/router/request-context.js';
 import { markdownRenderer } from "markdown";
 import {EmailService} from "./email.js"
 import { cacheManager } from './cache/cache-manager.js';
@@ -65,9 +64,18 @@ export class Loopar extends Document {
     RealtimeManager.emit(this.tenantId, room, action, data);
   }
 
+  /**
+   * Bring a tenant instance to life and plug it into the core. The tenant does
+   * NOT start a server — it rides the core's (booted by startCore()). Only
+   * called by getOrCreateTenantInstance when a tenant connects.
+   *
+   * @param {object}  opts
+   * @param {string}  opts.tenantId
+   * @param {string?} opts.appsBasePath
+   */
   async init({
     tenantId,
-    appsBasePath
+    appsBasePath,
   }){
     this.hookManager.attach(this.ORM);
     this.tenantId = tenantId;
@@ -76,6 +84,10 @@ export class Loopar extends Document {
     this.id = "loopar-"+sha1(tenantId);
     this.appsBasePath = appsBasePath;
 
+    // Register this instance so the `loopar` proxy can resolve requests for
+    // this tenant to it (see the registry at the bottom of the file).
+    registerTenantInstance(tenantId, this);
+
     await this.#resolveJwtSecret();
 
     this.auth = new Auth(
@@ -83,8 +95,6 @@ export class Loopar extends Document {
     );
 
     await this.initialize();
-
-    await this.server.initialize();
   }
 
   async initialize() {
@@ -166,35 +176,17 @@ export class Loopar extends Document {
   }
 
   async #resolveJwtSecret() {
-    // 1) Already in the process env (PM2 loads the tenant .env on start).
-    if (process.env.JWT_SECRET) {
-      this.#jwtSecret = process.env.JWT_SECRET;
-      return;
-    }
-
-    // 2) Present in sites/<tenant>/.env but this process started before the
-    //    variable existed (e.g. first boot after upgrading to this version).
+    // The per-tenant JWT secret lives in the tenant's config (config.json).
+    // ensureJwtSecret reads it, or generates + persists a random one on first
+    // boot. Never derived from the (public) tenant name.
     try {
-      const envData = tenant.readEnvFile(this.tenantId);
-      if (envData.JWT_SECRET) {
-        this.#jwtSecret = envData.JWT_SECRET;
-        return;
-      }
+      this.#jwtSecret = await tenant.ensureJwtSecret(this.tenantId);
     } catch (err) {
-      console.warn('[loopar] Could not read tenant .env for JWT_SECRET:', err.message);
+      // Last-resort in-process secret — still strictly better than a
+      // publicly derivable one.
+      console.warn('[loopar] Could not persist JWT secret for tenant:', err.message);
+      this.#jwtSecret = crypto.randomBytes(32).toString('hex');
     }
-
-    // 3) First boot for this tenant: generate and persist.
-    const secret = crypto.randomBytes(32).toString('hex');
-    try {
-      await tenant.saveTenant({ name: this.tenantId, JWT_SECRET: secret });
-      console.log(`[loopar] Generated JWT_SECRET for tenant "${this.tenantId}" (persisted to .env)`);
-    } catch (err) {
-      // Worst case the secret lives only for this process lifetime — still
-      // strictly better than a publicly derivable one.
-      console.warn('[loopar] Could not persist JWT_SECRET to tenant .env:', err.message);
-    }
-    this.#jwtSecret = secret;
   }
 
   #server = {};
@@ -205,8 +197,50 @@ export class Loopar extends Document {
     }
   }
 
+  /**
+   * Tenant id for the current request (from AsyncLocalStorage). Outside a
+   * request (boot, jobs) it falls back to `this.tenantId` — undefined on the
+   * tenant-less core. Prefer this over `loopar.tenantId` in request paths.
+   */
+  get requestTenantId() {
+    return getTenant()?.name ?? this.tenantId;
+  }
+
+  /**
+   * Per-tenant cloud secrets, read from the ACTIVE tenant's config.json (the
+   * proxy resolves `this` to the request's tenant). These used to live in the
+   * tenant PROCESS env; in the core model there's one shared process, so they
+   * must be read per-tenant from disk.
+   */
+  get installToken() {
+    try { return tenant.readTenant(this.tenantId)?.installToken || null; }
+    catch { return null; }
+  }
+
+  get cloudVerifier() {
+    let c = {};
+    try { c = tenant.readTenant(this.tenantId)?.cloud || {}; } catch { /* none */ }
+    return { url: c.verifierUrl || null, token: c.verifierToken || null };
+  }
+
   get cookie() {
     return cookieManager;
+  }
+
+  get workspace(){
+    return getRequest()?.__WORKSPACE_NAME__;
+  }
+
+  getPage(document){
+    return parseInt(this.session.get(`${this.workspace}${document}page`) || 1)
+  }
+
+  getQ(document){
+    return this.session.get(`${this.workspace}${document}q`) || {};
+  }
+
+  setPage(document, page){
+    this.session.set(`${this.workspace}${document}page`, page)
   }
 
   get session() {
@@ -428,4 +462,128 @@ export class Loopar extends Document {
   }
 }
 
-export const loopar = new Loopar();
+const instances = new Map();
+const initInFlight = new Map();
+const coreInstance = new Loopar();
+
+export function registerTenantInstance(tenantId, instance) {
+  instances.set(tenantId, instance);
+}
+
+/** Initialized instance for a tenant, or null (does not create). */
+export function getTenantInstance(tenantId) {
+  return instances.get(tenantId) || null;
+}
+
+/**
+ * Boot the CORE server — the generator. Starts HTTP + Vite + realtime + the
+ * per-request tenant-resolution middleware, WITHOUT loading any tenant.
+ * After this, requests are served per-tenant via the proxy; a Host with no
+ * active tenant simply gets nothing (the tenant must be turned On).
+ */
+export async function startCore() {
+  await coreInstance.server.initialize();
+  return coreInstance;
+}
+
+/**
+ * Get-or-create an initialized instance for a tenant (plug it into the core),
+ * deduping concurrent callers so two simultaneous first-requests don't
+ * double-init. This is how a tenant "connects" to the running core.
+ */
+export async function getOrCreateTenantInstance(tenantId, { appsBasePath } = {}) {
+  const existing = instances.get(tenantId);
+  if (existing) return existing;
+
+  if (initInFlight.has(tenantId)) return initInFlight.get(tenantId);
+
+  const p = (async () => {
+    const inst = new Loopar();
+    inst.server = coreInstance.server;
+
+    // Run init INSIDE an AsyncLocalStorage context for this tenant.
+    // Framework internals (db-env's connector, fileManage, tailwind…) resolve
+    // paths and config through the `loopar` proxy — without this context the
+    // proxy would fall back to the tenant-less core and the new tenant would
+    // initialize against the wrong (missing) folder.
+    // (init registers the instance in `instances` on its first line, so the
+    // proxy resolves to `inst` for everything after that.)
+    await requestContext.run({ tenant: { name: tenantId } }, () =>
+      inst.init({ tenantId, appsBasePath })
+    );
+    return inst;
+  })();
+
+  initInFlight.set(tenantId, p);
+  try {
+    return await p;
+  } catch (err) {
+    instances.delete(tenantId);
+    throw err;
+  } finally {
+    initInFlight.delete(tenantId);
+  }
+}
+
+/** Unplug a tenant from the core (force a fresh re-init on next request). */
+export function evictTenantInstance(tenantId) {
+  return instances.delete(tenantId);
+}
+
+function resolveActiveInstance() {
+  const name = getTenant()?.name;
+  if (name) {
+    const inst = instances.get(name);
+    if (inst) return inst;
+  }
+  return coreInstance;
+}
+
+// Per-instance cache of bound methods so `loopar.fn` keeps a stable identity
+// within a tenant (and we don't rebind on every access).
+const boundMethodCache = new WeakMap();
+
+function boundMethod(inst, prop, fn) {
+  let perInstance = boundMethodCache.get(inst);
+  if (!perInstance) {
+    perInstance = new Map();
+    boundMethodCache.set(inst, perInstance);
+  }
+  let bound = perInstance.get(prop);
+  if (!bound) {
+    bound = fn.bind(inst);
+    perInstance.set(prop, bound);
+  }
+  return bound;
+}
+
+export const loopar = new Proxy(coreInstance, {
+  get(_target, prop, _receiver) {
+    const inst = resolveActiveInstance();
+    // Receiver is the real instance so private-field getters resolve.
+    const value = Reflect.get(inst, prop, inst);
+    // Bind methods to the real instance so `this.#private` works even though
+    // callers hold the proxy. Non-function props (db, storage, utils…) pass
+    // through untouched.
+    return typeof value === 'function' ? boundMethod(inst, prop, value) : value;
+  },
+  set(_target, prop, value) {
+    const inst = resolveActiveInstance();
+    return Reflect.set(inst, prop, value, inst);
+  },
+  has(_target, prop) {
+    return Reflect.has(resolveActiveInstance(), prop);
+  },
+  getPrototypeOf() {
+    return Reflect.getPrototypeOf(resolveActiveInstance());
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    const inst = resolveActiveInstance();
+    const desc = Reflect.getOwnPropertyDescriptor(inst, prop);
+    if (desc) desc.configurable = true; // Proxy invariant vs the fixed target
+    return desc;
+  },
+  ownKeys() {
+    return Reflect.ownKeys(resolveActiveInstance());
+  },
+});

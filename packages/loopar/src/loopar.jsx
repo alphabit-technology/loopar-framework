@@ -1,4 +1,4 @@
-import Router from "@@tools/router/router";
+import { createRouter } from "@@tools/router/router";
 import * as dateUtils from "@global/date-utils";
 import * as Helpers from "@global/helper";
 import scriptManager from "@@tools/script-manager";
@@ -8,23 +8,45 @@ import animation from "./loopar/animation.js";
 import { ClientDatabase } from "./loopar/ClientDatabase.js";
 export { useRealtime } from "./loopar/useRealtime.js";
 
-class Loopar extends Router {
+class Loopar {
   scriptManager = scriptManager;
   currentPageName = "";
-  rootApp = null;
   sidebarOption = "preview";
   Components = {};
   #loadedMeta = {};
   generatedColors = {};
 
+  /** The router instance — reachable directly as `loopar.router`. */
+  router = createRouter();
+
   constructor() {
-    super();
     this.utils = Helpers;
     this.cookie = Helpers.cookie;
     this.dateUtils = dateUtils;
     this.db = new ClientDatabase(this);
     this.animation = animation;
+
+    // UI adapter: the router is UI-agnostic; Loopar plugs its own effects.
+    this.router.bindUI({
+      freeze: (state) => this.freeze(state),
+      notify: (payload) => this.notify(payload),
+      refresh: () => this.refresh(),
+      error: (err) => this.throw(err),
+    });
   }
+
+  call(Document, action, options) { return this.router.call(Document, action, options); }
+  fetchDocument(path, options) { return this.router.fetchDocument(path, options); }
+  navigate(to, options) { return this.router.navigate(to, options); }
+  get workspace() { return this.router.workspace; }
+  get user() { return this.router.user; }
+  isLoggedIn() { return this.router.isLoggedIn(); }
+
+  /** Port pass-throughs for <RouterBridge/> and <WorkspaceProvider/>. */
+  _bindRouter(binding) { this.router._bindRouter(binding); }
+  _unbindRouter() { this.router._unbindRouter(); }
+  _bindWorkspace(workspace) { this.router._bindWorkspace(workspace); }
+  _bindSession(user) { this.router._bindSession(user); }
 
   dialog(dialog, callback) {
     const content = dialog.content || dialog.message;
@@ -42,13 +64,25 @@ class Loopar extends Router {
     this.emit('dialog', dialog);
   }
 
-  confirm(message, callback) {
+  confirm(message, callback, onCancel) {
+    let settled = false;
+    const settle = (fn) => (...args) => {
+      if (settled) return;
+      settled = true;
+      fn?.(...args);
+    };
+
+    const ok = settle(callback);
+    const cancel = settle(onCancel);
+
     this.emit('dialog', {
       icon: null,
       type: "confirm",
       title: "Confirm",
       content: message,
-      ok: callback,
+      ok,
+      cancel,
+      onClose: () => setTimeout(cancel, 0),
       ...(typeof message == 'object' ? message : {})
     });
   }
@@ -71,7 +105,6 @@ class Loopar extends Router {
   }
 
   throw(error, m, throwError = true) {
-    console.log(["Loopar.throw", error])
     this.emit('freeze', false);
 
     let normalized;
@@ -184,7 +217,7 @@ class Loopar extends Router {
     if (!this.#loadedMeta[Document + action]) {
       const loadMeta = async () => {
         return new Promise((resolve) => {
-          this.api.get(Document, action, {
+          this.call(Document, action, {
             query,
             success: (data) => {
               this.#loadedMeta[Document + action] = data;

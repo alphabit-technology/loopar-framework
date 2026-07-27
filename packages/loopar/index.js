@@ -1,7 +1,14 @@
 
 import BaseDocument from "./core/document/base-document.js";
 import BaseStorage from "./core/document/base-storage.js";
-import { loopar } from "./core/loopar.js";
+import {
+  loopar,
+  startCore,
+  getOrCreateTenantInstance,
+  getTenantInstance,
+  evictTenantInstance,
+} from "./core/loopar.js";
+import { tenantRegistry } from "./core/server/tenant-registry.js";
 import {
   StorageDriver,
   LocalDriver,
@@ -60,6 +67,11 @@ import {
 
 export {
   loopar,
+  startCore,
+  getOrCreateTenantInstance,
+  getTenantInstance,
+  evictTenantInstance,
+  tenantRegistry,
   documentManage,
   BaseDocument,
   BaseStorage,

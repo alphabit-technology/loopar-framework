@@ -1,279 +1,221 @@
 import fs from 'fs/promises';
-import { existsSync, readdirSync, statSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'pathe';
 import crypto from 'node:crypto';
 
 const SITES_DIR = path.join(process.cwd(), 'sites');
 
 /**
- * Canonical fields for the tenant .env file.
- * Order matters — it determines the order in the written file.
+ * Tenant catalog — sites/<name>/.
+ *
+ * A tenant's identity IS the folder name (no ID/NAME fields); tenant-specific
+ * config lives in sites/<name>/config.json ({ domain, status, jwtSecret, cloud }).
+ * Server-wide keys (PORT, NODE_ENV, REDIS_*, SHARED_TENANTS…) live in
+ * config/core.json.
+ *
  */
-export const TENANT_ENV_FIELDS = [
-  { key: '__DOCUMENT_STATUS__',   default: 'Active', required: false },
-  { key: 'ID', default: null, required: true  },
-  { key: 'NAME', default: null, required: true  },
-  { key: 'PORT', default: 3000, required: true  },
-  { key: 'DOMAIN', default: (data) => `${data.NAME ?? data.ID}.localhost`, required: false },
-  { key: 'FORCE_CONNECT', default: 0, required: false },
-  { key: 'NODE_ENV', default: 'development', required: false },
-  { key: 'CONTROL_PLANE', default: 0, required: false },
-  { key: 'CUSTOMER_EMAIL', default: null, required: false },
-  { key: 'CLOUD_VERIFIER_URL', default: null, required: false },
-  { key: 'CLOUD_VERIFIER_TOKEN', default: null, required: false },
-
-  //TODO: Integrate Redis
-  { key: 'REDIS_HOST', default: null, required: false },
-  { key: 'REDIS_PORT', default: 6379, required: false },
-  { key: 'REDIS_PASSWORD', default: null, required: false },
-  { key: 'REDIS_TTL_PERMISSIONS', default: 300, required: false },
-  { key: 'REDIS_TTL_SESSIONS', default: 86400, required: false },
-];
 
 const TENANT_FOLDERS = [
-  'config',
   'sessions',
   path.join('public', 'uploads'),
   path.join('public', 'thumbnails'),
 ];
 
-export function readEnvFile(envId) {
-  if (!existsSync(path.join(SITES_DIR, envId))) return {};
-  if (!existsSync(path.join(SITES_DIR, envId, ".env"))) return {};
+const tenantDir  = (name) => path.join(SITES_DIR, name);
+const configPath = (name) => path.join(tenantDir(name), 'config.json');
 
-  const result = {};
-  const envPath = path.join(SITES_DIR, envId, '.env');
-
-  for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const match = trimmed.match(/^([\w.-]+)\s*=\s*(.+)$/);
-    if (!match) continue;
-    let [, key, value] = match;
-    value = value.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
-    result[key] = value;
-  }
-
-  result.TENANT_PATH = path.join(SITES_DIR, envId)
-  return result;
-}
-
-export function buildTenantEnvData(data) {
-  const normalized = Object.fromEntries(
-    Object.entries(data).map(([k, v]) => [k.toUpperCase(), v])
-  );
-
-  const result = {};
-  // Canonical fields first — apply defaults + required validation.
-  for (const field of TENANT_ENV_FIELDS) {
-    const raw = normalized[field.key];
-    let value = (raw !== undefined && raw !== null && raw !== '')
-      ? raw
-      : (typeof field.default === 'function' ? field.default(normalized) : field.default);
-
-    if (value === null || value === undefined || value === '') {
-      if (field.required) throw new Error(`[TenantBuilder] Missing required field: ${field.key}`);
-      continue;
-    }
-
-    result[field.key] = String(value);
-  }
-
-  // Preserve any custom keys that aren't in TENANT_ENV_FIELDS — operators
-  // (and the control plane) can stash arbitrary env vars in the tenant .env
-  // (e.g. CLOUD_CLAIM_SECRET, integration credentials). Without this pass
-  // every saveTenant would silently strip them on re-serialization. We
-  // explicitly skip TENANT_PATH because readEnvFile injects it as a runtime
-  // convenience and it isn't real config.
-  const canonicalKeys = new Set(TENANT_ENV_FIELDS.map(f => f.key));
-  for (const [key, value] of Object.entries(normalized)) {
-    if (canonicalKeys.has(key)) continue;
-    if (key === 'TENANT_PATH') continue;
-    if (value === null || value === undefined || value === '') continue;
-    result[key] = String(value);
-  }
-
-  return result;
-}
-
-export function serializeEnv(envData) {
-  return Object.entries(envData)
-    .map(([k, v]) => `${k}=${v}`)
-    .join('\n') + '\n';
-}
-
-export async function createTenantFolders(tenantPath) {
-  await fs.mkdir(tenantPath, { recursive: true });
-  for (const folder of TENANT_FOLDERS) {
-    await fs.mkdir(path.join(tenantPath, folder), { recursive: true });
-  }
-}
-
-export async function writeTenantEnv(tenantPath, data) {
-  const envData = buildTenantEnvData(data);
-  await fs.writeFile(path.join(tenantPath, '.env'), serializeEnv(envData), 'utf8');
-  return envData;
-}
-
-export async function saveTenant(data) {
-  const name = data.name ?? data.NAME;
-  if (!name) throw new Error('[TenantBuilder] name/NAME is required');
-
-  const tenantPath = path.join(SITES_DIR, name);
-  const isNew      = !existsSync(tenantPath);
-
-  if (isNew) await createTenantFolders(tenantPath);
-  // Read the current .env (if any) and merge `data` on top, so each save
-  // patches the file instead of overwriting it. Callers that touch only one
-  // or two fields don't accidentally wipe the rest.
-  const current = isNew ? {} : readEnvFile(name);
-  const merged  = { ...current, ...data };
-
-  await writeTenantEnv(tenantPath, merged);
-
-  return { tenantPath, isNew };
-}
-
-const tenants = () => sites().map(tenantId => {
-  const envData = readEnvFile(tenantId);
-  
-  const port = envData.PORT || 3000;
-  const domain = envData.DOMAIN || "";
-  const NODE_ENV = envData.NODE_ENV || "development";
-  const controlPlane = envData.CONTROL_PLANE || "0";
-  const customerEmail = envData.CUSTOMER_EMAIL || "";
-  const cloudVerifierUrl = envData.CLOUD_VERIFIER_URL || "";
-  const cloudVerifierToken = envData.CLOUD_VERIFIER_TOKEN || "";
-  // CLOUD_CLAIM_SECRET is the JWT signing secret for the magic-link claim
-  // tokens. It lives ONLY on the control-plane tenant's .env (never gets
-  // serialized into TENANT_ENV_FIELDS because it has no business in client
-  // tenant .env files). Passing it through here lets the control-plane
-  // process see it via process.env so issueClaimToken / verifyAndConsumeClaim
-  // can sign and verify.
-  const cloudClaimSecret = envData.CLOUD_CLAIM_SECRET || "";
-
-  return {
-    namespace: path.basename(process.cwd()),
-    name: tenantId,
-    script: 'node_modules/loopar/bin/pm2-wrapper.js',
-    env: {
-      NODE_ENV: NODE_ENV || "development",
-      TENANT_ID: tenantId,
-      TENANT_PATH: envData.TENANT_PATH,
-      DOMAIN: domain || "",
-      PORT: port || "",
-      CONTROL_PLANE: controlPlane,
-      CUSTOMER_EMAIL: customerEmail,
-      CLOUD_VERIFIER_URL: cloudVerifierUrl,
-      CLOUD_VERIFIER_TOKEN: cloudVerifierToken,
-      CLOUD_CLAIM_SECRET: cloudClaimSecret,
-      IS_LOOPAR: true
-    }
-  };
-});
-
-export function getTenantData(name, onNotFound = 'throw') {
-  const tenantPath = path.join(SITES_DIR, name);
-  const envFile = path.join(tenantPath, '.env');
-  const app = tenants().find(a => a.name === name);
-
-  if (!app || !existsSync(envFile)) {
-    if (onNotFound === 'throw') throw new Error(`Tenant ${name} not found`);
-    return onNotFound;
-  }
-
-  return { ...app, env: { ...app.env, ...readEnvFile(name) } };
-}
-
-function sites() {
+/** Folder names under sites/ — the canonical tenant identities. */
+export function tenantNames() {
   if (!existsSync(SITES_DIR)) return [];
-  return readdirSync(SITES_DIR).filter(f => {
-    return statSync(path.join(SITES_DIR, f)).isDirectory();
+  return readdirSync(SITES_DIR).filter((f) => {
+    try { return statSync(path.join(SITES_DIR, f)).isDirectory() && !f.startsWith('.'); }
+    catch { return false; }
   });
 }
 
-export function allocateFreePort({ base = 3100, max = 3999 } = {}) {
-  const used = new Set(
-    tenants()
-      .map(t => Number(t.env?.PORT))
-      .filter(p => Number.isFinite(p) && p > 0)
-  );
-  for (let p = base; p < max; p++) {
-    if (!used.has(p)) return p;
+function normalize(name, c = {}) {
+  const status = String(c.status || 'suspended').toLowerCase() === 'active' ? 'active' : 'suspended';
+  return {
+    name,
+    domain: c.domain || `${name}.localhost`,
+    status,
+    online: status === 'active',
+    jwtSecret: c.jwtSecret || null,
+    // Transient install gate for cloud-provisioned tenants (scrubbed after
+    // install); read in-core via loopar.installToken.
+    installToken: c.installToken || null,
+    // Cloud control-plane secrets: { customerEmail, verifierUrl, verifierToken }.
+    cloud: c.cloud || {},
+  };
+}
+
+/**
+ * Read a tenant's config from sites/<name>/config.json:
+ * a folder without config.json is UNCONFIGURED → suspended (won't serve until a
+ * `save` in the Tenant Manager writes config.json). Fails toward correct config
+ * rather than limping along on old .env values.
+ *
+ * Returns null only when the tenant folder itself doesn't exist.
+ * @returns {{name,domain,status,online,jwtSecret,cloud}|null}
+ */
+export function readTenant(name) {
+  if (!name || !existsSync(tenantDir(name))) return null;
+
+  const cp = configPath(name);
+  if (existsSync(cp)) {
+    try { return normalize(name, JSON.parse(readFileSync(cp, 'utf8')) || {}); }
+    catch { /* malformed config → treat as unconfigured (bare) below */ }
   }
-  throw new Error(`No free tenant port in range ${base}..${max}`);
+
+  // No config.json → unconfigured: listed (so you can save it) but suspended.
+  return normalize(name, {});
+}
+
+/** All tenants, normalized. */
+export function tenants() {
+  return tenantNames().map(readTenant).filter(Boolean);
+}
+
+/** Logical status helper (kept for callers that only have a status string). */
+export function tenantStatusOf(input = {}) {
+  const s = typeof input === 'string' ? input : (input.status || input.STATUS);
+  return String(s || 'suspended').toLowerCase() === 'active' ? 'active' : 'suspended';
+}
+
+/**
+ * Single source of truth for UIs (Desk + TUI): name/domain/status from the
+ * catalog, never a process state.
+ * @returns {Array<{name,domain,status,online}>}
+ */
+export function tenantList() {
+  return tenants().map((t) => ({
+    name: t.name,
+    domain: t.domain,
+    status: t.status,
+    online: t.online,
+  }));
+}
+
+/** Translate an incoming patch (legacy UPPERCASE or lowercase) to config keys. */
+function translatePatch(data) {
+  const out = {};
+  const domain = data.domain ?? data.DOMAIN;
+  if (domain !== undefined) out.domain = domain || undefined;
+  const status = data.status ?? data.STATUS;
+  if (status !== undefined) out.status = String(status).toLowerCase();
+  const jwt = data.jwtSecret ?? data.JWT_SECRET;
+  if (jwt !== undefined) out.jwtSecret = jwt;
+  const it = data.installToken ?? data.INSTALL_TOKEN;
+  if (it !== undefined) out.installToken = it;
+
+  const cloud = {};
+  const ce = data.customerEmail ?? data.CUSTOMER_EMAIL;
+  if (ce !== undefined) cloud.customerEmail = ce;
+  const vt = data.verifierToken ?? data.CLOUD_VERIFIER_TOKEN;
+  if (vt !== undefined) cloud.verifierToken = vt;
+  const vu = data.verifierUrl ?? data.CLOUD_VERIFIER_URL;
+  if (vu !== undefined) cloud.verifierUrl = vu;
+  if (Object.keys(cloud).length) out.cloud = cloud;
+
+  return out;
+}
+
+export async function createTenantFolders(name) {
+  await fs.mkdir(tenantDir(name), { recursive: true });
+  for (const folder of TENANT_FOLDERS) {
+    await fs.mkdir(path.join(tenantDir(name), folder), { recursive: true });
+  }
+  await fs.mkdir(path.join(tenantDir(name), 'config'), { recursive: true }); // db.config.json lives here
+}
+
+export async function saveTenant(data = {}) {
+  const name = data.name ?? data.NAME ?? data.ID;
+  if (!name) throw new Error('[tenant] name/NAME is required');
+
+  const isNew = !existsSync(tenantDir(name));
+  if (isNew) await createTenantFolders(name);
+
+  const current = readTenant(name) || normalize(name, {});
+  const patch = translatePatch(data);
+
+  const next = {
+    domain: patch.domain ?? current.domain ?? `${name}.localhost`,
+    status: patch.status ?? current.status ?? 'suspended',
+    jwtSecret: patch.jwtSecret ?? current.jwtSecret ?? null,
+    installToken: patch.installToken ?? current.installToken ?? null,
+    cloud: { ...(current.cloud || {}), ...(patch.cloud || {}) },
+  };
+  if (!next.jwtSecret) delete next.jwtSecret;
+  if (!next.installToken) delete next.installToken;   // empty → scrubbed
+  // Drop empty cloud fields, then the object if nothing's left.
+  if (next.cloud) {
+    for (const k of Object.keys(next.cloud)) {
+      if (next.cloud[k] === '' || next.cloud[k] == null) delete next.cloud[k];
+    }
+    if (Object.keys(next.cloud).length === 0) delete next.cloud;
+  }
+
+  writeFileSync(configPath(name), JSON.stringify(next, null, 2), 'utf8');
+  return { tenantPath: tenantDir(name), isNew };
+}
+
+/** Ensure a tenant has a random JWT secret; generate + persist on first need. */
+export async function ensureJwtSecret(name) {
+  const t = readTenant(name);
+  if (t?.jwtSecret) return t.jwtSecret;
+  const secret = crypto.randomBytes(32).toString('hex');
+  await saveTenant({ NAME: name, JWT_SECRET: secret });
+  return secret;
+}
+
+export function tenantUrl(name, override = {}) {
+  const domain = override.domain || readTenant(name)?.domain || `${name}.localhost`;
+  // Local domains are served portless through Caddy's catch-all → the core.
+  // Real domains get https. (The per-tenant port is gone.)
+  const isLocal = domain === 'localhost' || domain.endsWith('.localhost');
+  return isLocal ? `http://${domain}` : `https://${domain}`;
 }
 
 /**
  * Pre-seed `config/db.config.json` for a new tenant by copying another
- * tenant's template and picking a unique `database` name. With this in place
- * the new tenant skips `/loopar/system/connect` on first boot and goes
- * straight to install. The control plane uses this to clone its own DB
- * config when provisioning a customer workspace.
- *
- * @param {object}  opts
- * @param {string}  opts.from  Source tenant whose db.config.json is copied.
- * @param {string}  opts.to    Destination tenant (the new one).
- * @returns {Promise<string>}  The unique database name written into the copy.
+ * tenant's template and picking a unique `database` name.
  */
 export async function saveDbConfig({ from, to } = {}) {
-  if (!from || !to) {
-    throw new Error('[TenantBuilder] saveDbConfig: { from, to } are required');
-  }
+  if (!from || !to) throw new Error('[tenant] saveDbConfig: { from, to } are required');
   const srcPath = path.join(SITES_DIR, from, 'config', 'db.config.json');
   if (!existsSync(srcPath)) {
-    throw new Error(
-      `[TenantBuilder] saveDbConfig: source not found at ${srcPath} — ` +
-      `cannot template a new tenant's DB config.`
-    );
+    throw new Error(`[tenant] saveDbConfig: source not found at ${srcPath}`);
   }
   const tmpl = JSON.parse(readFileSync(srcPath, 'utf8'));
-  // Unique per-tenant DB name. SHA-1 of tenant+timestamp (16 hex chars) keeps
-  // it short, predictable, and collision-free in practice.
-  tmpl.database =
-    'db_' + crypto.createHash('sha1').update(to + Date.now()).digest('hex').slice(0, 16);
+  tmpl.database = 'db_' + crypto.createHash('sha1').update(to + String(process.hrtime.bigint())).digest('hex').slice(0, 16);
 
   const dstDir = path.join(SITES_DIR, to, 'config');
-  await fs.mkdir(dstDir, { recursive: true });
-  await fs.writeFile(
-    path.join(dstDir, 'db.config.json'),
-    JSON.stringify(tmpl, null, 2),
-    'utf8'
-  );
+  if (!existsSync(dstDir)) mkdirSync(dstDir, { recursive: true });
+  writeFileSync(path.join(dstDir, 'db.config.json'), JSON.stringify(tmpl, null, 2), 'utf8');
   return tmpl.database;
 }
 
-export function tenantUrl(name, override = {}) {
-  // Override lets callers compute the URL before the tenant .env exists on
-  // disk (e.g. the provisioning flow needs the URL inside the JWT payload
-  // BEFORE writing the env). Without it, look up the live tenant by name.
-  let domain = override.domain;
-  let port   = override.port;
-  if (!domain) {
-    const t = tenants().find(x => x.name === name);
-    if (!t) return null;
-    const env = t.env || {};
-    domain = env.DOMAIN || `${name}.localhost`;
-    port   = Number(env.PORT);
+/** Look a tenant up by name; throws (or returns the fallback) when missing. */
+export function getTenantData(name, onNotFound = 'throw') {
+  const t = readTenant(name);
+  if (!t) {
+    if (onNotFound === 'throw') throw new Error(`Tenant ${name} not found`);
+    return onNotFound;
   }
-  // Local-only domains never get SSL and need their port appended.
-  // Real domains (anything not ending in .localhost / not bare "localhost")
-  // are served behind Caddy with auto-HTTPS, so the URL omits the port.
-  const isLocal = domain === 'localhost' || domain.endsWith('.localhost');
-  return isLocal ? `http://${domain}:${port}` : `https://${domain}`;
+  return t;
 }
 
-const tenant = {
+export const tenant = {
   tenants,
-  saveTenant,
-  readEnvFile,
+  tenantNames,
+  tenantList,
+  tenantStatusOf,
+  readTenant,
   getTenantData,
-  allocateFreePort,
+  saveTenant,
+  ensureJwtSecret,
   tenantUrl,
   saveDbConfig,
-}
+};
 
-export {
-  tenant,
-  tenants
-}
+export { tenants as tenantsList };

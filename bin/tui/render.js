@@ -1,30 +1,13 @@
-/**
- * Drawing. Pure output: reads `state`, writes one frame to stdout, and
- * refreshes the clickable regions (state.rowRegionStart / buttonRegions /
- * urlCol). Two full-screen tabs: the tenant table ("tenants") and the
- * realtime log stream ("logs" — data managed by logs.js).
- *
- * Visual language (ANSI only, no deps):
- *   - "pills": explicit BACKGROUND color + black/bright-white foreground,
- *     picked for contrast. (The previous inverse-video trick made the text
- *     color depend on the terminal theme's background — dark themes turned
- *     the blue/gray pills illegible.)
- *   - underlined letter inside a pill = its hotkey.
- *   - status = media-style glyphs: ▶ online · ■ stopped · ✖ errored.
- *   - the SELECTED row is one uniform inverse bar — per-cell colors are
- *     dropped there on purpose; colored fg + inverse painted random
- *     background blocks on some terminal themes.
- */
 import { A, pad, link, stripAnsi } from "./term.js";
 import { state, NO_PM2 } from "./state.js";
+import { corePort, coreEnv } from "loopar/core/config/core-config.js";
 
-// Local extras (kept out of term.js to avoid touching shared primitives).
 const ESC = "\x1b";
 const MAGENTA = `${ESC}[35m`;
 const BLUE = `${ESC}[34m`;
 const WHITE = `${ESC}[37m`;
-const U = `${ESC}[4m`;    // underline on (hotkey letter)
-const UO = `${ESC}[24m`;  // underline off
+const U = `${ESC}[4m`; // underline on (hotkey letter)
+const UO = `${ESC}[24m`; // underline off
 
 // Colored chip with GUARANTEED contrast: background color code + a
 // foreground chosen per background (black on light, bright white on dark).
@@ -52,11 +35,11 @@ function nameColor(n) {
   return NAME_COLORS[h % NAME_COLORS.length];
 }
 
+// Core model: no per-tenant port or mode — a tenant is just name + domain +
+// logical status. (Mode is core-level; see config/core.json.)
 const COLS = [
-  { key: "name", label: "TENANT", w: 22 },
-  { key: "port", label: "PORT", w: 7 },
-  { key: "env", label: "ENV", w: 6 },
-  { key: "url", label: "URL", w: 44 },
+  { key: "name", label: "TENANT", w: 24 },
+  { key: "url", label: "URL", w: 48 },
   { key: "status", label: "ST", w: 4 },
 ];
 
@@ -77,10 +60,19 @@ function hr(width) {
 
 /** Title + spacer + clickable [Tenants][Logs] tabs + separator (4 lines). */
 function pushHeader(lines, width) {
-  const daemon = NO_PM2
-    ? `${A.gray}pm2 disabled${A.reset}`
-    : `${A.gray}pm2 ${process.env.PM2_HOME || ""}${A.reset}`;
-  lines.push(` ${pill(` ◆ LOOPAR `, "cyan")} ${A.bold}Tenant Manager${A.reset}  ${daemon}`);
+  // The core (generator) this manager talks to — from config/core.json.
+  let coreInfo;
+  try { coreInfo = `${A.gray}core :${corePort()} · ${coreEnv()}${A.reset}`; }
+  catch { coreInfo = `${A.gray}core${A.reset}`; }
+
+  // Live core-process chip (state.coreStatus, set by loadRows).
+  const cs = state.coreStatus;
+  const serverChip =
+    cs === "online" ? pill(" ● server up ", "green") :
+    cs == null       ? `${A.gray}server …${A.reset}` :
+                       pill(" ✖ server down · press c ", "red");
+
+  lines.push(` ${pill(` ◆ LOOPAR `, "cyan")} ${A.bold}Tenant Manager${A.reset}  ${coreInfo}   ${serverChip}`);
   lines.push(""); // breathing room so the title pill and the active tab don't stack
 
   const logsLabel = `LOGS${state.logs ? ` · ${state.logs.name || "all"}` : ""}`;
@@ -175,17 +167,7 @@ function renderTenants(lines, width, height) {
         if (isSel) return pad(m.dot, c.w);
         return pad(`${m.color}${m.dot}${A.reset}`, c.w);
       }
-      if (c.key === "env") {
-        const label = row.env === "production" ? "prod" : "dev";
-        if (isSel) return pad(label, c.w);
-        return pad(
-          row.env === "production"
-            ? `${A.yellow}${A.bold}${label}${A.reset}`
-            : `${A.dim}${label}${A.reset}`,
-          c.w
-        );
-      }
-      return pad(raw, c.w); // port
+      return pad(raw, c.w);
     }).join("");
     lines.push(isSel ? `${A.inv}❯ ${cells}${A.reset}` : `  ${cells}`);
   }
@@ -194,7 +176,7 @@ function renderTenants(lines, width, height) {
   if (state.rows.length === 0) {
     lines.push("");
     lines.push(`   ${A.dim}No tenants in sites/ yet.${A.reset}`);
-    lines.push(`   ${A.dim}Press ${A.reset}${pill(` ✚ ${U}N${UO}ew `, "blue")}${A.dim} to create your first one — port and domain are prefilled.${A.reset}`);
+    lines.push(`   ${A.dim}Press ${A.reset}${pill(` ✚ ${U}N${UO}ew `, "blue")}${A.dim} to create your first one.${A.reset}`);
     for (let i = 3; i < tableHeight; i++) lines.push("");
   } else {
     for (let i = visible.length; i < tableHeight; i++) lines.push("");
@@ -238,9 +220,8 @@ function renderTenants(lines, width, height) {
       { label: ` ■ S${U}t${UO}op `, w: 8, color: "yellow", action: "stop" },
       { label: ` ↻ ${U}R${UO}estart `, w: 11, color: "cyan", action: "restart" },
       { label: ` ≣ ${U}L${UO}ogs `, w: 8, color: "white", action: "logs" },
-      { label: ` ⇄ ${U}P${UO}rod/dev `, w: 12, color: "magenta", action: "mode" },
+      { label: ` ⇄ ${U}M${UO}ode `, w: 8, color: "magenta", action: "mode" },
       { label: ` ✚ ${U}N${UO}ew `, w: 7, color: "blue", action: "new" },
-      { label: ` ${U}U${UO}nreg `, w: 7, color: "gray", action: "unregister" },
       { label: ` ✕ ${U}D${UO}estroy `, w: 11, color: "red", action: "destroy" },
       { label: ` ${U}Q${UO}uit `, w: 6, color: "gray", action: "quit" },
     ];

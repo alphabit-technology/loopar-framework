@@ -98,7 +98,7 @@ const Buttons = ({row}) => {
         onClick={(e) => {
           e.preventDefault();
           loopar.confirm(`Are you sure you want to delete ${row.name}?`, () => {
-            loopar.api.delete("File Manager", "delete", {
+            loopar.call("File Manager", "delete", {
               query: {
                 file_name: row.name,
                 app: row.app,

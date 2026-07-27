@@ -46,7 +46,7 @@ export const MetaComponent = ({ component = "div", render, ...props }) => {
   if(ENVIRONMENT === "server" && (isDesigner || def.designerOnly !== true)) {
     global.__REQUIRE_COMPONENTS__.push(component);
   }
-  
+
   useEffect(() => {
     if (!Comp) {
       ComponentsLoader([component], () => {

@@ -2,7 +2,6 @@
 import { loopar } from '../../loopar.js';
 import { fileManage } from "../../file-manage.js";
 import multer from "multer";
-import BaseController from '../../controller/base-controller.js';
 import { RouterUtils } from './router-utils.js';
 import { merge } from 'es-toolkit/object';
 import { Middleware } from "./middleware.js";
@@ -40,100 +39,42 @@ function collectPrototypeMethods(cls) {
   return methods;
 }
 
+/**
+ * Server router — pipeline order + controller dispatch.
+ *
+ * The pipeline STEPS and the response primitives (render/renderAjax/
+ * redirect/throw) live in `Middleware` (the base class); this class owns
+ * exactly two things:
+ *   1. `route()` — the order in which the steps run.
+ *   2. `makeController` / `executeController` — resolving the Document
+ *      ref and executing the controller action (the hook the base
+ *      pipeline expects).
+ */
 export default class Router extends Middleware {
   constructor(options) {
     super(options);
-    this.uploader = multer({ storage: multer.memoryStorage() }).any();
-  }
-
-  /**
-   * Renders HTML response
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   * @param {Object} response - Response data
-   */
-  render(req, res, response) {
-    if (res.headersSent) return;
-
-    if (response instanceof Error) {
-      res.status(500).set('Content-Type', 'text/html').send(response.message);
-      return;
-    }
-
-    if (!response || typeof response !== 'object') {
-      res.status(500).set('Content-Type', 'text/html').send('Invalid response');
-      return;
-    }
-
-    res.status(response.status || 200)
-      .set('Content-Type', response.contentType || 'text/html')
-      // The HTML references hashed asset URLs from the current release. On a
-      // release swap the old hashed chunks are pruned, so a cached HTML would
-      // point at deleted files. no-cache forces revalidation; the hashed assets
-      // themselves stay cacheable.
-      .set('Cache-Control', 'no-cache')
-      .send(response.body ?? '');
-  }
-
-  /**
-   * Renders AJAX/JSON response with a single, stable wire shape.
-   *
-   * Error responses (status >= 400):  { status, code, title, message }
-   * Success responses:                { status, success: true, message?, notify?, ...payload }
-   *
-   * Anything else passed in (raw Error, string, object) is normalized here so
-   * downstream code never has to think about the shape.
-   */
-  renderAjax(res, response) {
-    if (res.headersSent) return;
-
-    if (!response) {
-      console.error('Error: Empty response received');
-      return;
-    }
-
-    // No CORS headers on purpose. The previous wildcard
-    // `Access-Control-Allow-Origin: *` exposed every JSON/API response to
-    // any origin on the internet. Same-origin clients (Desk, web workspace)
-    // don't need CORS, and server-to-server calls (provision/install) ignore
-    // it. If a third-party BROWSER client ever needs /api/*, add an explicit
-    // per-tenant origin allowlist here instead of the wildcard.
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-
-    if (response instanceof Error) {
-      res.status(500).set(headers).json({
-        status: 500,
-        code: response.code || 'INTERNAL_ERROR',
-        title: response.title || 'Internal Server Error',
-        message: response.message || 'An unexpected error occurred'
-      });
-      return;
-    }
-
-    if (typeof response === 'string') {
-      res.status(200).set(headers).json({ status: 200, success: true, message: response });
-      return;
-    }
-    
-    const raw = Number(response.status) || Number(response.code) || 200;
-    const status = (raw >= 100 && raw <= 599) ? raw : 200;
-    res.status(status).set(headers).json(response);
+    // memoryStorage() with NO limits meant multer buffered files of arbitrary
+    // size straight into RAM — in the single-core model one 2 GB upload takes
+    // down the process that serves EVERY tenant. Cap file size, file count and
+    // non-file field size. Generous enough for real uploads, bounded enough to
+    // stop a memory-exhaustion DoS.
+    this.uploader = multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fileSize: 50 * 1024 * 1024,   // 50 MB per file
+        files: 20,                    // at most 20 files per request
+        fieldSize: 10 * 1024 * 1024,  // 10 MB per non-file field
+      },
+    }).any();
   }
 
   route() {
-    // NOTE: the per-request WorkspaceController lives on `req.__APP__`
-    // (set in setupWorkspaceMiddleware) — never on `this`, which is shared
-    // across concurrent requests.
-    this.baseUrl = null;
-
     this.server.use(
       this.setupAssetMiddleware(),
       this.setupNotFoundSourceMiddleware(),
-      this.setupLoadHttpMiddleware(),
-      this.setupSystemMiddleware(),
+      this.setupRouteMiddleware(),
       this.setupBuildParamsMiddleware(),
+      this.setupSystemMiddleware(),
       this.setupRateLimitMiddleware(),
       this.setupWorkspaceMiddleware(),
       this.setupControllerMiddleware(),
@@ -151,22 +92,29 @@ export default class Router extends Middleware {
   async makeController(req, res, next) {
     const params = req.__params__;
 
-    if (req.tryToServePrivateFile) {
-      return await this.handlePrivateFile(req, res);
-    }
-
-    RouterUtils.setDefaultParams(params, req.__WORKSPACE_NAME__);
-
-    if (req.__WORKSPACE_NAME__ === "web") {
-      const menu = RouterUtils.RouteParsing.findWebAppMenu(params.document, loopar);
-      
-      if (!menu) {
+    if (req.__ROUTE_MODE__ === "rpc") {
+      // RPC contract: the Document AND action are always explicit
+      // (/{Document}/{action}) — no workspace defaults, no web menu mapping.
+      if (!params.document || !params.action) {
         return loopar.throw({
           code: 404,
-          message: !loopar.webApp?.name ? "The web app has not yet been set up in System Settings." : "Page not found"
+          message: `Invalid RPC route "${req._parsedUrl.pathname}" — expected /{Document}/{action}.`
         });
       }
-      params.document = menu.page;
+    } else {
+      RouterUtils.setDefaultParams(params, req.__WORKSPACE_NAME__);
+
+      if (req.__WORKSPACE_NAME__ === "web") {
+        const menu = RouterUtils.RouteParsing.findWebAppMenu(params.document, loopar);
+
+        if (!menu) {
+          return loopar.throw({
+            code: 404,
+            message: !loopar.webApp?.name ? "The web app has not yet been set up in System Settings." : "Page not found"
+          });
+        }
+        params.document = menu.page;
+      }
     }
 
     const ref = loopar.getRef(loopar.utils.Capitalize(params.document), false);
@@ -181,19 +129,6 @@ export default class Router extends Middleware {
     params.document = ref.__NAME__;
 
     return await this.executeController(req, res, next, params, ref);
-  }
-
-  /**
-   * Handles private file serving
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async handlePrivateFile(req, res) {
-    const errControlled = new BaseController({ req, res });
-    errControlled.dictUrl = req._parsedUrl;
-    const e = await errControlled.servePrivateFile("logo-test.png");
-    req.__WORKSPACE__.Document = e;
-    return this.render(req, res, await req.__APP__.render(req.__WORKSPACE__, true));
   }
 
   /**
@@ -213,12 +148,12 @@ export default class Router extends Middleware {
 
       const data = RouterUtils.prepareFileData(body, req.files);
 
+      // List state (filters + page) persisted per Document. Readers use the
+      // bare `${document}q` / `${document}page` keys (document.js,
+      // base-document.js, base-controller.js)
       if(data && (data.q || data.page)){
         loopar.session.set(`${req.__WORKSPACE_NAME__}${params.document}q`, data.q || {});
         loopar.session.set(`${req.__WORKSPACE_NAME__}${params.document}page`, data.page || 1);
-
-        loopar.session.set(`${params.document}q`, data.q || {});
-        loopar.session.set(`${params.document}page`, data.page || 1);
       }
 
       // Filter parsedQuery to avoid shadowing controller methods. A URL like
@@ -274,6 +209,12 @@ export default class Router extends Middleware {
     const isMultipart = RouterUtils.isMultipartFormData(contentType);
 
     if (isMultipart) {
+      // Multer's callback breaks the AsyncLocalStorage chain, so we re-enter
+      // the context below. Capture the CURRENT store first (while it's still
+      // live) so the re-run preserves everything it carried — notably the
+      // resolved tenant — instead of rebuilding a partial {req,res} store.
+      const parentContext = requestContext.getStore() || {};
+
       return new Promise((resolve, reject) => {
         this.uploader(req, res, async err => {
           if (err) {
@@ -282,7 +223,7 @@ export default class Router extends Middleware {
           }
 
           try {
-            requestContext.run({ req, res }, async () => {
+            requestContext.run({ ...parentContext, req, res }, async () => {
               try {
                 resolve(await makeController(req.query, req.body));
               } catch (controllerErr) {
@@ -297,26 +238,5 @@ export default class Router extends Middleware {
     }
 
     return await makeController(req.query, req.body);
-  }
-
-  /**
-   * Creates URL using RouterUtils
-   * @param {string} href - The href to process
-   * @param {string} currentURL - The current URL
-   * @returns {string} The built URL
-   */
-  makeUrl = (href, currentURL) => RouterUtils.buildUrl(href, currentURL);
-
-  /**
-   * Redirects to specified URL
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   * @param {string} url - URL to redirect to
-   */
-  redirect(req, res, url) {
-    if (res.headersSent) return;
-
-    const redirectUrl = this.makeUrl(url, req._parsedUrl?.pathname || '/');
-    res.redirect(redirectUrl || '/desk');
   }
 }

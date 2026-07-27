@@ -275,7 +275,7 @@ export function OrphanColumnsManager({
   const [working, setWorking] = useState(false);
 
   const loadColumns = () => {
-    loopar.api.get("Entity", "orphanColumns", {
+    loopar.call("Entity", "orphanColumns", {
       query: { name: doc },
       success: (c) => {
         setCols(c.map((c, i) => ({ ...c, _id: i })));
@@ -298,7 +298,7 @@ export function OrphanColumnsManager({
 
     try {
       if (action === ACTIONS.RELEASE) {
-        loopar.api.post("Entity", "releaseColumn", {
+        loopar.call("Entity", "releaseColumn", {
           query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`Constraints released on "${col.name}"`, "warn")
@@ -312,7 +312,7 @@ export function OrphanColumnsManager({
         loopar.notify(`Constraints released on "${col.name}"`, "warn") */
 
       } else if (action === ACTIONS.DROP) {
-        loopar.api.delete("Entity", "dropColumn", {
+        loopar.call("Entity", "dropColumn", {
           query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`Column "${col.name}" dropped permanently`)
@@ -324,7 +324,7 @@ export function OrphanColumnsManager({
         loopar.notify(`Column "${col.name}" dropped permanently`) */
 
       } else if (action === ACTIONS.RESTORE) {
-        loopar.api.post("Entity", "restoreColumn", {
+        loopar.call("Entity", "restoreColumn", {
           query: { name: document, column: col.name },
           success: () => {
             loopar.notify(`"${col.name}" queued for restore`)

@@ -1,15 +1,11 @@
 /**
- * Shared PM2 plumbing for the CLI commands.
+ * Shared PM2 for the CLI commands.
  *
- * Tenants are resolved through the SAME source the Tenant Manager UI and the
- * TUI use (loopar/bin/tenant/tenant-builder.js): process name = tenant id
- * (plain, no project prefix), namespace = basename(cwd), start config built
- * from the tenant's sites/<name>/.env (exec_mode cluster in production, fork
- * in development, instances 1). Anything else drifts from what the UI starts
- * and targets processes that don't exist.
+ * Single-core model: PM2 supervises ONE process — the core (`loopar-core`),
+ * which serves every tenant in-process. No per-tenant processes. Namespace =
+ * basename(cwd); the core's config comes from config/core.json.
  */
 import "loopar/bin/pm2-home.js";
-import { tenants, getTenantData } from "loopar/bin/tenant/tenant-builder.js";
 import { execSync } from 'child_process';
 import path from 'path';
 import chalk from 'chalk';
@@ -39,27 +35,7 @@ export function pm2Command(cmd, silent = false) {
   }
 }
 
-// ─── tenant resolution (mirrors TenantManager / tenant-service) ─────────────
-
-export const siteNames = () => tenants().map(t => t.name);
-export const productionSites = () =>
-  tenants().filter(t => t.env.NODE_ENV === 'production').map(t => t.name);
-
-export function tenantConfig(name) {
-  let config = null;
-  try { config = getTenantData(name); } catch (_) { /* not found */ }
-  if (!config) {
-    console.error(chalk.red(`❌ Tenant "${name}" not found in sites/.`));
-    console.error(chalk.gray(`   Available: ${siteNames().join(', ') || '(none)'}`));
-    return null;
-  }
-  const isProduction = (config.env.NODE_ENV || 'development') === 'production';
-  config.exec_mode = isProduction ? 'cluster' : 'fork';
-  config.instances = 1;
-  return config;
-}
-
-// ─── programmatic pm2 (same API path the Tenant Manager UI uses) ────────────
+// ─── programmatic pm2 ---
 
 const pm2Connect = () => new Promise((res, rej) => pm2.connect(e => e ? rej(e) : res()));
 const pm2Do = (fn, arg) => new Promise(res =>
@@ -78,22 +54,44 @@ export async function withPm2(fn) {
 // Start an arbitrary pm2 process config (non-tenant helpers like build-watch).
 export const startProcess = (config) => pm2Do(pm2.start, config);
 
-export const startTenant = async (name) => {
-  const config = tenantConfig(name);
-  if (!config) return false;
-  console.log(chalk.cyan(`Starting ${name} (${config.env.NODE_ENV || 'development'})...`));
+// ─── single execution model: the core process ─────────────
+
+import { corePort, coreEnv, coreEnvVars } from 'loopar/core/config/core-config.js';
+export { corePort, coreEnv };
+
+export const CORE_PROCESS_NAME = 'loopar-core';
+
+/**
+ * PM2 config for THE core process — the generator. One process, tenant-less,
+ * serves every tenant in-process. Cluster in production for multi-core;
+ * fork in development. Its env is populated from config/core.json.
+ */
+export function coreConfig() {
+  return {
+    name: CORE_PROCESS_NAME,
+    namespace: projectName,
+    script: 'node_modules/loopar/bin/core.js',
+    exec_mode: coreEnv() === 'production' ? 'cluster' : 'fork',
+    instances: 1,
+    env: coreEnvVars(),
+  };
+}
+
+/** Start the core process (the generator). No tenant is loaded. */
+export const startCoreProcess = async () => {
+  const config = coreConfig();
+  console.log(chalk.cyan(`Starting core "${config.name}" (${config.env.NODE_ENV}) on :${config.env.PORT} — serves all tenants`));
   return await pm2Do(pm2.start, config);
 };
 
-// Env changes only apply on a fresh start — mirror the UI's external restart:
-// delete the process, then start it again with a freshly-built config.
-export const restartTenant = async (name) => {
-  const config = tenantConfig(name);
-  if (!config) return false;
-  console.log(chalk.cyan(`Restarting ${name}...`));
-  await new Promise(res => pm2.delete(name, () => res())); // may not exist — fine
-  return await pm2Do(pm2.start, config);
+/** Restart the core (delete + fresh start so config/core.json is re-read). */
+export const restartCoreProcess = async () => {
+  await new Promise((res) => pm2.delete(CORE_PROCESS_NAME, () => res()));
+  return startCoreProcess();
 };
 
-export const pm2Stop = (name) => withPm2(() => pm2Do(pm2.stop, name));
-export const pm2Delete = (name) => withPm2(() => pm2Do(pm2.delete, name));
+/** PM2 status of the core process: 'online' | 'stopped' | 'errored' | … */
+export const coreProcessStatus = () =>
+  withPm2(() => new Promise((res) =>
+    pm2.describe(CORE_PROCESS_NAME, (e, d) =>
+      res(e ? 'stopped' : (d?.[0]?.pm2_env?.status || 'stopped')))));

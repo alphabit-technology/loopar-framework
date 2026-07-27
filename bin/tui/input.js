@@ -173,9 +173,9 @@ function handleKey(ch, seq) {
     case "r": return run("restart");
     case "o": return run("open");
     case "l": return run("logs");
-    case "p": return run("mode");
+    case "m": return run("mode");
+    case "c": return run("core");
     case "n": return run("new");
-    case "u": return run("unregister");
     case "d": return run("destroy");
     case "\r": return run("refresh");
   }

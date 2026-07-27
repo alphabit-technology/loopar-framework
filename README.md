@@ -57,7 +57,18 @@ When the process is completed, navigate to your browser. The system will show a 
 
 All commands run through the project-local pm2 daemon (isolated `PM2_HOME`). Use `yarn <command>` or `node bin/cli/index.js <command>`.
 
-There is no separate dev command: prod/dev is a **per-tenant** switch (`sites/<site>/.env`, toggled from the Tenant Manager UI), and `start` simply runs each tenant in whatever mode it is set to.
+One tenant-less **core** process serves every tenant in-process. `dev`/`prod` is a **global** core switch (`config/core.json` → `nodeEnv`), toggled from the TUI (`[p]`) or with `yarn prod` — not a per-tenant or per-command mode. Tenants are turned on/off individually (their `status` in `sites/<name>/config.json`), not started as separate processes.
+
+## Scripts at a glance
+
+Most days you only need `start` and `logs`. The rest are situational, grouped by intent:
+
+- **Local:** `start` opens the TUI (manage tenants, switch dev/prod, tail logs) — `tui` is the same command. `logs` tails outside the TUI.
+- **Run headless:** `serve` boots the core in the configured mode (servers / pm2 / CI); `prod` sets production (guards that a build exists) then boots.
+- **Tenants:** `tenant <on|off|list>` turns a tenant on or off.
+- **Build & deploy:** `build` is a full rebuild. For fast iteration use `watch` (keeps building `build/staging` in the background) + `activate` (promotes staging to live). `build:client` / `build:server` are the two halves `build` runs — rarely invoked alone.
+- **pm2 lifecycle:** `stop`, `restart`, `kill`; `startup` registers a reboot hook (run once, on servers).
+- **Maintenance:** `migrate` converts a legacy `sites/<t>/.env` to `config.json` (one-shot); `deps` does a reproducible install. `preinstall` / `postinstall` run automatically on `yarn install`.
 
 ## Lifecycle
 
@@ -65,8 +76,9 @@ There is no separate dev command: prod/dev is a **per-tenant** switch (`sites/<s
 | Command               | Description                                                                                                     |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `yarn start`          | Open the TUI — the interactive tenant manager (same as `yarn tui`)                                              |
-| `yarn start all`      | Start every **production** tenant in `sites/` (headless-safe, for servers/scripts)                              |
-| `yarn start <site>`   | Start one tenant with its config from `sites/<site>/.env`, whatever its `NODE_ENV`                              |
+| `yarn serve`          | Headless boot of the core in the mode `config/core.json` says (for servers/scripts/pm2)                        |
+| `yarn prod`           | Set the core to **production** (guards that a build exists) and boot it                                         |
+| `yarn tenant <on\|off\|list> [name]` | Turn a tenant on/off or list them (same as the TUI / Desk)                                       |
 | `yarn stop [site]`    | Stop one tenant, or everything running in the project namespace                                                 |
 | `yarn restart [site]` | With a site: delete + fresh start (picks up `.env` changes). No argument: in-place restart of running processes |
 | `yarn delete [site]`  | Remove processes from the pm2 registry                                                                          |
@@ -87,7 +99,7 @@ A full tenant manager in your terminal, with mouse support (click rows and butto
 - **Start / Stop / Restart** — stop and restart ask for confirmation; starting a tenant with a `DOMAIN` also registers its Caddy route, exactly like the Desk UI.
 - **Open** — launch the selected tenant's URL in your browser (key `o`, click the URL cell, or double-click the row). Tenant names are OSC 8 hyperlinks (Cmd/Ctrl+click) in terminals that support them. When Caddy routes the domain, the URL drops the port (`http://dev.localhost`); otherwise it targets the tenant port directly.
 - **Logs** — key `l` / Tab switches to a full-screen realtime log stream of the selected tenant: recent history from the pm2 log files, then live lines via the pm2 event bus (the same mechanism `pm2 logs` uses) with timestamps, stderr in red. Arrows/wheel scroll (pauses following), `f` resumes.
-- **Prod/dev** — key `p` switches the tenant's `NODE_ENV` (with confirmation) and restarts it if it's running, so cluster/fork mode and asset serving actually apply.
+- **Prod/dev** — key `p` switches the **core's** mode (`config/core.json` → `nodeEnv`, with confirmation) and restarts the core process, so cluster/fork mode and prebuilt-dist vs Vite serving actually apply. It's a global switch, not per-tenant.
 - **New** — guided wizard: name, auto-allocated free port, domain — with optional immediate start.
 - **Unregister** — remove from the pm2 registry (files stay on disk).
 - **Destroy** — full teardown (pm2 + Caddy route + `sites/<name>/`); requires typing the tenant name to confirm.

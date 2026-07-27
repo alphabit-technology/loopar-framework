@@ -72,7 +72,7 @@ export default class SystemController extends BaseController {
       // Once the system is installed (`loopar.__installed__`), the legacy
       // "already installed / role check" guard inside unInstallApp takes
       // over, so the token becomes inert and we don't gate again here.
-      const expectedToken = process.env.INSTALL_TOKEN || '';
+      const expectedToken = loopar.installToken || '';
       if (expectedToken && !loopar.__installed__) {
         const provided = this.req?.headers?.['x-install-token'] || '';
         if (provided !== expectedToken) {

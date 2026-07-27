@@ -102,17 +102,17 @@ export async function AppSourceLoader(Document) {
   return { default: () => <ErrorMessage Document={Document} /> };
 }
 
-export const Loader = (__META__, ENVIRONMENT) => {
-  return new Promise((resolve) => {
-    WorkspaceLoader(__META__.name).then(Workspace => {
-      __META__.Document ? AppSourceLoader(__META__.Document, ENVIRONMENT).then(Document => {
-        MetaComponentsLoader(__META__, ENVIRONMENT).then(() => {
-          
-          resolve({ Workspace: Workspace.default, View: Document.default });
-        });
-      }) : resolve({ Workspace: Workspace.default, View: () => <ErrorMessage Document={__META__.Document} /> });
-    });
-  });
+export const Loader = async (__META__, ENVIRONMENT) => {
+  const Workspace = await WorkspaceLoader(__META__.name);
+
+  if (!__META__.Document) {
+    return { Workspace: Workspace.default, View: () => <ErrorMessage Document={__META__.Document} /> };
+  }
+
+  const Document = await AppSourceLoader(__META__.Document, ENVIRONMENT);
+  await MetaComponentsLoader(__META__, ENVIRONMENT);
+
+  return { Workspace: Workspace.default, View: Document.default };
 }
 
 async function __loader__(source) {
@@ -155,7 +155,11 @@ export function Entity({ name, action, entityName, fallback, ...props }) {
 
   if (model) {
     const { Component, meta } = model;
-    return <Component {...props} Document={meta} />
+    return (
+      <div className="space-y-4 p-2">
+        <Component {...props} Document={meta} />
+      </div>
+    )
   }
 
   return fallback || <Fallback />;

@@ -3,7 +3,7 @@
 import cookieParser from "cookie-parser";
 import { express as useragent } from "express-useragent";
 import express from "express";
-import { loopar } from "../loopar.js";
+import { loopar, getOrCreateTenantInstance, getTenantInstance } from "../loopar.js";
 import Router from "./router/router.js";
 import path from "pathe";
 import compression from 'compression';
@@ -12,121 +12,39 @@ import { createServer as createViteServer } from 'vite';
 import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
 import { requestContext } from './router/request-context.js';
-import { shouldServeProduction, isDevTenant } from './runtime-mode.js';
+import { tenantRegistry } from './tenant-registry.js';
+import { shouldServeProduction } from './runtime-mode.js';
 import http from "http";
-import net from "node:net";
 import { RealtimeManager } from "../realtime/RealtimeManager.js";
-import { tenant } from "../../bin/tenant/tenant-builder.js";
 
 const server = new express();
 
-// Trust only the loopback hop (Caddy → app). This lets Express read the
-// real client protocol from Caddy's X-Forwarded-Proto header, so req.secure
-// reflects the actual browser↔Caddy connection (HTTPS via domain) and not
-// the plain-HTTP localhost hop. An external client hitting the app port
-// directly is NOT loopback, so it cannot spoof the header.
+// Trust the loopback hop only (Caddy → app) so req.secure comes from Caddy's
+// X-Forwarded-Proto; a direct external client isn't loopback and can't spoof it.
 server.set('trust proxy', 'loopback');
-
-/**
- * Legacy HMR port offset. HMR no longer opens its own port (it rides on the
- * shared HTTP server), but startup still probes PORT+OFFSET so that range
- * stays reserved/free. Safe to simplify away later.
- */
-const HMR_PORT_OFFSET = 10000;
-
-/** Probe a TCP port — resolves true if nothing is listening, false otherwise. */
-function isPortFree(port) {
-  return new Promise((resolve) => {
-    const tester = net.createServer();
-    tester.once("error", () => resolve(false));
-    tester.once("listening", () => tester.close(() => resolve(true)));
-    tester.listen(port, "0.0.0.0");
-  });
-}
-
-/**
- * Find an HTTP port `p` such that BOTH `p` and `p + HMR_PORT_OFFSET` are free.
- * Returns the chosen port or `null` if no pair is free in [start, start+maxTries).
- */
-async function findFreePortPair(startPort, maxTries = 100) {
-  for (let p = startPort; p < startPort + maxTries; p++) {
-    if ((await isPortFree(p)) && (await isPortFree(p + HMR_PORT_OFFSET))) {
-      return p;
-    }
-  }
-  return null;
-}
 
 export class Server extends Router {
   server = server;
   url = null;
+  // NODE_ENV says production; we only SERVE the prebuilt dist when it also
+  // exists (else fall back to Vite, never blank pages) → shouldServeProduction().
   isProduction = process.env.NODE_ENV == 'production';
+  get serveProduction() { return shouldServeProduction(); }
   uploadPath = "uploads";
 
   constructor() { super() }
 
   async initialize() {
-    // Resolve port BEFORE Vite (which baked in PORT+10000 for HMR) and BEFORE
-    // any listen call. In dev, if either the HTTP port or its HMR sibling is
-    // taken, auto-shift to the next free pair and update process.env.PORT.
-    // Production never shifts: with Caddy fronting tenants by domain, ports
-    // are stable contracts; an EADDRINUSE in production should fail loud.
     const requestedPort = parseInt(process.env.PORT, 10);
     if (Number.isNaN(requestedPort)) {
       throw new Error(`Invalid PORT env: "${process.env.PORT}"`);
     }
 
-    // Auto-shift to a free port pair when:
-    //   - We're a non-production process (classic dev workflow), OR
-    //   - We're the dev tenant, regardless of mode. Dev hosts the admin
-    //     UI and always sets up Vite (so it needs HMR_PORT free too).
-    //     If admin toggled dev to production mode, we still want it to
-    //     survive a port collision instead of crash-looping.
-    // Other tenants in production keep the "fail loud" behavior — their
-    // ports are stable contracts behind Caddy.
-    const shouldAutoShift = !this.isProduction || isDevTenant();
-
-    if (shouldAutoShift) {
-      const httpFree = await isPortFree(requestedPort);
-      const hmrFree = await isPortFree(requestedPort + HMR_PORT_OFFSET);
-
-      if (!httpFree || !hmrFree) {
-        const newPort = await findFreePortPair(requestedPort);
-        if (newPort === null) {
-          throw new Error(
-            `No free port pair found starting at ${requestedPort} (HTTP) / ` +
-            `${requestedPort + HMR_PORT_OFFSET} (HMR). Free up some ports and retry.`
-          );
-        }
-        const reason = !httpFree ? `HTTP ${requestedPort}` : `HMR ${requestedPort + HMR_PORT_OFFSET}`;
-        console.warn(
-          `\n⚠️  Port ${reason} is busy. Auto-shifting to ${newPort} (HMR ${newPort + HMR_PORT_OFFSET}).`
-        );
-        process.env.PORT = String(newPort);
-
-        // Persist the shift to the tenant's .env so other readers (the
-        // control-plane provisioner, external scripts, the next restart)
-        // see the actual port. If the original conflict was transient and
-        // you want to revert, edit sites/<tenant>/.env back to the desired
-        // port manually.
-        try {
-          await tenant.saveTenant({ name: process.env.TENANT_ID, PORT: newPort });
-          console.warn(`   ✓ Persisted PORT=${newPort} to sites/${process.env.TENANT_ID}/.env\n`);
-        } catch (err) {
-          console.warn(
-            `   ⚠️  Could not persist PORT to sites/${process.env.TENANT_ID}/.env: ${err.message}\n` +
-            `   Edit it manually if you need other processes to see the shifted port.\n`
-          );
-        }
-      }
-    }
-
-    // Single HTTP server shared by Express, the realtime socket and Vite's
-    // HMR websocket. Created here (before Vite) so HMR can ride on it instead
-    // of opening its own ws:// port, which a browser on an HTTPS page blocks.
+    // One HTTP server for Express, realtime and Vite HMR — so HMR rides it
     this.httpServer = http.createServer(server);
+    this.#installTenantResolution();
 
-    if (this.isProduction && !isDevTenant()) {
+    if (this.serveProduction) {
       server.use(compression());
       server.use(zstdMiddleware({
         root: 'dist/client',
@@ -136,19 +54,11 @@ export class Server extends Router {
       this.vite = await createViteServer({
         server: {
           middlewareMode: true,
-          // HMR rides on the shared HTTP server, so the browser reaches it
-          // at the same origin/protocol as the page (wss:// via Caddy,
-          // ws:// by IP).
-          hmr: { server: this.httpServer },
+          ws: { server: this.httpServer },
         },
         appType: 'custom'
       });
-
-      if (isDevTenant()) {
-        this.#installDynamicModeDispatcher();
-      } else {
-        server.use(this.vite.middlewares);
-      }
+      server.use(this.vite.middlewares);
     }
 
     await this.#exposePublicDirectories();
@@ -158,68 +68,108 @@ export class Server extends Router {
     this.#start();
   }
 
-  #initializeSession() {
-    server.use((req, res, next) => {
-      requestContext.run({ req, res }, next);
+  #warnedHosts = new Set();
+
+  async #resolveRequestTenant(req) {
+    const byHost = tenantRegistry.resolveHost(req.headers?.host);
+
+    if (!byHost) {
+      if (req.headers?.host && !this.#warnedHosts.has(req.headers.host)) {
+        this.#warnedHosts.add(req.headers.host);
+        console.warn(
+          `[tenant] Host "${req.headers.host}" matches no tenant — ` +
+          `turn a tenant On whose DOMAIN covers it.`
+        );
+      }
+      return null;
+    }
+
+    if (byHost.suspended) {
+      const e = new Error('suspended');
+      e.suspendedTenant = byHost.name;
+      throw e;
+    }
+
+    await getOrCreateTenantInstance(byHost.name, { appsBasePath: loopar.appsBasePath });
+    return byHost;
+  }
+
+  #suspendedPage(name) {
+    return `<!doctype html><html><head><meta charset="utf-8">` +
+      `<title>Workspace suspended</title></head>` +
+      `<body style="display:flex;justify-content:center;align-items:center;` +
+      `height:100vh;margin:0;flex-direction:column;background:#0b0b0f;color:#95b3d6;` +
+      `font-family:ui-sans-serif,system-ui">` +
+      `<h1 style="font-size:64px;margin:0">Suspended</h1>` +
+      `<p style="font-size:18px;opacity:.8">This workspace is temporarily unavailable.</p>` +
+      `<hr style="width:40%;opacity:.2;margin:20px 0"/>` +
+      `<span style="opacity:.6">Loopar</span></body></html>`;
+  }
+
+  #installTenantResolution() {
+    server.use(async (req, res, next) => {
+      try {
+        const tenant = await this.#resolveRequestTenant(req);
+        requestContext.run({ req, res, tenant }, next);
+      } catch (err) {
+        if (err?.suspendedTenant) {
+          if (!res.headersSent) {
+            res.status(503)
+              .set('Content-Type', 'text/html')
+              .set('Retry-After', '3600')
+              .send(this.#suspendedPage(err.suspendedTenant));
+          }
+          return;
+        }
+        console.error(
+          `[tenant] initialization failed for host "${req.headers?.host}": ${err?.message || err}`
+        );
+        if (!res.headersSent) {
+          res.status(503).json({ error: 'Tenant initialization failed, try again shortly' });
+        }
+      }
     });
+  }
+
+  #initializeSession() {
     server.use(cookieParser());
     server.use(express.json({
       limit: '50mb',
-      // Preserve the raw request bytes on `req.rawBody`. Endpoints that must
-      // verify a byte-exact payload — e.g. Stripe webhook signature checks —
-      // need the original body; re-serializing the parsed `req.body` changes
-      // whitespace/key order and breaks the HMAC. `req.body` is unaffected.
       verify: (req, res, buf) => { req.rawBody = buf; }
     }));
     server.use(express.urlencoded({ extended: true, limit: '50mb' }));
     server.use(tenantContextMiddleware);
   }
 
-  /**
-   * Per-request dispatcher for the dev tenant. Inspects the runtime mode
-   * (tenant .env + dist presence) on each request and routes to either
-   * the production chain (compression → zstd → serveStatic) or the
-   * Vite middleware. Both are pre-built once; the per-request cost is
-   * just the `.env` read (cached) and a function dispatch.
-   */
-  #installDynamicModeDispatcher() {
-    const distClientPath = path.join(loopar.pathRoot, 'dist/client');
-    const prodChain = [
-      compression(),
-      zstdMiddleware({ root: 'dist/client', priority: ['zst', 'br', 'gz'] }),
-      serveStatic(distClientPath),
-    ];
-
-    const runProdChain = (req, res, next) => {
-      let i = 0;
-      const advance = (err) => {
-        if (err) return next(err);
-        if (i >= prodChain.length) return next();
-        prodChain[i++](req, res, advance);
-      };
-      advance();
-    };
-
-    server.use((req, res, next) => {
-      if (shouldServeProduction()) {
-        runProdChain(req, res, next);
-      } else {
-        this.vite.middlewares(req, res, next);
-      }
-    });
-  }
-
   async #exposePublicDirectories() {
-    // For the dev tenant, dist/client is already part of the dynamic
-    // dispatcher (runs only in production mode), so we skip the static
-    if (!isDevTenant() && process.env.NODE_ENV == 'production') {
+    if (this.serveProduction) {
       server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
     }
 
-    for (const root of loopar.getAssetRoots("public")) {
-      server.use("/assets/public", serveStatic(root));
-    }
+    // Tenant-aware static assets: handlers built from the active tenant's roots
+    // (resolved per request via the `loopar` proxy) and cached per tenant.
+    const assetChains = new Map();
+    server.use("/assets/public", (req, res, next) => {
+      const tenantId = loopar.requestTenantId;
+      if (!tenantId) return next();
+
+      let chain = assetChains.get(tenantId);
+      if (!chain) {
+        chain = loopar.getAssetRoots("public").map((root) => serveStatic(root));
+        assetChains.set(tenantId, chain);
+      }
+
+      let i = 0;
+      const advance = (err) => {
+        if (err) return next(err);
+        if (i >= chain.length) return next();
+        chain[i++](req, res, advance);
+      };
+      advance();
+    });
+
     server.get("/assets/public/theme.css", (_req, res, next) => {
+      if (!loopar.requestTenantId) return next();
       res.sendFile(path.join(loopar.tenantPath, "theme.css"), (err) => {
         if (err) next();
       });
@@ -228,31 +178,38 @@ export class Server extends Router {
 
   #start() {
     const port = process.env.PORT;
-    const installMessage = loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation';
+    const installMessage = loopar.tenantId
+      ? (loopar.__installed__ ? '' : '\n\nContinue in your browser to complete the installation')
+      : '';
 
     const httpServer = this.httpServer;
 
-    // Catch EADDRINUSE with an actionable message instead of a raw stack trace.
-    // In dev this is a fallback (initialize() already resolved a free pair);
-    // in production this is the primary signal that a port collided.
     httpServer.on("error", (err) => {
       if (err && err.code === "EADDRINUSE") {
-        console.error(`\n❌ Port ${port} is already in use.`);
-        console.error(`   Inspect:   lsof -nP -iTCP:${port} -sTCP:LISTEN`);
-        console.error(`   Change:    edit sites/${loopar.tenantId ?? "<tenant>"}/.env (PORT=...) and restart.`);
-        console.error(`   In dev, restart Loopar and it will auto-shift to a free port.\n`);
+        console.error(`\n❌ Core port ${port} is already in use.`);
+        console.error(`   Inspect:  lsof -nP -iTCP:${port} -sTCP:LISTEN`);
+        console.error(`   Change:   edit config/core.json (port) and restart.`);
+        console.error(`   The core port is fixed — Caddy routes every tenant domain here — so it is not auto-shifted.\n`);
         process.exit(1);
       }
       throw err;
     });
 
     RealtimeManager.attach(httpServer, {
-      tenantId: loopar.tenantId,
-      getJwtSecret: () => loopar.jwtSecret,
+      tenantId: null,
+      getJwtSecret: () => null,
+      getJwtSecretFor: (siteName) => {
+        try {
+          return getTenantInstance(siteName)?.jwtSecret ?? null;
+        } catch {
+          return null;
+        }
+      },
+      isKnownTenant: (siteName) => !!tenantRegistry.get(siteName),
     });
 
     httpServer.listen(port, () => {
-      console.log("Server is started in " + port + installMessage);
+      console.log(`Core server listening on ${port} — turn tenants On to serve them.` + installMessage);
     });
   }
 }

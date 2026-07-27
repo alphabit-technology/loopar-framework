@@ -76,9 +76,14 @@ export default function MetaGalery(props) {
   const hasPrev = firstPage > 1;
 
   const fetchPage = useCallback(async (p) => {
-    const res = await (designerMode ? 
-      loopar.rpc.get(Document.name, "loadGalery", { page: p }) : 
-      loopar.sendAction("loadGalery", { page: p }, { freeze: false }));
+    // RPC to the page's own controller: /{Document}/loadGalery. The action is
+    // declared public (publicActionLoadGalery on PageController) so web guests
+    // keep paginating; the relative-URL sendAction pattern is gone.
+    // only Documents that extends to PageController have acces here.
+    const res = await loopar.call(Document.name, "loadGalery", {
+      body: { page: p },
+      freeze: false,
+    });
 
     const rows = Array.isArray(res) ? res : (res?.rows || []);
     const pg = Array.isArray(res) ? null : res?.pagination;

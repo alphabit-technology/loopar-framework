@@ -1,6 +1,6 @@
 import { Droppable } from "@droppable";
 import { LayoutSelector, gridLayouts } from "./row/LayoutSelector";
-import { ComponentDefaults } from "./base/ComponentDefaults";
+import { ComponentDefaults, DEFAULTS, colPadding } from "./base/ComponentDefaults";
 import { loopar } from "loopar";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { cn } from "@cn/lib/utils";
@@ -9,19 +9,6 @@ import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";
 import { isEqual } from "es-toolkit/predicate";
 import elementManage from "@@tools/element-manage";
-
-const DEFAULTS = {
-  layout: [50, 50],
-  spacing: 1,
-  col_padding: "p-0",
-  col_margin: "",
-  horizontal_alignment: "left",
-  vertical_alignment: "top",
-  row_height: "auto",
-  full_height: false,
-};
-
-const colPadding = ["p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-7", "p-8", "p-9"];
 
 export default function Row(props) {
   const { setElements, set } = ComponentDefaults(props);
@@ -41,7 +28,6 @@ export default function Row(props) {
   }), [data, spacing, webApp]);
 
   
-
   const handleSetLayout = (layout) => {
     setLayout(layout);
     set("layout", JSON.stringify(layout));

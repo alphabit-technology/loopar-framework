@@ -43,7 +43,7 @@ export default class DocumentHistoryForm extends FormContext {
       return;
     }
 
-    loopar.api.post('Document History', 'restore', { query: { name: this.props.meta.__DOCUMENT_NAME__ } }).then(() => {
+    loopar.call('Document History', 'restore', { query: { name: this.props.meta.__DOCUMENT_NAME__ } }).then(() => {
       loopar.rootApp.refresh();
     });*/
   }

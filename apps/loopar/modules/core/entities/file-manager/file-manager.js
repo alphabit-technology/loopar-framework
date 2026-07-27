@@ -23,18 +23,11 @@ export default class FileManager extends BaseDocument {
   }
 
   /**
-   * Companion to `reqUploadFile` for the "Web" origin of the file
-   * picker. Instead of a multer-parsed buffer we receive a URL plus:
-   *
-   *   - `name`: the filename the client already staged in the doc
-   *     (designer field / file input). Using it verbatim guarantees
-   *     `File Manager.name` matches the doc reference so the
-   *     post-save patcher can rewrite it.
-   *   - `mode`: "reference" (record the URL as-is, no download — the
-   *     asset stays a pointer to the external URL) or "download"
-   *     (fetch the bytes through the active driver).
-   *
-   * Falls back to a URL-derived name when the client didn't pass one.
+   * "Web"-origin counterpart of `reqUploadFile`: takes a URL instead of a
+   * multer buffer. `name` must match the doc reference so the post-save
+   * patcher can rewrite it (derived from the URL if missing). `mode`:
+   * "reference" (record the URL as-is) or "download" (fetch bytes via the
+   * active driver).
    */
   set remoteImport({ url, name, mode } = {}) {
     if (!url) {
@@ -69,7 +62,7 @@ export default class FileManager extends BaseDocument {
 
     let normalized = name;
 
-    // If the name still contains mojibake bytes, try latin1 -> utf8 decode once.
+    // Repair mojibake with a single latin1 -> utf8 decode.
     if (/[\u0080-\u009f]/.test(normalized)) {
       normalized = Buffer.from(normalized, 'latin1').toString('utf8');
     }
@@ -169,17 +162,12 @@ export default class FileManager extends BaseDocument {
     const file = this.reqUploadFile;
     const remote = this.#remoteImport;
 
-    // Filesystem-only entity: with neither a binary nor a remote
-    // import there is nothing to persist — the mirror IS the asset's
-    // metadata and only a save that produces bytes (or a reference)
-    // touches disk.
+    // Filesystem-only entity: nothing to persist without a binary or a
+    // remote import.
     if (!file && !remote) {
       return this;
     }
 
-    // ---- Resolve the working name ----
-    //   - Local upload: normalize multer's originalname (latin1 mojibake).
-    //   - Remote import: use the URL-derived name set by the setter.
     let uploadName;
     if (file) {
       uploadName = this.normalizeFileName(
@@ -191,24 +179,11 @@ export default class FileManager extends BaseDocument {
       uploadName = remote.derivedName || this.name;
     }
 
-    // ---- Collision check (filesystem mirror) ----
-    //
-    // The contract: "same name + same app = reuse the existing
-    // asset". A stable `File Manager.name` per filename is what lets
-    // the page-builder reference assets by name alone (e.g.
-    // `background_image: [{ name }]`) and the asset middleware
-    // resolve `/assets/public/{name}` back to the owning driver.
-    //
-    // `getAssetPath` is already app-scoped, so a mirror at
-    // `{assetPath}/{uploadName}.meta.json` is INHERENTLY per-app —
-    // there is no cross-app collision to disambiguate. When the
-    // mirror exists we EARLY-RETURN before any driver call,
-    // rehydrating this entity from the mirror so the caller
-    // (`_processFile` / `_processRemoteFile` in core-document) gets
-    // back a populated `file_ref` and the post-save patcher can
-    // rewrite the doc reference. Re-uploads under the same name are a
-    // no-op at this layer — a deliberate trade-off to avoid orphan
-    // remote objects; content-based replacement is a future task.
+    // Collision check: same name + same app = reuse the existing asset
+    // (mirrors are per-app because `getAssetPath` is app-scoped). If the
+    // mirror exists, rehydrate from it and return before any driver call;
+    // re-uploads under the same name are a no-op (content-based
+    // replacement is a future task).
     const existing = this.#readMirror(uploadName);
     if (existing) {
       this.name = uploadName;
@@ -230,15 +205,10 @@ export default class FileManager extends BaseDocument {
       return this;
     }
 
-    // ---- Persist the asset ----
-    // Three paths, all producing the same result shape:
-    //
-    //   - binary upload   → active driver `.upload(buffer)`
-    //   - download import → active driver `.importFromUrl(url)`
-    //   - reference import → NO driver. `reference` is an import
-    //     *mode*, not a storage backend: the asset is just a pointer
-    //     to an external URL, nobody stored bytes. We record the URL
-    //     as-is and tag `storage_driver = "reference"` as a marker.
+    // Persist — three paths, same result shape: binary upload → driver
+    // `.upload()`, download import → driver `.importFromUrl()`, reference
+    // import → no driver (just record the URL, tagged
+    // `storage_driver = "reference"`).
     const isReference = !!remote && remote.mode === 'reference';
 
     let result;
@@ -269,29 +239,23 @@ export default class FileManager extends BaseDocument {
           });
     }
 
-    // The LocalDriver may rename on disk-content collision (a second
-    // file with the same name but different bytes). For Cloudinary /
-    // reference `storedName === uploadName`.
+    // LocalDriver may rename on content collision; other drivers keep the name.
     if (result.storedName !== uploadName) {
       uploadName = result.storedName;
       this.name = uploadName;
       this.__DOCUMENT_NAME__ = uploadName;
     }
 
-    // ---- Record metadata on the document ----
+    // Record metadata on the document.
     this.size = result.bytes;
     this.extention = (uploadName.split('.').pop() || '').toLowerCase();
     this.type = this.getFileType({ originalname: uploadName });
     this.storage_driver = driverName;
     this.external_id = result.externalId || null;
-    // For local assets file_ref.src already carries the URL; external_url
-    // holds the absolute URL for assets that live outside our /assets
-    // (Cloudinary, or a referenced external URL).
+    // external_url: absolute URL for assets outside our /assets; null for local.
     this.external_url = (driverName === 'local') ? null : result.src;
-    // previewSrc: for a stored asset the active driver computes it
-    // (LocalDriver → thumbnails/ path, Cloudinary → transformed URL).
-    // A referenced external URL can't be transformed, so the preview
-    // is the URL itself.
+    // previewSrc: computed by the driver; a referenced external URL can't
+    // be transformed, so it previews as itself.
     const previewSrc = isReference
       ? result.src
       : loopar.storage.active.deliveryUrl({
@@ -315,21 +279,15 @@ export default class FileManager extends BaseDocument {
     }]);
     this.route = uploadName;
 
-    // No DB write — the mirror sidecar is the asset's record of
-    // truth and the read path resolves entirely from it.
+    // No DB write — the mirror sidecar is the asset's source of truth.
     await this.#writeMirror({ src: result.src, previewSrc, bytes: result.bytes });
     return this;
   }
 
   /**
-   * Write the asset's mirror file next to where its binary would (or
-   * does) live. The mirror is the source of truth for the read path:
-   * the asset middleware consults `{name}.meta.json` to resolve URLs
-   * for assets whose binary lives in a remote driver, without
-   * touching the DB.
-   *
-   * Atomic-ish: writes to `{name}.meta.json.tmp` first and renames,
-   * so a partial read can never observe a half-written JSON.
+   * Write the asset's `{name}.meta.json` mirror — what the asset
+   * middleware uses to resolve remote assets without touching the DB.
+   * Writes to a .tmp file and renames so reads never see half-written JSON.
    */
   async #writeMirror({ src, previewSrc, bytes }) {
     if (!this.name) return;
@@ -379,9 +337,8 @@ export default class FileManager extends BaseDocument {
   }
 
   async delete() {
-    // Filesystem-only: there is no DB row to remove. When the entity
-    // wasn't hydrated (the controller just sets `name`/`app`),
-    // resolve the owning driver from the mirror before deleting.
+    // No DB row: if the entity wasn't hydrated, resolve the owning
+    // driver from the mirror.
     if (!this.storage_driver) {
       const mirror = this.#readMirror();
       if (mirror) {
@@ -390,11 +347,8 @@ export default class FileManager extends BaseDocument {
       }
     }
 
-    // Delegate physical deletion to the driver that owns this asset.
-    // A `reference` asset has no bytes of ours to delete — it's just
-    // a pointer to an external URL — so we skip the driver call.
-    // Anything else (including a bare local binary with no mirror)
-    // goes through its driver; `local` is the safe default.
+    // Physical deletion goes through the owning driver (`local` as safe
+    // default). A `reference` asset has no bytes of ours — skip it.
     const driverName = this.storage_driver || 'local';
     if (driverName !== 'reference') {
       const driver = loopar.storage.for(driverName);
@@ -411,23 +365,15 @@ export default class FileManager extends BaseDocument {
   }
 
   async loadDiskFiles(rows = []) {
-    // Enumerate INSTALLED apps only — `loopar.installedApps` reads
-    // the `installed-apps` config file (no DB), and it is the very
-    // same source `getAssetRoots()` uses to mount `express.static`.
-    // Using it here keeps the listing in sync with what the server
-    // can actually serve: an app that's present in `apps/` on disk
-    // but not installed for this tenant has its assets unexposed, so
-    // listing its mirrors would surface references that 404.
+    // Installed apps only — same source `getAssetRoots()` uses, so the
+    // listing matches what the server can actually serve (a non-installed
+    // app's assets would 404).
     const apps = Object.keys(loopar.installedApps || {});
 
     const loadFiles = (source = "uploads", app) => {
-      // Accept both relative (`apps/myapp/uploads`) and absolute
-      // (`{tenantPath}/uploads`) sources. The legacy code joined
-      // `loopar.pathRoot + source` unconditionally; when the caller
-      // already passed an absolute path, the join produced a
-      // duplicated nonsense path (e.g. `/Users/.../loopar/Users/.../sites/dev/uploads`)
-      // that never matched the filesystem — so the entire site
-      // tenant subtree was silently invisible in the listing.
+      // Accept relative (`apps/x/uploads`) and absolute (tenant) sources —
+      // joining an absolute path onto pathRoot used to produce a bogus
+      // path that hid the whole tenant subtree.
       const sourcePath = path.isAbsolute(source)
         ? source
         : path.join(loopar.pathRoot, source);
@@ -437,20 +383,15 @@ export default class FileManager extends BaseDocument {
         if (fs.existsSync(filesPath)) {
           const diskFiles = fs.readdirSync(filesPath);
 
-          // First pass: collect every binary filename in this dir,
-          // so we can decide later whether a mirror's companion
-          // binary is also present.
+          // Binaries in this dir, to detect mirrors with an adjacent binary.
           const binarySet = new Set(diskFiles.filter(f => !f.endsWith('.meta.json')));
 
           diskFiles.forEach(file => {
             const fullPath = path.join(filesPath, file);
 
-            // Mirror sidecars: list only when the binary is missing —
-            // that's the "remote driver" case (Cloudinary, Reference)
-            // where the mirror IS the asset's only on-disk
-            // representation. When a binary exists adjacent to the
-            // mirror, the binary handles itself in the branch below
-            // (avoid double-listing).
+            // Mirrors are listed only when there's no adjacent binary
+            // (remote-driver assets); otherwise the binary branch below
+            // handles the file.
             if (file.endsWith('.meta.json')) {
               const baseName = file.slice(0, -'.meta.json'.length);
               
@@ -470,8 +411,7 @@ export default class FileManager extends BaseDocument {
                   storage_driver: meta.storage_driver,
                   external_id: meta.external_id,
                   external_url: meta.external_url,
-                  // src/previewSrc travel along so getMappedFiles can
-                  // render the right preview without an extra round-trip.
+                  // src/previewSrc let getMappedFiles render the preview directly.
                   src: meta.src,
                   previewSrc: meta.previewSrc,
                 });
@@ -511,8 +451,7 @@ export default class FileManager extends BaseDocument {
   }
 
   loadFile(file) {
-    // 1. Local binary path — historical behavior for LocalDriver
-    //    assets where the file lives on this filesystem.
+    // 1. Local binary (LocalDriver assets).
     file ??= this.getStatFile();
 
     if (file) {
@@ -532,10 +471,8 @@ export default class FileManager extends BaseDocument {
       return true;
     }
 
-    // 2. No binary — try the mirror sidecar. Remote-driver assets
-    //    (Cloudinary, Reference) leave only `{name}.meta.json` on
-    //    disk; without this fallback the View/Update actions can't
-    //    open them.
+    // 2. No binary — fall back to the mirror (remote-driver assets leave
+    //    only `{name}.meta.json` on disk).
     const mirror = this.#readMirror();
     if (mirror) {
       this.file_ref = JSON.stringify([{
@@ -560,10 +497,8 @@ export default class FileManager extends BaseDocument {
   }
 
   /**
-   * Read a mirror file from disk. Defaults to this asset's own
-   * mirror; `save()` passes an explicit name for the pre-upload
-   * collision check. Returns the parsed metadata or null when the
-   * mirror doesn't exist.
+   * Read a mirror from disk (own name by default; `save()` passes one
+   * for its collision check). Returns parsed metadata or null.
    */
   #readMirror(name = this.name) {
     if (!name) return null;
@@ -584,10 +519,10 @@ export default class FileManager extends BaseDocument {
     q ??= {};
     q.visible = this.visible || "public";
 
-    const workspace = getRequest()?.__WORKSPACE_NAME__;
+    const workspace = loopar.workspace;
 
     const pagination = {
-      page: loopar.session.get(`${workspace}${this.__ENTITY__.name}page`) || 1,
+      page: loopar.getPage(this.__ENTITY__.name),
       pageSize: this.pageSize || 10,
       totalPages: 1,
       totalRecords: 0,
@@ -609,10 +544,9 @@ export default class FileManager extends BaseDocument {
     pagination.totalRecords = filtered.length;
     pagination.totalPages = Math.max(1, Math.ceil(filtered.length / pagination.pageSize));
 
-    // Clamp the current page when filters shrink the set below it.
     if (pagination.page > pagination.totalPages) {
       pagination.page = 1;
-      loopar.session.set(`${this.__ENTITY__.name}page`, 1);
+      loopar.setPage(this.__ENTITY__.name, 1);
     }
 
     const startIndex = (pagination.page - 1) * pagination.pageSize;

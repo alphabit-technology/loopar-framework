@@ -2,13 +2,14 @@ import fs from 'fs';
 import path from 'pathe';
 import { loopar } from '../../loopar.js';
 import { RouterUtils } from './router-utils.js';
+import { verifyWorkspaceToken } from '../../auth/workspace-token.js';
 import WorkspaceController from '../../controller/workspace-controller.js';
 import { getHttpError } from '../../global/http-errors.js';
 import BaseController from '../../controller/base-controller.js';
 import { merge } from 'es-toolkit/object';
-import { requestContext } from './request-context.js';
 import rateLimit from 'express-rate-limit';
-
+import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis';
+import { redisEnabled, createRedisClient } from '../../redis/redis-client.js';
 
 export class Middleware {
   constructor(options) {
@@ -16,69 +17,70 @@ export class Middleware {
   }
 
   /**
-   * Sets up request context middleware using AsyncLocalStorage
-   * This must be the first middleware in the chain
+   *   navigation → workspace from the URL (GET) or from the explicit
+   *                `workspace` param of the SPA's document fetch (POST).
+   *   rpc        → workspace from the signed X-Workspace-Token header;
+   *                the URL is just /{Document}/{action}.
+   *
+   * Every later step reads `req.__ROUTE_MODE__` / `req.__WORKSPACE_NAME__`
+   * instead of re-reading the URL to guess either of them.
+   *
    * @returns {Function} Middleware function
    */
-  setupRequestContextMiddleware() {
+  setupRouteMiddleware() {
     return (req, res, next) => {
-      requestContext.run({ req, res }, () => {
-        next();
-      });
-    };
-  }
-
-  /**
-   * Sets up HTTP loading middleware
-   * @returns {Function} Middleware function
-   */
-  setupLoadHttpMiddleware() {
-    return async (req, res, next) => {
+      const route = RouterUtils.resolveRequestRoute(req, verifyWorkspaceToken);
+      req.__ROUTE_MODE__ = route.mode;
+      req.__WORKSPACE_NAME__ = route.workspace;
       next();
     };
   }
 
   /**
-   * Sets up system validation middleware
+   * Sets up system validation middleware.
+   *
    * @returns {Function} Middleware function
    */
   setupSystemMiddleware() {
     return async (req, res, next) => {
-      const currentUrl = req._parsedUrl.pathname;
+      const currentUrlLower = req._parsedUrl.pathname.toLowerCase();
       const status = RouterUtils.SystemValidation.getStatus(loopar);
 
-      // Any request that will route to the System controller during the
-      // install/connect/update bootstrap must be let through. Two shapes
-      // reach this middleware:
-      //   - Browser-typed:   /loopar/system/connect (lowercase)
-      //   - RPC-generated:   /loopar/System/connect  (PascalCase, from
-      //     loopar.rpc.post which builds the URL with the Document name)
-      //   - Third-party API: /api/System/connect
-      // Case-insensitive comparison covers all three without redirecting.
-      const currentUrlLower = currentUrl.toLowerCase();
-      const isSystemBootstrap =
-        currentUrl.startsWith('/api/System/') ||
-        currentUrlLower.startsWith('/loopar/system/');
+      // The System controller must stay reachable while the framework is
+      // still half-installed — it's how the bootstrap pages submit, and it
+      // guards itself (`static publicActions` + the install token).
+      //
+      // Asked as a ROUTE question — "is this an RPC to the System
+      // document?" — instead of matching url prefixes. One check now
+      // covers every channel, because the workspace segment (if the caller
+      // sent one) was already resolved away upstream:
+      //   - client: /System/connect (loopar.call("System", …))
+      //   - server-to-server: /api/System/install
+      const isSystemRpc =
+        req.__ROUTE_MODE__ === "rpc" &&
+        String(req.__params__?.document || '').toLowerCase() === 'system';
 
-      const matchesBootstrapPath = (target) =>
-        currentUrlLower === target.toLowerCase();
+      if (!isSystemRpc) {
+        const requiredPath = RouterUtils.SystemValidation.getRedirectPath(loopar);
 
-      if (status.needsConnect
-          && !matchesBootstrapPath(status.connectPath)
-          && !isSystemBootstrap) {
-        return this.redirect(req, res, status.connectPath);
-      }
-
-      if (status.needsInstallOrUpdate) {
-        const redirectPath = status.needsUpdate ? status.updatePath : status.installPath;
-        if (!matchesBootstrapPath(redirectPath) && !isSystemBootstrap) {
-          return this.redirect(req, res, redirectPath);
+        if (requiredPath) {
+          if (currentUrlLower !== requiredPath.toLowerCase()) {
+            return this.redirect(req, res, requiredPath);
+          }
+        } else {
+          const spentPages = [status.connectPath, status.installPath, status.updatePath]
+            .map((path) => path.toLowerCase());
+          if (spentPages.includes(currentUrlLower)) {
+            return this.redirect(req, res, '/desk');
+          }
         }
       }
 
-      req.__WORKSPACE_NAME__ = RouterUtils.getWorkspaceName(currentUrl);
-
-      if (status.isFullyInstalled && req.__WORKSPACE_NAME__ === "loopar") {
+      if (
+        status.isFullyInstalled &&
+        req.__WORKSPACE_NAME__ === "loopar" &&
+        req.__ROUTE_MODE__ === "navigation"
+      ) {
         return this.redirect(req, res, '/desk');
       }
 
@@ -103,11 +105,6 @@ export class Middleware {
       Controller.dictUrl = req._parsedUrl;
       Controller.workspace = req.__WORKSPACE_NAME__;
 
-      // Per-request, NOT `this.App`: the Middleware/Router instance is shared
-      // by every request in the process, and there are awaits between here
-      // and the final render. Storing the controller on `this` let two
-      // concurrent HTML requests swap each other's App (render A with B's
-      // workspace). `req` is the only safe home for per-request state.
       req.__APP__ = Controller;
       req.__WORKSPACE__ = await Controller.getWorkspace();
       next();
@@ -120,28 +117,31 @@ export class Middleware {
    */
   setupBuildParamsMiddleware() {
     return (req, res, next) => {
-      if (req.tryToServePrivateFile) return next();
-
       req.__WORKSPACE__ ??= {};
       const url = req._parsedUrl;
+      const isRpc = req.__ROUTE_MODE__ === "rpc";
 
-      const routeStructure = RouterUtils.RouteParsing.parseParams(
-        url.pathname,
-        req.__WORKSPACE_NAME__,
-        loopar
-      );
+      const routeStructure = isRpc
+        ? RouterUtils.RouteParsing.parseRpcParams(url.pathname)
+        : RouterUtils.RouteParsing.parseParams(url.pathname, req.__WORKSPACE_NAME__);
+
+      // Keep the full path unless the workspace declares that its
+      // navigation urls are prefixed with the workspace segment
+      // (`urlPrefixed` in WORKSPACE_CAPABILITIES). RPC urls are never
+      // prefixed, whatever the workspace context is.
+      const stripPrefix = !isRpc && RouterUtils.workspaceIsUrlPrefixed(req.__WORKSPACE_NAME__);
 
       const controllerParams = {
         req,
         res,
         dictUrl: url,
-        pathname: ["web", "auth"].includes(req.__WORKSPACE_NAME__)
-          ? url.pathname
-          : url.pathname.split("/").slice(1).join("/"),
+        pathname: stripPrefix
+          ? url.pathname.split("/").slice(1).join("/")
+          : url.pathname,
         method: req.method
       };
 
-      if (req.__WORKSPACE_NAME__ === "web") {
+      if (!isRpc && req.__WORKSPACE_NAME__ === "web") {
         routeStructure.action ??= "view";
         routeStructure.document ??= "Home";
         controllerParams.action = routeStructure.action;
@@ -201,17 +201,6 @@ export class Middleware {
   /**
    * Sets up not found source middleware.
    *
-   * Reaches here only when `express.static` (mounted earlier in
-   * `server.js#exposePublicDirectories`) didn't find the asset
-   * binary on disk. Before giving up with 404, we look for the
-   * asset's mirror sidecar (`{name}.meta.json`) in the same roots —
-   * a remote-driver asset (Cloudinary, S3, …) has only the mirror on
-   * disk. If found, we 302 to the driver's delivery URL pulled from
-   * the mirror.
-   *
-   * Pure filesystem — no DB. Read-side counterpart to the mirror
-   * writer on the save path.
-   *
    * @returns {Function} Middleware function
    */
   setupNotFoundSourceMiddleware() {
@@ -226,8 +215,6 @@ export class Middleware {
       } catch (err) {
         console.warn('[asset middleware] remote lookup failed:', err?.message || err);
       }
-
-      req.tryToServePrivateFile = true;
 
       const errString = this.errTemplate({
         code: 404,
@@ -305,7 +292,6 @@ export class Middleware {
    */
   setupErrorMiddleware() {
     return async (err, req, res, next) => {
-      console.log(["Request Error", err]);
       try {
         loopar.db && (await loopar.db.safeRollback());
       } catch (rollbackErr) {
@@ -360,11 +346,25 @@ export class Middleware {
 
   setupRateLimitMiddleware() {
     const minutes = 15;
+    // Global limit across workers: with Redis the counter is shared, so N
+    // cluster workers enforce ONE 15/window budget. Without Redis each worker
+    // counts alone (limit x N) \u2014 fine single-process, weak in cluster.
+    let store;
+    if (redisEnabled()) {
+      const client = createRedisClient();
+      if (client) {
+        store = new RateLimitRedisStore({
+          prefix: 'rl:login:',
+          sendCommand: (...args) => client.call(...args),
+        });
+      }
+    }
     const loginLimiter = rateLimit({
       windowMs: minutes * 60 * 1000,
       max: 15,
       standardHeaders: true,
       legacyHeaders: false,
+      ...(store ? { store } : {}),
       handler: (req, res) => {
         res.status(429).json({
           status: 429,
@@ -376,24 +376,97 @@ export class Middleware {
     });
   
     return (req, res, next) => {
-      const isLoginPost = req.method === 'POST' 
-        && req.__WORKSPACE_NAME__ === 'auth'
-        && req._parsedUrl.pathname.toLowerCase().includes('login');
-  
+      // Matched on the PARSED route, not on the url. `/Auth/login` (rpc)
+      // and the legacy `/auth/login` post both parse to the same
+      // document/action pair, so one check covers both without naming a
+      // single url.
+      const doc = String(req.__params__?.document || '').toLowerCase();
+      const action = String(req.__params__?.action || '').toLowerCase();
+
+      const isLoginPost = req.method === 'POST' && doc === 'auth' && action === 'login';
+
       if (!isLoginPost) return next();
       return loginLimiter(req, res, next);
     };
   }
 
   /**
-   * Generates error template using RouterUtils
+   * Renders an HTML response.
+   */
+  render(req, res, response) {
+    if (res.headersSent) return;
+
+    if (response instanceof Error) {
+      res.status(500).set('Content-Type', 'text/html').send(response.message);
+      return;
+    }
+
+    if (!response || typeof response !== 'object') {
+      res.status(500).set('Content-Type', 'text/html').send('Invalid response');
+      return;
+    }
+
+    res.status(response.status || 200)
+      .set('Content-Type', response.contentType || 'text/html')
+      .set('Cache-Control', 'no-cache')
+      .send(response.body ?? '');
+  }
+
+  /**
+   * Renders AJAX/JSON response with a single, stable wire shape.
+   *
+   * Error responses (status >= 400): { status, code, title, message }
+   * Success responses: { status, success: true, message?, notify?, ...payload }
+   * 
+   */
+  renderAjax(res, response) {
+    if (res.headersSent) return;
+
+    if (!response) {
+      console.error('Error: Empty response received');
+      return;
+    }
+
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (response instanceof Error) {
+      res.status(500).set(headers).json({
+        status: 500,
+        code: response.code || 'INTERNAL_ERROR',
+        title: response.title || 'Internal Server Error',
+        message: response.message || 'An unexpected error occurred'
+      });
+      return;
+    }
+
+    if (typeof response === 'string') {
+      res.status(200).set(headers).json({ status: 200, success: true, message: response });
+      return;
+    }
+
+    const raw = Number(response.status) || Number(response.code) || 200;
+    const status = (raw >= 100 && raw <= 599) ? raw : 200;
+    res.status(status).set(headers).json(response);
+  }
+
+  makeUrl = (href, currentURL) => RouterUtils.buildUrl(href, currentURL);
+
+  redirect(req, res, url) {
+    if (res.headersSent) return;
+
+    const redirectUrl = this.makeUrl(url, req._parsedUrl?.pathname || '/');
+    res.redirect(redirectUrl || '/desk');
+  }
+
+  /**
    * @param {Object} err - Error object
    * @returns {string} HTML error template
    */
   errTemplate = (err) => RouterUtils.generateErrorTemplate(err);
 
   /**
-   * Throws and handles errors
    * @param {*} err - Error to throw
    * @param {Object} res - Express response object
    * @returns {string|undefined} Error string if no response sent

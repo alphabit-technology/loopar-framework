@@ -7,7 +7,7 @@
  *      Static file lookups (main.html, client assets) flip instantly because
  *      they're resolved per request.
  *
- *   2. `pm2.reload` each production tenant.
+ *   2. `pm2.reload` the core process.
  *      In cluster mode (exec_mode: 'cluster'), reload forks a fresh worker —
  *      which loads the new SSR bundle from scratch — waits for it to come
  *      online, then kills the old worker. New requests hit new code, no
@@ -22,8 +22,9 @@ import fs from 'fs';
 import path from 'pathe';
 import { promisify } from 'util';
 import pm2 from 'pm2';
-import { tenant } from 'loopar';
 import { ROOT, RELEASES_DIR, readTag, clearTag } from './lib/release.js';
+
+const CORE_PROCESS_NAME = 'loopar-core';
 
 const KEEP_RELEASES = 2;
 
@@ -32,10 +33,6 @@ const tag = readTag({ requiredBy: 'activate' });
 const releaseTarget = `build/releases/${tag}`;      // relative — symlink stays portable
 const distPath = path.join(ROOT, 'dist');
 const tmpLink = path.join(ROOT, '.dist.swap');
-
-// ────────────────────────────────────────────────────────────────────────────
-// 1. Atomic symlink swap
-// ────────────────────────────────────────────────────────────────────────────
 
 // Clean any leftover from a prior interrupted run
 try { fs.unlinkSync(tmpLink); } catch (_) { /* ignore */ }
@@ -57,61 +54,26 @@ if (existing && existing.isDirectory() && !existing.isSymbolicLink()) {
 fs.renameSync(tmpLink, distPath);
 console.log(`🔗 dist → ${releaseTarget}`);
 
-// ────────────────────────────────────────────────────────────────────────────
-// 2. Reload production tenants
-// ────────────────────────────────────────────────────────────────────────────
-
 const pm2Connect = () => new Promise((res, rej) => pm2.connect(e => e ? rej(e) : res()));
 const pm2Reload = promisify(pm2.reload.bind(pm2));
 const pm2Describe = promisify(pm2.describe.bind(pm2));
 
-// If the build was kicked off from a worker (e.g. via the Build button in
-// the UI), that worker passes BUILD_INITIATOR so we don't reload it here —
-// reloading it would kill the worker mid-process and discard the in-memory
-// build state the UI is polling. The initiator updates its own code by an
-// explicit "Reload" click after the build finishes.
-const skipTenant = process.env.BUILD_INITIATOR || null;
-
 await pm2Connect();
 try {
-  const tenants = tenant.tenants();
-  let reloaded = 0;
-
-  for (const t of tenants) {
-    if (t.env.NODE_ENV !== 'production') {
-      console.log(`⏭  ${t.name} (${t.env.NODE_ENV || 'development'}) — not production, skipped`);
-      continue;
-    }
-
-    if (skipTenant && t.name === skipTenant) {
-      console.log(`⏭  ${t.name} — build initiator, skipped (reload manually after build)`);
-      continue;
-    }
-
-    const desc = await pm2Describe(t.name);
-    const status = desc[0]?.pm2_env?.status;
-    if (status !== 'online') {
-      console.log(`⏭  ${t.name} (${status || 'stopped'}) — not online, skipped`);
-      continue;
-    }
-
-    try {
-      await pm2Reload(t.name);
-      console.log(`♻️  ${t.name} reloaded`);
-      reloaded++;
-    } catch (err) {
-      console.error(`❌ ${t.name} reload failed: ${err.message || err}`);
-    }
+  const desc = await pm2Describe(CORE_PROCESS_NAME).catch(() => []);
+  const status = desc[0]?.pm2_env?.status;
+  if (status === 'online') {
+    // Cluster mode → zero-downtime reload; fork mode → in-place restart.
+    await pm2Reload(CORE_PROCESS_NAME);
+    console.log(`♻️  core (${CORE_PROCESS_NAME}) reloaded`);
+  } else {
+    console.log(`⏭  core (${status || 'stopped'}) — not online; start it with \`yarn start\``);
   }
-
-  console.log(`\n   ${reloaded}/${tenants.length} tenants reloaded`);
+} catch (err) {
+  console.error(`❌ core reload failed: ${err.message || err}`);
 } finally {
   pm2.disconnect();
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// 3. Prune old releases (keep last N, never touch the active one)
-// ────────────────────────────────────────────────────────────────────────────
 
 const allReleases = fs.readdirSync(RELEASES_DIR)
   .filter(name => name !== tag && !name.startsWith('_legacy_'))
@@ -130,7 +92,6 @@ if (toKeep.length > 0) {
   console.log(`\n   kept for rollback: ${toKeep.join(', ')}`);
 }
 
-// Clean the marker so a fresh build/prepare must run next time
 clearTag();
 
 console.log(`\n✅ Deploy ${tag} activated\n`);

@@ -4,15 +4,10 @@
  * Loopar TUI — interactive tenant manager for the terminal.
  *
  * Same data source as the Tenant Manager UI and the CLI: tenants are read
- * PHYSICALLY from sites/<name>/.env via tenant-builder.js, and all PM2/Caddy
- * orchestration comes from tenant-service.js — the SAME module the
- * TenantManager entity (Desk UI / loopar.build) delegates to. No tenant
- * process, no Entity, no database is needed to run this ("bare mode").
- *
- * Scope: lifecycle + inspection (list/status/start/stop/restart/create/
- * unregister/destroy, prod⇄dev switch, open-in-browser, log tail). Installing
- * a tenant is deliberately left to the tenant's own browser wizard
- * (connect → install) — the canonical first-boot flow.
+ * PHYSICALLY from sites/<name>/config.json via tenant-builder.js, and the tenant
+ * lifecycle comes from tenant-ops.js — the SAME shared ops the TenantManager
+ * entity (Desk UI / control plane) uses. No tenant process, no Entity, no
+ * database is needed to run this ("bare mode").
  *
  * Modules:
  *   term.js    ANSI, screen lifecycle, quit
@@ -30,13 +25,6 @@
  *   LOOPAR_TUI_NO_PM2=1   never touch PM2 (statuses show as "n/a")
  */
 
-// ─── Boot feedback ──────────────────────────────────────────────────────────
-// The heavy imports below (pm2 → tenant-service → caddy) take a couple of
-// seconds on a cold start. With STATIC imports they'd run before any of our
-// code — nothing on screen, looks like a hang. So: print a spinner first,
-// then load everything dynamically. enterScreen() switches to the alternate
-// buffer, which wipes the spinner line cleanly.
-
 const IS_LIST = process.argv.includes("--list");
 let bootTimer = null;
 
@@ -50,11 +38,12 @@ if (!IS_LIST && process.stdout.isTTY) {
 }
 
 await import("loopar/bin/pm2-home.js");
-const { enterScreen, exitScreen, quit } = await import("./term.js");
+const { enterScreen, exitScreen, quit, silenced } = await import("./term.js");
 const { state, NO_PM2 } = await import("./state.js");
 const { render } = await import("./render.js");
 const { loadRows, actions } = await import("./actions.js");
 const { onData } = await import("./input.js");
+const { withPm2, startCoreProcess, coreProcessStatus } = await import("../cli/pm2.js");
 
 if (bootTimer) {
   clearInterval(bootTimer);
@@ -89,11 +78,31 @@ async function main() {
   // Statuses arrive async so the UI paints instantly even if PM2 is cold.
   await loadRows();
 
+  // Ensure the core is up. The TUI manages tenants, but a tenant only serves
+  // while loopar-core is running — so opening the manager should also bring the
+  // server up.
+  if (!NO_PM2) {
+    try {
+      const status = await coreProcessStatus();
+      if (status !== "online") {
+        state.busy = true;
+        state.message = "core is down — starting it…";
+        render();
+        await silenced(() => withPm2(() => startCoreProcess()));
+        state.message = "core started";
+        state.messageKind = "ok";
+        state.busy = false;
+        await loadRows();
+      }
+    } catch (err) {
+      state.busy = false;
+      state.message = `core start failed: ${err.message || err}`;
+      state.messageKind = "error";
+    }
+  }
+
   // First-boot fast path: exactly one tenant and it's stopped — the state
-  // right after a fresh install (ensure-site creates `dev`). Start it
-  // without asking so `yarn start` lands on a running site, wizard included.
-  // With several tenants (or an errored one) the TUI stays a status panel
-  // and never starts anything on its own.
+  // right after a fresh install (ensure-site creates `dev`)
   if (!NO_PM2 && state.rows.length === 1 && state.rows[0].status === "stopped") {
     const only = state.rows[0];
     state.busy = true;

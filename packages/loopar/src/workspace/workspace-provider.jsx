@@ -6,6 +6,7 @@ import { usePersist } from "@services/persist-state";
 import { AppSourceLoader } from "@loopar/loader";
 import {useAuth} from "@context/AuthContext"
 import Emitter from "@services/emitter/emitter";
+import { LoopSocket } from "@services/realtime/LoopSocket";
 
 /** Read the current public session (JWT is httpOnly → ask the server). */
 async function fetchSession() {
@@ -72,11 +73,41 @@ export function WorkspaceProvider({
   // auth changes (login modal / logout) so the chrome AND in-page components
   // (e.g. comments) flip between guest/logged-in without a full reload.
   const [user, setUser] = useState(__META__.user || null);
+
+  // Explicit singleton binds — the provider is the one place that actually
+  // knows the active workspace and the reactive session, so it (and only it)
+  // pushes them into `loopar`. See the bind section in tools/router/router.jsx.
+  useEffect(() => {
+    loopar._bindWorkspace(__WORKSPACE_NAME__);
+  }, [__WORKSPACE_NAME__]);
+
+  useEffect(() => {
+    loopar._bindSession(user);
+  }, [user]);
   useEffect(() => {
     const onAuthChanged = () => { fetchSession().then(setUser); };
     Emitter.on("auth:changed", onAuthChanged);
     return () => Emitter.off("auth:changed", onAuthChanged);
   }, []);
+
+  // Realtime: open the socket for THIS tenant's namespace. The server derives
+  // the socket identity from the httpOnly JWT cookie; the client only needs to
+  // connect to `/<site>`. Without this call nothing ever connected, so
+  // useRealtime()'s onReady callbacks queued forever. `__META__.site` is the
+  // tenant name the server injected (= the realtime namespace + cookie suffix).
+  useEffect(() => {
+    const site = __META__.site;
+    if (!site) return;
+    LoopSocket.connect(site);
+  }, [__META__.site]);
+
+  // `useRealtime({ ignoreSelf })` compares payload.user against window.__user__
+  // to skip echoing a client's own writes. Keep it in sync with the session.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.__user__ = user?.userId || user?.name || null;
+    }
+  }, [user]);
 
   const metaCacheRef = useRef({});
   const lastFetchedPath = useRef(null);
@@ -150,19 +181,36 @@ export function WorkspaceProvider({
   }, [storedTheme, pathname]);
 
   const goToErrorView = useCallback((e) => {
-    __META__.Document = {
-      key: "error404",
+    const Document = {
+      key: "error-view",
       entryPoint: "error-view",
-    };
-    AppSourceLoader(__META__.Document).then((Module) => {
-      __META__.Document.data = {
-        code: 404,
-        title: "Source not found",
+      data: {
+        code: e.code || 404,
+        title: e.title || "Source not found",
         description: e.message
-      };
-      loadDocument(__META__, Module);
+      }
+    };
+
+    AppSourceLoader(Document).then((Module) => {
+      startTransition(() => {
+        setDocuments(prevDocuments => {
+          const updatedDocuments = { ...prevDocuments };
+          Object.values(updatedDocuments).forEach((doc) => {
+            doc.active = false;
+          });
+
+          updatedDocuments[Document.key] = {
+            View: Module.default,
+            key: Document.key,
+            Document,
+            active: true,
+          };
+
+          return updatedDocuments;
+        });
+      });
     });
-  }, [__META__]);
+  }, []);
 
   const loadDocument = useCallback((__META__, Module) => {
     try {
@@ -175,6 +223,7 @@ export function WorkspaceProvider({
             active: true,
           }
         }));
+        
       });
     } catch (err) {
       goToErrorView(err);
@@ -220,20 +269,32 @@ export function WorkspaceProvider({
     const targetSearch = route.search || '';
     const preloadedMeta = !!metaCacheRef.current[loopar.utils.urlInstance(route)];
 
+    // Real navigation: ask the server to resolve/render what was navigated
+    // to. This is the ONLY request that names a workspace, and it travels as
+    // a parameter — RPCs (loopar.call) never send one.
+    const queryParams = Object.fromEntries(new URLSearchParams(targetSearch));
+
     return new Promise((resolve, reject) => {
-      loopar.send({
-        action: targetPath,
-        query: `${targetSearch.length ? targetSearch + "&" : "?"}preloaded=${preloadedMeta}`,
+      loopar.fetchDocument(targetPath, {
+        workspace: __WORKSPACE_NAME__,
+        query: { ...queryParams, preloaded: preloadedMeta },
         success: r => {
           if (currentFetchId !== fetchIdRef.current) return;
 
           lastFetchedPath.current = { pathname: targetPath, search: targetSearch };
           setDocument(r);
           resolve();
+        },
+        error: e => {
+          if (currentFetchId !== fetchIdRef.current) return;
+
+          lastFetchedPath.current = { pathname: targetPath, search: targetSearch };
+          goToErrorView(e);
+          resolve();
         }
       });
     });
-  }, [setDocument]);
+  }, [setDocument, goToErrorView]);
 
   /**
    * Re-fetch the active document.

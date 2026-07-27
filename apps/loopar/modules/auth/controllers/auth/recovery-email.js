@@ -26,8 +26,7 @@ async function deliverEmail({ to, subject, html }) {
     return loopar.mail.send({ to, subject, html });
   }
 
-  const verifierUrl   = process.env.CLOUD_VERIFIER_URL;
-  const verifierToken = process.env.CLOUD_VERIFIER_TOKEN;
+  const { url: verifierUrl, token: verifierToken } = loopar.cloudVerifier;
   if (verifierUrl && verifierToken) {
     let gatewayUrl;
     try {

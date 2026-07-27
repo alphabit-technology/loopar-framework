@@ -8,6 +8,13 @@ export default class AuthController {
 
     if (this.#isPublicAction(this.req.__WORKSPACE_NAME__)) return true;
 
+    if (this.#isRpc) {
+      if (!validateCsrfToken(this.req)) {
+        loopar.throw('Invalid CSRF token', '/auth/login');
+      }
+      return true;
+    }
+
     const workspace = this.req.__WORKSPACE_NAME__;
     if (!workspaceCapabilities(workspace).enforceCsrf) return true;
 
@@ -18,8 +25,13 @@ export default class AuthController {
     return true;
   }
 
+  /** RPC mode: workspace-less /{Document}/{action} routed by middleware. */
+  get #isRpc() {
+    return this.req?.__ROUTE_MODE__ === 'rpc';
+  }
+
   #isPublicAction(workspace){
-    if(workspace == "web") return true;
+    if(workspace == "web" && !this.#isRpc) return true;
     const method = this[`publicAction${loopar.utils.Capitalize(this.action)}`];
     if(method && typeof method == "function") return true;
 
@@ -96,21 +108,32 @@ export default class AuthController {
 
     const cap = workspaceCapabilities(workspace);
 
-    const isAjax = this.method === 'POST' || workspace === 'api';
+    const isAjax = this.method === 'POST' || workspace === 'api' || this.#isRpc;
     const resolve = (message, url) => loopar.throw(
       message,
       isAjax ? null : (url || '/auth/login')
     );
 
-    // Fully public surfaces (web, loopar): no auth gate at all.
+    if (this.#isRpc) {
+      if (this.#isPublicAction(workspace)) return true;
+
+      const user = await loopar.auth.award();
+      if (!user) return resolve('You must be logged in to perform this action');
+
+      if (user.name !== 'Administrator' && user.disabled) {
+        return resolve('Not permitted');
+      }
+
+      if (cap.blockWebUsers && user.user_type === 'Web') {
+        return resolve('This account does not have desk access');
+      }
+
+      return await this.isAuthorized(user);
+    }
+
+    // Fully public surfaces (web, loopar): no auth gate at all (navigation).
     if (cap.public) return true;
 
-    // On the auth FORM pages (login/register/recovery), an already-logged-in
-    // user should be sent to where they belong instead of seeing the form
-    // again. This must run BEFORE the public-action short-circuit below, since
-    // `login` is itself a public action. Restricted to GET page loads of the
-    // form actions so it never interferes with the ajax helpers (me,
-    // oauthProviders) or the OAuth dance (oauth, oauthCallback) on this workspace.
     const AUTH_FORM_ACTIONS = ['login', 'register', 'recoveryuser', 'recoverypassword', 'recoverypasswordrequest'];
     if (
       cap.isAuth &&
@@ -132,7 +155,6 @@ export default class AuthController {
       const webLanding = process.env.WEB_LANDING || '/';
 
       if (cap.isAuth && action !== 'logout') {
-        // Already logged in → bounce to where this user belongs.
         const dest = user.user_type === 'Web' ? webLanding : '/desk/Desk/view';
         return resolve('You are already logged in, refresh this page', dest);
       }
@@ -141,7 +163,6 @@ export default class AuthController {
         return resolve('Not permitted');
       }
 
-      // Audience guard: e.g. desk blocks `user_type === "Web"` accounts.
       if (cap.blockWebUsers && user.user_type === 'Web') {
         return resolve('This account does not have desk access', webLanding);
       }
@@ -151,9 +172,6 @@ export default class AuthController {
 
     if (cap.isAuth) return true;
     if (cap.requiresAuth) {
-      // On a full page load of a protected surface, the requested URL IS the
-      // page the user was on — carry it as ?redirect= so login can return them
-      // there. Generalized to any auth-required workspace (desk, portal, …).
       let url = '/auth/login';
       if (!isAjax) {
         const back = this.req?.originalUrl || '';
@@ -167,7 +185,47 @@ export default class AuthController {
     return resolve('You must be logged in to access this page');
   }
 
+  /**
+   * Actions that don't change state and are therefore safe to run on a GET
+   * (HTTP semantics: GET/HEAD must be safe / idempotent). Everything else —
+   * `delete`, `bulkDelete`, and any custom mutator — must arrive over a
+   * CSRF-validated request, i.e. POST (`loopar.call` is always POST).
+   *
+   * `update`/`create` are safe here because they self-branch: with no body
+   * they only RENDER the form; their write path needs a POST body, which on
+   * an authenticated workspace is CSRF-gated anyway.
+   */
+  static SAFE_ON_GET = new Set(['view', 'list', 'update', 'create', 'search']);
+
+  /**
+   * A GET (or HEAD) may only run a state-safe action. This closes the
+   * CSRF-via-GET hole on BOTH channels at once: navigation (`/desk/...`) and
+   * the RPC `/api/...` surface both reach `validateCsrf`, which exempts GET —
+   * so without this guard a top-level `GET /desk/User/delete?name=X` (or
+   * `GET /api/User/delete?name=X`) would delete using only the victim's
+   * session cookie, no token required. Mutations must use POST.
+   *
+   * Explicit `publicAction<X>` methods opt out: the developer owns those
+   * entry points, and GET-redirect flows like the OAuth callback need them.
+   */
+  #assertGetSafety() {
+    const method = String(this.method || '').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') return;
+
+    const action = String(this.action || '').toLowerCase();
+    if (AuthController.SAFE_ON_GET.has(action)) return;
+
+    const publicMethod = this[`publicAction${loopar.utils.Capitalize(this.action)}`];
+    if (typeof publicMethod === 'function') return;
+
+    loopar.throw({
+      code: 404,
+      message: `Action "${this.action}" is not available over GET \u2014 mutations must use loopar.call (POST).`,
+    });
+  }
+
   async beforeAction() {
+    this.#assertGetSafety();
     return await this.#award() && await this.validateCsrf();
   }
 }
