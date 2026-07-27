@@ -40,7 +40,8 @@ test/
 # 🎨 BUILD OUTPUT
 # -----------------------------------
 dist
-build/
+# Anchored to the repo ROOT — bin/build/ is source, only /build/ is output.
+/build/
 
 # -----------------------------------
 # ⚙️ CONFIGURATION FILES (Auto-generated)
