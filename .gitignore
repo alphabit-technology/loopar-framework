@@ -45,7 +45,10 @@ build/
 # -----------------------------------
 # ⚙️ CONFIGURATION FILES (Auto-generated)
 # -----------------------------------
-config/
+# Anchored to the repo ROOT so it only ignores the runtime /config/core.json
+# — NOT source dirs named "config" (e.g. packages/loopar/core/config/).
+# Per-tenant config under sites/*/config/ stays covered by the `sites/` rule below.
+/config/
 tsconfig.tsbuildinfo
 
 # -----------------------------------
