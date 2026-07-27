@@ -1,63 +1,56 @@
-## Drag and Drop Framework ([https://loopar.build/Doc](https://loopar.build/Doc))
+# Loopar
 
-Loopar is a multi-tenant, drag-and-drop web framework built on Node.js, React (SSR + hydration), Vite 8 (Rolldown) and pm2. Full documentation lives in the `loopar-webpage` app and at [loopar.build/Doc](https://loopar.build/Doc).
+**Design your app in the browser, ship the full stack.** Loopar is a multi-tenant, drag-and-drop web framework: you model entities, pages and forms visually and it scaffolds the database model, the controller and the rendered views for you.
 
-# Prerequisites
+`v7.0.0` · MIT · Node 22.12+ · React (SSR + hydration), Vite 8 (Rolldown), single-core multi-tenant.
 
-> 1. Node JS 22.12+
-> 2. Yarn 4+ (required)
+> 📖 **Full documentation:** the `loopar-webpage` app and **[loopar.build/Doc](https://loopar.build/Doc)**.
 
-# Installation
+---
 
-## Automatic Installation
+## Prerequisites
 
-### With NPX
+- Node.js **22.12+**
+- Yarn **4+** (required — npm/pnpm are not supported)
 
-```shell
-npx loopar-install project-name --port 8080
-```
-
-> Your server will start automatically in the dev environment.
-
-
-
-## Manual Installation
-
-### Clone from Git
-
-```shell
-git clone https://github.com/alphabit-technology/loopar-framework.git project-name
-cd project-name
-```
-
-
-
-##### Install with yarn
-
-```shell
-yarn install
-yarn start
-```
-
-`yarn start` opens the TUI (interactive tenant manager). On a fresh install — a single stopped `dev` tenant — it starts it automatically; press `o` (or click its URL) to open `http://localhost:3000` in your browser.
-
-> [!IMPORTANT]
-> Loopar uses a workspace-based monorepo structure. **Yarn 4+ is required** — other package managers (npm, pnpm) are not supported and may cause dependency resolution errors.
-
-> If you don't have Yarn 4, enable it via Corepack (included with Node.js 16.9+):
->
+> No Yarn 4? Enable it via Corepack (bundled with Node 16.9+):
 > ```shell
 > corepack enable
 > yarn set version stable
 > ```
 
-When the process is completed, navigate to your browser. The system will show a wizard installation where you can define your database type and connection data, then your project data. Once completed, you can start designing your projects.
+## Install
+
+**With NPX (fastest):**
+
+```shell
+npx loopar-install project-name --port 8080
+```
+
+The dev server starts automatically.
+
+**From Git:**
+
+```shell
+git clone https://github.com/alphabit-technology/loopar-framework.git project-name
+cd project-name
+yarn install
+yarn start
+```
+
+`yarn start` opens the **TUI** (interactive tenant manager). On a fresh install — a single stopped `dev` tenant — it starts it automatically; press `o` (or click the URL) to open `http://localhost:3000`.
+
+## First run
+
+The browser shows a setup wizard: pick your **database** and connection, then your **project** data. When it finishes you land in the Desk, where you design your app visually — everything else is in the [docs](https://loopar.build/Doc).
+
+---
 
 # Commands
 
 All commands run through the project-local pm2 daemon (isolated `PM2_HOME`). Use `yarn <command>` or `node bin/cli/index.js <command>`.
 
-One tenant-less **core** process serves every tenant in-process. `dev`/`prod` is a **global** core switch (`config/core.json` → `nodeEnv`), toggled from the TUI (`[p]`) or with `yarn prod` — not a per-tenant or per-command mode. Tenants are turned on/off individually (their `status` in `sites/<name>/config.json`), not started as separate processes.
+> One tenant-less **core** process serves every tenant in-process. `dev`/`prod` is a **global** core switch (`config/core.json` → `nodeEnv`), toggled from the TUI (`[p]`) or with `yarn prod` — not a per-tenant or per-command mode. Tenants are turned on/off individually (their `status` in `sites/<name>/config.json`), not started as separate processes.
 
 ## Scripts at a glance
 
@@ -72,7 +65,6 @@ Most days you only need `start` and `logs`. The rest are situational, grouped by
 
 ## Lifecycle
 
-
 | Command               | Description                                                                                                     |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `yarn start`          | Open the TUI — the interactive tenant manager (same as `yarn tui`)                                              |
@@ -84,7 +76,6 @@ Most days you only need `start` and `logs`. The rest are situational, grouped by
 | `yarn delete [site]`  | Remove processes from the pm2 registry                                                                          |
 | `yarn kill`           | Kill processes AND the daemon (clean slate)                                                                     |
 | `yarn startup`        | Register a reboot-safe boot hook (run once after first deploy)                                                  |
-
 
 Tenants are resolved the same way the Tenant Manager UI does (`tenant-builder`): process name = tenant id, config built from the tenant's `.env`. The CLI and the UI manage the same processes interchangeably.
 
@@ -110,36 +101,26 @@ The TUI, the CLI and the Tenant Manager UI all share the same underlying layer (
 
 ## Inspection
 
-
 | Command            | Description                                                       |
 | ------------------ | ----------------------------------------------------------------- |
 | `yarn tui`         | Interactive tenant manager: statuses, start/stop, create, destroy |
 | `yarn logs [site]` | Tail logs for all sites or one                                    |
 
-
-
-
 ## Dependencies
-
 
 | Command     | Description                                                                                                              |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `yarn deps` | Install dependencies (`yarn install --immutable`). Decoupled from `build` so a deploy never triggers an implicit install |
 
-
-
-
 ## Build & Deploy
 
 Two paths to production, both ending in an atomic release swap:
-
 
 | Command         | Description                                                                                                                                                                                  |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `yarn build`    | Full build: prepare release → Vite client + server bundles (compressed) → activate                                                                                                           |
 | `yarn watch`    | Warm watcher under pm2 (`build-watch` process): incremental rebuilds (~1s) of `apps/**/client/**` into `build/staging/`. Start it when preparing releases; stop with `yarn stop build-watch` |
 | `yarn activate` | Snapshot `build/staging/` into a new release and activate it (fast deploy)                                                                                                                   |
-
 
 Dev tenants serve through Vite middleware (HMR) and do **not** need the watcher — it exists only to keep `build/staging/` fresh for fast deploys.
 
@@ -160,10 +141,7 @@ Activation swaps the `dist` symlink atomically and `pm2 reload`s production tena
 ln -sfn build/releases/<previous-tag> dist && yarn restart
 ```
 
-
-
 ### Build environment variables
-
 
 | Variable               | Default  | Description                                            |
 | ---------------------- | -------- | ------------------------------------------------------ |
@@ -171,16 +149,16 @@ ln -sfn build/releases/<previous-tag> dist && yarn restart
 | `BUILD_BROTLI_QUALITY` | `9`      | Brotli quality (0–11)                                  |
 | `BUILD_GZIP_LEVEL`     | `6`      | Gzip level (1–9)                                       |
 
-
-
-
 # Project structure
 
 ```
 apps/<app>/modules/...        # your applications (entities, controllers, client views)
 packages/loopar/              # framework core (server, ORM, React components)
 packages/vite-env/            # shared Vite config (client/server/watch builds)
-sites/<tenant>/               # per-tenant config and SQLite data
+sites/<tenant>/               # per-tenant config and data
 bin/                          # cli/, tui/, build/, setup/
 ```
 
+---
+
+MIT © [Alphabit Technology](https://github.com/alphabit-technology)
