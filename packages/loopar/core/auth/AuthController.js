@@ -185,38 +185,21 @@ export default class AuthController {
     return resolve('You must be logged in to access this page');
   }
 
-  /**
-   * Actions that don't change state and are therefore safe to run on a GET
-   * (HTTP semantics: GET/HEAD must be safe / idempotent). Everything else —
-   * `delete`, `bulkDelete`, and any custom mutator — must arrive over a
-   * CSRF-validated request, i.e. POST (`loopar.call` is always POST).
-   *
-   * `update`/`create` are safe here because they self-branch: with no body
-   * they only RENDER the form; their write path needs a POST body, which on
-   * an authenticated workspace is CSRF-gated anyway.
-   */
-  static SAFE_ON_GET = new Set(['view', 'list', 'update', 'create', 'search']);
+  static GET_UNSAFE_ACTIONS = new Set(['delete', 'bulkdelete']);
 
   /**
-   * A GET (or HEAD) may only run a state-safe action. This closes the
-   * CSRF-via-GET hole on BOTH channels at once: navigation (`/desk/...`) and
-   * the RPC `/api/...` surface both reach `validateCsrf`, which exempts GET —
-   * so without this guard a top-level `GET /desk/User/delete?name=X` (or
-   * `GET /api/User/delete?name=X`) would delete using only the victim's
-   * session cookie, no token required. Mutations must use POST.
-   *
-   * Explicit `publicAction<X>` methods opt out: the developer owns those
-   * entry points, and GET-redirect flows like the OAuth callback need them.
+   * On GET/HEAD, block the state-changing actions above. This closes the
+   * CSRF-via-GET hole on BOTH channels (navigation `/desk/...` and the RPC
+   * `/api/...` surface reach `validateCsrf`, which exempts GET) without
+   * blocking page renders reached on a GET reload.
    */
   #assertGetSafety() {
     const method = String(this.method || '').toUpperCase();
     if (method !== 'GET' && method !== 'HEAD') return;
 
     const action = String(this.action || '').toLowerCase();
-    if (AuthController.SAFE_ON_GET.has(action)) return;
-
-    const publicMethod = this[`publicAction${loopar.utils.Capitalize(this.action)}`];
-    if (typeof publicMethod === 'function') return;
+    const postOnly = (this.constructor?.postOnlyActions || []).map(a => String(a).toLowerCase());
+    if (!AuthController.GET_UNSAFE_ACTIONS.has(action) && !postOnly.includes(action)) return;
 
     loopar.throw({
       code: 404,
