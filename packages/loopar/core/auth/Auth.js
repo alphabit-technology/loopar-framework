@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { loopar } from '../loopar.js';
 import { CSRF_COOKIE_NAME, generateCsrfToken } from './csrf.js';
+import { getRequest } from '../server/router/request-context.js';
 
 const getJWTSecret = () => loopar.jwtSecret;
 const REFRESH_THRESHOLD = 1800;
@@ -17,19 +18,35 @@ function setCsrfCookie(token) {
 }
 
 export default class Auth {
+  #disabledCache = new Map();
+  #disabledHookBound = false;
+
   constructor(tenantId, getUser) {
     this.tenantId = tenantId;
     this.tokenName = `loopar_token_${tenantId}`;
     this.loggedCookieName = `logged_${tenantId}`;
   }
 
+  #bindDisabledInvalidation() {
+    if (this.#disabledHookBound) return;
+    this.#disabledHookBound = true;
+    const drop = ({ doc }) => { this.#disabledCache.delete(doc?.name); this.#disabledCache.delete(doc?.email); };
+    loopar.hook("User", "afterSave", drop);
+    loopar.hook("User", "afterDelete", drop);
+  }
+
   async disabledUser(user_id) {
     if ((!loopar.__installed__ || loopar.installing) || (user_id === "Administrator")) return false;
 
+    this.#bindDisabledInvalidation();
+    if (this.#disabledCache.has(user_id)) return this.#disabledCache.get(user_id);
+
     const status = await loopar.db.query('User').where({ name: user_id }).orWhere({ email: user_id })
       .select('disabled').first();
-    
-    return !status || status.disabled === 1 || status.disabled === '1'
+
+    const disabled = !status || status.disabled === 1 || status.disabled === '1';
+    this.#disabledCache.set(user_id, disabled);
+    return disabled;
   }
 
   async getUser(user_id=null) {
@@ -104,18 +121,23 @@ export default class Auth {
   }
 
   user(){
-    const token = loopar.cookie.get(this.tokenName);
-    if(!token) return null;
+    const req = getRequest();
+    if (req && '__authUserName__' in req) return req.__authUserName__;
 
-    try {
-      const userData = jwt.verify(token, getJWTSecret(), { ignoreExpiration: true });
+    const resolve = () => {
+      const token = loopar.cookie.get(this.tokenName);
+      if (!token) return null;
+      try {
+        const userData = jwt.verify(token, getJWTSecret(), { ignoreExpiration: true });
+        return userData?.name ?? null;
+      } catch (error) {
+        return null;
+      }
+    };
 
-      if (!userData) return null;
-
-      return userData.name
-    } catch (error) {
-      return null;
-    }
+    const name = resolve();
+    if (req) req.__authUserName__ = name;
+    return name;
   }
 
   async award(award=true) {

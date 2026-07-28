@@ -33,6 +33,7 @@ export {
 };
 
 export function isAjaxRequest(req) {
+  if (typeof req.__IS_AJAX__ === 'boolean') return req.__IS_AJAX__;
   return (
     req.method === 'POST' ||
     req.__WORKSPACE_NAME__ === 'api' ||

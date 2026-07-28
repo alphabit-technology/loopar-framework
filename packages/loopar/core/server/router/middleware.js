@@ -32,6 +32,7 @@ export class Middleware {
       const route = RouterUtils.resolveRequestRoute(req, verifyWorkspaceToken);
       req.__ROUTE_MODE__ = route.mode;
       req.__WORKSPACE_NAME__ = route.workspace;
+      req.__IS_AJAX__ = RouterUtils.isAjaxRequest(req);
       next();
     };
   }
@@ -235,7 +236,6 @@ export class Middleware {
    *
    * Resolution is filesystem-only: the asset's mirror file
    * (`{name}.meta.json`) lives in the same roots `express.static`
-   * searches. Zero DB hits on the read path.
    *
    * Scope is intentionally narrow: only URLs under `/assets/public/`
    * and `/assets/private/` (with an optional `/thumbnails/` segment)
