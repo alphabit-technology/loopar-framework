@@ -15,6 +15,8 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
   const showMini = variant === "all" || variant === "mobile";
 
   const heightClass = { sm: "h-8", md: "h-10", lg: "h-14" }[size] || "h-8";
+  const height = parseInt(webApp.logo_height || 55);
+
 
   return (
     <div className='p-1 flex items-center'>
@@ -24,6 +26,7 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
             {...imageProps}
             src={getImage(webApp, "logo")}
             className={`hidden ${heightClass} md:block`}
+            style={{height}}
           />
         )}
         {showMini && (
@@ -41,6 +44,7 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
             {...imageProps}
             src={getImage(webApp, "logo_dark")}
             className={`hidden ${heightClass} md:block`}
+            style={{height}}
           />
         )}
         {showMini && (
