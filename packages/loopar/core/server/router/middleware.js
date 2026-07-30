@@ -142,9 +142,8 @@ export class Middleware {
         method: req.method
       };
 
-      if (!isRpc && req.__WORKSPACE_NAME__ === "web") {
+      if (req.__WORKSPACE_NAME__ === "web") {
         routeStructure.action ??= "view";
-        routeStructure.document ??= "Home";
         controllerParams.action = routeStructure.action;
       }
 

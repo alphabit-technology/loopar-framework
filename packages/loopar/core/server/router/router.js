@@ -105,13 +105,19 @@ export default class Router extends Middleware {
       RouterUtils.setDefaultParams(params, req.__WORKSPACE_NAME__);
 
       if (req.__WORKSPACE_NAME__ === "web") {
-        const menu = RouterUtils.RouteParsing.findWebAppMenu(params.document, loopar);
-
-        if (!menu) {
+        const webApp = loopar.webApp;
+        if (!webApp?.name) {
           return loopar.throw({
             code: 404,
-            message: !loopar.webApp?.name ? "The web app has not yet been set up in System Settings." : "Page not found"
+            message: "The web app has not yet been set up in System Settings."
           });
+        }
+        
+        const requestedLink = params.document ?? webApp.menu_items?.[0]?.link;
+        const menu = RouterUtils.RouteParsing.findWebAppMenu(requestedLink, loopar);
+
+        if (!menu) {
+          return loopar.throw({ code: 404, message: "Page not found" });
         }
         params.document = menu.page;
       }

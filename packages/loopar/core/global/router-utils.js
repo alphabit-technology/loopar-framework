@@ -155,7 +155,6 @@ export function setDefaultParams(params, workspaceName) {
   const defaultDocument = {
     desk: 'Module',
     auth: 'Auth',
-    web: 'Home',
   };
 
   const defaultAction = {
