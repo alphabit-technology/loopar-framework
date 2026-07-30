@@ -518,12 +518,11 @@ export default class FileManager extends BaseDocument {
   async getList({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
     q ??= {};
     q.visible = this.visible || "public";
-
     const workspace = loopar.workspace;
 
     const pagination = {
       page: loopar.getPage(this.__ENTITY__.name),
-      pageSize: this.pageSize || 10,
+      pageSize: parseInt(this.pageSize || 10),
       totalPages: 1,
       totalRecords: 0,
       sortBy: "id",

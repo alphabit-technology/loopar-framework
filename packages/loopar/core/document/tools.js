@@ -24,10 +24,8 @@ export function stripEphemeralDocStructure(fields) {
       for (const key of EPHEMERAL_DATA_KEYS) {
         delete field.data[key];
       }
-      // A server-sourced gallery gets its whole getList() payload injected
-      // under `images`; the authored value for that mode is empty anyway.
       if (field.element === GALLERY && field.data.source === "Server") {
-        delete field.data.images;
+        //delete field.data.images;
       }
     }
     if (Array.isArray(field?.elements)) {
@@ -150,7 +148,7 @@ export const parseDocStructure = async (
 
       if(field.element == GALLERY && field.data.source == "Server"){
         const m = await loopar.newDocument("File Manager", {app});
-        m.pageSize = field.data.page_size || 10;
+        m.pageSize = parseInt(field.data.page_size || 10);
         const list = await m.getList();
         field.data.images = list;
       }

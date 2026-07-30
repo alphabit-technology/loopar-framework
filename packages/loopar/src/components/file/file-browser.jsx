@@ -9,6 +9,7 @@ export function Browser(props) {
       hasBreadcrumb={false}
       hasSidebar={false}
       {...props}
+      inModal={false}
     />
   );
 }

@@ -50,7 +50,7 @@ export default function MetaGalery(props) {
   const localElements = imagesToElements(data.images, props.node);
 
   const seed = useMemo(() => {
-    if (!isServer) return { elements: [], startPage: 1, totalPages: 1 };
+    if (!isServer) return { elements: [], startPage: 1, totalPages: 1, pageSize: data.page_size };
     const preloaded = data.images || {};
     const pg = (!Array.isArray(preloaded) && preloaded.pagination) || null;
     const startPage = pg ? Number(pg.page) || 1 : 1;
@@ -59,6 +59,7 @@ export default function MetaGalery(props) {
       elements: imagesToElements(preloaded, props.node, `p${startPage}`),
       startPage,
       totalPages,
+      pageSize: data.page_size
     };
   }, [isServer, data.images, props.node]);
 
@@ -76,12 +77,8 @@ export default function MetaGalery(props) {
   const hasPrev = firstPage > 1;
 
   const fetchPage = useCallback(async (p) => {
-    // RPC to the page's own controller: /{Document}/loadGalery. The action is
-    // declared public (publicActionLoadGalery on PageController) so web guests
-    // keep paginating; the relative-URL sendAction pattern is gone.
-    // only Documents that extends to PageController have acces here.
-    const res = await loopar.call(Document.name, "loadGalery", {
-      body: { page: p },
+    const res = await loopar.call(Document?.Entity?.name, "loadGalery", {
+      body: { page: p, pageSize: parseInt( data.page_size )},
       freeze: false,
     });
 
@@ -98,7 +95,9 @@ export default function MetaGalery(props) {
       const nextPage = lastPage + 1;
       const { rows, pg } = await fetchPage(nextPage);
       const confirmedPage = pg ? Number(pg.page) || nextPage : nextPage;
+
       if (!rows.length || confirmedPage <= lastPage) return;
+
       const els = imagesToElements(rows, props.node, `p${confirmedPage}`);
       setServerElements((prev) => [...prev, ...els]);
       setLastPage(confirmedPage);

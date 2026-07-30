@@ -4,6 +4,7 @@ import { useEffect, lazy, useState } from "react";
 import { loopar } from "loopar";
 import { LoaderCircleIcon } from "lucide-react";
 
+
 const Fallback = () => (
   <div className="flex flex-row justify-center items-center h-full">
     <LoaderCircleIcon className="animate-spin" size={150} />
@@ -127,11 +128,16 @@ function _Import(source) {
   return lazy(() => __loader__(source));
 }
 
-export function Entity({ name, action, entityName, fallback, ...props }) {
+export function Entity({ name, action, entityName, fallback, inModal, ...props }) {
   const [model, setModel] = useState(null);
+  const [meta, setMeta] = useState(null);
+
   useEffect(() => {
     loopar.getMeta(name, action).then((meta) => {
-      if (meta) setModel({ Component: _Import(meta), meta });
+      if (meta){
+        setMeta(meta)
+        setModel({ Component: _Import(meta), meta });
+      }
     });
   }, []);
 
@@ -153,11 +159,13 @@ export function Entity({ name, action, entityName, fallback, ...props }) {
       model.Document.Entity.doc_structure = JSON.stringify(updateValue(JSON.parse(model.Document.Entity.doc_structure)), model.Document.data);
   }, [model])
 
+  if(!meta) return null;
+
   if (model) {
     const { Component, meta } = model;
     return (
       <div className="space-y-4 p-2">
-        <Component {...props} Document={meta} />
+        <Component {...props} inModal={inModal} Document={meta} />
       </div>
     )
   }

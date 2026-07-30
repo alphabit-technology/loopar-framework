@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { buttonVariants } from "@cn/components/ui/button";
-import { Profile, Login } from "./UserSecction.jsx";
+import { Profile } from "./UserSecction.jsx";
+import { Link } from "@link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,12 +32,13 @@ function UserMenu({ onOpenLogin, onOpenProfile }) {
 
   if (!me) {
     return (
-      <button
-        onClick={onOpenLogin}
+      <Link
+        to="/auth/login"
+        inModal
         className={`${buttonVariants({ size: "sm", variant: "ghost" })} hover:text-primary`}
       >
         Sign in
-      </button>
+      </Link>
     );
   }
 
@@ -123,14 +125,12 @@ function MenuActions({ menuActions = [], onOpenLogin, onOpenProfile }) {
 export function TopNav({ menuActions }) {
   const { webApp } = useWorkspace();
   const [updatingProfile, setUpdatingProfile] = useState(false);
-  const [login, setLogin] = useState(false);
   const logoPosition = ["left", "center", "right"].includes(webApp.logo_position)
     ? webApp.logo_position
     : "left";
 
   const actionProps = {
     menuActions,
-    onOpenLogin: () => setLogin(true),
     onOpenProfile: () => setUpdatingProfile(true),
   };
 
@@ -138,7 +138,6 @@ export function TopNav({ menuActions }) {
     <header
       className="fixed top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm"
     >
-      {login && <Login onClose={() => setLogin(false)} />}
       {updatingProfile && <Profile onClose={() => setUpdatingProfile(false)} />}
       <div className="flex items-center px-2 h-web-header-height">
         <div className="flex lg:hidden flex-1 items-center">

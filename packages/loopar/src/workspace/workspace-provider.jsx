@@ -69,45 +69,52 @@ export function WorkspaceProvider({
     props.pathname || (typeof window !== "undefined" ? window.location.pathname + window.location.search : "")
   );
 
-  // Reactive session. Seeded from SSR (__META__.user); refreshed in place when
-  // auth changes (login modal / logout) so the chrome AND in-page components
-  // (e.g. comments) flip between guest/logged-in without a full reload.
+  // Reactive session: seeded from SSR, refreshed in place on auth changes.
   const [user, setUser] = useState(__META__.user || null);
 
-  // Explicit singleton binds — the provider is the one place that actually
-  // knows the active workspace and the reactive session, so it (and only it)
-  // pushes them into `loopar`. See the bind section in tools/router/router.jsx.
+  // A secondary provider (modal mini-workspace) reuses render + navigation,
+  // but only the PRIMARY touches global singletons (workspace bind, session,
+  // socket, window.__user__).
+  const primary = props.primary !== false;
+  const onClose = props.onClose; 
+  const seeded = Object.keys(props.Documents || {}).length > 0;
+
+  // Singleton binds — only the provider knows the active workspace and
+  // session, so only it pushes them into `loopar`.
   useEffect(() => {
+    if (!primary) return;
     loopar._bindWorkspace(__WORKSPACE_NAME__);
-  }, [__WORKSPACE_NAME__]);
+  }, [__WORKSPACE_NAME__, primary]);
 
   useEffect(() => {
+    if (!primary) return;
     loopar._bindSession(user);
-  }, [user]);
+  }, [user, primary]);
   useEffect(() => {
+    if (!primary) return;
     const onAuthChanged = () => { fetchSession().then(setUser); };
     Emitter.on("auth:changed", onAuthChanged);
     return () => Emitter.off("auth:changed", onAuthChanged);
-  }, []);
+  }, [primary]);
 
-  // Realtime: open the socket for THIS tenant's namespace. The server derives
-  // the socket identity from the httpOnly JWT cookie; the client only needs to
-  // connect to `/<site>`. Without this call nothing ever connected, so
-  // useRealtime()'s onReady callbacks queued forever. `__META__.site` is the
-  // tenant name the server injected (= the realtime namespace + cookie suffix).
+  // Realtime: connect to this tenant's namespace (`__META__.site`); identity
+  // comes from the httpOnly JWT. Without this call nothing ever connects and
+  // useRealtime()'s onReady callbacks queue forever.
   useEffect(() => {
+    if (!primary) return;
     const site = __META__.site;
     if (!site) return;
     LoopSocket.connect(site);
-  }, [__META__.site]);
+  }, [__META__.site, primary]);
 
-  // `useRealtime({ ignoreSelf })` compares payload.user against window.__user__
-  // to skip echoing a client's own writes. Keep it in sync with the session.
+  // useRealtime({ ignoreSelf }) compares payload.user vs window.__user__;
+  // keep it in sync with the session.
   useEffect(() => {
+    if (!primary) return;
     if (typeof window !== "undefined") {
       window.__user__ = user?.userId || user?.name || null;
     }
-  }, [user]);
+  }, [user, primary]);
 
   const metaCacheRef = useRef({});
   const lastFetchedPath = useRef(null);
@@ -116,18 +123,29 @@ export function WorkspaceProvider({
 
   const location = useLocation();
   useEffect(() => {
+    // Only the primary follows the browser URL; a modal drives its pathname locally.
+    if (!primary) return;
     const newPath = location.pathname + location.search;
     setPathname(newPath);
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, primary]);
+
+  // Navigation for consumers: primary → the real URL/router; a modal advances
+  // its own in-memory path, never touching the browser URL.
+  const navigate = useCallback((to) => {
+    if (primary) return loopar.navigate(to);
+    setPathname(typeof to === "string" ? to : String(to ?? ""));
+  }, [primary]);
 
   const memoizedActiveView = useMemo(() => {
+    // `inModal` lets a View skip full-page behaviour (e.g. URL normalizing,
+    // which from a modal would navigate the base page away).
     return Object.values(Documents)
       .filter(doc => doc.active)
       .map(doc => {
         const { View } = doc;
-        return View && <View Document={doc.Document} key={doc.key} />;
+        return View && <View Document={doc.Document} inModal={!primary} onClose={onClose} key={doc.key} />;
       });
-  }, [Documents]);
+  }, [Documents, primary, onClose]);
 
   const [openNav, setOpenNav] = usePersist(__WORKSPACE_NAME__);
   const ActiveView = useMemo(() => memoizedActiveView, [memoizedActiveView, refreshFlag]);
@@ -261,17 +279,19 @@ export function WorkspaceProvider({
   }, [loadDocument, goToErrorView]);
 
   const fetchDocument = useCallback((url) => {
-    const route = window.location;
-    if (route.hash?.includes("#")) return Promise.resolve();
+    // Works off the path string alone (router location for the base,
+    // in-memory path for a modal) — one code path, no second <Router>.
+    const raw = String(url ?? '');
+    if (raw.includes('#')) return Promise.resolve();
+
+    const [rawPath, rawSearch = ''] = raw.split('?');
+    const targetPath = rawPath || '/';
+    const targetSearch = rawSearch ? `?${rawSearch}` : '';
 
     const currentFetchId = ++fetchIdRef.current;
-    const targetPath = route.pathname;
-    const targetSearch = route.search || '';
-    const preloadedMeta = !!metaCacheRef.current[loopar.utils.urlInstance(route)];
+    const preloadedMeta = !!metaCacheRef.current[loopar.utils.urlInstance({ pathname: targetPath })];
 
-    // Real navigation: ask the server to resolve/render what was navigated
-    // to. This is the ONLY request that names a workspace, and it travels as
-    // a parameter — RPCs (loopar.call) never send one.
+    // The ONLY request that names a workspace (as a parameter) — RPCs never send one.
     const queryParams = Object.fromEntries(new URLSearchParams(targetSearch));
 
     return new Promise((resolve, reject) => {
@@ -280,33 +300,24 @@ export function WorkspaceProvider({
         query: { ...queryParams, preloaded: preloadedMeta },
         success: r => {
           if (currentFetchId !== fetchIdRef.current) return;
-
-          lastFetchedPath.current = { pathname: targetPath, search: targetSearch };
+          lastFetchedPath.current = raw;
           setDocument(r);
           resolve();
         },
         error: e => {
           if (currentFetchId !== fetchIdRef.current) return;
-
-          lastFetchedPath.current = { pathname: targetPath, search: targetSearch };
+          lastFetchedPath.current = raw;
           goToErrorView(e);
           resolve();
         }
       });
     });
-  }, [setDocument, goToErrorView]);
+  }, [setDocument, goToErrorView, __WORKSPACE_NAME__]);
 
   /**
-   * Re-fetch the active document.
-   *
-   * @param {{ force?: boolean }} [opts]
-   *   force:true => invalidates metaCacheRef before the fetch. This makes
-   *     fetchDocument send `preloaded=false` and the server returns the
-   *     complete meta (not just data), refreshing fields, permissions,
-   *     enabled actions, etc. This is the semantics of `loopar.reload()`.
-   *   force:false (default) => maintains the cache; the server usually
-   *     responds with lightweight data (preloaded=true) and a shallow merge.
-   *     This is the semantics of `loopar.refresh()`.
+   * Re-fetch the active document. force:true clears the meta cache so the
+   * server returns full meta — fields, permissions, actions (`loopar.reload()`);
+   * default keeps it and gets lightweight data + shallow merge (`loopar.refresh()`).
    */
   const refresh = useCallback((opts = {}) => {
     if (opts.force) metaCacheRef.current = {};
@@ -341,11 +352,8 @@ export function WorkspaceProvider({
       setLoaded(true);
     }, 100);
     
-    if (!lastFetchedPath.current) {
-      lastFetchedPath.current = {
-        pathname: window.location.pathname,
-        search: window.location.search
-      };
+    if (!lastFetchedPath.current && seeded) {
+      lastFetchedPath.current = pathname;
     }
   }, []);
 
@@ -354,13 +362,10 @@ export function WorkspaceProvider({
 
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      return;
+      if (seeded) return;   // not seeded (modal) → fall through and fetch the initial path
     }
 
-    if (
-      lastFetchedPath.current?.pathname === window.location.pathname &&
-      lastFetchedPath.current?.search === window.location.search
-    ) return;
+    if (lastFetchedPath.current === pathname) return;
 
     fetchDocument(pathname);
 
@@ -405,7 +410,10 @@ export function WorkspaceProvider({
     workspace: __WORKSPACE_NAME__,
     pathname,
     award,
-    user
+    user,
+    navigate,
+    isModal: !primary,
+    onClose
   }), [
     getTheme,
     __META__,

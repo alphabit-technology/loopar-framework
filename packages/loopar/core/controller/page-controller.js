@@ -97,10 +97,11 @@ export default class PageController extends SingleConrtroller {
     const ref = loopar.getRef(this.document);
 
     if (this.hasData()) {
-      loopar.setPage(`webFile Managerpage`, this.data.page || 1);
+      loopar.setPage(`File Manager`, this.data.page || 1);
     }
 
     const m = await loopar.newDocument("File Manager", {app: ref.__APP__});
+    m.pageSize = parseInt(this.data.pageSize || 10)
     const files = await m.getList();
 
     return { rows: files.rows, pagination: files.pagination };

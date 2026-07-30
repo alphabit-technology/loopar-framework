@@ -37,7 +37,7 @@ export const PreassembledContextProvider = (props) => {
 
       setElements(prepareElements(props.defaultElements || []), null, false);
     }
-  }, [data]);
+  }, [data, props.elements]);
 
   return (
     <PreassembledContext.Provider value={{
@@ -57,6 +57,7 @@ export default function Preassembled(props) {
 
   useEffect(() => {
     if(!designerMode) return;
+    return;
     let counter = 0;
 
     if (!props.elements || props.elements?.length === 0) {

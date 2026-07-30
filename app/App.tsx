@@ -63,15 +63,18 @@ interface RootLayoutProps {
   };
   pathname: string;
   permissions: ()=>{}
+  primary?: boolean;
+  onClose?: () => void;
 }
 
-const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
+const Main = ({ __META__, permissions, pathname, primary = true, onClose }: RootLayoutProps) => {
   const { components, Document } = __META__;
   const { Workspace, View } = components;
 
   const navigate = useNavigate();
   
   useEffect(() => {
+    if (!primary) return;
     const onPop = () => {
       const path = window.location.pathname;
       const isDesk = path.startsWith('/desk');
@@ -82,11 +85,11 @@ const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [navigate]);
+  }, [navigate, primary]);
   
-  return (
-    <RealtimeProvider siteName={__META__.site} userId={__META__.userId}>
-      <RouterBridge />
+  const content = (
+    <>
+      {primary && <RouterBridge />}
       <main
         className={cn(
           "h-full font-sans antialiased"
@@ -99,14 +102,16 @@ const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
               userId={__META__.userId}
             >
               <WorkspaceProvider
+                primary={primary}
+                onClose={onClose}
                 __META__={__META__}
-                Documents={{
+                Documents={Document ? {
                   [Document.name]: {
                     ...__META__,
                     View,
                     active: true
                   }
-                }}
+                } : {}}
                 pathname={pathname}
               >
                 <Workspace
@@ -117,11 +122,17 @@ const Main = ({ __META__, permissions, pathname }: RootLayoutProps) => {
           </div>
         </div>
       </main>
-    </RealtimeProvider>
+    </>
   );
+
+  // The realtime socket is a global; only the primary (root) opens it. A modal
+  // reuses the one already mounted in the base tree above.
+  return primary
+    ? <RealtimeProvider siteName={__META__.site} userId={__META__.userId}>{content}</RealtimeProvider>
+    : content;
 }
 
-const App = ({ __META__, permissions, pathname}: RootLayoutProps) => {
+const App = ({ __META__, permissions, pathname, primary = true, onClose }: RootLayoutProps) => {
   const [, setUpdate] = React.useState(false);
   const { cookieManager } = __META__.services;
 
@@ -133,6 +144,8 @@ const App = ({ __META__, permissions, pathname}: RootLayoutProps) => {
             __META__={__META__}
             permissions={permissions}
             pathname={pathname}
+            primary={primary}
+            onClose={onClose}
           />
         </PersistStateProvider>
       </CookiesProvider>

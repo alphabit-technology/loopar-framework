@@ -8,6 +8,7 @@ import { activeLink } from "@workspace/defaults";
 import { useDesigner } from "@context/@/designer-context";
 import { VARIANTS } from "./base/ComponentDefaults";
 import { RouteParsing, setDefaultParams, buildUrl } from "@global/router-utils";
+import { EntryModal } from "@app/entry-modal";
 
 const HEADER_OFFSET = 15;
 
@@ -90,6 +91,7 @@ const useActiveSection = (to, enabled) => {
 
 export function Link({
   to = "",
+  inModal,
   variant = "link",
   size,
   children,
@@ -99,7 +101,8 @@ export function Link({
   bare = false,
   ...props
 }) {
-  const { setOpenNav, currentPage, workspace, award } = useWorkspace();
+  const { setOpenNav, currentPage, workspace, award, navigate: wsNavigate, isModal } = useWorkspace();
+  const [modalOpen, setModalOpen] = useState(false);
   const { designing } = useDesigner();
 
   const url = useMakeUrl(to);
@@ -193,6 +196,51 @@ export function Link({
     return <div {...commonProps} disabled={true}>
       {children}
     </div>
+  }
+
+  if (inModal) {
+    // This link OPENS its target in a modal (a mini-workspace booted from the
+    // URL). Plain left-click opens; modified clicks fall through to the <a>.
+    return (
+      <>
+        <a
+          {...commonProps}
+          href={url}
+          onClick={(e) => {
+            if (!e.defaultPrevented && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
+              e.preventDefault();
+              setModalOpen(true);
+            }
+            handleClick(e);
+          }}
+          key={renderizableProps.key || url}
+        >
+          {children}
+        </a>
+        {modalOpen && <EntryModal initialPath={url} onClose={() => setModalOpen(false)} />}
+      </>
+    );
+  }
+
+  if (isModal) {
+    // Inside a modal: navigate the modal's in-memory path on a plain
+    // left-click; let modified clicks (new tab, middle-click) use the <a>.
+    return (
+      <a
+        {...commonProps}
+        href={url}
+        onClick={(e) => {
+          if (!e.defaultPrevented && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
+            e.preventDefault();
+            wsNavigate(url);
+          }
+          handleClick(e);
+        }}
+        key={renderizableProps.key || url}
+      >
+        {children}
+      </a>
+    );
   }
 
   return (
