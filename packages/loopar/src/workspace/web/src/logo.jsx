@@ -8,7 +8,7 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
 
   const imageProps = {
     alt: webApp.name,
-    href: "/Home",
+    href: "/",
   };
 
   const showFull = variant === "all" || variant === "desktop";
@@ -20,7 +20,7 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
 
   return (
     <div className='p-1 flex items-center'>
-      <Link className='flex items-center dark:hidden' to="/Home">
+      <Link className='flex items-center dark:hidden' to="/">
         {showFull && (
           <img
             {...imageProps}
@@ -38,7 +38,7 @@ export const Logo = ({ variant = "all", size = "sm" }) => {
           />
         )}
       </Link>
-      <Link className='hidden dark:flex items-center' to="/Home">
+      <Link className='hidden dark:flex items-center' to="/">
         {showFull && (
           <img
             {...imageProps}

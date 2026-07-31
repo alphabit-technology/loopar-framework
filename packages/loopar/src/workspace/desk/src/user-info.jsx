@@ -40,7 +40,7 @@ export function UserInfo() {
         <div className="grid grid-cols-1 p-2">
           <MakeButton Icon={UserRoundCogIcon} text="Profile" link="/desk/Profile/update" />
           <MakeButton Icon={LogOutIcon} text="Log Out" link="/auth/logout" notControlled="true" award={false}/>
-          <MakeButton Icon={Globe2Icon} text="Web Site" link="/Home" award={false} target="_blank" />
+          <MakeButton Icon={Globe2Icon} text="Web Site" link="/" award={false} target="_blank" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
