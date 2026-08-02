@@ -1,5 +1,6 @@
 import BaseInput from "@base-input";
 import dayjs from "dayjs";
+import loopar from "loopar";
 import { format } from 'date-fns';
 
 import { cn } from "@cn/lib/utils"
@@ -28,6 +29,14 @@ export default function DatePicker(props) {
     const parsed = dayjs(field.value);
     const isValid = !!field.value && parsed.isValid();
     const fieldDate = isValid ? parsed.toDate() : null;
+
+    const disabledDays = [];
+    if (loopar.utils.trueValue(data.disable_past_dates)) disabledDays.push({ before: new Date() });
+    if (loopar.utils.trueValue(data.disable_future_dates)) disabledDays.push({ after: new Date() });
+    const minDate = data.min_date ? dayjs(data.min_date) : null;
+    const maxDate = data.max_date ? dayjs(data.max_date) : null;
+    if (minDate?.isValid()) disabledDays.push({ before: minDate.toDate() });
+    if (maxDate?.isValid()) disabledDays.push({ after: maxDate.toDate() });
 
     const setDateHandler = (val) => {
       if (!val) return;
@@ -67,10 +76,8 @@ export default function DatePicker(props) {
               mode="single"
               selected={fieldDate ?? undefined}
               onSelect={setDateHandler}
-              disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
-              }
-              initialFocus
+              disabled={disabledDays.length ? disabledDays : undefined}
+              autoFocus
             />
           </PopoverContent>
         </Popover>
@@ -83,4 +90,27 @@ export default function DatePicker(props) {
   });
 }
 
-DatePicker.metaFields = BaseInput.metaFields;
+DatePicker.metaFields = () => [
+  ...BaseInput.metaFields(),
+  {
+    group: "form",
+    elements: {
+      min_date: {
+        element: DATE,
+        data: { description: "Earliest selectable date. Leave empty for no lower limit." },
+      },
+      max_date: {
+        element: DATE,
+        data: { description: "Latest selectable date. Leave empty for no upper limit." },
+      },
+      disable_past_dates: {
+        element: SWITCH,
+        data: { description: "Disallow picking dates before today." },
+      },
+      disable_future_dates: {
+        element: SWITCH,
+        data: { description: "Disallow picking dates after today." },
+      },
+    },
+  },
+];

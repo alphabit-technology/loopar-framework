@@ -130,6 +130,15 @@ export default function carouselMetaFields() {
             default_value: DEFAULTS.animation_delay,
           },
         },
+        autoplay: {
+          element: SWITCH,
+          data: {
+            label: "Auto-play",
+            description:
+              "Advance slides automatically using the interval below. Manual navigation restarts the timer. On by default.",
+            selected: true,
+          },
+        },
         interval: {
           element: SELECT,
           data: {
@@ -188,7 +197,9 @@ export default function carouselMetaFields() {
           element: SWITCH,
           data: {
             label: "Pause on Hover",
-            description: "Stop auto-play when mouse is over the slider",
+            description:
+              "Pause auto-play while the pointer is over the slider, resuming on leave. On by default.",
+            selected: true,
           },
         },
         keyboard: {

@@ -34,9 +34,12 @@ export default function CarouselBase({
 }) {
   const itemCount = slides.length;
   const isControlled = typeof current === "number";
-
-  const [internalIndex, setInternalIndex] = useState(() => clampIndex(defaultIndex, itemCount));
-  const [prevIndex, setPrevIndex] = useState(() => clampIndex(defaultIndex, itemCount));
+  const [internalIndex, setInternalIndex] = useState(() =>
+    clampIndex(typeof current === "number" ? current : defaultIndex, itemCount)
+  );
+  const [prevIndex, setPrevIndex] = useState(() =>
+    clampIndex(typeof current === "number" ? current : defaultIndex, itemCount)
+  );
   const [isExiting, setIsExiting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -98,10 +101,6 @@ export default function CarouselBase({
   const next = useCallback(() => goTo(indexRef.current + 1), [goTo]);
   const prev = useCallback(() => goTo(indexRef.current - 1), [goTo]);
 
-  useEffect(() => {
-    if (isControlled) indexRef.current = current;
-  }, [isControlled, current]);
-
   const clearAutoplay = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -119,6 +118,29 @@ export default function CarouselBase({
       nextRef.current();
     }, Math.max(1000, intervalMs));
   }, [autoplay, itemCount, intervalMs, clearAutoplay]);
+
+  const isHoveredRef = useRef(false);
+  useEffect(() => { isHoveredRef.current = isHovered; }, [isHovered]);
+
+  const restartAutoplay = useCallback(() => {
+    if (pauseOnHover && isHoveredRef.current) {
+      clearAutoplay();
+      return;
+    }
+    startAutoplay();
+  }, [pauseOnHover, clearAutoplay, startAutoplay]);
+
+  const userGoTo = useCallback((i) => { goTo(i); restartAutoplay(); }, [goTo, restartAutoplay]);
+  const userNext = useCallback(() => { next(); restartAutoplay(); }, [next, restartAutoplay]);
+  const userPrev = useCallback(() => { prev(); restartAutoplay(); }, [prev, restartAutoplay]);
+
+  useEffect(() => {
+    if (!isControlled) return;
+    if (current !== indexRef.current) {
+      indexRef.current = current;
+      restartAutoplay();
+    }
+  }, [isControlled, current, restartAutoplay]);
 
   useEffect(() => {
     startAutoplay();
@@ -138,12 +160,12 @@ export default function CarouselBase({
   useEffect(() => {
     if (!keyboard) return;
     const handler = (e) => {
-      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); userPrev(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); userNext(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [keyboard, prev, next]);
+  }, [keyboard, userPrev, userNext]);
 
   const handlePointerStart = useCallback((x, y) => {
     if (!touch || itemCount <= 1) return;
@@ -179,8 +201,8 @@ export default function CarouselBase({
       }
     }
     touchRef.current.isDragging = false;
-    startAutoplay();
-  }, [prev, next, startAutoplay, swipeThreshold, swipeVelocity]);
+    restartAutoplay();
+  }, [prev, next, restartAutoplay, swipeThreshold, swipeVelocity]);
 
   const onTouchStart = (e) => { const t = e.touches?.[0]; if (t) handlePointerStart(t.clientX, t.clientY); };
   const onTouchMove = (e) => { const t = e.touches?.[0]; if (t) handlePointerMove(t.clientX, t.clientY, e); };
@@ -237,15 +259,15 @@ export default function CarouselBase({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
     >
-      {renderBefore?.({ index, prevIndex, count: itemCount, hovered: isHovered, goTo, next, prev })}
+      {renderBefore?.({ index, prevIndex, count: itemCount, hovered: isHovered, goTo: userGoTo, next: userNext, prev: userPrev })}
 
       {slides.map((slide, i) => renderSlide(slide, slideCtx(i)))}
 
-      {renderArrowLeft?.({ onClick: prev, hovered: isHovered, count: itemCount, disabled: !loop && index === 0 })}
-      {renderArrowRight?.({ onClick: next, hovered: isHovered, count: itemCount, disabled: !loop && index === itemCount - 1 })}
-      {renderIndicators?.({ current: index, count: itemCount, goTo })}
+      {renderArrowLeft?.({ onClick: userPrev, hovered: isHovered, count: itemCount, disabled: !loop && index === 0 })}
+      {renderArrowRight?.({ onClick: userNext, hovered: isHovered, count: itemCount, disabled: !loop && index === itemCount - 1 })}
+      {renderIndicators?.({ current: index, count: itemCount, goTo: userGoTo })}
 
-      {renderAfter?.({ current: index, count: itemCount, goTo, slides })}
+      {renderAfter?.({ current: index, count: itemCount, goTo: userGoTo, slides })}
     </div>
   );
 }

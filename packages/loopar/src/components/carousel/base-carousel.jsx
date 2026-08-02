@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import loopar from "loopar";
 import { useDesigner } from "@context/@/designer-context";
 import { PlusIcon, Maximize2Icon } from "lucide-react";
@@ -29,7 +29,10 @@ const BaseCarousel = (props) => {
     return Number.isNaN(n) ? 0 : n;
   });
 
+  const hasNavigatedRef = useRef(false);
+
   const handleChange = useCallback((next) => {
+    hasNavigatedRef.current = true;
     setIndex(next);
     loopar.cookie.set(node, next);
   }, [node]);
@@ -72,7 +75,7 @@ const BaseCarousel = (props) => {
 
     const slideData = {
       ...item.data,
-      ...(!ctx.isPrev && !designerMode ? {
+      ...(!ctx.isPrev && !designerMode && hasNavigatedRef.current ? {
         animation: data.animation,
         animation_duration: data.animation_duration,
         animation_delay: data.animation_delay,
@@ -143,7 +146,7 @@ const BaseCarousel = (props) => {
   };
 
   const renderCounter = ({ index: i, count }) =>
-    viewMode === "gallery" && count > 1 ? (
+    viewMode === "gallery" && count > 1 && !designerMode ? (
       <div className="absolute top-2 right-2 z-20 text-xs px-2 py-1 rounded-md bg-background/70 text-foreground backdrop-blur">
         {i + 1} / {count}
       </div>
@@ -197,9 +200,9 @@ const BaseCarousel = (props) => {
           renderBefore={renderBefore}
           current={index}
           onChange={handleChange}
-          autoplay={!designerMode && !data.pause}
+          autoplay={!designerMode && (data.autoplay == null ? true : loopar.utils.trueValue(data.autoplay))}
           intervalMs={(parseInt(data.interval, 10) || 5) * 1000}
-          pauseOnHover={!!data.pause}
+          pauseOnHover={data.pause == null ? true : loopar.utils.trueValue(data.pause)}
           loop={data.loop !== false}
           keyboard={!!data.keyboard && !designerMode}
           touch={!!data.touch && !designerMode}
