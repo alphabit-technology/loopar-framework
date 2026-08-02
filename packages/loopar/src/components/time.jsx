@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@cn/components/ui/popover"
 
-import DateDemo from "@@date/date-picker";
+import BaseTimePicker from "@@date/time-picker";
 
 import { CalendarIcon } from "lucide-react";
 
@@ -60,7 +60,7 @@ export default function TimePicker(props) {
             </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <DateDemo value={initialHour} handleChange={setTimeHandler}/>
+            <TimePicker value={initialHour} handleChange={setTimeHandler}/>
           </PopoverContent>
         </Popover>
         <FormDescription>
