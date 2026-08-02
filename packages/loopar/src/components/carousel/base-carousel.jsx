@@ -87,7 +87,7 @@ const BaseCarousel = (props) => {
     return (
       <Droppable
         key={`${item.node || ctx.index}-${ctx.isPrev ? "prev" : "current"}`}
-        className={`[grid-area:1/1] w-full ${ctx.isPrev ? "z-0" : "z-10"} ${designerMode ? "pt-3" : ""}`}
+        className={`[grid-area:1/1] w-full ${ctx.isPrev ? "z-0" : "z-10"} ${designerMode ? "pt-3 overflow-x-acu" : ""}`}
         data={slideData}
         index={ctx.index}
         elements={[

@@ -77,7 +77,16 @@ export const Meta = memo(function Meta(props) {
     const data = applyMetaDefaults(Comp, metaProps.data || {});
     metaProps.data = data;
 
-    metaProps.className = cn("relative", def.designerClasses, metaProps.className, meta.className, className, (!isDesigner || !designer.designing) && 'space-y-4 gap-4', data?.class);
+    metaProps.className = cn(
+      "relative",
+      def.designerClasses,
+      metaProps.className, 
+      meta.className, 
+      className, 
+      (!isDesigner || !designer.designing) && 'space-y-4 gap-4',
+      (designer.designing && def.droppable) && "pt-4 overflow-y-auto",
+      data?.class
+    );
 
     if (docRef.__META_DEFS__[data.name]) {
       const newData = {

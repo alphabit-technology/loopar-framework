@@ -1,6 +1,6 @@
 {
   "name": "loopar-framework",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "private": true,
   "description": "Loopar — multi-tenant low-code framework. Single-core model: one tenant-less process (the generator) serves every tenant in-process.",
   "license": "MIT",

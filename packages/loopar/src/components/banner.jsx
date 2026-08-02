@@ -93,6 +93,7 @@ function Banner() {
   const isActive = data.isActive !== false;
   const animationDuration = (parseFloat(data.animation_duration) || 0.7);
 
+  
   return (
     <div className={cn(
       props.className.split("transition-all")[0],

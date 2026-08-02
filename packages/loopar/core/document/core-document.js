@@ -2,7 +2,7 @@
 import DynamicField from './dynamic-field.js';
 import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
-import { parseDocStructure, stripEphemeralDocStructure } from './tools.js';
+import { parseDocStructure, stripEphemeralDocStructure, injectCookieIndexes } from './tools.js';
 import { FRAMEWORK_OWNED_COLUMN_NAMES } from '../global/audit.js';
 
 export default class CoreDocument {
@@ -790,7 +790,13 @@ export default class CoreDocument {
     const value = async (field) => {
       if (field.element === DESIGNER) {
         const fieldValue = loopar.utils.JSONparse(field.value, field.value)
-        return field.value ? JSON.stringify(fieldValue.filter(field => (field.data || []).name !== ID)) : "[]";
+        // injectCookieIndexes: the designer/form view renders from rawValues
+        // (not values→parseDocStructure), so without this the carousel's
+        // saved slide (cookie) never reaches SSR and hydration mismatches
+        // against the client's live document.cookie read.
+        return field.value ? JSON.stringify(
+          injectCookieIndexes(fieldValue.filter(field => (field.data || []).name !== ID))
+        ) : "[]";
       } else if (field.element === FORM_TABLE) {
         return await this.getChildRawValues(field.options);
       } else if (field.element === PASSWORD) {

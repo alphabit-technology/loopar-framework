@@ -35,6 +35,41 @@ export function stripEphemeralDocStructure(fields) {
   });
 }
 
+/**
+ * Injects the current request's saved slide index (cookie) into a
+ * carousel-like field's data as `_cookie_index`, so SSR and client
+ * hydrate from the same snapshot instead of each reading the cookie
+ * on their own (the client would see a fresher value → hydration
+ * mismatch). Stripped on save by stripEphemeralDocStructure.
+ */
+function injectCookieIndex(field) {
+  const node = field.node || field.key || field.data?.key;
+  if (!CAROUSEL_LIKE_ELEMENTS.has(field.element) || !node) return;
+  try {
+    const saved = loopar.cookie?.get?.(node);
+    if (saved != null && saved !== "") {
+      (field.data ??= {})._cookie_index = String(saved);
+    }
+  } catch (_) { /* cookie store unavailable; client will fall back */ }
+}
+
+/**
+ * Walks a doc_structure tree injecting `_cookie_index` into every
+ * carousel-like element. Used by render paths that do NOT run the full
+ * parseDocStructure (e.g. rawValues() → DESIGNER field for the form/
+ * designer view), which otherwise ship the structure without the cookie
+ * snapshot and hydrate inconsistently.
+ */
+export function injectCookieIndexes(fields) {
+  if (!Array.isArray(fields)) return fields;
+  for (const field of fields) {
+    if (!field || typeof field !== "object") continue;
+    injectCookieIndex(field);
+    if (Array.isArray(field.elements)) injectCookieIndexes(field.elements);
+  }
+  return fields;
+}
+
 function buildEntitySchema(entityName) {
   const ref = loopar.getRef(entityName);
   if (!ref) return [];
@@ -133,14 +168,7 @@ export const parseDocStructure = async (
         await preloadCollection(field, requestContext);
       }
 
-      if (CAROUSEL_LIKE_ELEMENTS.has(field.element) && field.node) {
-        try {
-          const saved = loopar.cookie?.get?.(field.node);
-          if (saved != null && saved !== "") {
-            field.data._cookie_index = String(saved);
-          }
-        } catch (_) { /* cookie store unavailable; client will fall back */ }
-      }
+      injectCookieIndex(field);
 
       if (field.element === COLLECTION_VIEW) {
         await preloadCollectionView(field, requestContext);
