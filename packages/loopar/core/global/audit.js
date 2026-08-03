@@ -46,7 +46,7 @@ const EXCLUDED_AUDIT_TABLES = new Set([
 
 export function isAuditableEntity(e) {
   if (!e) return false;
-  if (EXCLUDED_AUDIT_TABLES.has(e.name)) return false;
+  if (EXCLUDED_AUDIT_TABLES.has(e.__NAME__)) return false;
   if (e.is_static || e.is_child || e.is_single || e.is_virtual) return false;
   if (e.is_audited === false) return false;
   return true;
