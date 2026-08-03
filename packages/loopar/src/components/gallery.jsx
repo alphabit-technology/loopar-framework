@@ -47,7 +47,10 @@ export default function MetaGalery(props) {
   const {designerMode} = useDesigner();
   const {Document} = useDocument()
 
-  const localElements = imagesToElements(data.images, props.node);
+  const localElements = useMemo(
+    () => imagesToElements(data.images, props.node),
+    [data.images, props.node]
+  );
 
   const seed = useMemo(() => {
     if (!isServer) return { elements: [], startPage: 1, totalPages: 1, pageSize: data.page_size };
@@ -77,8 +80,11 @@ export default function MetaGalery(props) {
   const hasPrev = firstPage > 1;
 
   const fetchPage = useCallback(async (p) => {
-    const res = await loopar.call(Document?.Entity?.name, "loadGalery", {
-      body: { page: p, pageSize: parseInt( data.page_size )},
+    const entity = Document?.Entity?.name;
+    if (!entity) return { rows: [], pg: null };
+
+    const res = await loopar.call(entity, "loadGalery", {
+      body: { page: p, pageSize: parseInt(data.page_size) || 10 },
       freeze: false,
     });
 
@@ -95,13 +101,17 @@ export default function MetaGalery(props) {
       const nextPage = lastPage + 1;
       const { rows, pg } = await fetchPage(nextPage);
       const confirmedPage = pg ? Number(pg.page) || nextPage : nextPage;
+      const serverTotal = pg?.totalPages ? Number(pg.totalPages) || null : null;
 
-      if (!rows.length || confirmedPage <= lastPage) return;
+      if (!rows.length || confirmedPage <= lastPage) {
+        setTotalPages(serverTotal && serverTotal <= lastPage ? serverTotal : lastPage);
+        return;
+      }
 
       const els = imagesToElements(rows, props.node, `p${confirmedPage}`);
       setServerElements((prev) => [...prev, ...els]);
       setLastPage(confirmedPage);
-      if (pg?.totalPages) setTotalPages(Number(pg.totalPages) || totalPages);
+      if (serverTotal) setTotalPages(serverTotal);
     } catch (e) {
       console.error("Gallery loadMore failed:", e);
     } finally {

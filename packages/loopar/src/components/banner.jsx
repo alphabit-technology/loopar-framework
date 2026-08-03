@@ -58,15 +58,36 @@ const Content = (props) => {
     props.haveCarousel && (isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")
   )
   
+  if (props.textBackground) {
+    return (
+      <div
+        className={cn(
+          props.wrapperClassName,
+          designing ? '' : animationClassName
+        )}
+      >
+        <div className={cn("flex h-full w-full p-4 md:p-8", props.className)}>
+          <Droppable
+            {...props}
+            className={cn(
+              "flex flex-col gap-4 w-full max-w-3xl bg-card/50 rounded-2xl p-6 md:p-10 shadow-lg",
+              props.textBackgroundClass
+            )}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div 
+    <div
       className={cn(
         props.wrapperClassName,
         designing ? '' : animationClassName
       )}
     >
-      <Droppable 
-        {...props} 
+      <Droppable
+        {...props}
         className={cn("h-full w-full flex flex-col gap-4", props.className,)}
       />
     </div>
@@ -92,6 +113,7 @@ function Banner() {
 
   const isActive = data.isActive !== false;
   const animationDuration = (parseFloat(data.animation_duration) || 0.7);
+  const textBackground = loopar.utils.trueValue(data.text_background);
 
   
   return (
@@ -113,6 +135,8 @@ function Banner() {
         isActive={isActive}
         animationDuration={animationDuration}
         haveCarousel={props.haveCarousel}
+        textBackground={textBackground}
+        textBackgroundClass={data.text_background_class}
       />
     </div>
   )
@@ -163,6 +187,22 @@ MetaBanner.metaFields =()=>{
         data: {
           description:
             "If enabled the slider will have the height of the screen.",
+        },
+      },
+      text_background: {
+        element: SWITCH,
+        data: {
+          label: "Text Background",
+          description:
+            "Render this banner's content inside a translucent themed panel so text stays readable over the background image. Overridden to ON when the parent carousel enables Text Background.",
+        },
+      },
+      text_background_class: {
+        element: INPUT,
+        data: {
+          label: "Text Background Class",
+          description:
+            "Optional Tailwind classes merged over the panel defaults (bg-card/50 backdrop-blur-sm rounded-2xl ...). E.g. 'bg-black/30' or 'bg-card/80 backdrop-blur-md'.",
         },
       },
     }

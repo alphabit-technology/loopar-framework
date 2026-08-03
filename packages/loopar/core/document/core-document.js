@@ -755,7 +755,7 @@ export default class CoreDocument {
   async values(raw=false) {
     const value = async (field) => {
       if (field.element === DESIGNER) {
-        return field.value ? JSON.stringify(await parseDocStructure(field.value, false)) : "[]";
+        return field.value ? JSON.stringify(await parseDocStructure(field.value, false, this.name, {}, this.__APP__)) : "[]";
       } else if (field.element === FORM_TABLE || field.element == REVIEW) {
         return await this.getChildValues(field.options);
       }

@@ -3,11 +3,13 @@ import {ImageIcon} from "lucide-react";
 import LazyLoad from 'react-lazy-load';
 import {cn} from "@cn/lib/utils";
 
-export function FallbackFile({ src, ...props }) {
+export function FallbackFile({ src, fallbackSrc, ...props }) {
   const [imageStatus, setImageStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+  const [activeSrc, setActiveSrc] = useState(src);
 
   useEffect(() => {
     setImageStatus('loading');
+    setActiveSrc(src);
   }, [src]);
 
   const handleLoad = () => {
@@ -15,6 +17,11 @@ export function FallbackFile({ src, ...props }) {
   }
 
   const handleError = () => {
+    if (fallbackSrc && activeSrc !== fallbackSrc) {
+      setActiveSrc(fallbackSrc);
+      setImageStatus('loading');
+      return;
+    }
     setImageStatus('error');
   }
   
@@ -54,7 +61,7 @@ export function FallbackFile({ src, ...props }) {
                 imageStatus === 'loading' && "opacity-0",
                 imageStatus === 'success' && "opacity-100"
               )}
-              src={src}
+              src={activeSrc}
               style={{color: "transparent"}}
               onLoad={handleLoad}
               onError={handleError}

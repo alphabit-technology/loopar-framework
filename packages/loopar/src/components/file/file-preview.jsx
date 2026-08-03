@@ -43,6 +43,7 @@ export default function FilePreview(props) {
     >
       <FallbackFile
         src={file.previewSrc || file.src}
+        fallbackSrc={file.src}
         icon={Icon}
         iconColor={color}
       />

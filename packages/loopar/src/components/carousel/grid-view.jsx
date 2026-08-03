@@ -45,21 +45,25 @@ const QUILTED_SPANS = [
  * immediately.
  */
 function useImageReady(src, enabled = true) {
-  const [ready, setReady] = useState(!enabled || !src);
+  const [state, setState] = useState(() => ({ ready: !enabled || !src, failed: false }));
 
   useEffect(() => {
     if (!enabled || !src || typeof window === "undefined") return;
     let cancelled = false;
     const img = new window.Image();
-    const done = () => { if (!cancelled) setReady(true); };
-    img.onload = done;
-    img.onerror = done; // never leave a broken image hidden
+    const done = (failed) => {
+      if (cancelled) return;
+      if (failed) console.warn("[gallery] dead image link:", src);
+      setState({ ready: true, failed });
+    };
+    img.onload = () => done(false);
+    img.onerror = () => done(true);
     img.src = src;
-    if (img.complete) done();
+    if (img.complete) done(img.naturalWidth === 0);
     return () => { cancelled = true; };
   }, [src, enabled]);
 
-  return ready;
+  return state;
 }
 
 const DOWN_KEYS = new Set(["ArrowDown", "PageDown", "End", " ", "Spacebar"]);
@@ -170,9 +174,17 @@ function GridCell({
   designerMode,
   openLightbox,
 }) {
-  const imageReady = useImageReady(getSlideThumbnail(item), !designerMode);
+  const { ready: imageReady, failed: imageFailed } = useImageReady(
+    getSlideThumbnail(item),
+    !designerMode
+  );
 
   if (!item) return null;
+
+  // A dead link would otherwise reserve its full cell (bg-card + aspect
+  // ratio) forever. Collapse it instead — except in the designer, where the
+  // author needs to see (and fix or remove) the broken slide.
+  if (imageFailed && !designerMode) return null;
 
   const cellData = {
     ...item.data,

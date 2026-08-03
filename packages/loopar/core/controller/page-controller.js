@@ -96,12 +96,9 @@ export default class PageController extends SingleConrtroller {
   async publicActionLoadGalery(){
     const ref = loopar.getRef(this.document);
 
-    if (this.hasData()) {
-      loopar.setPage(`File Manager`, this.data.page || 1);
-    }
-
     const m = await loopar.newDocument("File Manager", {app: ref.__APP__});
     m.pageSize = parseInt(this.data.pageSize || 10)
+    m.page = parseInt(this.data.page) || 1;
     const files = await m.getList();
 
     return { rows: files.rows, pagination: files.pagination };

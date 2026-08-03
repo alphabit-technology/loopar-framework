@@ -4,7 +4,7 @@ import App from "./App.tsx";
 import { StaticRouter } from "react-router";
 import { Loader } from "@loopar/loader";
 import {ServerCookiesManager} from '@services/cookie';
-import { __META_COMPONENTS__ } from "@loopar/components-loader";
+import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
 
 const Main = ({ __META__, pathname, context, req, res, permissions }) => {
   const cookieManager = new ServerCookiesManager(req, res);
@@ -35,7 +35,7 @@ export async function render(pathname, __META__, req, res, permissions) {
   global.ENVIRONMENT = "server";
 
   const context = {};
-  const HTML = renderToString(
+  const doRender = () => renderToString(
     <Main
       pathname={pathname}
       __META__={{
@@ -48,6 +48,22 @@ export async function render(pathname, __META__, req, res, permissions) {
     />,
     context
   );
+
+  let HTML = doRender();
+
+  // Runtime-generated elements (e.g. gallery rows → `image`) aren't in the
+  // doc_structure, so their components aren't preloaded: the server renders
+  // them empty and the client doesn't → hydration mismatch. Load whatever
+  // the render discovered and re-render until nothing new appears.
+  for (let pass = 0; pass < 3; pass++) {
+    const missing = Array.from(new Set(global.__REQUIRE_COMPONENTS__))
+      .filter((c) => c && !__META_COMPONENTS__[c]);
+    if (!missing.length) break;
+
+    await ComponentsLoader(missing);
+    global.__REQUIRE_COMPONENTS__ = [];
+    HTML = doRender();
+  }
 
   if (context.url) {
     return {

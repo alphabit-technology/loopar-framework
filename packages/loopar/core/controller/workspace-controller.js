@@ -112,7 +112,20 @@ export default class WorkspaceController extends AuthController {
     __META__.wsToken = signWorkspaceToken(__META__.name || this.workspace) ?? null;
     __META__.permissions = permissions
     
-    let html = template.replace(`<!--ssr-outlet-->`, HTML.HTML);
+    // renderToString leaves hoistables (<title>/<meta>/<link>, e.g. from SEO)
+    // at the start of the fragment, but hydrateRoot expects them in <head> —
+    // inline they desync the whole tree. Move them to the template's <head>.
+    
+    let fragment = HTML.HTML || "";
+    let hoisted = "";
+    const HOIST_RE = /^\s*(<title>[\s\S]*?<\/title>|<meta\s[^>]*\/?>|<link\s[^>]*\/?>)/;
+    for (let m; (m = fragment.match(HOIST_RE)); ) {
+      hoisted += m[1];
+      fragment = fragment.slice(m[0].length);
+    }
+
+    let html = template.replace(`<!--ssr-outlet-->`, fragment);
+    if (hoisted) html = html.replace("</head>", `${hoisted}</head>`);
     const cookieTheme = loopar.cookie.get('vite-ui-theme');
     const ssrTheme =
       cookieTheme === 'light' || cookieTheme === 'dark' ? cookieTheme : 'dark';

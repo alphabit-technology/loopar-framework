@@ -204,7 +204,7 @@ class FileManager {
     files = this.parseSerializedFiles(files);
 
     if (typeof files === "string" && !loopar.utils.isJSON(files)) {
-      if (this.isURL(files)) {
+      if (this.isURL(files) || files.startsWith("/") || files.startsWith("data:")) {
         const detectedType = this.getTypeFromURL(files) || "image";
         const ext = getExtention(files) || (detectedType === 'image' ? 'jpg' : 'file');
         

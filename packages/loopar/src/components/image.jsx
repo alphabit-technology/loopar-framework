@@ -2,6 +2,7 @@ import { useState, useMemo} from "react";
 import {ImageIcon} from "lucide-react";
 import LazyLoad from 'react-lazy-load';
 import { cn } from "@cn/lib/utils";
+import fileManager from "@@file/file-manager";
 
 export function FallbackImage(props) {
   const [loading, setLoading] = useState(true);
@@ -64,8 +65,13 @@ export function FallbackImage(props) {
 }
 
 export default function MetaImage(props) {
+  const src = useMemo(
+    () => fileManager.getMappedFiles(props.data?.background_image)[0]?.src || null,
+    [props.data?.background_image]
+  );
+
   return (
-    <FallbackImage {...props} />
+    <FallbackImage {...props} imageProps={{ src, ...(props.imageProps || {}) }} />
   )
 }
 

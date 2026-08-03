@@ -44,6 +44,22 @@ export default function carouselMetaFields() {
             selected: false,
           },
         },
+        text_background: {
+          element: SWITCH,
+          data: {
+            label: "Text Background",
+            description:
+              "Render every slide's content inside a translucent themed panel so text stays readable over photos in light and dark mode. If off, each banner can enable it individually.",
+          },
+        },
+        text_background_class: {
+          element: INPUT,
+          data: {
+            label: "Text Background Class",
+            description:
+              "Optional Tailwind classes merged over the panel defaults for all slides. E.g. 'bg-black/30' or 'bg-card/80 backdrop-blur-md'.",
+          },
+        },
         grid_layout: {
           element: SELECT,
           data: {

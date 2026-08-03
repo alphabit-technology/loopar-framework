@@ -39,7 +39,7 @@ export default function CarouselLightbox({
               touch
               exitDurationMs={exitDurationMs}
               transitionDurationMs={transitionDurationMs}
-              containerClassName="absolute inset-0 w-full h-full select-none group"
+              containerClassName="absolute inset-0 w-full h-full grid grid-cols-1 [grid-template-rows:1fr] items-center overflow-hidden select-none group"
             />
           </div>
         ) : null}

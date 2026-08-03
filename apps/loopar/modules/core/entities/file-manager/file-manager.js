@@ -378,6 +378,7 @@ export default class FileManager extends BaseDocument {
         ? source
         : path.join(loopar.pathRoot, source);
 
+
       if (fs.existsSync(sourcePath)) {
         const filesPath = path.join(sourcePath, this.visible || "public");
         if (fs.existsSync(filesPath)) {
@@ -520,8 +521,9 @@ export default class FileManager extends BaseDocument {
     q.visible = this.visible || "public";
     const workspace = loopar.workspace;
 
+    const explicitPage = parseInt(this.page);
     const pagination = {
-      page: loopar.getPage(this.__ENTITY__.name),
+      page: explicitPage > 0 ? explicitPage : loopar.getPage(this.__ENTITY__.name),
       pageSize: parseInt(this.pageSize || 10),
       totalPages: 1,
       totalRecords: 0,
@@ -544,8 +546,8 @@ export default class FileManager extends BaseDocument {
     pagination.totalPages = Math.max(1, Math.ceil(filtered.length / pagination.pageSize));
 
     if (pagination.page > pagination.totalPages) {
-      pagination.page = 1;
-      loopar.setPage(this.__ENTITY__.name, 1);
+      pagination.page = pagination.totalPages;
+      if (!(explicitPage > 0)) loopar.setPage(this.__ENTITY__.name, pagination.totalPages);
     }
 
     const startIndex = (pagination.page - 1) * pagination.pageSize;

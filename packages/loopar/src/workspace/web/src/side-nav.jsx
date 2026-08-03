@@ -1,6 +1,6 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
-import React, {useMemo, Activity} from "react";
+import React, {useMemo} from "react";
 import { cn } from "@cn/lib/utils";
 import { Cross1Icon } from "@radix-ui/react-icons";
 import { Item } from "@radix-ui/react-context-menu";
@@ -49,13 +49,11 @@ const MenuItemTree = ({item, isChild = false}={item:Item, isChild:Boolean}) => {
         isChild={isChild}
         solid={webApp.solid}
       >
-        <Activity mode={treeIsActive ? "visible" : "hidden"}>
-          <div className={`pl-3 ${isChild ? '' : ''}`}>
-            {item.items.filter(item => item.router_only != 1).sort((a, b) => a.id - b.id).map((subItem) => (
-              <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
-            ))}
-          </div>
-        </Activity>
+        <div className={cn("pl-3", !treeIsActive && "hidden")}>
+          {item.items.filter(item => item.router_only != 1).sort((a, b) => a.id - b.id).map((subItem) => (
+            <MenuItemTree key={subItem.page} item={subItem} isChild={true}/>
+          ))}
+        </div>
       </SideNavItem>
     </>
   );
@@ -114,19 +112,17 @@ export function SideNav({sideMenuItems}) {
           </div>
         </>
       </div>
-      <Activity mode={childMenuItems.length > 0 ? "visible" : "hidden"}>
-        <div className="relative col-start-1 row-start-1 max-lg:hidden">
-          <div className="absolute inset-0">
-            <div
-              className={"sticky top-web-header-height bottom-web-header-height left-0 max-h-[calc(100dvh-(var(--spacing)*14.25))] w-2xs overflow-y-auto p-2"}
-            >
-              <>
-                <SideNavRender menu={childMenuItems} />
-              </>
-            </div>
+      <div className={cn("relative col-start-1 row-start-1 max-lg:hidden", childMenuItems.length === 0 && "hidden")}>
+        <div className="absolute inset-0">
+          <div
+            className={"sticky top-web-header-height bottom-web-header-height left-0 max-h-[calc(100dvh-(var(--spacing)*14.25))] w-2xs overflow-y-auto p-2"}
+          >
+            <>
+              <SideNavRender menu={childMenuItems} />
+            </>
           </div>
         </div>
-      </Activity>
+      </div>
     </>
   );
 }
