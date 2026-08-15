@@ -134,7 +134,7 @@ export default function carouselMetaFields() {
           element: INPUT,
           data: {
             label: "Duration (ms)",
-            format: "number",
+            format: "integer",
             default_value: DEFAULTS.animation_duration,
           },
         },
@@ -142,7 +142,7 @@ export default function carouselMetaFields() {
           element: INPUT,
           data: {
             label: "Delay (ms)",
-            format: "number",
+            format: "integer",
             default_value: DEFAULTS.animation_delay,
           },
         },
@@ -173,11 +173,19 @@ export default function carouselMetaFields() {
             selected: "5",
           },
         },
-        static_content: {
-          element: SWITCH,
+        content_animation: {
+          element: SELECT,
           data: {
+            label: "Content Animation",
             description:
-              "If enabled the content will remain static even when there are animations in the slide.",
+              "How the slide CONTENT transitions (the background image always uses the Transition Effect). reveal: fade + slide-up after a delay. inherit: same effect as the slide transition. fade: soft cross-fade between contents (in fast, out slow). static: no animation.",
+            options: [
+              { option: "Reveal (default)", value: "reveal" },
+              { option: "Inherit slide animation", value: "inherit" },
+              { option: "Cross-fade", value: "fade" },
+              { option: "Static (none)", value: "static" },
+            ],
+            selected: "reveal",
           },
         },
         full_height: {

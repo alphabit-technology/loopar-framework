@@ -92,18 +92,7 @@ export default class Router extends Middleware {
   async makeController(req, res, next) {
     const params = req.__params__;
 
-    if (req.__ROUTE_MODE__ === "rpc") {
-      // RPC contract: the Document AND action are always explicit
-      // (/{Document}/{action}) — no workspace defaults, no web menu mapping.
-      if (!params.document || !params.action) {
-        return loopar.throw({
-          code: 404,
-          message: `Invalid RPC route "${req._parsedUrl.pathname}" — expected /{Document}/{action}.`
-        });
-      }
-    } else {
-      RouterUtils.setDefaultParams(params, req.__WORKSPACE_NAME__);
-
+    const setDocument = (validate=true) => {
       if (req.__WORKSPACE_NAME__ === "web") {
         const webApp = loopar.webApp;
         if (!webApp?.name) {
@@ -116,11 +105,26 @@ export default class Router extends Middleware {
         const requestedLink = params.document ?? webApp.menu_items?.[0]?.link;
         const menu = RouterUtils.RouteParsing.findWebAppMenu(requestedLink, loopar);
 
-        if (!menu) {
+        if (menu) {
+          params.document = menu.page;
+        }else if (validate){
           return loopar.throw({ code: 404, message: "Page not found" });
         }
-        params.document = menu.page;
+        
       }
+    }
+
+    if (req.__ROUTE_MODE__ === "rpc") {
+      setDocument(false);
+      if (!params.document || !params.action) {
+        return loopar.throw({
+          code: 404,
+          message: `Invalid RPC route "${req._parsedUrl.pathname}" — expected /{Document}/{action}.`
+        });
+      }
+    } else {
+      RouterUtils.setDefaultParams(params, req.__WORKSPACE_NAME__);
+      setDocument();
     }
 
     const ref = loopar.getRef(loopar.utils.Capitalize(params.document), false);

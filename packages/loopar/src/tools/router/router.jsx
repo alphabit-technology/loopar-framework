@@ -17,6 +17,13 @@ export default class Router extends HTTP {
   call(Document, action, options = {}) {
     const { success, error, always } = options;
 
+    if(!Document) {
+      const workspace = this.workspace;
+      const url = window.location.pathname;
+
+      Document = url.split('/')[workspace === "web" ? 1 : 2];
+    }
+
     const sendArgs = {
       ...options,
       method: "POST",

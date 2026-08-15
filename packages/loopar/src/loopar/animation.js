@@ -11,6 +11,9 @@ export const reverses = {
 
 export const animations = (notContains) => {
   const animations = {
+    "random": {
+      
+    },
     "fade-up": {
       initial: "opacity-0 translate-y-4",
       visible: "opacity-100 translate-y-0",
@@ -58,7 +61,7 @@ export const animations = (notContains) => {
     "flip-down": {
       initial: "opacity-0 rotateX--90",
       visible: "opacity-100 rotateX-0",
-    },
+    }
   }
 
   if (notContains) {
@@ -85,7 +88,7 @@ export const reverseAnimation = (animation) => {
 export const getAnimation = (animation, notContains) => {
   if (!animation) return null;
   if (animation === "random") {
-    const transitions = Object.keys(this.animations(notContains)).filter(
+    const transitions = Object.keys(animations(notContains)).filter(
       (animation) => animation !== "random"
     );
     return animations()[transitions[Math.floor(Math.random() * transitions.length)]]

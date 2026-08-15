@@ -7,9 +7,7 @@ import { Button } from "@cn/components/ui/button"
 import {
   FormControl,
   FormDescription,
-  FormItem,
   FormLabel,
-  FormMessage,
 } from "@cn/components/ui/form"
 
 import {
@@ -42,7 +40,7 @@ export default function TimePicker(props) {
     };
 
     return (
-      <FormItem className="flex flex-col" >
+      <div className="flex flex-col">
         <FormLabel>{data.label}</FormLabel>
         <Popover>
           <PopoverTrigger asChild>
@@ -60,14 +58,13 @@ export default function TimePicker(props) {
             </FormControl>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <TimePicker value={initialHour} handleChange={setTimeHandler}/>
+            <BaseTimePicker value={initialHour} handleChange={setTimeHandler}/>
           </PopoverContent>
         </Popover>
         <FormDescription>
           {data.description}
         </FormDescription>
-        <FormMessage />
-      </FormItem>
+      </div>
     )
   })
 }

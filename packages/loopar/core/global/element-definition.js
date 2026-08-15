@@ -282,7 +282,8 @@ export const elementsDefinition = {
     { element: 'example_viewer', icon: 'Scan' },
     { element: 'review', icon: "Star"},
     { element: 'collection', icon: "LayoutGrid"},
-    { element: 'collection_view', icon: "LayoutGrid", show_in_design: false}
+    { element: 'collection_view', icon: "LayoutGrid", show_in_design: false},
+    { element: "entity", icon: "Code"}
   ],
   [FORM_ELEMENT]: [
     { element: "input", icon: "RectangleEllipsis", type: TYPES.string },
@@ -394,6 +395,13 @@ class DataInterface {
     type = type.charAt(0).toUpperCase() + type.slice(1);
 
     if (this['is' + type]) {
+      // Every format rule below is regex-based and only meaningful for short
+      // values. Bounding the length BEFORE running any regex neutralizes
+      // catastrophic backtracking (ReDoS) — these validators also run
+      // server-side on attacker-controlled input (publicActionSubmitForm).
+      if (String(this.value).length > 2048) {
+        return { valid: false, message: 'Value is too long' };
+      }
       return this['is' + type]();
     }
 
@@ -524,10 +532,20 @@ class DataInterface {
     }
   }
 
+  isEmptyValue() {
+    // 0 and false are real values (numeric/boolean fields), not "empty".
+    if (this.value === 0 || this.value === false) return false;
+
+    return typeof this.value === "undefined" ||
+      this.value === null ||
+      ["null", "undefined"].includes(this.value) ||
+      (this.value || "").toString().trim().length === 0;
+  }
+
   validatorRequired() {
     const required = [true, 'true', 1, '1'].includes(this.data.required);
     return {
-      valid: !required || !(typeof this.value == "undefined" || (["null", "undefined"].includes(this.value) || (this.value || "").toString().length === 0)),
+      valid: !required || !this.isEmptyValue(),
       message: `${this.__label()} is required`
     }
   }
@@ -539,12 +557,28 @@ class DataInterface {
       return this.#validatorMessage(validatorRequired);
     }
 
-    if (this.data.no_validate_type) {
+    // Accept both spellings: the designer's metaField switch is declared as
+    // `not_validate_type` (input.jsx) while this check used `no_validate_type`.
+    if (this.data.no_validate_type || this.data.not_validate_type) {
+      return { valid: true, message: '' };
+    }
+
+    // An empty optional value has nothing to type-check: without this guard
+    // an empty non-required email/phone/number field failed its format regex
+    // ("'' is not a valid value...") and blocked the whole submission.
+    if (this.isEmptyValue()) {
       return { valid: true, message: '' };
     }
 
     const validatorRules = this.validatorRules();
-    validatorRules.message = `'${this.value}' is not a valid value in ${this.__label()}`;
+
+    // Keep the rule's specific message ("Invalid email address") and add the
+    // field for context, instead of the raw "'<value>' is not a valid value".
+    if (!validatorRules.valid) {
+      validatorRules.message = validatorRules.message
+        ? `${this.__label()}: ${validatorRules.message}`
+        : `'${this.value}' is not a valid value in ${this.__label()}`;
+    }
 
     return this.#validatorMessage(validatorRules);
   }
@@ -557,7 +591,9 @@ class DataInterface {
   }
 
   __label() {
-    return this.data.label;
+    if (this.data.label) return this.data.label;
+    const name = String(this.data.name || "").replace(/_/g, " ").trim();
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : "This field";
   }
 }
 

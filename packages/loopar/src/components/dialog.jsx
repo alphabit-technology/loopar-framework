@@ -80,6 +80,41 @@ const MetaDialog = (props) => {
   const content = props.children || props.content || props.message;
   const contentType = typeof content === "string" ? "text" : "react";
 
+  /**
+   * String content: split multi-message strings into one line each.
+   * Sources join errors with '\n' (client validate()) or '<br/>' (server
+   * core-document / submitForm); rendered inside a single <p> both collapsed
+   * into one run-on paragraph. Multiple lines render as a disc list; a single
+   * line keeps the plain paragraph. Inline HTML per line (e.g. the <a> links
+   * of the delete-connected message) still works as before.
+   */
+  const renderTextContent = (raw) => {
+    const lines = String(raw)
+      .split(/\n|<br\s*\/?>/gi)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length <= 1) {
+      return (
+        <div
+          className="h-full"
+          dangerouslySetInnerHTML={{ __html: `<p>${lines[0] || ""}</p>` }}
+        />
+      );
+    }
+
+    return (
+      <div
+        className="h-full"
+        dangerouslySetInnerHTML={{
+          __html: `<ul class="list-disc pl-5 space-y-1 text-left">${lines
+            .map((line) => `<li>${line}</li>`)
+            .join("")}</ul>`,
+        }}
+      />
+    );
+  };
+
   const getButtons = () => {
     if(Array.isArray(props.buttons) && props.buttons.length === 0) return [];
 
@@ -148,10 +183,7 @@ const MetaDialog = (props) => {
             <>
             {
               contentType === "text" ? (
-                <div
-                  className="h-full"
-                  dangerouslySetInnerHTML={{ __html: `<p>${content}</p>` }}
-                />
+                renderTextContent(content)
               ) : (
                 <div className="h-full">{content}</div>
               )

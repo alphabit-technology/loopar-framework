@@ -4,7 +4,6 @@ import {
   FormControl,
   FormDescription,
   FormLabel,
-  FormMessage
 } from "@cn/components/ui/form";
 import { Textarea } from "@cn/components/ui/textarea";
 import { AlertTriangle, Loader2 } from "lucide-react";
@@ -62,15 +61,15 @@ export default function Tailwind(props) {
   const hasError = scriptStatus === "error";
   const isReady = scriptStatus === "loaded";
 
-  return renderInput((field) => (
+
+  return renderInput(({ isInvalid, ...inputProps }) => (
     <div>
       <FormLabel>{data.label}</FormLabel>
       <div className="relative">
         <FormControl className="p-2">
           <Textarea
-            {...data}
+            {...inputProps}
             placeholder={data.placeholder || data.label}
-            {...field}
             className="bg-transparent border border-input rounded-xm disabled:opacity-50 w-full"
             rows={6}
             disabled={!isReady}
@@ -103,7 +102,6 @@ export default function Tailwind(props) {
           Classes preview only works in development mode
         </p>
       </FormDescription>
-      <FormMessage />
     </div>
   ));
 }

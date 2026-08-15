@@ -10,8 +10,13 @@ export default class BaseForm extends BaseDocument {
   __FORM_REFS__ = {};
   #Form = null;
 
-  save() {
-    this.send({ action: this.Document.meta.action });
+  /**
+   * @param {Object} [options] - Forwarded to `send()`. Notables:
+   *   `extra` (plain object merged into the outgoing body — e.g. anti-bot
+   *   fields from a public form), `success`, `error`, `notRequireChanges`.
+   */
+  save(options = {}) {
+    return this.send({ action: this.Document.meta.action, ...options });
   }
 
   set Form(Form) {
@@ -59,10 +64,15 @@ export default class BaseForm extends BaseDocument {
    * @param {string} opts.action - Controller action to invoke.
    * @param {Object} [opts.query] - Extra URL query params (merged with
    *   `this.queryParams`).
+   * @param {Object} [opts.extra] - Plain object appended to the outgoing
+   *   body AFTER the form values. Fields not declared in the entity travel
+   *   through here (getFormValues only maps declared fields, and the zod
+   *   schema would strip them anyway) — e.g. captcha_token/_hp/_elapsed
+   *   from public forms.
    * @param {Function} [opts.success]
    * @param {Function} [opts.error]
    */
-  send({ document, action, query={}, ...options } = {}, successCallback, errorCallback) {
+  send({ document, action, query={}, extra=null, ...options } = {}, successCallback, errorCallback) {
     this.validate();
 
     if (!options.notRequireChanges && !this.checkChanges()) return;
@@ -83,6 +93,13 @@ export default class BaseForm extends BaseDocument {
 
     const mergedQuery = { ...this.queryParams, ...query };
     const body = this.#getFormData(true);
+
+    if (extra && typeof extra === "object") {
+      for (const [key, value] of Object.entries(extra)) {
+        if (value === undefined || value === null) continue;
+        body.append(key, value);
+      }
+    }
 
     // Resolve target controller (see `controller` field above for resolution
     // order). Every submission MUST name its controller — the RPC channel is

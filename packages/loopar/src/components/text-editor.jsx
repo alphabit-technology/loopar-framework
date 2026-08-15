@@ -18,3 +18,10 @@ export default function MetaHtmlBlock(props) {
     )
   });
 }
+
+
+MetaHtmlBlock.metaFields = () => {
+  return [
+    ...BaseInput.metaFields()
+  ];
+}

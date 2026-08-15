@@ -34,36 +34,61 @@ const Cover = (props) => {
 }
 
 const Content = (props) => {
-  const { isActive = true } = props;
+  const { isActive = true, contentAnimation = "reveal", isPrevSlide, animation } = props;
   const {designing} = useDesigner();
-  const [isVisible, setIsVisible] = useState(designing || false);
-  
+  const crossfade = contentAnimation === "fade" || contentAnimation === "inherit";
+  const [isVisible, setIsVisible] = useState(
+    designing || contentAnimation === "static" || (crossfade && isPrevSlide) || false
+  );
+
   useEffect(() => {
-    if(designing) return;
+    if(designing || contentAnimation === "static") return;
     let timeout;
-    
-    if (isActive) {
+
+    if (crossfade) {
+      timeout = setTimeout(() => setIsVisible(!isPrevSlide), 30);
+    } else if (isActive) {
       timeout = setTimeout(() => {
         setIsVisible(true);
       }, 1000);
     } else {
       setIsVisible(false);
     }
-    
-    return () => clearTimeout(timeout);
-  }, [isActive, designing]);
 
-  const animationClassName = cn(
-    "transition-all duration-700 ease-out",
-    props.haveCarousel && (isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")
-  )
+    return () => clearTimeout(timeout);
+  }, [isActive, designing, contentAnimation, crossfade, isPrevSlide]);
+
+  const inheritAnim =
+    contentAnimation === "inherit" ? (loopar.animation.getAnimation(animation) || {}) : null;
+  const hasInherit = !!(inheritAnim && (inheritAnim.visible || inheritAnim.initial));
+
+  let animationClassName = "";
+  if (hasInherit) {
+    animationClassName = cn(
+      "transition-all ease-in-out",
+      isPrevSlide ? "duration-700" : "duration-500",
+      props.haveCarousel && (isVisible ? inheritAnim.visible : inheritAnim.initial)
+    );
+  } else if (crossfade) {
+    animationClassName = cn(
+      "transition-opacity ease-out",
+      isPrevSlide ? "duration-700" : "duration-300",
+      props.haveCarousel && (isVisible ? "opacity-100" : "opacity-0")
+    );
+  } else if (contentAnimation !== "static") {
+    animationClassName = cn(
+      "transition-all duration-700 ease-out",
+      props.haveCarousel && (isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")
+    );
+  }
+  const skipAnimation = designing || contentAnimation === "static";
   
   if (props.textBackground) {
     return (
       <div
         className={cn(
           props.wrapperClassName,
-          designing ? '' : animationClassName
+          skipAnimation ? '' : animationClassName
         )}
       >
         <div className={cn("flex h-full w-full p-4 md:p-8", props.className)}>
@@ -83,7 +108,7 @@ const Content = (props) => {
     <div
       className={cn(
         props.wrapperClassName,
-        designing ? '' : animationClassName
+        skipAnimation ? '' : animationClassName
       )}
     >
       <Droppable
@@ -114,6 +139,22 @@ function Banner() {
   const isActive = data.isActive !== false;
   const animationDuration = (parseFloat(data.animation_duration) || 0.7);
   const textBackground = loopar.utils.trueValue(data.text_background);
+  const contentAnimation =
+    data.content_animation || (loopar.utils.trueValue(data.static_content) ? "fade" : "reveal");
+  const isPrevSlide = loopar.utils.trueValue(data.is_prev_slide);
+
+  const joinedAnim =
+    contentAnimation === "inherit" && props.haveCarousel
+      ? (loopar.animation.getAnimation(data.animation) || {})
+      : null;
+  const hasJoined =
+    !!(joinedAnim && (joinedAnim.visible || joinedAnim.initial)) && !designerMode;
+  const [joinedVisible, setJoinedVisible] = useState(isPrevSlide);
+  useEffect(() => {
+    if (!hasJoined) return;
+    const t = setTimeout(() => setJoinedVisible(!isPrevSlide), 30);
+    return () => clearTimeout(t);
+  }, [hasJoined, isPrevSlide]);
 
   
   return (
@@ -121,22 +162,33 @@ function Banner() {
       props.className.split("transition-all")[0],
       "p-0 relative",
       data.full_height && !designerMode && "h-[calc(100vh-var(--spacing-web-header-height))] max-h-[calc(100vh-var(--spacing-web-header-height))]",
+      hasJoined && cn(
+        "transition-all ease-in-out",
+        isPrevSlide ? "duration-700" : "duration-500",
+        joinedVisible ? joinedAnim.visible : joinedAnim.initial
+      ),
     )}>
       <Cover
         className={coverClassName}
         style={props.style}
-        animation={data.animation}
+        animation={hasJoined ? undefined : data.animation}
       />
       <Content  
         elements={props.elements}
-        // wrapperClassName="absolute inset-0 z-10 h-full w-full"
-        wrapperClassName="inset-0 z-10 h-full w-full"
+        // "relative" is required for z-10 to apply: a static element's
+        // background paints BELOW positioned elements (the absolute Cover),
+        // so without it the panel's bg-card only showed when backdrop-blur
+        // forced a stacking context.
+        wrapperClassName="relative inset-0 z-10 h-full w-full"
         className={cn(alignment, data.class)}
         isActive={isActive}
         animationDuration={animationDuration}
         haveCarousel={props.haveCarousel}
         textBackground={textBackground}
         textBackgroundClass={data.text_background_class}
+        contentAnimation={hasJoined ? "static" : contentAnimation}
+        isPrevSlide={isPrevSlide}
+        animation={data.animation}
       />
     </div>
   )
@@ -166,7 +218,7 @@ export default function MetaBanner(props){
 
   return (
     <PreassembledContextProvider {...props} defaultElements={defaultElements}>
-      <Banner haveCarousel={props.haveCarousel} staticContent={data.static_content}/>
+      <Banner/>
     </PreassembledContextProvider>
   )
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer, useRef, MouseEvent } from 'react';
 import { ToggleGroup, ToggleGroupItem } from "@cn/components/ui/toggle-group";
+import { useDesigner } from "@context/@/designer-context";
 import dayjs from "dayjs";
 
 interface PropsInterface {
@@ -76,6 +77,7 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const [state, dispatch] = useReducer(reducer, value, init);
   const userInteracted = useRef<boolean>(false);
   const clockRef = useRef<HTMLDivElement>(null);
+  const {designerMode} = useDesigner();
 
   const amPm = state.hour24 >= 12 ? "PM" : "AM";
 
@@ -104,6 +106,8 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const handleMouseDown = (selector: SelectorType) => (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if(designerMode) return;
+    
     userInteracted.current = true;
     dispatch({ type: "BEGIN_DRAG", selector });
     const action = computeAction(e, selector);
@@ -111,7 +115,7 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   };
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!state.dragging || !state.selector) return;
+    if (!state.dragging || !state.selector || designerMode) return;
     const action = computeAction(e, state.selector);
     if (action) dispatch(action);
   };
@@ -119,6 +123,7 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if(designerMode) return;
     dispatch({ type: "END_DRAG" });
   };
 
@@ -128,11 +133,11 @@ const AnalogTimePicker: React.ElementType = (props: PropsInterface) => {
   };
 
   useEffect(() => {
-    if (!userInteracted.current) return;
+    if (!userInteracted.current || designerMode) return;
     const hh = String(state.hour24).padStart(2, "0");
     const mm = String(state.minute).padStart(2, "0");
     handleChange?.(`${hh}:${mm}`);
-  }, [state.hour24, state.minute, handleChange]);
+  }, [state.hour24, state.minute, handleChange, designerMode]);
 
   const calculateMarkPosition = (index: number, isHourMark: boolean) => {
     const angle = (index * (isHourMark ? 30 : 6)) * (Math.PI / 180);

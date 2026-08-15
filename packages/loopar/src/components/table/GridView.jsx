@@ -37,7 +37,7 @@ export function GridView(props) {
   const rows = props.rows || useTable().rows || [];
 
   const defaultAction = (row) => {
-    if (["Entity", "Builder"].includes(row.type || "")) {
+    if (["Entity", "Builder", "Contact Form Builder"].includes(row.type || "")) {
       return row.is_single ? "update" : "list";
     }
     if (["Page Builder", "View Builder"].includes(row.type)) return "view";

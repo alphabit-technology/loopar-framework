@@ -165,7 +165,18 @@ export function Entity({ name, action, entityName, fallback, inModal, ...props }
     const { Component, meta } = model;
     return (
       <div className="space-y-4 p-2">
-        <Component {...props} inModal={inModal} Document={meta} />
+        <Component 
+          {...props} 
+          inModal={inModal} 
+          Document={meta} 
+          entityName={entityName}
+          hasHeader={props.hasHeader || false}
+          hasFooter={props.hasFooter || false}
+          hasSidebar={props.hasSidebar || false}
+          hasSubmiting={props.hasSubmiting || false}
+        >
+          {props.children}
+        </Component>
       </div>
     )
   }

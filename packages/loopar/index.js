@@ -17,6 +17,8 @@ import {
 import { documentManage } from "./core/document/document-manage.js";
 import { fileManage } from "./core/file-manage.js";
 import fileManager from "./core/global/file-manager.js";
+import ContactFormBase from "./core/document/contact-form-base.js";
+import BaseContactFormController from "./core/controller/base-contact-form-controller.js";
 import BaseController from "./core/controller/base-controller.js";
 import SingleController from "./core/controller/single-controller.js";
 import PageController from "./core/controller/page-controller.js";
@@ -75,6 +77,8 @@ export {
   documentManage,
   BaseDocument,
   BaseStorage,
+  ContactFormBase,
+  BaseContactFormController,
   StorageDriver,
   LocalDriver,
   CloudinaryDriver,

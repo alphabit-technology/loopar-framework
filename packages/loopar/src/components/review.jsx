@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { loopar, useRealtime } from "loopar";
 import {useDocument} from "@context/@/document-context";
 import { useDesigner} from "@context/@/designer-context";
+import { useCaptcha, CaptchaSlot } from "./captcha-widget";
 
 function getInitials(name = "") {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -118,6 +119,7 @@ function ReviewForm({ requireCity, requireRating, entity }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const {entityMenu, Document} = useDocument();
+  const ts = useCaptcha();
 
   useEffect(() => {
     fetch("http://ip-api.com/json")
@@ -131,6 +133,7 @@ function ReviewForm({ requireCity, requireRating, entity }) {
     if (requireRating && rating === 0) return setError("Please select a rating.");
     if (requireCity && !city.trim()) return setError("Please enter your city.");
     if (!comment.trim()) return setError("Please write your review.");
+    if (!ts.ready) return setError("Please complete the verification.");
 
     setError("");
     setLoading(true);
@@ -140,7 +143,8 @@ function ReviewForm({ requireCity, requireRating, entity }) {
         body: {
           author_name: name.trim(),
           rating,
-          comment: comment.trim()
+          comment: comment.trim(),
+          captcha_token: ts.token
         }
       });
 
@@ -149,6 +153,7 @@ function ReviewForm({ requireCity, requireRating, entity }) {
       setError(e?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+      ts.reset();
     }
   };
 
@@ -204,10 +209,12 @@ function ReviewForm({ requireCity, requireRating, entity }) {
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
+      <CaptchaSlot captcha={ts} />
+
       <button
         className="self-start bg-primary text-primary-foreground rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         onClick={handleSubmit}
-        disabled={loading}
+        disabled={loading || !ts.ready}
       >
         {loading ? "Submitting..." : "Submit review"}
       </button>

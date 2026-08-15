@@ -15,13 +15,12 @@ import React from "react";
 import { ComponentDefaults, DEFAULTS, colPadding } from "./base/ComponentDefaults.jsx";
 
 const TabContent = ({element, parent, onDrop}) => {
-  
-  const { spacing = {} } = useDocument();
-  const { webApp = {} } = useWorkspace();
-  const config = useMemo(() => ({
+  //const { spacing = {} } = useDocument();
+  //const { webApp = {} } = useWorkspace();
+/*   const config = useMemo(() => ({
     ...DEFAULTS,
     spacing: spacing.spacing || webApp.spacing || DEFAULTS.spacing,
-  }), [spacing, webApp]);
+  }), [spacing, webApp]); */
 
   if(element.type === "dynamic.component"){
     return (
@@ -157,7 +156,7 @@ function TabFn(props){
       {elementsDict.map((element, index) => {
         const tabKey = getKey(element);
         return (
-          <TabsContent key={tabKey} value={tabKey}>
+          <TabsContent key={tabKey} value={tabKey} className="space-y-2">
             <TabContent element={element} parent={parent + index}/>
           </TabsContent>
         );

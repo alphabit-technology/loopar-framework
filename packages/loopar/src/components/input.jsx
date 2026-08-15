@@ -30,6 +30,9 @@ export default function Input(props) {
   delete _props.key;
 
   return renderInput((field) => {
+    // isInvalid is UI state for styling, not a DOM attribute.
+    const { isInvalid, ...inputProps } = field;
+
     return (
       <>
         <FormLabel {...props} field={field} />
@@ -37,9 +40,9 @@ export default function Input(props) {
           <FormInput
             {..._props}
             placeholder={data.placeholder || data.label}
-            {...field}
+            {...inputProps}
             {..._type}
-            className={field.isInvalid ? invalidClass.border : ""}
+            className={isInvalid ? invalidClass.border : ""}
           />
         </FormControl>
         {(data.description) && <FormDescription>

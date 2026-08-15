@@ -9,9 +9,7 @@ import { Calendar } from "@cn/components/ui/calendar"
 import {
   FormControl,
   FormDescription,
-  FormItem,
   FormLabel,
-  FormMessage,
 } from "@cn/components/ui/form"
 
 import {
@@ -63,7 +61,7 @@ export default function DateTime(props) {
     }
 
     return (
-      <FormItem className="flex flex-col" >
+      <div className="flex flex-col">
         <FormLabel>{data.label}</FormLabel>
         <Popover>
           <PopoverTrigger asChild>
@@ -111,8 +109,7 @@ export default function DateTime(props) {
         <FormDescription>
           {data.description}
         </FormDescription>
-        <FormMessage />
-      </FormItem>
+      </div>
     )
   })
 }

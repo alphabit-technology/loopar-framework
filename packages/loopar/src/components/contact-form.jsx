@@ -1,184 +1,181 @@
-import { useState } from 'react';
-import { Input } from '@cn/components/ui/input';
-import { Textarea } from '@cn/components/ui/textarea';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@cn/components/ui/button';
 import { cn } from '@cn/lib/utils';
 import loopar from "loopar";
+import { useCaptcha, CaptchaSlot } from './captcha-widget';
+import { Entity } from "../loader.jsx";
+import { useDocument } from "@context/@/document-context";
+import { useDesigner } from "@context/@/designer-context";
+import { SendHorizonalIcon } from "lucide-react";
 
-const sizeClasses = {
-  compact: {
-    container: "space-y-2",
-    grid: "gap-2",
-    title: "text-lg font-semibold mb-3",
-    input: "h-8 text-sm",
-    textarea: "text-sm",
-    button: "h-8 text-sm"
-  },
-  normal: {
-    container: "space-y-4",
-    grid: "gap-4",
-    title: "text-2xl font-bold mb-6",
-    input: "h-10",
-    textarea: "",
-    button: "h-10"
-  },
-  large: {
-    container: "space-y-6",
-    grid: "gap-6",
-    title: "text-3xl font-bold mb-8",
-    input: "h-12 text-lg",
-    textarea: "text-lg",
-    button: "h-12 text-lg"
-  }
+export const SendButton = ({ captcha, getBotFields, onSent, onError, children }) => {
+  const { docRef } = useDocument();
+  const { designerMode } = useDesigner();
+  const [sending, setSending] = useState(false);
+
+  if (!docRef?.Form || !docRef.save || designerMode) return null;
+
+  const send = async (e) => {
+    e.preventDefault();
+
+    if (sending || !captcha.ready) return;
+
+    const valid = await docRef.Form.trigger();
+    if (!valid) return;
+
+    setSending(true);
+    onError?.(null);
+
+    const done = () => {
+      setSending(false);
+      captcha.reset();
+    };
+
+    try {
+      const request = docRef.save({
+        extra: getBotFields(),
+        success: (r) => {
+          done();
+          onSent?.(r?.message);
+        },
+        error: (err) => {
+          done();
+          onError?.(err?.message || "Something went wrong. Please try again.");
+        }
+      });
+
+      if (request === undefined) done();
+    } catch (err) {
+      done();
+    }
+  };
+
+  return (
+    <Button
+      variant="secondary"
+      tabIndex="0"
+      onClick={send}
+      disabled={sending || !captcha.ready}
+      className="flex allign-items-right"
+    >
+      <SendHorizonalIcon className="pr-1" />
+      {sending ? "Sending..." : children}
+    </Button>
+  );
 };
 
 export default function ContactForm(props) {
-  const { 
-    data: {
-      label = 'Contact Us',
-      show_phone = true,
-      show_subject = true,
-      button_text = 'Send Message',
-      success_message = 'Message sent successfully!',
-      variant = 'default',
-      size = 'normal',
-      name_placeholder = 'Name *',
-      email_placeholder = 'Email *',
-      phone_placeholder = 'Phone',
-      subject_placeholder = 'Subject *',
-      message_placeholder = 'Message *',
-      rows = 5,
-      show_reset_button = 0,
-      reset_button_text = 'Send another message'
-    } 
-  } = props;
+  const data = props.data;
+  const {
+    success_message = "Message sent successfully!",
+    button_text = "Send Message",
+    show_reset_button = 1,
+    reset_button_text = "Send another message"
+  } = data;
 
-  const [form, setForm] = useState({
-    sender_name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentMessage, setSentMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [formKey, setFormKey] = useState(0);
 
-  const styles = sizeClasses[size] || sizeClasses.normal;
+  const captcha = useCaptcha();
+  const [hp, setHp] = useState("");
+  const mountTsRef = useRef(null);
+  useEffect(() => { mountTsRef.current = Date.now(); }, [formKey]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const getBotFields = () => ({
+    captcha_token: captcha.token,
+    _hp: hp,
+    _elapsed: Date.now() - (mountTsRef.current || Date.now()),
+    source_page: typeof window !== "undefined" ? window.location.pathname : ""
+  });
+
+  const handleSent = (message) => {
+    setSentMessage(message || success_message);
+    setSent(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    loopar.call("Contact Message", "submit", {
-      body: {
-        ...form,
-        source_page: window.location.pathname
-      },
-      success: () => {
-        setSent(true);
-        setForm({ sender_name: '', email: '', phone: '', subject: '', message: '' });
-      },
-      always: () => {
-        setLoading(false);
-      }
-    });
-  };
-
-  const handleReset = () => {
+  const handleWriteAnother = () => {
     setSent(false);
-    setForm({ sender_name: '', email: '', phone: '', subject: '', message: '' });
+    setSentMessage(null);
+    setErrorMessage(null);
+    setHp("");
+    setFormKey((k) => k + 1); // fresh, clean form
+    captcha.reset();
   };
+
+  if (!data.entity) {
+    return <h1>No Contact Form set</h1>;
+  }
 
   if (sent) {
     return (
       <div className="text-center p-8">
         <div className="text-4xl mb-4">✉️</div>
-        <h3 className={cn("font-semibold mb-4", styles.title)}>{success_message}</h3>
-        <Button variant="outline" onClick={handleReset} className={styles.button}>
-          {reset_button_text}
-        </Button>
+        <h3 className="text-2xl font-bold mb-6">{String(sentMessage || success_message)}</h3>
+        {[1, "1", true, "true"].includes(show_reset_button) && (
+          <Button variant="outline" onClick={handleWriteAnother}>
+            {reset_button_text}
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {label && <h2 className={styles.title}>{label}</h2>}
-      
-      <form onSubmit={handleSubmit} className={styles.container}>
-        <div className={cn("grid grid-cols-1 md:grid-cols-2", styles.grid)}>
-          <Input
-            name="sender_name"
-            placeholder={name_placeholder}
-            value={form.sender_name}
-            onChange={handleChange}
-            required
-            className={styles.input}
-          />
-          <Input
-            name="email"
-            type="email"
-            placeholder={email_placeholder}
-            value={form.email}
-            onChange={handleChange}
-            required
-            className={styles.input}
+    <div className="relative">
+      <Entity key={formKey} name={data.entity} action="create" hasSubmiting>
+        {/* Honeypot — invisible to humans, bait for bots */}
+        <div
+          aria-hidden="true"
+          style={{ position: "absolute", left: "-9999px", top: "auto", width: "1px", height: "1px", overflow: "hidden" }}
+        >
+          <label htmlFor={`cf_hp_${formKey}`}>Website</label>
+          <input
+            id={`cf_hp_${formKey}`}
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={hp}
+            onChange={(e) => setHp(e.target.value)}
           />
         </div>
 
-        {(show_phone || show_subject) && (
-          <div className={cn("grid grid-cols-1 md:grid-cols-2", styles.grid)}>
-            {show_phone && (
-              <Input
-                name="phone"
-                placeholder={phone_placeholder}
-                value={form.phone}
-                onChange={handleChange}
-                className={styles.input}
-              />
-            )}
-            {show_subject && (
-              <Input
-                name="subject"
-                placeholder={subject_placeholder}
-                value={form.subject}
-                onChange={handleChange}
-                required
-                className={styles.input}
-              />
-            )}
-          </div>
+        <CaptchaSlot captcha={captcha} />
+
+        {errorMessage && (
+          <p className="text-sm text-destructive py-2">{String(errorMessage)}</p>
         )}
 
-        <Textarea
-          name="message"
-          placeholder={message_placeholder}
-          value={form.message}
-          onChange={handleChange}
-          rows={rows}
-          required
-          className={cn("w-full", styles.textarea)}
-        />
-
-        <Button 
-          type="submit" 
-          variant={variant}
-          disabled={loading} 
-          className={cn("w-full", styles.button)}
+        <SendButton
+          captcha={captcha}
+          getBotFields={getBotFields}
+          onSent={handleSent}
+          onError={setErrorMessage}
         >
-          {loading ? 'Sending...' : button_text}
-        </Button>
-      </form>
+          {button_text}
+        </SendButton>
+      </Entity>
     </div>
   );
 }
 
 ContactForm.metaFields = () => {
-  return [
+  return [[
+    {
+      group: "General",
+      elements: {
+        entity: {
+          element: SELECT,
+          data: {
+            label: "Entity",
+            description: "Entity to use",
+            options: "Contact Form Builder"
+          }
+        }
+      }
+    },
     {
       group: "content",
       elements: {
@@ -221,106 +218,6 @@ ContactForm.metaFields = () => {
           }
         }
       }
-    },
-    {
-      group: "fields",
-      elements: {
-        show_phone: {
-          element: SWITCH,
-          data: {
-            label: "Show Phone Field",
-            default: 1
-          }
-        },
-        show_subject: {
-          element: SWITCH,
-          data: {
-            label: "Show Subject Field",
-            default: 1
-          }
-        },
-        rows: {
-          element: INPUT,
-          data: {
-            label: "Message Rows",
-            description: "Number of rows for the message textarea",
-            type: "number",
-            default: 5
-          }
-        }
-      }
-    },
-    {
-      group: "placeholders",
-      elements: {
-        name_placeholder: {
-          element: INPUT,
-          data: {
-            label: "Name Placeholder",
-            default: "Name *"
-          }
-        },
-        email_placeholder: {
-          element: INPUT,
-          data: {
-            label: "Email Placeholder",
-            default: "Email *"
-          }
-        },
-        phone_placeholder: {
-          element: INPUT,
-          data: {
-            label: "Phone Placeholder",
-            default: "Phone"
-          }
-        },
-        subject_placeholder: {
-          element: INPUT,
-          data: {
-            label: "Subject Placeholder",
-            default: "Subject *"
-          }
-        },
-        message_placeholder: {
-          element: TEXTAREA,
-          data: {
-            label: "Message Placeholder",
-            default: "Message *"
-          }
-        }
-      }
-    },
-    {
-      group: "style",
-      elements: {
-        variant: {
-          element: SELECT,
-          data: {
-            label: "Button Style",
-            options: [
-              { option: "Default", value: "default" },
-              { option: "Primary", value: "primary" },
-              { option: "Secondary", value: "secondary" },
-              { option: "Outline", value: "outline" },
-              { option: "Ghost", value: "ghost" },
-              { option: "Destructive", value: "destructive" }
-            ],
-            default: "default"
-          }
-        },
-        size: {
-          element: SELECT,
-          data: {
-            label: "Form Size",
-            options: [
-              { option: "Compact", value: "compact" },
-              { option: "Normal", value: "normal" },
-              { option: "Large", value: "large" }
-            ],
-            default: "normal"
-          }
-        }
-      }
     }
-  ];
+  ]];
 };

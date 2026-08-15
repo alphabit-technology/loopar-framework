@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { loopar } from "loopar";
 import { useWorkspace } from "@workspace/workspace-provider";
+import { useCaptcha, CaptchaSlot } from "./captcha-widget";
 import {
   Plus, Pencil, Trash2, RotateCcw, MessageSquare,
   Check, X, Clock, Send, Loader2, ChevronDown, ChevronUp,
@@ -69,14 +70,21 @@ function Composer({ onSubmit, submitting, guestIdentity = false, loggedInName = 
   const [text, setText] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  // Anti-bot check applies to guests only; logged-in users proved themselves
+  // at login. With no captcha integration enabled, this is all a no-op.
+  const ts = useCaptcha();
+  const verificationMissing = guestIdentity && ts.required && !ts.token;
 
   const identityMissing = guestIdentity && (!name.trim() || !email.trim());
   const send = async () => {
     const value = text.trim();
-    if (!value || submitting || identityMissing) return;
-    const identity = guestIdentity ? { guest_name: name.trim(), guest_email: email.trim() } : null;
+    if (!value || submitting || identityMissing || verificationMissing) return;
+    const identity = guestIdentity
+      ? { guest_name: name.trim(), guest_email: email.trim(), captcha_token: ts.token }
+      : null;
     const ok = await onSubmit(value, identity);
     if (ok) setText("");
+    if (guestIdentity) ts.reset();
   };
 
   const inputCls = "w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
@@ -101,12 +109,13 @@ function Composer({ onSubmit, submitting, guestIdentity = false, loggedInName = 
         disabled={submitting}
         onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send(); }}
       />
+      {guestIdentity && <CaptchaSlot captcha={ts} />}
       <div className="flex justify-end gap-2">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={submitting} className="px-3 h-8 rounded-md text-sm text-muted-foreground hover:text-foreground">Cancel</button>
         )}
         <button
-          type="button" onClick={send} disabled={submitting || !text.trim() || identityMissing}
+          type="button" onClick={send} disabled={submitting || !text.trim() || identityMissing || verificationMissing}
           className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md bg-primary text-primary-foreground text-sm hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

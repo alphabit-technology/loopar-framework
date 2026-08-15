@@ -86,6 +86,8 @@ const BaseCarousel = (props) => {
       background_blend_mode: item.data?.background_blend_mode || data.background_blend_mode,
       text_background: loopar.utils.trueValue(data.text_background) ? 1 : item.data?.text_background,
       text_background_class: data.text_background_class || item.data?.text_background_class,
+      content_animation: data.content_animation || item.data?.content_animation,
+      is_prev_slide: ctx.isPrev ? 1 : 0,
       node,
     };
 
@@ -148,7 +150,7 @@ const BaseCarousel = (props) => {
   };
 
   const renderCounter = ({ index: i, count }) =>
-    viewMode === "gallery" && count > 1 && !designerMode? (
+    viewMode === "gallery" && count > 1 && !designerMode ? (
       <div className="absolute top-2 right-2 z-20 text-xs px-2 py-1 rounded-md bg-background/70 text-foreground backdrop-blur">
         {i + 1} / {count}
       </div>

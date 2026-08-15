@@ -35,6 +35,7 @@ export default class FormContext extends BaseForm {
             );
           })}
           {this.getDocumentHistory?.()}
+          {this.props.children}
         </DeskGUI>
       </FormWrapper>,
       slots
