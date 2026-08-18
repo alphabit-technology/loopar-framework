@@ -40,14 +40,9 @@ export default class CoreDocument {
     }
 
     if (this.__ENTITY__.name === "App") {
-      /**
-       * If is an Entity type App, the app name is the same as the document name
-       */
       this.__APP__ = this.name;
     } else if (this.is_builder) {
-      /**
-       * If is a Entity type Entity, the app name is the same as the module name
-       */
+      // Builder entities resolve their app through the module.
       if (this.name === "Entity") {
         this.__APP__ = "loopar";
       } else {
@@ -71,10 +66,8 @@ export default class CoreDocument {
 
     if (this.__DATA__ && this.__DATA__.doc_structure) {
       const parsed = JSON.parse(this.__DATA__.doc_structure);
-      // stripEphemeralDocStructure: incoming structures (designer save)
-      // may carry render-injected payloads — getList rows on Server
-      // galleries, collection preloads, cookie indexes — that must not
-      // be persisted with the document.
+      // Incoming structures (designer save) may carry render-injected
+      // payloads (getList rows, preloads, cookie indexes) — don't persist them.
       this.__DATA__.doc_structure = JSON.stringify(
         stripEphemeralDocStructure(parsed.filter(field => (field.data || {}).name !== ID))
       );
@@ -199,20 +192,10 @@ export default class CoreDocument {
   }
 
   /**
-   * Define `this.id` and `this.__created_at__` / `__updated_at__` /
-   * `__deleted_at__` / `__document_status__` as enumerable getter/setter
-   * pairs backed by __DATA__. Mirrors what #makeField does for declared
-   * fields — minus the DynamicField wrapper, since these are plain scalar
-   * columns with no UI metadata to attach.
-   *
-   * Safe to call even when an entity isn't auditable: a non-auditable
-   * table simply won't have those columns in __DATA__, the getters
-   * resolve to undefined, and nothing breaks. Defining them
-   * unconditionally keeps this code branchless.
-   *
-   * Idempotent: if a property was already defined (subclass override,
-   * field collision, etc.), we leave it alone so we never clobber
-   * existing behavior.
+   * Define `id` and the audit columns (`__created_at__`, …) as getter/setter
+   * pairs backed by __DATA__ — like #makeField minus the DynamicField wrapper.
+   * Safe for non-auditable entities (getters resolve to undefined) and
+   * idempotent (never clobbers an already-defined property).
    */
   #defineFrameworkOwnedProps() {
     for (const name of FRAMEWORK_OWNED_COLUMN_NAMES) {
@@ -253,16 +236,9 @@ export default class CoreDocument {
   }
 
   async __ID__() {
-    // `this.id` is the cached value loaded with the doc; trust it when set
-    // regardless of __IS_NEW__. The DB fallback covers two cases:
-    //   1. A fresh doc that just got insertRow'd — id was assigned on the
-    //      payload but not pushed back to `this`, so `this.id` is still
-    //      undefined. getValue picks it up by name.
-    //   2. A doc loaded from a stale ref cache whose __FIELDS__ predates
-    //      the id-as-framework refactor and therefore didn't SELECT `id`.
-    //      Without this fallback, deleteChildRecords would issue a
-    //      `DELETE FROM <child> WHERE parent_id = undefined` and Knex
-    //      would bail with "Undefined binding(s) detected".
+    // Trust the cached id when set. The DB fallback covers a just-inserted
+    // doc (id not pushed back to `this`) and a stale ref cache that didn't
+    // SELECT `id` — without it deleteChildRecords would bind `undefined`.
     if (this.id != null) return this.id;
     return await loopar.db.getValue(this.__ENTITY__.name, "id", this.__DOCUMENT_NAME__);
   }
@@ -297,7 +273,7 @@ export default class CoreDocument {
     const updateRows = async (Ent, rows, parentType, parentId) => {
       const nextId = await loopar.db.nextId(Ent);
       const cleanParentId = Number.isFinite(+parentId) ? parseInt(parentId, 10) : parentId;
-      for (const [index, row] of rows/*.sort((a, b) => a.id - b.id)*/.entries()) {
+      for (const [index, row] of rows.entries()) {
         row.id = nextId + index;
         row.name = loopar.utils.randomString(15);
         row.parent_document = parentType;
@@ -364,18 +340,10 @@ export default class CoreDocument {
   }
 
   /**
-   * The app this record installs into, or `null`.
-   *
-   * A record belongs to an app's installer when its entity is flagged
-   * `include_in_installer` AND the record itself carries an `app`
-   * reference (e.g. a `Project` created *for* a specific app). This
-   * getter is the single source of truth for two coupled decisions:
-   *   - bumping the owning app's version on save (see above), and
-   *   - scoping uploaded files to that app (see `getFileScopeApp`).
-   *
-   * Keeping both off the same condition guarantees a record and its
-   * files never drift apart — if the record travels in the
-   * installer, its assets travel with it.
+   * The app this record installs into (entity flagged `include_in_installer`
+   * AND the record carries an `app`), or null. Single source of truth for
+   * both bumping the app version on save and scoping uploaded files
+   * (`getFileScopeApp`), so a record and its assets never drift apart.
    */
   get installerApp() {
     return (this.__ENTITY__?.include_in_installer === 1 && this.app)
@@ -384,38 +352,20 @@ export default class CoreDocument {
   }
 
   /**
-   * App scope for files saved through this document.
-   *
-   * **Runtime attachments → site.** When the record is plain tenant
-   * data (a profile picture, an end-user file input) this returns
-   * `null` and files land under `{tenant}/uploads/...`.
-   *
-   * **Installer records → their app.** When the record belongs to an
-   * app's installer (`installerApp`), its files must travel with the
-   * app's code/installer, so they go to `apps/{app}/uploads/...`
-   * instead of being orphaned in the site.
-   *
-   * `Entity` overrides this to return its owning app, because
-   * anything saved through Entity (page builders, designed
-   * entities, …) is *design-time content* resolved from `module`.
-   *
-   * Async because subclasses may need a DB lookup (e.g. Entity
-   * resolves the app from its `module`).
+   * App scope for files saved through this document: null → tenant
+   * `{site}/uploads`; installer records → `apps/{app}/uploads` so assets
+   * travel with the app. `Entity` overrides it (design-time content resolved
+   * from `module`). Async because subclasses may need a DB lookup.
    */
   async getFileScopeApp() {
     return this.installerApp;
   }
 
   /**
-   * Persist files that arrived with the request:
-   *   - `__REQ_FILES__`   — binary uploads (multipart).
-   *   - `__REMOTE_FILES__` — deferred URL imports staged by the
-   *     "Web" origin of the file picker.
-   *
-   * Both are scoped by `getFileScopeApp()` and return the same
-   * `{ name, src, previewSrc, type, size }` ref shape, so the caller
-   * (`#patchUploadedFileRefs`) can backfill designer/file-input
-   * fields that reference assets by name only.
+   * Persist files that arrived with the request — `__REQ_FILES__` (multipart
+   * binaries) and `__REMOTE_FILES__` (URL imports from the picker's "Web"
+   * origin). Both scoped by `getFileScopeApp()`; returns uniform refs so
+   * `#patchUploadedFileRefs` can backfill fields that reference by name.
    */
   async saveFiles() {
     const app = await this.getFileScopeApp();
@@ -432,13 +382,73 @@ export default class CoreDocument {
       if (ref) uploadedRefs.push(ref);
     }
 
+    // Bare URLs assigned server-side → reference assets (rewrites its own fields).
+    await this.#importUrlFileFields(app);
+
     return uploadedRefs;
   }
 
   /**
-   * Parse the `__REMOTE_FILES__` payload (a JSON string of
-   * `{ name, url, mode }` entries) staged by `base-form.jsx`.
+   * Normalize file-type fields holding a bare `http(s)://` string (assigned
+   * server-side, e.g. an OAuth avatar) into the canonical `[{ name, src, … }]`
+   * via a File Manager *reference* import. Runs after the row is written,
+   * re-persists only converted fields, idempotent; on failure the raw URL
+   * stays (display resolvers tolerate it).
    */
+  async #importUrlFileFields(app) {
+    const FILE_ELEMENTS = new Set([FILE_INPUT, IMAGE_INPUT, FILE_UPLOADER]);
+    const isRawUrl = (v) => typeof v === 'string' && /^https?:\/\//i.test(v.trim());
+
+    const fieldNames = [];
+    const collect = (nodes = []) => {
+      for (const node of nodes) {
+        if (node?.data?.name && FILE_ELEMENTS.has(node.element)) {
+          fieldNames.push(node.data.name);
+        }
+        collect(node.elements || []);
+      }
+    };
+    collect(this.getDocypeStructure());
+
+    const patches = {};
+    for (const fieldName of fieldNames) {
+      const value = this.__DATA__?.[fieldName] ?? this[fieldName];
+      if (!isRawUrl(value)) continue;
+
+      const url = value.trim();
+      let ref = null;
+      try {
+        ref = await this._processRemoteFile({ url, mode: 'reference' }, app);
+      } catch (err) {
+        console.warn(
+          `[core-document] URL import failed for ${this.__ENTITY__.name}.${fieldName}:`,
+          err?.message
+        );
+      }
+      if (!ref) continue;
+
+      patches[fieldName] = JSON.stringify([{
+        name: ref.name,
+        src: ref.src,
+        previewSrc: ref.previewSrc,
+        type: ref.type,
+        size: ref.size,
+      }]);
+      this.__DATA__[fieldName] = patches[fieldName];
+      this[fieldName] = patches[fieldName];
+    }
+
+    if (Object.keys(patches).length > 0) {
+      await loopar.db.updateRow(
+        this.__ENTITY__.name,
+        this.__DOCUMENT_NAME__,
+        patches,
+        this.__ENTITY__.is_single
+      );
+    }
+  }
+
+  /** Parse `__REMOTE_FILES__` (JSON of `{ name, url, mode }`, staged by base-form.jsx). */
   #remoteFilesFromData() {
     const raw = this.__DATA__.__REMOTE_FILES__;
     if (!raw) return [];
@@ -451,12 +461,7 @@ export default class CoreDocument {
     }
   }
 
-  /**
-   * Import one staged URL through the `File Manager` entity's
-   * `remoteImport` path. `mode` ("reference" / "download") selects
-   * the driver; `app` scopes the asset. Returns the resolved ref or
-   * null.
-   */
+  /** Import one URL via File Manager `remoteImport` (mode reference/download). Returns the ref or null. */
   async _processRemoteFile(remote, app = null) {
     if (!remote || !remote.url) return null;
 
@@ -484,16 +489,7 @@ export default class CoreDocument {
     return null;
   }
 
-  /**
-   * Shared helper for `saveFiles()` and any subclass override. Uploads
-   * one binary through the active storage driver via the `File Manager`
-   * entity, then returns the resolved `{ name, src, previewSrc, type,
-   * size }` so the caller can patch designer fields that referenced
-   * the file by name only.
-   *
-   * `app` is the scope: null routes to tenant (site), a non-empty
-   * string routes to `apps/{app}/uploads/`.
-   */
+  /** Upload one binary via File Manager (active driver). Returns the ref or null. `app` = scope. */
   async _processFile(file, app = null) {
     const fileManager = await loopar.newDocument("File Manager");
     fileManager.reqUploadFile = file;
@@ -516,25 +512,12 @@ export default class CoreDocument {
   }
 
   /**
-   * After files are uploaded through `loopar.storage.active`, the
-   * driver decides the final URL (local `/assets/...` or remote
-   * `https://res.cloudinary.com/...`). The page-builder designer and
-   * regular file inputs strip the `src` field when they serialize the
-   * form (the client only keeps `{ name, size, type }` — see
-   * `base-form.jsx#buildDesignerToSave`), so the doc we just saved to
-   * the DB has dangling references that the renderer can't resolve
-   * for non-local drivers.
-   *
-   * This method walks every JSON-encoded string field on `__DATA__`
-   * and patches any `{ name }` object whose name matches one of the
-   * files we just uploaded, injecting `src` + `previewSrc`. Affected
-   * fields are then re-written to the DB so subsequent reads see the
-   * resolved URLs.
-   *
-   * Discrimination: only items that look like file references
-   * (`{ name, size, type }` shape, missing `src`) are patched, so we
-   * don't accidentally rewrite unrelated objects that happen to share
-   * a `name` property.
+   * The client strips `src` when serializing file refs (keeps `{ name, size,
+   * type }` — see base-form.jsx#buildDesignerToSave), so after upload the
+   * saved doc has dangling refs the renderer can't resolve for non-local
+   * drivers. Walk every JSON string field on __DATA__, inject src/previewSrc
+   * into refs matching an uploaded name, and re-persist. Only file-ref-shaped
+   * objects (missing `src`) are touched.
    */
   async #patchUploadedFileRefs(uploadedRefs) {
     const byName = new Map(uploadedRefs.map(r => [r.name, r]));
@@ -728,8 +711,7 @@ export default class CoreDocument {
     const __ENTITY__ = entity;
     delete __ENTITY__.__REF__;
 
-    // Document-history flags travel to the client so forms can auto-mount
-    // the timeline. Sourced from the registry ref (single source of truth).
+    // History flags come from the registry ref so forms can auto-mount the timeline.
     const __REF__ = loopar.getRef(__ENTITY__.name) || {};
 
     return {
@@ -747,7 +729,6 @@ export default class CoreDocument {
         require_login_to_comment: __REF__.require_login_to_comment ? 1 : 0
       },
       ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
-      //data: await this.rawValues(),
       spacing: this.__SPACING__
     }
   }
@@ -790,10 +771,8 @@ export default class CoreDocument {
     const value = async (field) => {
       if (field.element === DESIGNER) {
         const fieldValue = loopar.utils.JSONparse(field.value, field.value)
-        // injectCookieIndexes: the designer/form view renders from rawValues
-        // (not values→parseDocStructure), so without this the carousel's
-        // saved slide (cookie) never reaches SSR and hydration mismatches
-        // against the client's live document.cookie read.
+        // The form view renders from rawValues (not parseDocStructure), so
+        // cookie indexes must be injected here or SSR/hydration mismatch.
         return field.value ? JSON.stringify(
           injectCookieIndexes(fieldValue.filter(field => (field.data || []).name !== ID))
         ) : "[]";

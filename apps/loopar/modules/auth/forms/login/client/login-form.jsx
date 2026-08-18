@@ -27,13 +27,31 @@ const ProviderIcons = {
   ),
 };
 
+const OAUTH_ERRORS = {
+  not_member: "This account doesn't belong to this site.",
+  email_unverified: 'Your email is not verified with that provider.',
+  access_denied: 'Sign in was cancelled.',
+};
+const oauthErrorMessage = (reason) =>
+  OAUTH_ERRORS[reason] || 'Could not complete sign in. Please try again.';
+
 /**
  * Social-login buttons. Self-contained: asks the Auth controller which
  * providers are enabled and renders a styled button (with brand logo) per
  * provider. Renders nothing when none are configured.
+ *
+ * Preferred flow is a POPUP (window.open): the login page/modal stays put
+ * while the provider round-trip happens in a small window; the callback's
+ * close-page reports back via postMessage (validated: same origin + our
+ * payload shape). Popup blocked → graceful fallback to the full-page
+ * redirect flow, which the server keeps supporting (no `popup=1` flag).
  */
-function OAuthButtons() {
+function OAuthButtons({ inModal, onClose }) {
   const [providers, setProviders] = useState([]);
+  const [connecting, setConnecting] = useState(null); // provider key or null
+  const [error, setError] = useState(null);
+  const popupRef = React.useRef(null);
+  const watchdogRef = React.useRef(null);
 
   useEffect(() => {
     let alive = true;
@@ -48,6 +66,70 @@ function OAuthButtons() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    const onMessage = (event) => {
+      // Origin-strict + shape-strict: anyone can postMessage a window.
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || data.type !== 'loopar:oauth') return;
+
+      clearInterval(watchdogRef.current);
+      setConnecting(null);
+
+      if (!data.ok) {
+        setError(oauthErrorMessage(data.reason));
+        return;
+      }
+
+      if (inModal) {
+        onClose?.();
+        loopar.emit('auth:changed');
+        return;
+      }
+      window.location.assign(data.landing || '/');
+    };
+
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearInterval(watchdogRef.current);
+    };
+  }, [inModal, onClose]);
+
+  const start = (e, provider) => {
+    e.preventDefault();
+    setError(null);
+
+    const url = `/auth/oauth?provider=${encodeURIComponent(provider)}&popup=1`;
+    const w = 500, h = 650;
+    const left = Math.max(0, (window.screen.width - w) / 2 + (window.screenLeft || 0));
+    const top = Math.max(0, (window.screen.height - h) / 2 + (window.screenTop || 0));
+
+    let popup = null;
+    try {
+      popup = window.open(url, 'loopar_oauth', `width=${w},height=${h},left=${left},top=${top}`);
+    } catch (_e) { /* fall through */ }
+
+    if (!popup) {
+      // Popup blocked → the classic full-page flow (no popup flag).
+      window.location.assign(`/auth/oauth?provider=${encodeURIComponent(provider)}`);
+      return;
+    }
+
+    popupRef.current = popup;
+    setConnecting(provider);
+
+    // If the user closes the popup by hand there is no postMessage —
+    // release the "connecting" state so the buttons work again.
+    clearInterval(watchdogRef.current);
+    watchdogRef.current = setInterval(() => {
+      if (popupRef.current?.closed) {
+        clearInterval(watchdogRef.current);
+        setConnecting(null);
+      }
+    }, 500);
+  };
+
   if (!providers.length) return null;
 
   return (
@@ -57,10 +139,15 @@ function OAuthButtons() {
         or
         <span style={{ flex: 1, height: 1, background: 'currentColor', opacity: 0.25 }} />
       </div>
+      {error && (
+        <div role="alert" style={{ fontSize: '0.85rem', color: '#d33c3c' }}>{error}</div>
+      )}
       {providers.map((p) => (
         <a
           key={p.provider}
           href={`/auth/oauth?provider=${encodeURIComponent(p.provider)}`}
+          onClick={(e) => start(e, p.provider)}
+          aria-disabled={!!connecting}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -75,10 +162,14 @@ function OAuthButtons() {
             textDecoration: 'none',
             fontSize: '0.95rem',
             fontWeight: 500,
+            opacity: connecting && connecting !== p.provider ? 0.5 : 1,
+            pointerEvents: connecting ? 'none' : 'auto',
           }}
         >
           {ProviderIcons[p.provider] || null}
-          <span>Continue with {p.label}</span>
+          <span>
+            {connecting === p.provider ? `Connecting to ${p.label}…` : `Continue with ${p.label}`}
+          </span>
         </a>
       ))}
     </div>
@@ -153,7 +244,7 @@ export default class LoginForm extends AuthContext {
     return (
       <Login ref={this.afterLogin} {...this.props}>
         {super.render()}
-        <OAuthButtons />
+        <OAuthButtons inModal={this.props.inModal} onClose={this.props.onClose} />
       </Login>
     )
   }

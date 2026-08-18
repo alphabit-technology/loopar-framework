@@ -102,6 +102,17 @@ export default class CoreController extends AuthController {
     return { redirect: url, hardRedirect: hard };
   }
 
+  /**
+   * Returns a raw-HTML payload: the router sends `body` as-is (text/html)
+   * instead of running the workspace SSR. For tiny self-contained pages a
+   * navigation endpoint must answer directly — e.g. the OAuth popup-close
+   * page, which just postMessages the opener and closes itself.
+   * Ignored on the AJAX channel (those requests always get JSON).
+   */
+  html(body, { status = 200 } = {}) {
+    return { __RAW_HTML__: true, status, body, contentType: 'text/html' };
+  }
+
   refresh(url = null) {
     if (url) return this.redirect(url, { hard: false });
     return { refresh: 'soft' };

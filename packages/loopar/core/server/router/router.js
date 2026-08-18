@@ -195,7 +195,11 @@ export default class Router extends Middleware {
       const result = await Controller.sendAction(action) || {};
 
       if (result) {
-        if (RouterUtils.isAjaxRequest(req) || (typeof result == "object" && result.redirect)) {
+        // Terminal payloads (redirect / raw HTML from `CoreController.html()`)
+        // must stay top-level: the controller middleware inspects
+        // `req.__WORKSPACE__` directly — merging them under `Document`
+        // would bury the marker and fall through to the workspace SSR.
+        if (RouterUtils.isAjaxRequest(req) || (typeof result == "object" && (result.redirect || result.__RAW_HTML__))) {
           req.__WORKSPACE__ = result;
         } else {
           req.__WORKSPACE__ = merge(

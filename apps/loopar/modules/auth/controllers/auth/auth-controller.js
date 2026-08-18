@@ -212,6 +212,9 @@ export default class AuthController extends BaseController {
    */
   async publicActionOauth() {
     const providerKey = String(this.query?.provider || '').trim().toLowerCase();
+    // `popup=1` marks a window.open flow: the callback then answers with the
+    // popup-close page (postMessage + close) instead of navigating.
+    const popup = this.query?.popup === '1' || this.query?.popup === 1;
     const provider = getProvider(providerKey);
     if (!provider) return this.redirect('/auth/login?oauth=unknown_provider');
 
@@ -232,8 +235,58 @@ export default class AuthController extends BaseController {
       url = provider.authUrl(client, { state, scopes });
     }
 
-    setOauthTx({ provider: providerKey, state, codeVerifier });
+    setOauthTx({ provider: providerKey, state, codeVerifier, popup });
     return this.redirect(url.toString(), { hard: true });
+  }
+
+  /**
+   * Terminal response for the OAuth callback, aware of how the flow started.
+   *
+   * Popup flow → a tiny self-contained page that postMessages the result to
+   * `window.opener` (origin-strict: targetOrigin is the page's own origin,
+   * never '*') and closes itself. Full-page flow → the usual redirects.
+   * When the tx cookie is missing/expired we can't know the flow — fall back
+   * to redirect (worst case the login page renders inside the popup).
+   */
+  #oauthFinish(tx, { ok, landing = null, reason = null }) {
+    if (!tx?.popup) {
+      return ok
+        ? this.redirect(landing, { hard: true })
+        : this.redirect(`/auth/login?oauth=${encodeURIComponent(reason || 'login_failed')}`);
+    }
+
+    const payload = JSON.stringify({
+      type: 'loopar:oauth',
+      ok: !!ok,
+      landing: ok ? landing : null,
+      reason: ok ? null : (reason || 'login_failed'),
+    }).replace(/</g, '\\u003c');
+
+    // Fallback when the window can't close itself (opener gone / opened as a
+    // tab): the session cookie is already set on success, so landing works.
+    const fallbackUrl = ok
+      ? (landing || '/')
+      : `/auth/login?oauth=${encodeURIComponent(reason || 'login_failed')}`;
+
+    return this.html(`<!doctype html>
+<html><head><meta charset="utf-8"><title>Signing in…</title></head>
+<body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+<p style="opacity:.6">Completing sign in…</p>
+<script>
+(function () {
+  var payload = ${payload};
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, window.location.origin);
+    }
+  } catch (e) {}
+  window.close();
+  setTimeout(function () {
+    window.location.replace(${JSON.stringify(fallbackUrl)});
+  }, 400);
+})();
+</script>
+</body></html>`);
   }
 
   /**
@@ -245,20 +298,23 @@ export default class AuthController extends BaseController {
     const code = this.query?.code;
     const state = this.query?.state;
     const providerError = this.query?.error;
-    if (providerError) {
-      return this.redirect(`/auth/login?oauth=${encodeURIComponent(providerError)}`);
-    }
 
+    // Read the tx FIRST: even error responses need to know whether the flow
+    // runs in a popup (close-page) or a full page (redirect).
     const tx = readOauthTx();
     clearOauthTx();
 
+    if (providerError) {
+      return this.#oauthFinish(tx, { ok: false, reason: providerError });
+    }
+
     if (!tx || !code || !state || state !== tx.state) {
-      return this.redirect('/auth/login?oauth=invalid_state');
+      return this.#oauthFinish(tx, { ok: false, reason: 'invalid_state' });
     }
 
     const provider = getProvider(tx.provider);
     const cfg = await loadProviderConfig(tx.provider);
-    if (!provider || !cfg) return this.redirect('/auth/login?oauth=not_configured');
+    if (!provider || !cfg) return this.#oauthFinish(tx, { ok: false, reason: 'not_configured' });
 
     const client = provider.client(cfg, oauthRedirectUri(this.req));
 
@@ -267,7 +323,7 @@ export default class AuthController extends BaseController {
       tokens = await provider.exchange(client, { code, codeVerifier: tx.codeVerifier });
     } catch (err) {
       console.error('[auth/oauth] code exchange failed:', err?.message);
-      return this.redirect('/auth/login?oauth=exchange_failed');
+      return this.#oauthFinish(tx, { ok: false, reason: 'exchange_failed' });
     }
 
     let profile;
@@ -275,7 +331,7 @@ export default class AuthController extends BaseController {
       profile = await provider.profile(tokens);
     } catch (err) {
       console.error('[auth/oauth] profile fetch failed:', err?.message);
-      return this.redirect('/auth/login?oauth=profile_failed');
+      return this.#oauthFinish(tx, { ok: false, reason: 'profile_failed' });
     }
 
     console.log('[auth/oauth] profile resolved:', {
@@ -286,7 +342,7 @@ export default class AuthController extends BaseController {
     });
 
     if (!profile?.email || !profile.email_verified) {
-      return this.redirect('/auth/login?oauth=email_unverified');
+      return this.#oauthFinish(tx, { ok: false, reason: 'email_unverified' });
     }
 
     let user, reason;
@@ -294,17 +350,17 @@ export default class AuthController extends BaseController {
       ({ user, reason } = await linkUser(profile, cfg, tx.provider));
     } catch (err) {
       console.error('[auth/oauth] linking failed:', err?.message);
-      return this.redirect('/auth/login?oauth=link_error');
+      return this.#oauthFinish(tx, { ok: false, reason: 'link_error' });
     }
     console.log('[auth/oauth] link result:', { matchedUser: user?.name || null, reason: reason || null });
     if (!user) {
-      return this.redirect(`/auth/login?oauth=${reason || 'login_failed'}`);
+      return this.#oauthFinish(tx, { ok: false, reason: reason || 'login_failed' });
     }
 
     await loopar.auth.login(user);
     // System users → desk; Web users (self-signup) → website.
     const landing = user.user_type === 'Web' ? (process.env.WEB_LANDING || '/') : '/desk';
-    return this.redirect(landing, { hard: true });
+    return this.#oauthFinish(tx, { ok: true, landing });
   }
 
   /**

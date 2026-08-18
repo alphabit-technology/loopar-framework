@@ -173,6 +173,14 @@ export class Middleware {
         return this.redirect(req, res, response.redirect);
       }
 
+      // Raw-HTML payload from `CoreController.html()` — send it as-is and
+      // skip the workspace SSR (used by self-contained pages like the OAuth
+      // popup-close page). Only reachable on navigation: the AJAX branch
+      // above already returned.
+      if (response?.__RAW_HTML__) {
+        return this.render(req, res, response);
+      }
+
       next();
     };
   }
