@@ -65,9 +65,11 @@ interface RootLayoutProps {
   permissions: ()=>{}
   primary?: boolean;
   onClose?: () => void;
+  /** Modal mini-workspace only: called with the saved document's name after a form save. */
+  onSaved?: (name: string, response?: unknown) => void;
 }
 
-const Main = ({ __META__, permissions, pathname, primary = true, onClose }: RootLayoutProps) => {
+const Main = ({ __META__, permissions, pathname, primary = true, onClose, onSaved }: RootLayoutProps) => {
   const { components, Document } = __META__;
   const { Workspace, View } = components;
 
@@ -104,6 +106,7 @@ const Main = ({ __META__, permissions, pathname, primary = true, onClose }: Root
               <WorkspaceProvider
                 primary={primary}
                 onClose={onClose}
+                onSaved={onSaved}
                 __META__={__META__}
                 Documents={Document ? {
                   [Document.name]: {
@@ -132,7 +135,7 @@ const Main = ({ __META__, permissions, pathname, primary = true, onClose }: Root
     : content;
 }
 
-const App = ({ __META__, permissions, pathname, primary = true, onClose }: RootLayoutProps) => {
+const App = ({ __META__, permissions, pathname, primary = true, onClose, onSaved }: RootLayoutProps) => {
   const [, setUpdate] = React.useState(false);
   const { cookieManager } = __META__.services;
 
@@ -146,6 +149,7 @@ const App = ({ __META__, permissions, pathname, primary = true, onClose }: RootL
             pathname={pathname}
             primary={primary}
             onClose={onClose}
+            onSaved={onSaved}
           />
         </PersistStateProvider>
       </CookiesProvider>

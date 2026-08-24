@@ -53,7 +53,7 @@ export default class BaseController extends CoreController {
 
     if (this.hasData()) {
       await document.save();
-      return this.redirect('update?name=' + document.name);
+      return { ...this.redirect('update?name=' + document.name), name: document.name };
     } else {
       if(this.preloaded == true) {
         return await document.values();

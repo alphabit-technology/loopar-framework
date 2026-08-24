@@ -3,7 +3,7 @@
 
 import ViewContext from '@context/view-context';
 
-export default class GPTView extends ViewContext {
+export default class AIView extends ViewContext {
     constructor(props){
         super(props);
     }

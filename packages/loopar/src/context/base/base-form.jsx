@@ -14,8 +14,31 @@ export default class BaseForm extends BaseDocument {
    * @param {Object} [options] - Forwarded to `send()`. Notables:
    *   `extra` (plain object merged into the outgoing body — e.g. anti-bot
    *   fields from a public form), `success`, `error`, `notRequireChanges`.
+   *
+   * Inside a modal mini-workspace (`this.props.inModal`) the server's
+   * post-save redirect must NOT navigate the browser (the transport is a
+   * global singleton — it would move the BASE page, not the modal). So the
+   * redirect is suppressed (`followRedirect: false`) and the saved document's
+   * name is reported to the modal's opener via `this.props.onSaved(name, r)`.
+   * The name comes from `r.name` (actionCreate/actionUpdate include it) with
+   * a fallback to parsing the legacy `redirect: 'update?name=X'` payload.
    */
   save(options = {}) {
+    if (this.props.inModal) {
+      const { success, ...rest } = options;
+      return this.send({
+        action: this.Document.meta.action,
+        followRedirect: false,
+        ...rest,
+        success: (r) => {
+          success?.(r);
+          const name = r?.name
+            ?? new URLSearchParams(String(r?.redirect || "").split("?")[1] || "").get("name");
+          this.props.onSaved?.(name, r);
+        },
+      });
+    }
+
     return this.send({ action: this.Document.meta.action, ...options });
   }
 
@@ -120,6 +143,9 @@ export default class BaseForm extends BaseDocument {
       success: handleSuccess,
       error: handleError,
       freeze: true,
+      // Modal saves: hand the redirect payload to `success` instead of
+      // navigating the (global) router — see save() above.
+      ...(options.followRedirect === false ? { followRedirect: false } : {}),
     });
   }
 

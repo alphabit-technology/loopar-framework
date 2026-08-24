@@ -50,13 +50,19 @@ const Icon = ({type, size, ...props}) => {
   return <Icon size={size || 24} className={cn(color, props.className)} />;
 }
 
+// Lazy: a static import would close the cycle @dialog -> entry-modal -> modal-workspace -> @dialog
+const EntryModal = React.lazy(() =>
+  import("@app/entry-modal").then((m) => ({ default: m.EntryModal }))
+);
+
 const MetaDialog = (props) => {
   const [open, setOpen] = useState(props.open || false);
+  const [entryPath, setEntryPath] = useState(null);
 
   useEffect(() => {
     setOpen(props.open)
   }, [props.open])
-  
+
   const handleSetOpenClose = (open) => {
     loopar.handleOpenCloseDialog(props.id, open);
     if(open) props.onOpen && props.onOpen();
@@ -88,6 +94,19 @@ const MetaDialog = (props) => {
    * line keeps the plain paragraph. Inline HTML per line (e.g. the <a> links
    * of the delete-connected message) still works as before.
    */
+  // Internal <a> inside raw-HTML content opens in an EntryModal (like Link
+  // inModal) instead of navigating away; modified clicks keep the native <a>.
+  const handleContentClick = (e) => {
+    const anchor = e.target.closest?.("a");
+    if (!anchor || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    const href = anchor.getAttribute("href") || "";
+    if (!href.startsWith("/") || anchor.target === "_blank") return;
+
+    e.preventDefault();
+    setEntryPath(href);
+  };
+
   const renderTextContent = (raw) => {
     const lines = String(raw)
       .split(/\n|<br\s*\/?>/gi)
@@ -98,6 +117,7 @@ const MetaDialog = (props) => {
       return (
         <div
           className="h-full"
+          onClick={handleContentClick}
           dangerouslySetInnerHTML={{ __html: `<p>${lines[0] || ""}</p>` }}
         />
       );
@@ -106,6 +126,7 @@ const MetaDialog = (props) => {
     return (
       <div
         className="h-full"
+        onClick={handleContentClick}
         dangerouslySetInnerHTML={{
           __html: `<ul class="list-disc pl-5 space-y-1 text-left">${lines
             .map((line) => `<li>${line}</li>`)
@@ -229,6 +250,11 @@ const MetaDialog = (props) => {
           )}
         </DialogContent>
       </Dialog>
+      {entryPath && (
+        <React.Suspense fallback={null}>
+          <EntryModal initialPath={entryPath} onClose={() => setEntryPath(null)} />
+        </React.Suspense>
+      )}
     </DialogContextProvider>
   );
 };

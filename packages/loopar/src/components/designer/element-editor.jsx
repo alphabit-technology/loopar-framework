@@ -1,11 +1,11 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import loopar from "loopar";
 import { elementsDict } from "@global/element-definition";
-import Tabs from "@tabs";
 import {MetaComponent} from "@@meta/meta-component";
 import { Separator } from "@cn/components/ui/separator";
-import Tab from "@tab";
+import { Input } from "@cn/components/ui/input";
+import { ChevronDown } from "lucide-react";
 import { getMetaFields } from "@@tools/meta-fields";
 import { DesignerContext, useDesigner } from "@context/@/designer-context";
 import { FormWrapper } from "@context/form-provider";
@@ -48,6 +48,17 @@ function mergeGroups(...arrays) {
 
   return Array.from(groupMap.values());
 }
+
+const ACTIVE_SECTION_KEY = "element-editor-active-section";\
+const NONE = "__none__";
+
+const readActiveSection = () => {
+  try {
+    return localStorage.getItem(ACTIVE_SECTION_KEY);
+  } catch (e) {
+    return null;
+  }
+};
 
 export function ElementEditor() {
   const { updateElement, updatingElement } = useDesigner();
@@ -153,6 +164,31 @@ export function ElementEditor() {
   
   const formRef = useRef(null);
 
+  const [search, setSearch] = useState("");
+  const [activeSection, setActiveSection] = useState(readActiveSection);
+  const query = search.trim().toLowerCase();
+
+  const toggleGroup = (group) => {
+    setActiveSection(prev => {
+      const next = prev === group ? NONE : group;
+      try { localStorage.setItem(ACTIVE_SECTION_KEY, next); } catch (e) {}
+      return next;
+    });
+  };
+
+  const groupNames = metaFieldsData.map(g => g.group);
+  const openGroup =
+    activeSection === NONE ? null :
+    groupNames.includes(activeSection) ? activeSection :
+    groupNames[0];
+
+  const fieldMatches = (field, props) => {
+    if (!query) return true;
+    const label = String(props?.data?.label || "");
+    return field.replaceAll("_", " ").toLowerCase().includes(query) ||
+      label.toLowerCase().includes(query);
+  };
+
   return (
     <DesignerContext.Provider
       value={{}}
@@ -164,47 +200,81 @@ export function ElementEditor() {
         formRef={formRef}
       >
         <div className="flex flex-col">
-          <div className="p-3 pb-0">
-           <span className='text-2xl'>{loopar.utils.Capitalize(elementName)}</span>
-           <span className="text-muted-foreground text-sm">{elementKey}</span>
+          <div className="sticky top-0 z-10 bg-background dark:bg-background-dark p-2 pb-1">
+            <div className="flex items-baseline gap-2 min-w-0 px-1 pb-1.5">
+              <span className="text-sm font-semibold truncate">{loopar.utils.Capitalize(elementName)}</span>
+              <span className="text-muted-foreground text-xs truncate">{elementKey}</span>
+            </div>
+            <Input
+              type="search"
+              placeholder="Search properties..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <Tabs
-            data={{ name: "element_editor_tabs" }}
-            tabsClassName="flex flex-wrap justify-start border"
-          >
-            {metaFieldsData.map(({ group, elements }) => (
-              <Tab
-                key={`${elementKey}-${group}-tab`}
-                label={loopar.utils.Capitalize(group)}
-                name={group + "_tab"}
-              >
-                <div className="flex flex-col gap-2">
-                  {Object.entries(elements).map(([field, props]) => {
-                    if (dontHaveMetaElements.includes(field)) return null;
-                    if (!props.element) {
-                      return <div key={`${elementKey}-${group}-${field}`}>{props}</div>;
-                    }
+          {metaFieldsData.map(({ group, elements }, index) => {
+            const fields = Object.entries(elements)
+              .filter(([field]) => !dontHaveMetaElements.includes(field));
+            const matches = query
+              ? fields.filter(([field, props]) => props.element && fieldMatches(field, props)).length
+              : fields.length;
 
-                    return (
-                      <MetaComponent
-                        key={`${elementKey}-${group}-${field}`}
-                        component={props.element}
-                        render={Component => (
-                          <Component
-                            data={{
-                              ...props.data,
-                              name: elementKey + field,
-                              label: props.data?.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
-                            }}
-                          />
-                        )}
-                      />
-                    );
-                  })}
+            const isCollapsed = !query && openGroup !== group;
+
+            return (
+              <div
+                key={`${elementKey}-${group}-section`}
+                className={query && matches === 0 ? "hidden" : "pb-2"}
+              >
+                <div className="sticky top-[78px] z-[5] bg-background dark:bg-background-dark px-1 pb-1">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between rounded-md bg-secondary hover:bg-muted px-3 py-2 text-left transition-colors"
+                    onClick={() => toggleGroup(group)}
+                  >
+                    <span className="text-sm font-semibold uppercase tracking-wider">{loopar.utils.Capitalize(group)}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                    />
+                  </button>
                 </div>
-              </Tab>
-            ))}
-          </Tabs>
+                <div className={`flex-col gap-2 pl-2 ${isCollapsed ? "hidden" : "flex"}`}>
+                  <div className='w-full border-l-3 p-2 pt-3 border-secondary'>
+                    {fields.map(([field, props]) => {
+                      if (!props.element) {
+                        return (
+                          <div
+                            key={`${elementKey}-${group}-${field}`}
+                            className={query ? "hidden" : ""}
+                          >{props}</div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={`${elementKey}-${group}-${field}`}
+                          className={query && !fieldMatches(field, props) ? "hidden" : ""}
+                        >
+                          <MetaComponent
+                            component={props.element}
+                            render={Component => (
+                              <Component
+                                data={{
+                                  ...props.data,
+                                  name: elementKey + field,
+                                  label: props.data?.label || loopar.utils.Capitalize(field.replaceAll("_", " ")),
+                                }}
+                              />
+                            )}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </FormWrapper>
     </DesignerContext.Provider>

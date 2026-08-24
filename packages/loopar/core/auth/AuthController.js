@@ -108,10 +108,10 @@ export default class AuthController {
 
     const cap = workspaceCapabilities(workspace);
 
-    const isAjax = this.method === 'POST' || workspace === 'api' || this.#isRpc;
+    const isApi = workspace === 'api';
     const resolve = (message, url) => loopar.throw(
       message,
-      isAjax ? null : (url || '/auth/login')
+      isApi ? null : (url || '/auth/login')
     );
 
     if (this.#isRpc) {
@@ -172,8 +172,11 @@ export default class AuthController {
 
     if (cap.isAuth) return true;
     if (cap.requiresAuth) {
+      // On a full-page GET the requested URL IS the page the user was on —
+      // carry it as ?redirect=. On AJAX `originalUrl` is the fetch/RPC url,
+      // not the page: the client appends its own location instead.
       let url = '/auth/login';
-      if (!isAjax) {
+      if (String(this.method).toUpperCase() === 'GET') {
         const back = this.req?.originalUrl || '';
         if (back && workspaceRequiresAuth(getWorkspaceName(back))) {
           url += `?redirect=${encodeURIComponent(back)}`;

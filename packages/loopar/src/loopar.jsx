@@ -2,7 +2,7 @@ import { createRouter } from "@@tools/router/router";
 import * as dateUtils from "@global/date-utils";
 import * as Helpers from "@global/helper";
 import scriptManager from "@@tools/script-manager";
-import { elementsDict, AIPrompt } from "@global/element-definition";
+import { elementsDict, AIPrompt, AIStructureSchema, sanitizeAIStructure } from "@global/element-definition";
 import Emitter from '@services/emitter/emitter';
 import animation from "./loopar/animation.js";
 import { ClientDatabase } from "./loopar/ClientDatabase.js";
@@ -251,4 +251,4 @@ class Loopar {
 
 const loopar = new Loopar();
 export default loopar;
-export { loopar, elementsDict, AIPrompt };
+export { loopar, elementsDict, AIPrompt, AIStructureSchema, sanitizeAIStructure };

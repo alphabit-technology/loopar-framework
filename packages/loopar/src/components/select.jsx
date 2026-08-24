@@ -4,11 +4,18 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import loopar from "loopar";
 import { Select } from "./select/base-select.jsx";
 import { FormDescription } from "@cn/components/ui/form";
+import { Button } from "@cn/components/ui/button";
+import { PlusIcon } from "@radix-ui/react-icons";
+import { useWorkspace } from "@workspace/workspace-provider";
+import { EntryModal } from "@app/entry-modal";
+import { makeUrl } from "./link.jsx";
 
 export default function MetaSelect(props) {
   const [rows, setRows] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const { award } = useWorkspace();
   
   const titleFields = useRef(["label"]);
   const model = useRef(null);
@@ -251,27 +258,75 @@ export default function MetaSelect(props) {
     hasMore: !isLocal && paginationRef.current.page < paginationRef.current.pages
   }), [isLocal, rows]);
 
+  const serverEntity = useMemo(() => {
+    return !isLocal ? builtOptions[0]?.value : null;
+  }, [isLocal, builtOptions]);
+
+  const canCreate = useMemo(() => {
+    if (!serverEntity || data.disabled) return false;
+    // Same permission check Link performs for its target (award ignores case/spaces).
+    return !!award?.(String(serverEntity).toLowerCase().replaceAll(" ", ""), "create", false);
+  }, [serverEntity, data.disabled, award]);
+
+  const handleCreated = useCallback((name) => {
+    setCreateOpen(false);
+    if (!name) return;
+
+    // Optimistic row so the trigger can render the value immediately…
+    setRows(prev => (
+      prev.some(r => r?.value === name) ? prev : [{ value: name, label: name }, ...prev]
+    ));
+    fieldRef.current?.onChange(name);
+
+    model.current = model.current || builtOptions[0];
+    getServerData("", 1, false).catch(() => {});
+  }, [builtOptions, getServerData]);
+
   return renderInput((field) => {
     fieldRef.current = field;
     
     return (
       <>
         <FormLabel {...props} field={field} />
-        <Select
-          field={field}
-          options={rows}
-          search={search}
-          loadMore={loadMore}
-          pagination={pagination}
-          data={data}
-          onSelect={field.onChange}
-          selected={currentOption(field.value)}
-          isLoading={isLoading}
-          error={error}
-          isLocal={isLocal}
-          renderOption={props.renderOption}
-          model={getModel()}
-        />
+        <div className="flex w-full items-start gap-1">
+          <div className="min-w-0 flex-1">
+            <Select
+              field={field}
+              options={rows}
+              search={search}
+              loadMore={loadMore}
+              pagination={pagination}
+              data={data}
+              onSelect={field.onChange}
+              selected={currentOption(field.value)}
+              isLoading={isLoading}
+              error={error}
+              isLocal={isLocal}
+              renderOption={props.renderOption}
+              model={getModel()}
+            />
+          </div>
+          {canCreate && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              aria-label={`Create ${serverEntity}`}
+              title={`Create ${serverEntity}`}
+              onClick={() => setCreateOpen(true)}
+            >
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {createOpen && (
+          <EntryModal
+            initialPath={makeUrl(`${serverEntity}/create`)}
+            onClose={() => setCreateOpen(false)}
+            onSaved={handleCreated}
+          />
+        )}
         {(data.description && props.simpleInput !== true) && (
           <FormDescription>{data.description}</FormDescription>
         )}

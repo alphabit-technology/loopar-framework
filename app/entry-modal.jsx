@@ -10,7 +10,7 @@ import { getWorkspaceName } from "@global/router-utils";
  * the singleton / socket / session. The workspace is derived from the initial
  * path so hosted docs route as their real workspace (e.g. `auth`), not "modal".
  */
-export function EntryModal({ __META__, View, initialPath, onClose }){
+export function EntryModal({ __META__, View, initialPath, onClose, onSaved }){
   const path = initialPath || (typeof window !== "undefined" ? window.location.pathname : "/");
   const workspace = getWorkspaceName(path);
 
@@ -27,6 +27,7 @@ export function EntryModal({ __META__, View, initialPath, onClose }){
       pathname={path}
       primary={false}
       onClose={onClose}
+      onSaved={onSaved}
     />
   );
 }

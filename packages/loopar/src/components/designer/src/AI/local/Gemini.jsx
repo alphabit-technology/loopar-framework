@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, createContext, useContext } from "react";
 import {Button} from "@cn/components/ui/button";
+import {useDocument} from "@context/@/document-context";
 
-import { AIPrompt, loopar } from "loopar";
+import { AIPrompt, AIStructureSchema, sanitizeAIStructure, loopar } from "loopar";
 
 const GeminiContext = createContext({
   status: "checking"
@@ -68,19 +69,23 @@ export const GeminiContextProvider = ({children}) => {
 
 export const useGeminiContext = () => useContext(GeminiContext)
 
-export function GeminiSend({inputText, isUserActivated, onStart, onComplete,  fallbackUrl = "/api/llm/summarize" }) {
+export function GeminiSend({inputText, getCurrentDesign, isUserActivated, onStart, onComplete, onError}) {
   const [sendingPrompt, setSendingPrompt] = useState(false);
   const {status} = useGeminiContext();
+  const documentType = useDocument().entity;
 
   const doPrompt = async () => {
     onStart && onStart();
     try {
       if(navigator.userActivation.isActive) {
         setSendingPrompt(true);
-        const prompt = AIPrompt(inputText, "Entity");
+        const prompt = AIPrompt(inputText, documentType, getCurrentDesign ? getCurrentDesign() : null);
+        const format = AIStructureSchema(documentType);
+
+        const modelParams = LanguageModel.params ? await LanguageModel.params() : null;
         const session = await LanguageModel.create({
-          temperature: 0.1,
-          topK: 2,
+          temperature: modelParams?.defaultTemperature ?? 0.7,
+          topK: modelParams?.defaultTopK ?? 3,
           initialPrompts: [
             {
               role: "system",
@@ -89,16 +94,39 @@ export function GeminiSend({inputText, isUserActivated, onStart, onComplete,  fa
           ],
         });
 
-        const r = await session.prompt(prompt.user.content);
-        
-        onComplete && onComplete(loopar.utils.evaluateAIResponse(r, "[", "]"));
+        let r;
+        try {
+          r = await session.prompt(prompt.user.content, { responseConstraint: format.schema });
+        } catch (err) {
+          // responseConstraint unsupported on this Chrome/model -> unconstrained retry
+          console.warn("responseConstraint failed, retrying unconstrained", err);
+          r = await session.prompt(prompt.user.content);
+        }
+
+        let parsed;
+        try {
+          const obj = JSON.parse(r);
+          parsed = sanitizeAIStructure(Array.isArray(obj) ? obj : obj.elements || []);
+        } catch {
+          parsed = sanitizeAIStructure(loopar.utils.evaluateAIResponse(r, "[", "]"));
+        }
+
+        // Empty result: NEVER hand it to onComplete — that would wipe the design
+        if (parsed.length) {
+          onComplete && onComplete(parsed);
+        } else {
+          onError && onError();
+          loopar.notify("The AI returned an empty design, your current design was kept. Try rephrasing the request.", "warning");
+        }
       }else{
         loopar.throw("Please interact with the page (click, tap, etc.) before using the AI features.");
       }
     } catch (err) {
       console.error("LLM error", err);
-      onComplete && onComplete([]);
+      onError && onError(err);
       loopar.throw(err.message || err.toString());
+    } finally {
+      setSendingPrompt(false);
     }
   };
 

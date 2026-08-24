@@ -3,7 +3,7 @@
 
 import ListContext from '@context/list-context';
 
-export default class GPTList extends ListContext {
+export default class AIList extends ListContext {
     constructor(props){
         super(props);
     }

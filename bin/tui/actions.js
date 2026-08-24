@@ -9,7 +9,7 @@ import { tenantList } from "loopar/bin/tenant/tenant-builder.js";
 import * as tenantOps from "loopar/bin/tenant/tenant-ops.js";
 import { coreEnv, setCoreMode } from "loopar/core/config/core-config.js";
 import { distIsReady } from "loopar/core/server/runtime-mode.js";
-import { withPm2, restartCoreProcess, coreProcessStatus } from "../cli/pm2.js";
+import { withPm2, restartCoreProcess, coreProcessStatus, CORE_PROCESS_NAME } from "../cli/pm2.js";
 import { silenced, quit } from "./term.js";
 import { state, NO_PM2 } from "./state.js";
 import { render } from "./render.js";
@@ -175,7 +175,7 @@ export async function run(action) {
 
   if (!sel) return;
 
-  if (action === "logs") return openLogs(sel.name);
+  if (action === "logs") return openLogs(CORE_PROCESS_NAME);
 
   if (action === "open") {
     if (!sel.url) {

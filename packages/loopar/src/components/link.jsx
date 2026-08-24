@@ -92,6 +92,7 @@ const useActiveSection = (to, enabled) => {
 export function Link({
   to = "",
   inModal,
+  onSaved,
   variant = "link",
   size,
   children,
@@ -217,7 +218,7 @@ export function Link({
         >
           {children}
         </a>
-        {modalOpen && <EntryModal initialPath={url} onClose={() => setModalOpen(false)} />}
+        {modalOpen && <EntryModal initialPath={url} onClose={() => setModalOpen(false)} onSaved={onSaved} />}
       </>
     );
   }

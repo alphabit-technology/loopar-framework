@@ -57,11 +57,10 @@ const fixMeta = (structure) => {
       const currentKey = getNodeKey(el);
       const finalKey = currentKey || elementManage.getUniqueKey();
       const needsKeyAtNode = el.node !== finalKey;
-      const needsKeyMirror = data.key !== finalKey;
       const needsIdMirror = data.id == null;
       const needsLabel = writable && data.label == null;
       const needsName = writable && data.name == null;
-      const dataChanged = needsKeyMirror || needsIdMirror || needsLabel || needsName || el.data == null;
+      const dataChanged = needsIdMirror || needsLabel || needsName || el.data == null;
       const hasChildren = Array.isArray(el.elements) && el.elements.length > 0;
       const newChildren = hasChildren ? fixMeta(el.elements) : el.elements;
       const childrenChanged = newChildren !== el.elements;
@@ -366,7 +365,7 @@ export const BaseDesigner = (props) => {
       return;
     }
 
-    const fixed = parsed;
+    const fixed = fixMeta(parsed);
 
     storeRef.current.populate(fixed);
     setLocalMetaComponents(fixed);
@@ -444,6 +443,11 @@ export const BaseDesigner = (props) => {
       } : prev);
     }
   }, [findElement, setMeta, scheduleCommit]);
+
+  // Current structure for the AI prompt ("edit current design" mode)
+  const getCurrentDesign = useCallback(() => {
+    return storeRef.current.reconcileTree(stateRef.current.localMetaComponents);
+  }, []);
 
   const deleteElement = useCallback((element) => {
     const removeElement = (elements) => {
@@ -595,11 +599,12 @@ export const BaseDesigner = (props) => {
     <DesignerContext.Provider value={contextValue}>
       <BaseFormContext.Provider value={{}}>
         <div className="">
-            <Prompt 
-              defaultPrompt={currentPrompt} 
-              open={sendingPrompt} 
+            <Prompt
+              defaultPrompt={currentPrompt}
+              open={sendingPrompt}
               onClose={() => setSendingPrompt(false)}
               onComplete={setMeta}
+              getCurrentDesign={getCurrentDesign}
             />
           <div className="flex w-full flex-row justify-between pt-2 px-2 pb-0">
             <div>

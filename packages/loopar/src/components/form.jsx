@@ -76,7 +76,7 @@ export default function MetaForm(props) {
       setSaved(true);
       // Blank the fields so the form is ready for another submission
       // (formRef api → react-hook-form reset with explicit empty values).
-      formRef.current?.clear?.();
+      //formRef.current?.clear?.();
     } catch (e) {
       setErrorMessage(e?.message || error_message || "Something went wrong. Please try again.");
     } finally {

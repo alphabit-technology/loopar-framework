@@ -3,7 +3,7 @@
 
 import FormContext from '@context/form-context';
 
-export default class GPTForm extends FormContext {
+export default class AIForm extends FormContext {
     constructor(props) {
         super(props);
     }

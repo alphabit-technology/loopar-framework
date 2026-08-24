@@ -136,6 +136,11 @@ export default class HTTP {
    * @param {Function} [options.error]
    * @param {Function} [options.always]
    * @param {boolean}  [options.freeze=true]
+   * @param {boolean}  [options.followRedirect=true] - Pass `false` to keep a
+   *   server `redirect` payload OUT of the router: no navigation happens and
+   *   `success` receives the full response (redirect included) so the caller
+   *   can act on it. Used by saves inside a modal mini-workspace, where the
+   *   global navigate would move the BASE page, not the modal.
    */
   async send(options = {}) {
     const freeze = options.freeze !== false;
@@ -177,7 +182,7 @@ export default class HTTP {
             });
           }
 
-          if (data?.redirect) {
+          if (data?.redirect && options.followRedirect !== false) {
             if (data.hardRedirect) {
               window.location.replace(data.redirect);
             } else {
@@ -188,7 +193,9 @@ export default class HTTP {
           }
 
           if (options.success) {
-            options.success?.(data?.message || data);
+            // followRedirect:false callers need the whole payload (redirect,
+            // name, …), not the message shorthand.
+            options.success?.(options.followRedirect === false ? data : (data?.message || data));
           }
 
           data?.notify && this.#ui.notify(data.notify);

@@ -76,7 +76,11 @@ export function WorkspaceProvider({
   // but only the PRIMARY touches global singletons (workspace bind, session,
   // socket, window.__user__).
   const primary = props.primary !== false;
-  const onClose = props.onClose; 
+  const onClose = props.onClose;
+  // Modal-only: notifies the modal's opener that a form inside it saved a
+  // document (BaseForm.save calls it with the document name). Same threading
+  // path as onClose: EntryModal → App → here → View.
+  const onSaved = props.onSaved;
   const seeded = Object.keys(props.Documents || {}).length > 0;
 
   // Singleton binds — only the provider knows the active workspace and
@@ -143,9 +147,9 @@ export function WorkspaceProvider({
       .filter(doc => doc.active)
       .map(doc => {
         const { View } = doc;
-        return View && <View Document={doc.Document} inModal={!primary} onClose={onClose} key={doc.key} />;
+        return View && <View Document={doc.Document} inModal={!primary} onClose={onClose} onSaved={onSaved} key={doc.key} />;
       });
-  }, [Documents, primary, onClose]);
+  }, [Documents, primary, onClose, onSaved]);
 
   const [openNav, setOpenNav] = usePersist(__WORKSPACE_NAME__);
   const ActiveView = useMemo(() => memoizedActiveView, [memoizedActiveView, refreshFlag]);

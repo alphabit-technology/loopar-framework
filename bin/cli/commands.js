@@ -179,14 +179,22 @@ export function kill() {
   pm2Command('pm2 kill');
 }
 
-export function logs(siteName) {
-  if (!siteName) {
-    log(cyan('Showing logs for all sites...\n'));
-    pm2Command(`pm2 logs all --namespace ${projectName}`);
-  } else {
-    log(cyan(`Showing logs for ${siteName}...\n`));
-    pm2Command(`pm2 logs ${siteName}`);
+
+export function logs(target, extra) {
+  let name = target;
+  let lines = 100;
+
+  if (target && /^-+lines$/.test(target)) {
+    lines = parseInt(extra, 10) || lines;
+    name = null;
+  } else if (extra && /^-+lines$/.test(extra)) {
+    // `yarn logs <proc> --lines N` puts N in argv[5]; index.js forwards it as `lines`
+    lines = parseInt(process.argv[5], 10) || lines;
   }
+
+  name = name || CORE_PROCESS_NAME;
+  log(cyan(`Showing logs for ${name}...\n`));
+  pm2Command(`pm2 logs ${name} --lines ${lines}`);
 }
 
 export async function watch() {

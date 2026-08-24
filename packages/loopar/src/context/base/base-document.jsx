@@ -29,6 +29,10 @@ export default class BaseDocument extends React.Component {
   }
 
   get __hasSidebar__() {
+    // Never inside a modal mini-workspace: the InnerSidebar (and its floating
+    // toggle) are `position: fixed`, so from a modal they would paint over the
+    // BASE page's viewport, not the modal.
+    if (this.props.inModal) return false;
     return typeof this.props.hasSidebar !== "undefined" ? this.props.hasSidebar : this.hasSidebar;
   }
 

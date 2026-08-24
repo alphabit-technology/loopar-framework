@@ -226,66 +226,93 @@ export function resolveColumnFormat(field) {
   if (!declared) return null;
   return COLUMN_FORMAT[String(declared).toLowerCase()] || null;
 }
+/**
+ * Element groups: palette categories for the designer sidebar.
+ *
+ * Classification criteria:
+ *  - layout:     pure structure — no content or semantics of its own, only arranges children.
+ *  - content:    text and inline content.
+ *  - media:      images, video and visual media collections.
+ *  - components: prefabricated blocks with their own internal style/layout.
+ *  - data:       data-driven — render entity data or external services.
+ *  - meta:       no visual output; page-level configuration.
+ *  - form:       writable inputs — the ONLY group that persists DB columns
+ *                (see `writable`, consumed by elementsDict.isWritable).
+ *
+ * `label` is the display name in the designer sidebar; `writable` drives
+ * persistence semantics — reclassifying an element between non-writable
+ * groups is purely a UI concern and can never change the DB schema.
+ */
 export const ELEMENT_GROUPS = Object.freeze({
-  LAYOUT_ELEMENT: 'layout',
-  DESIGN_ELEMENT: 'design',
-  FORM_ELEMENT: 'form',
-  HTML_ELEMENT: 'html'
+  layout:     { label: "Layout",     writable: false },
+  content:    { label: "Content",    writable: false },
+  media:      { label: "Media",      writable: false },
+  components: { label: "Components", writable: false },
+  data:       { label: "Data",       writable: false },
+  meta:       { label: "Meta",       writable: false },
+  form:       { label: "Form",       writable: true },
+  system:     { label: "System",     writable: true },
 });
 
-const { LAYOUT_ELEMENT, DESIGN_ELEMENT, FORM_ELEMENT, HTML_ELEMENT } = ELEMENT_GROUPS;
-
 export const elementsDefinition = {
-  [LAYOUT_ELEMENT]: [
+  layout: [
     { element: "section", icon: "GalleryVertical" },
+    { element: "container", icon: "Container" },
     { element: "div", icon: "Box", droppable: true},
     { element: "row", icon: "Columns2" },
     { element: "col", icon: "RectangleVertical" },
-    { element: "card", icon: "PanelTop" },
-    { element: "feature_card", icon: "BadgeCheck" },
-    { element: "banner", icon: "GalleryHorizontalEnd", droppable:true, designerClasses: "h-full w-full p-3 py-6" },
-    { element: "banner_image", droppable: true, icon: "ImagePlus" },
+    { element: "fragment", icon: "Scan" },
+    { element: "panel", icon: "PanelBottom", designerClasses: "min-h-[100px] w-full" },
     { element: "tabs", icon: "AppWindow" },
     { element: "tab", icon: "PanelTop", show_in_design: false  },
     { element: "generic", icon: "Code" },
     { element: "menu_content", icon: "Menu" },
-    { element: "fragment", icon: "Scan" },
-    { element: "container", icon: "Container" },
-    { element: "panel", icon: "PanelBottom", designerClasses: "min-h-[100px] w-full" },
-    { element: "contact_form", icon: "Contact"},
-    { element: "form", icon: "ClipboardList"},
   ],
-  [DESIGN_ELEMENT]: [
-    { element: "image", icon: "Image", droppable: false },
-    { element: "slider", icon: "GalleryHorizontal" },
-    { element: "carousel", icon: "GalleryHorizontalEnd", designerClasses: "pt-2" },
-    { element: "gallery", icon: "Images", designerClasses: "pt-3" },
-    { element: "video_embed", icon: "MonitorPlay", droppable: false },
-    { element: "text_block", icon: "Type" },
-    { element: "text_block_icon", icon: "MessageSquareText" },
-    { element: "button", icon: "SquareMousePointer" },
-    { element: "link", icon: "Link", droppable: false },
-    { element: "icon", icon: "Shapes" },
-    { element: "markdown", icon: "BookOpenCheck", designerOnly: true, droppable: false },
-    { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
+  content: [
     { element: "title", icon: "Heading1", droppable: false },
     { element: "subtitle", icon: "Heading2", droppable: false },
     { element: "paragraph", icon: "Pilcrow", droppable: false },
-    { element: "direct-preview", icon: "View" },
-    //{ element: "direct-preview-iframe", icon: "View" },
-    { element: "stripe", icon: "CreditCard" },
-    { element: "stripe_embebed", icon: "CreditCard" },
-    { element: "stripe_plans", icon: "LayoutGrid" },
-    { element: "seo", icon: "Search", designerOnly: true },
+    { element: "text_block", icon: "Type" },
+    { element: "text_block_icon", icon: "MessageSquareText" },
+    { element: "markdown", icon: "BookOpenCheck", designerOnly: true, droppable: false },
+    { element: "html_block", icon: "Code", type: TYPES.text, designerOnly: true, clientOnly: true },
+    { element: "icon", icon: "Shapes" },
+    { element: "link", icon: "Link", droppable: false },
+    { element: "button", icon: "SquareMousePointer" },
+  ],
+  media: [
+    { element: "image", icon: "Image", droppable: false },
+    { element: "gallery", icon: "Images", designerClasses: "pt-3" },
+    { element: "slider", icon: "GalleryHorizontal" },
+    { element: "carousel", icon: "GalleryHorizontalEnd", designerClasses: "pt-2" },
+    { element: "video_embed", icon: "MonitorPlay", droppable: false },
+    { element: "banner_image", droppable: true, icon: "ImagePlus" },
+  ],
+  components: [
+    { element: "card", icon: "PanelTop" },
+    { element: "feature_card", icon: "BadgeCheck" },
+    { element: "banner", icon: "GalleryHorizontalEnd", droppable:true, designerClasses: "h-full w-full p-3 py-6" },
+    { element: 'review', icon: "Star"},
+    { element: "contact_form", icon: "Contact"},
     { element: 'particles', icon: 'Sparkles' },
     { element: 'particles_settings', icon: 'Settings2' },
     { element: 'example_viewer', icon: 'Scan' },
-    { element: 'review', icon: "Star"},
+    { element: "direct-preview", icon: "View" },
+    //{ element: "direct-preview-iframe", icon: "View" },
+  ],
+  data: [
     { element: 'collection', icon: "LayoutGrid"},
     { element: 'collection_view', icon: "LayoutGrid", show_in_design: false},
-    { element: "entity", icon: "Code"}
+    { element: "entity", icon: "Code"},
+    { element: "form", icon: "ClipboardList"},
+    { element: "stripe", icon: "CreditCard" },
+    { element: "stripe_embebed", icon: "CreditCard" },
+    { element: "stripe_plans", icon: "LayoutGrid" },
   ],
-  [FORM_ELEMENT]: [
+  meta: [
+    { element: "seo", icon: "Search", designerOnly: true },
+  ],
+  form: [
     { element: "input", icon: "RectangleEllipsis", type: TYPES.string },
     { element: "password", icon: "KeyRound", type: TYPES.text },
     { element: "date", icon: "Calendar", type: TYPES.date, format: 'YYYY-MM-DD' },
@@ -295,17 +322,12 @@ export const elementsDefinition = {
     { element: "integer", icon: "Binary", type: TYPES.integer, show_in_design: false },
     { element: "decimal", icon: "Hash", type: TYPES.decimal, show_in_design: false },
     { element: "select", icon: "ChevronDown", type: TYPES.text },
-    { element: "padding", icon: "Shrink", type: TYPES.text },
-    { element: "margin", icon: "Expand", type: TYPES.text },
     { element: "textarea", icon: "FileText", type: TYPES.longtext },
-    { element: "tailwind", icon: "SiTailwindcss", type: TYPES.longtext },
     { element: "text_editor", icon: "TextCursorInput", type: TYPES.longtext, clientOnly: true },
     { element: "checkbox", icon: "SquareCheck", type: TYPES.integer },
     { element: "switch", icon: "ToggleLeft", type: TYPES.integer },
-    { element: "id", icon: "BookKey", type: TYPES.increments, show_in_design: false },
     { element: "form_table", icon: "Table", type: TYPES.string },
     { element: "markdown_input", icon: "BookOpenCheck", type: TYPES.text, clientOnly: true },
-    { element: "designer", icon: "Brush", type: TYPES.longtext },
     { element: "file_input", icon: "FileInput", type: TYPES.longtext },
     { element: "file_uploader", icon: "FileUp", type: TYPES.longtext },
     { element: "image_input", icon: "FileImage", type: TYPES.longtext },
@@ -313,6 +335,16 @@ export const elementsDefinition = {
     { element: "icon_input", icon: "Shapes", type: TYPES.text },
     { element: "radio_group", icon: "CircleDot", type: TYPES.text },
     { element: "radio_item", icon: "CircleDot", type: TYPES.integer, show_in_design: false },
+  ],
+  // Writable like `form` (they persist DB columns), but framework-facing:
+  // style/config inputs and system-managed fields, not fields a person fills
+  // in a business form. Kept out of every AI generation context.
+  system: [
+    { element: "id", icon: "BookKey", type: TYPES.increments, show_in_design: false },
+    { element: "padding", icon: "Shrink", type: TYPES.text },
+    { element: "margin", icon: "Expand", type: TYPES.text },
+    { element: "tailwind", icon: "SiTailwindcss", type: TYPES.longtext },
+    { element: "designer", icon: "Brush", type: TYPES.longtext },
     { element: "slot", icon: "Plug"},
     { element: "metadata", icon: "Code", type: TYPES.json}
   ]
@@ -324,7 +356,7 @@ export const elementsDict = Object.freeze(Object.entries(elementsDefinition).red
       def: {
         ...element,
         group: key,
-        isWritable: key === FORM_ELEMENT,
+        isWritable: ELEMENT_GROUPS[key]?.writable === true,
         droppable: element.droppable,
         designerClasses: element.designerClasses ?? null,
       }
@@ -609,7 +641,145 @@ global.fieldIsWritable = (field) => {
   return elementsDict[field.element]?.def?.isWritable;
 }
 
-export const AIPrompt = (prompt, document_type ) => {
+/**
+ * Document contexts — allowlists by GROUP, not blacklists by element.
+ *
+ * One context describes what a document type can hold, and drives BOTH:
+ *  - the AI structure generator (`aiGroups` + `extra`, minus `exclude`), and
+ *  - the designer's element palette (`paletteGroups` + `extra`).
+ *
+ * The palette is a superset of the AI allowlist: a human may drag `system`
+ * elements (id, padding, tailwind, designer…), the AI never authors them.
+ * Any new element is therefore excluded from these documents by default
+ * unless it lands in an allowed group — the inverse (and safer) failure
+ * mode of the old SECTION/FORM blacklist.
+ *
+ * Document types with no matching context (pages): the palette shows every
+ * group, and the AI gets everything minus the `system` group.
+ */
+const DOCUMENT_CONTEXTS = Object.freeze({
+  form: {
+    documentTypes: ["Form Builder", "Entity", "Contact Form Builder"],
+    // Minimal structure a form needs: grid + tabs. No section/card/banner/etc.
+    extra: ["row", "col", "tabs", "tab"],
+    aiGroups: ["form"],
+    paletteGroups: ["form", "system"],
+  },
+});
+
+const contextFor = (document_type) =>
+  Object.values(DOCUMENT_CONTEXTS)
+    .find(c => c.documentTypes.includes(document_type)) || null;
+
+const aiAllowedElements = (document_type) => {
+  const ctx = contextFor(document_type);
+
+  const allowed = new Set(ctx?.extra || []);
+  for (const [el, { def }] of Object.entries(elementsDict)) {
+    if (ctx ? ctx.aiGroups.includes(def.group) : def.group !== "system") {
+      allowed.add(el);
+    }
+  }
+  for (const el of ctx?.exclude || []) allowed.delete(el);
+
+  return elementsNames.filter(e => allowed.has(e));
+};
+
+/**
+ * Grouped element definition for the designer sidebar, filtered by the
+ * document being designed. Keeps elementsDefinition's group order and
+ * element objects; groups left with no elements are dropped.
+ */
+export const paletteDefinition = (document_type) => {
+  const ctx = contextFor(document_type);
+  if (!ctx) return elementsDefinition;
+
+  const groups = ctx.paletteGroups || ctx.aiGroups;
+  const extra = new Set(ctx.extra || []);
+
+  return Object.entries(elementsDefinition).reduce((acc, [group, elements]) => {
+    const list = groups.includes(group)
+      ? elements
+      : elements.filter(e => extra.has(e.element));
+    if (list.length) acc[group] = list;
+    return acc;
+  }, {});
+};
+
+// JSON Schema for the generated structure — one source for OpenAI structured
+// outputs (json_schema) and Chrome's Prompt API (responseConstraint).
+export const AIStructureSchema = (document_type) => {
+  const elements = aiAllowedElements(document_type);
+  const formats = [...new Set(Object.keys(inputType))];
+  const nullable = (type) => ({ type: [type, "null"] });
+
+  return {
+    name: "doc_structure",
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        elements: { type: "array", items: { "$ref": "#/$defs/element" } }
+      },
+      required: ["elements"],
+      "$defs": {
+        element: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            element: { type: "string", enum: [...elements] },
+            // node: only echoed back when editing an existing design; null for new elements
+            node: nullable("string"),
+            data: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                name: { type: "string" },
+                label: { type: "string" },
+                format: { type: ["string", "null"], enum: [...formats, null] },
+                options: nullable("string"),
+                placeholder: nullable("string"),
+                required: nullable("boolean")
+              },
+              required: ["name", "label", "format", "options", "placeholder", "required"]
+            },
+            elements: { type: "array", items: { "$ref": "#/$defs/element" } }
+          },
+          required: ["element", "node", "data", "elements"]
+        }
+      }
+    }
+  };
+};
+
+// Normalizes an AI-generated structure before it enters the designer: strips
+// nulls/empties, coerces booleans to 1/0, drops duplicated node keys.
+export const sanitizeAIStructure = (structure, seen = new Set()) => {
+  if (!Array.isArray(structure)) return [];
+
+  return structure.map((el) => {
+    if (!el || typeof el !== "object" || !el.element) return null;
+
+    const data = {};
+    for (const [k, v] of Object.entries(el.data || {})) {
+      if (v == null || v === "") continue;
+      data[k] = typeof v === "boolean" ? (v ? 1 : 0) : v;
+    }
+
+    const out = { element: el.element, data };
+    if (typeof el.node === "string" && el.node && !seen.has(el.node)) {
+      out.node = el.node;
+      seen.add(el.node);
+    }
+
+    const children = sanitizeAIStructure(el.elements || [], seen);
+    if (children.length) out.elements = children;
+
+    return out;
+  }).filter(Boolean);
+};
+
+export const AIPrompt = (prompt, document_type, current = null) => {
   const exampleJSON = [
     {
       element: "row",
@@ -656,32 +826,30 @@ export const AIPrompt = (prompt, document_type ) => {
     }
   ];
 
-  const elements = elementsNames.filter(e => {
-    if (document_type === "Entity") {
-      return e !== SECTION
-    } else {
-      return true;
-    }
-  });
+  const elements = aiAllowedElements(document_type);
+
+  const editInstructions = current ? `
+        You will receive the CURRENT design. Apply the request to it and return the FULL updated design:
+        keep the "node" value of every element you keep, set "node" to null on new elements, and omit elements the request removes.` : "";
+
+  const userContent = current
+    ? `Current design:\n${JSON.stringify(current)}\n\nApply the following request to the current design:"${prompt}"`
+    : `Resolve the following request:"${prompt}"`;
 
   return {
     system: {
       role: 'developer',
       content:
         `You are a strict JSON generator: example: ${JSON.stringify(exampleJSON)}. ALWAYS output valid JSON ONLY, nothing else (no commentary, no trailing commas, no explanation). If you cannot produce valid JSON, output {"error":"<short description>"} only.
-        All elements MUST be objects with keys: "element" (string), data (object) {label, name, key}. If the element can have children, include an "elements" array. Use unique "id" values. Follow the exact structure shown in examples.
+        All elements MUST be objects with keys: "element" (string), data (object) {label, name}. If the element can have children, include an "elements" array. Follow the exact structure shown in examples.
         Use strict the following elements only: ${elements.join(",")}.
-        If you need to use a element like: ${ [...new Set(Object.keys(inputType))].join(", ")} strict use element="input" and set format in data.format: ${ [...new Set(Object.keys(inputType))].join(", ")}.
+        If you need to use a element like: ${ [...new Set(Object.keys(inputType))].join(", ")} strict use element="input" and set format in data.format: ${ [...new Set(Object.keys(inputType))].join(", ")}.${editInstructions}
         `,
     },
     user: {
-      content: `Resolve the following request:"${prompt}"`
+      content: userContent
     }
   }
-
-  return `I have a template generator that generates forms and pages with these elements: ${elements.join(",")},
-                 based on a metadata structure like this: ${JSON.stringify(exampleJSON)} resolve the following request:
-                  "${prompt}", I need the metadata in JSON not in html, strictly with the format that I have shown you. Each element compulsorily requires the data with the name, label and id as a minimum.`
 }
 
 export const GlobalEnvironment = () => {

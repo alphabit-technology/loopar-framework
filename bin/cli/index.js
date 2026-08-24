@@ -40,7 +40,7 @@ const registry = {
   kill:    () => c.kill(),
   watch:   () => c.watch(),
   startup: () => c.startup(),
-  logs:    () => c.logs(siteName),
+  logs:    () => c.logs(siteName, extraArg),
   help:    () => c.help(),
 };
 

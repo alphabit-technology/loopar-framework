@@ -4,20 +4,30 @@ import { Modal } from "@dialog"
 import { Scaner } from "./src/Scaner.jsx";
 import loopar from "loopar";
 import { GeminiSend, GeminiStatus, GeminiContextProvider } from "../AI/local/Gemini.jsx";
-import { AIPrompt } from "loopar";
+import { AIPrompt, sanitizeAIStructure } from "loopar";
+import {useDocument} from "@context/@/document-context";
 
 export const Prompt = ({
   onSend,
   onClose,
   onComplete,
-  document_type,
+  getCurrentDesign,
   ...props
 }) => {
   const [open, setOpen] = useState(props.open);
   const [sendingPrompt, setSendingPrompt] = useState(props.open);
   const [currentPrompt, setCurrentPrompt] = useState(props.defaultPrompt || "");
-  const [AI, setAi] = useState("GPT");
+  const [AI, setAi] = useState("Remote");
   const [copiedStatus, setCopiedStatus] = useState("waiting");
+  const [editCurrent, setEditCurrent] = useState(false);
+  const document_type = useDocument().entity;
+
+  // Resolved at send time so the AI always sees the latest structure
+  const currentDesign = () => {
+    if (!editCurrent || !getCurrentDesign) return null;
+    const current = getCurrentDesign();
+    return Array.isArray(current) && current.length ? current : null;
+  };
 
   useEffect(() => {
     setOpen(props.open)
@@ -33,16 +43,22 @@ export const Prompt = ({
 
   const handelComplete = (response) => {
     setSendingPrompt(false);
+    if (response == null) return;
     onComplete && onComplete(response);
   }
 
-  const sendPrompt = (prompt, document_type) => {
+  const sendPrompt = (prompt) => {
     setCurrentPrompt(prompt);
-    
-    loopar.call("GPT", "prompt", {
-      body: { prompt, document_type },
-      success: (res) => {
-        onComplete && onComplete(res.message);
+    const current = currentDesign();
+
+    loopar.call("AI", "prompt", {
+      body: { prompt, document_type, current: current ? JSON.stringify(current) : null },
+      success: (message) => {
+        if (!loopar.utils.isJSON(message) || !(JSON.parse(message) || []).length) {
+          loopar.notify("The AI returned an empty design, your current design was kept. Try rephrasing the request.", "warning");
+          return;
+        }
+        onComplete && onComplete(message);
         onClose && onClose();
       },
       always: () => {
@@ -56,21 +72,18 @@ export const Prompt = ({
     if (sendingPrompt) return null
     return (
       <div className="rounded-md border border-gray-100 dark:border-gray-800 p-3 bg-white/60 dark:bg-black/20 transition-all">
-        {AI === "GPT" && (
+        {AI === "Remote" && (
           <div>
             <p className="text-sm text-muted-foreground">
-              Powered by <a className="text-blue-500" target="_blank" href="https://openai.com/api/">OpenAI</a>
+              Works with any OpenAI-compatible provider (OpenAI, Anthropic, Google, Ollama...)
             </p>
-            <ul className="mt-2 ml-4 text-sm list-disc text-muted-foreground">
-              <li><a className="text-blue-500" target="_blanck" href="https://platform.openai.com/api-keys">Get your API key</a></li>
-              <li><a className="text-blue-500" target="_blanck" href="https://platform.openai.com/docs/guides">Explore the API documentation</a></li>
-            </ul>
             <p className="mt-2 text-sm text-muted-foreground">
                Navigate to <a className="text-blue-500" target="_blanck" href="/desk/integrations">Integrations</a>
             </p>
             <ul className="mt-2 ml-4 text-sm list-disc text-muted-foreground">
-              <li>Set your OpenAI API key in AI Provider</li>
-              <li>Create your OpenAI Models in AI Model</li>
+              <li>Set your API key and Base URL in AI Provider</li>
+              <li>Create your Models in AI Model</li>
+              <li>Select the default Model in AI</li>
             </ul>
           </div>
         )}
@@ -124,7 +137,7 @@ export const Prompt = ({
             <div className="flex items-center gap-3 mb-3">
               <label className="text-sm font-semibold">AI:</label>
               <div className="flex rounded-lg bg-transparent p-1 border border-transparent space-x-2">
-                {["GPT", "Local", "Browser"].map((option) => (
+                {["Remote", "Local", "Browser"].map((option) => (
                   <button
                     key={option}
                     onClick={() => setAi(option)}
@@ -148,6 +161,17 @@ export const Prompt = ({
           </div>
 
           {sendingPrompt && <Scaner text={currentPrompt} />}
+
+          {!sendingPrompt && getCurrentDesign && (
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={editCurrent}
+                onChange={(e) => setEditCurrent(e.target.checked)}
+              />
+              Edit current design (the AI receives the current structure and applies your request to it)
+            </label>
+          )}
 
           {!sendingPrompt && (
             <textarea
@@ -175,23 +199,25 @@ export const Prompt = ({
 
                 {!sendingPrompt && (
                   <>
-                    {AI === "GPT" && (
+                    {AI === "Remote" && (
                       <Button
                         variant="primary"
                         onClick={() => {
                           setSendingPrompt(true);
-                          sendPrompt(currentPrompt, document_type);
+                          sendPrompt(currentPrompt);
                         }}
                       >
-                        Send to GPT
+                        Send
                       </Button>
                     )}
                     {AI === "Local" && (
                       <GeminiSend
                         inputText={currentPrompt}
+                        getCurrentDesign={currentDesign}
                         isUserActivated={AI === "Local"}
                         onStart={() => setSendingPrompt(true)}
                         onComplete={handelComplete}
+                        onError={() => setSendingPrompt(false)}
                       />
                     )}
                     {AI === "Browser" && (
@@ -199,12 +225,16 @@ export const Prompt = ({
                         variant="primary"
                         onClick={async () => {
                           if (copiedStatus === "waiting") {
-                            const promp = AIPrompt(currentPrompt, document_type);
+                            const promp = AIPrompt(currentPrompt, document_type, currentDesign());
                             navigator.clipboard.writeText(promp.system.content + "\n" + promp.user.content + "\n" + "Respond in a plain JSON code block (```json ...```)");
                             setCopiedStatus("copied");
                             loopar.notify("Prompt copied to clipboard", "success");
                           } else if (copiedStatus === "copied") {
-                            const r = loopar.utils.evaluateAIResponse(await navigator.clipboard.readText(), "[", "]");
+                            const r = sanitizeAIStructure(loopar.utils.evaluateAIResponse(await navigator.clipboard.readText(), "[", "]"));
+                            if (!r.length) {
+                              loopar.notify("Could not read a design from the clipboard, your current design was kept.", "warning");
+                              return;
+                            }
                             onComplete && onComplete(r);
                             setSendingPrompt(false);
                             onClose && onClose();
