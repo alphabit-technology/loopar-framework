@@ -49,7 +49,7 @@ function mergeGroups(...arrays) {
   return Array.from(groupMap.values());
 }
 
-const ACTIVE_SECTION_KEY = "element-editor-active-section";\
+const ACTIVE_SECTION_KEY = "element-editor-active-section";
 const NONE = "__none__";
 
 const readActiveSection = () => {
