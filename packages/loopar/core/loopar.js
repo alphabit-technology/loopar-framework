@@ -483,6 +483,20 @@ export function getTenantInstance(tenantId) {
  */
 export async function startCore() {
   await coreInstance.server.initialize();
+
+  // Domains-from-boot: ensure Caddy is up and routing every tenant domain to
+  // this core no matter WHO booted us (PM2 resurrect after a reboot, `node
+  // bin/core.js`, `yarn serve`) — not only the CLI. Fire-and-forget and
+  // best-effort: a Caddy failure never blocks the core; domains just stay
+  // port-only until the next refreshCaddy() (tenant On/Off, `yarn serve`).
+  import("../bin/tenant/tenant-ops.js")
+    .then(({ refreshCaddy }) => refreshCaddy())
+    .then((suffix) => {
+      if (suffix) console.warn(`⚠️  Caddy bootstrap:${suffix}`);
+      else console.log("✅ Caddy bootstrap: tenant domains routed to the core");
+    })
+    .catch((err) => console.warn(`⚠️  Caddy bootstrap skipped: ${err.message}`));
+
   return coreInstance;
 }
 

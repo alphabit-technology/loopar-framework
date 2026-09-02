@@ -80,7 +80,7 @@ export default function MetaGalery(props) {
   const hasPrev = firstPage > 1;
 
   const fetchPage = useCallback(async (p) => {
-    const entity = Document?.Entity?.name;
+    const entity = designerMode ? Document.name : Document?.Entity?.name;
     if (!entity) return { rows: [], pg: null };
 
     const res = await loopar.call(entity, "loadGalery", {

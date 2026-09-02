@@ -22,6 +22,23 @@ export default class CaddyManager {
   constructor() {
     this.adminUrl = 'http://localhost:2019';
     this.httpPort = 80;
+    // PM2/launchd resurrect the core with a minimal PATH (no /opt/homebrew/bin,
+    // no /usr/local/bin), so `caddy`/`brew` as bare names fail exactly in the
+    // reboot scenario this class exists for. Resolve absolute paths up front.
+    this.caddyBin = this.#resolveBin('caddy');
+    this.brewBin = this.#resolveBin('brew');
+  }
+
+  #resolveBin(name) {
+    const candidates = [
+      `/opt/homebrew/bin/${name}`,
+      `/usr/local/bin/${name}`,
+      `/usr/bin/${name}`,
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) return p;
+    }
+    return name; // fall back to PATH lookup
   }
 
   async ensureReady() {
@@ -71,7 +88,7 @@ export default class CaddyManager {
   }
 
   async ensureInstalled() {
-    try { await execAsync('caddy version'); return true; }
+    try { await execAsync(`${this.caddyBin} version`); return true; }
     catch (_) { return false; }
   }
 
@@ -79,9 +96,9 @@ export default class CaddyManager {
     try {
       const platform = os.platform();
       if (platform === 'darwin') {
-        await execAsync('brew install caddy');
+        await execAsync(`${this.brewBin} install caddy`);
         // brew may auto-start Caddy as a service — stop it so Loopar manages it
-        try { await execAsync('brew services stop caddy'); } catch (_) {}
+        try { await execAsync(`${this.brewBin} services stop caddy`); } catch (_) {}
       } else if (platform === 'linux') {
         await execAsync('sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl');
         await execAsync('curl -1sLf "https://dl.cloudsmith.io/public/caddy/stable/gpg.key" | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg');
@@ -236,7 +253,7 @@ export default class CaddyManager {
   }
 
   async _stopCaddy() {
-    try { await execAsync('caddy stop'); } catch (_) {}
+    try { await execAsync(`${this.caddyBin} stop`); } catch (_) {}
     if (os.platform() === 'linux') {
       // sudo -n = non-interactive: fail rather than hang forever waiting for a
       // password on a tty nobody watches.
@@ -244,7 +261,7 @@ export default class CaddyManager {
       try { await execAsync('sudo -n pkill -9 -f "caddy run"'); } catch (_) {}
     } else {
       // macOS: no systemctl; user-owned caddy doesn't need sudo to kill.
-      try { await execAsync('brew services stop caddy'); } catch (_) {}
+      try { await execAsync(`${this.brewBin} services stop caddy`); } catch (_) {}
       try { await execAsync('pkill -9 -f "caddy run"'); } catch (_) {}
     }
     await new Promise(r => setTimeout(r, 1500));
@@ -254,7 +271,7 @@ export default class CaddyManager {
     const configPath = this._getConfigPath();
     this._writeConfigFile(configPath, port, initialRoutes);
 
-    exec(`caddy start --config ${configPath}`, (error) => {
+    exec(`${this.caddyBin} start --config ${configPath}`, (error) => {
       if (error && !error.message.includes('already running')) {
         console.error("Caddy start error:", error.message);
       }

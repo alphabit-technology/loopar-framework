@@ -4,6 +4,7 @@ import { cn } from "@cn/lib/utils";
 import { Button } from "@cn/components/ui/button";
 import { invalidClass } from "../input/index.js";
 import { Loader2 } from "lucide-react";
+import { useDialogContext } from "../dialog.jsx";
 
 import {
   Command,
@@ -37,6 +38,10 @@ export function Select({
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(false);
+  // Inside a Radix Dialog (Modal / EntryModal) the body gets
+  // `pointer-events: none`; the PopoverContent portals to body, so unless the
+  // Popover itself runs in modal mode its items render but are inert.
+  const { inDialog } = useDialogContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleRows, setVisibleRows] = useState([]);
   const [isPending, startTransition] = useTransition();
@@ -264,7 +269,7 @@ export function Select({
   }, [isLocal, currentPage, totalLocalPages, pagination]);
 
   return (
-    <Popover open={open} onOpenChange={openHandler}>
+    <Popover open={open} onOpenChange={openHandler} modal={inDialog}>
       <PopoverTrigger asChild>
         {renderButton({
           onClick: (e) => {

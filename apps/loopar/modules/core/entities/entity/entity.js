@@ -513,7 +513,7 @@ export default class Entity extends BaseDocument {
 
   async __meta__(withData = true) {
     const meta = await super.__meta__(withData);
-    const spacing = loopar.__installed__ ? await loopar.db.getDoc("App", await this.targetApp(), ["spacing", "col_padding", "col_margin"]) : {};
+    const spacing = loopar.__installed__ ? await loopar.db.getDoc("App", await this.targetApp(), ["gap", "col_padding"]) : {};
 
     return {
       ...meta,

@@ -7,7 +7,7 @@ import { useDocument } from "@context/@/document-context";
 import { cn } from "@cn/lib/utils";
 
 const DEFAULTS = {
-  spacing: 4,
+  gap: 4,
   padding_y: "md",
   max_width: "1280px",
   full_width: false,
@@ -24,7 +24,7 @@ export default function Section(props) {
   const config = useMemo(() => ({
     ...DEFAULTS,
     ...data,
-    spacing: data.spacing ?? docSpacing.spacing ?? DEFAULTS.spacing,
+    gap: data.gap ?? docSpacing.gap ?? DEFAULTS.gap,
   }), [data, docSpacing]);
 
   useEffect(() => {
@@ -34,9 +34,9 @@ export default function Section(props) {
   }, [designing, data.collapsible]);
 
   const gap = useMemo(() => {
-    const sp = parseInt(config.spacing);
-    return Number.isNaN(sp) ? DEFAULTS.spacing : sp;
-  }, [config.spacing]);
+    const sp = parseInt(config.gap);
+    return Number.isNaN(sp) ? DEFAULTS.gap : sp;
+  }, [config.gap]);
 
   const paddingY = useMemo(() => {
     return {
@@ -101,13 +101,13 @@ Section.metaFields = () => {
     {
       group: "layout",
       elements: {
-        spacing: {
+        gap: {
           element: SELECT,
           data: {
             label: "Gap",
             options: [0, 1, 2, 3, 4, 5, 6],
-            selected: DEFAULTS.spacing,
-            description: "Spacing between rows in rem.",
+            selected: DEFAULTS.gap,
+            description: "Gap between rows in rem.",
           },
         },
         padding_y: {

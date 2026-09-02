@@ -18,7 +18,7 @@ import MarkdownPreview from '@uiw/react-markdown-preview';
 import {elementsNames} from "@global/element-definition";
 import {OrphanColumnsManager} from "./src/OrphanColumnsManager.jsx"
 import { ElementStore, ElementStoreContext } from "./element-store.js";
-import { getNodeKey } from "@global/prune-doc-structure";
+import { getNodeKey, pruneDocStructure } from "@global/prune-doc-structure";
 
 const updateE = (structure, data, node, merge) => {
   return structure.map((el) => {
@@ -48,21 +48,27 @@ const updateE = (structure, data, node, merge) => {
 // changes, the same reference is returned. This keeps React from re-rendering
 // the entire designer on every drop — only the path from root to the touched
 // nodes gets new identities.
-const fixMeta = (structure) => {
+const fixMeta = (structure, path = "") => {
   try {
     let arrChanged = false;
-    const result = structure.map((el) => {
+    const result = structure.map((el, idx) => {
       const data = el.data || {};
       const writable = fieldIsWritable(el);
-      const currentKey = getNodeKey(el);
-      const finalKey = currentKey || elementManage.getUniqueKey();
+      // Do NOT use getNodeKey here: its fallback returns a RANDOM key, which
+      // made fixMeta non-deterministic for keyless nodes (different keys on
+      // every render/load -> SSR hydration mismatches and a base hash that
+      // never matched the saved draft's).
+      const currentKey = el.node ?? el.key ?? el.data?.key ?? null;
+      // Deterministic fallback: derived from the node's position/content so
+      // the same server meta always yields the same generated keys.
+      const finalKey = currentKey || ("gk" + hashStr(`${path}/${idx}:${el.element}:${data.name || ""}`).replace("-", "n"));
       const needsKeyAtNode = el.node !== finalKey;
       const needsIdMirror = data.id == null;
       const needsLabel = writable && data.label == null;
       const needsName = writable && data.name == null;
       const dataChanged = needsIdMirror || needsLabel || needsName || el.data == null;
       const hasChildren = Array.isArray(el.elements) && el.elements.length > 0;
-      const newChildren = hasChildren ? fixMeta(el.elements) : el.elements;
+      const newChildren = hasChildren ? fixMeta(el.elements, `${path}/${idx}`) : el.elements;
       const childrenChanged = newChildren !== el.elements;
 
       if (!needsKeyAtNode && !dataChanged && !childrenChanged) return el;
@@ -79,12 +85,11 @@ const fixMeta = (structure) => {
         }
       }
 
-      return {
-        ...el,
-        node: finalKey,
-        data: newData,
-        elements: newChildren,
-      };
+      const out = { ...el, node: finalKey, data: newData };
+
+      if (newChildren === undefined) delete out.elements;
+      else out.elements = newChildren;
+      return out;
     });
     return arrChanged ? result : structure;
   } catch (error) {
@@ -144,6 +149,16 @@ export const BaseDesigner = (props) => {
   };
 
   const serverBaseHashRef = useRef(null);
+  // Hashes of the JSON this designer itself emitted through onChange. The
+  // parent (designer.jsx) feeds field.value straight back as metaComponents,
+  // so every edit ECHOES into the prop — those echoes must never be mistaken
+  // for a server-content change (that reset state and deleted the draft).
+  const emittedHashesRef = useRef(new Set());
+  const rememberEmitted = useCallback((json) => {
+    const s = emittedHashesRef.current;
+    s.add(hashStr(json));
+    if (s.size > 20) s.delete(s.values().next().value);
+  }, []);
 
   // IMPORTANT: the first client render must match the server, and the server
   // never has localStorage. So we ALWAYS seed from the server base here and
@@ -152,7 +167,9 @@ export const BaseDesigner = (props) => {
   // base, client = restored draft → divergent undo state, gallery slides, etc.).
   const [localMetaComponents, setLocalMetaComponents] = useState(() => {
     const base = fixMeta(metaComponents || []);
-    serverBaseHashRef.current = hashStr(JSON.stringify(base));
+    // Hash the RAW server meta (not the fixMeta'd tree): deterministic by
+    // construction and immune to anything fixMeta fills in.
+    serverBaseHashRef.current = hashStr(JSON.stringify(metaComponents || []));
     return base;
   });
   const commitTimerRef = useRef(null);
@@ -206,8 +223,13 @@ export const BaseDesigner = (props) => {
     syncHistory();
     setDraftConflict(false);
     setHasUnsavedChanges(true);
-    stateRef.current.onChange?.(JSON.stringify(restored));
-  }, [syncHistory]);
+    // Re-stamp the draft against the CURRENT base hash so "Restore anyway"
+    // doesn't re-surface the same conflict on the next reload.
+    if (typeof window !== "undefined") { try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: JSON.parse(draftJson), baseHash: serverBaseHashRef.current })); } catch {} }
+    const emitted = JSON.stringify(restored);
+    rememberEmitted(emitted);
+    stateRef.current.onChange?.(emitted);
+  }, [syncHistory, draftKey, rememberEmitted]);
 
   const discardDraft = useCallback(() => {
     if (typeof window !== "undefined") { try { window.localStorage.removeItem(draftKey); } catch {} }
@@ -222,16 +244,20 @@ export const BaseDesigner = (props) => {
     const draft = readDraft();
     if (!draft) return;
     const base = fixMeta(metaComponents || []);
-    // Server base changed since the draft was saved → the draft is stale. Don't
+    
+    if (isEqual(pruneDocStructure(draft.meta), pruneDocStructure(base))) {
+      discardDraft();
+      return;
+    }
+    // Server base changed since the draft was saved -> the draft is stale. Don't
     // silently apply it over newer content; tell the client so the user decides.
     if (draft.baseHash !== serverBaseHashRef.current) {
       conflictDraftRef.current = draft.meta;
       setDraftConflict(true);
       return;
     }
-    if (isEqual(draft.meta, base)) return;
     applyDraft(draft.meta);
-  }, [applyDraft]);
+  }, [applyDraft, discardDraft]);
 
   // Re-sync to the server meta only when the prop actually changes AFTER mount
   // (reload / navigation), never on the initial mount — that would race the
@@ -240,18 +266,37 @@ export const BaseDesigner = (props) => {
   useEffect(() => {
     if (initialMetaSyncRef.current) { initialMetaSyncRef.current = false; return; }
     if (commitTimerRef.current !== null) return;
-    if (!isEqual(localMetaComponents, metaComponents || [])) {
+    // Detect a real server-content change by hashing the RAW prop against the
+    // recorded base hash. The old check (isEqual of the fixMeta'd local tree
+    // vs the raw prop) was almost always unequal, so any parent re-render
+    // with a fresh prop reference clobbered local edits and history.
+    const nextHash = hashStr(JSON.stringify(metaComponents || []));
+    if (nextHash !== serverBaseHashRef.current) {
+      // Echo of our own edit coming back through the form -> not a server
+      // change: keep local state, history and the draft untouched.
+      if (emittedHashesRef.current.has(nextHash)) return;
       const next = fixMeta(metaComponents || []);
       storeRef.current.populate(next);
       const baseJson = JSON.stringify(storeRef.current.reconcileTree(next));
-      serverBaseHashRef.current = hashStr(JSON.stringify(next));
+      serverBaseHashRef.current = nextHash;
       historyRef.current = { stack: [baseJson], index: 0 };
       setLocalMetaComponents(next);
       syncHistory();
       setHasUnsavedChanges(false);
-      setDraftConflict(false);
+      emittedHashesRef.current.clear();
+      // Re-evaluate any stored draft against the NEW server content: one that
+      // matches is a leftover from a completed save -> delete it; one that
+      // differs is kept and surfaced as a conflict the user can restore.
+      const draft = readDraft();
+      if (draft && !isEqual(pruneDocStructure(draft.meta), pruneDocStructure(next))) {
+        conflictDraftRef.current = draft.meta;
+        setDraftConflict(true);
+      } else {
+        if (draft && typeof window !== "undefined") { try { window.localStorage.removeItem(draftKey); } catch {} }
+        setDraftConflict(false);
+      }
     }
-  }, [metaComponents]);
+  }, [metaComponents, draftKey]);
 
   useEffect(() => {
     return () => {
@@ -307,21 +352,35 @@ export const BaseDesigner = (props) => {
         h.index = h.stack.length - 1;
         syncHistory();
       }
+      const dirty = json !== h.stack[0];
       if (typeof window !== "undefined") {
-        try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: reconciled, baseHash: serverBaseHashRef.current })); } catch {}
+        try {
+          // A no-op commit must not leave a draft behind: stale drafts are
+          // what resurfaced as phantom conflict/unsaved banners on reload.
+          if (dirty) window.localStorage.setItem(draftKey, JSON.stringify({ meta: reconciled, baseHash: serverBaseHashRef.current }));
+          else window.localStorage.removeItem(draftKey);
+        } catch {}
       }
-      setHasUnsavedChanges(json !== h.stack[0]);
+      setHasUnsavedChanges(dirty);
+      rememberEmitted(json);
       stateRef.current.onChange?.(json);
     }, 300);
-  }, [syncHistory, draftKey]);
+  }, [syncHistory, draftKey, rememberEmitted]);
 
   const applyHistory = useCallback((json) => {
     if (commitTimerRef.current) { clearTimeout(commitTimerRef.current); commitTimerRef.current = null; }
     const state = JSON.parse(json);
     storeRef.current.populate(state);
     setLocalMetaComponents(state);
-    if (typeof window !== "undefined") { try { window.localStorage.setItem(draftKey, JSON.stringify({ meta: state, baseHash: serverBaseHashRef.current })); } catch {} }
-    setHasUnsavedChanges(json !== historyRef.current.stack[0]);
+    const dirty = json !== historyRef.current.stack[0];
+    if (typeof window !== "undefined") {
+      try {
+        if (dirty) window.localStorage.setItem(draftKey, JSON.stringify({ meta: state, baseHash: serverBaseHashRef.current }));
+        else window.localStorage.removeItem(draftKey); // undone back to base -> nothing to restore
+      } catch {}
+    }
+    setHasUnsavedChanges(dirty);
+    rememberEmitted(json);
     stateRef.current.onChange?.(json);
 
     const selKey = stateRef.current.updatingElementName;
@@ -335,7 +394,7 @@ export const BaseDesigner = (props) => {
         setUpdatingElement(null);
       }
     }
-  }, [findElement, draftKey]);
+  }, [findElement, draftKey, rememberEmitted]);
 
   const undo = useCallback(() => {
     const h = historyRef.current;

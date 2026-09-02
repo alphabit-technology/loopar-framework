@@ -110,10 +110,50 @@
   }
 }
 
+/*
+ * Row grid. `--column-layout` is set inline by row.jsx (minmax(0, Xfr) per
+ * column). Below the `data-stack` size the row is a single column; the sizes
+ * are *container* queries (the row's wrapper is `@container`), so a nested row
+ * inside a narrow column stacks by its own width, not the viewport's.
+ * `data-reverse` flips the order only while stacked.
+ */
 @layer utilities {
-  @media (min-width: 768px) {
-    .grid-container.dynamic {
+  .grid-container.dynamic {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: var(--row-align, stretch);
+  }
+  /* Stacked + reversed: flex column so the order flips; cross-axis alignment
+     must stay `stretch` here or columns would shrink to their content width. */
+  .dynamic[data-reverse="true"] {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .grid-container.dynamic[data-stack="never"] {
+    display: grid;
+    grid-template-columns: var(--column-layout);
+    align-items: var(--row-align, stretch);
+  }
+  @container (min-width: 40rem) {
+    .grid-container.dynamic[data-stack="sm"] {
+      display: grid;
       grid-template-columns: var(--column-layout);
+      align-items: var(--row-align, stretch);
+    }
+  }
+  @container (min-width: 48rem) {
+    .grid-container.dynamic[data-stack="md"] {
+      display: grid;
+      grid-template-columns: var(--column-layout);
+      align-items: var(--row-align, stretch);
+    }
+  }
+  @container (min-width: 64rem) {
+    .grid-container.dynamic[data-stack="lg"] {
+      display: grid;
+      grid-template-columns: var(--column-layout);
+      align-items: var(--row-align, stretch);
     }
   }
 }

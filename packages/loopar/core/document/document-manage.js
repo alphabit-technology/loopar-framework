@@ -40,14 +40,14 @@ class DocumentManage {
     const ENTITY = preParsedEntity || await this.#GET_ENTITY(document);
     const DOCUMENT = await this.#importDocument(ENTITY);
     const spacing = loopar.__installed__ && ENTITY.__REF__.is_child != 1 ?
-      await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["spacing", "col_padding", "col_margin"]) : {};
+      await loopar.db.getDoc("App", ENTITY.__REF__.__APP__, ["gap", "col_padding"]) : {};
 
     const instance = await new DOCUMENT({
       __ENTITY__: ENTITY,
       __DOCUMENT_NAME__: name,
       __DATA__: data || {},
       __IS_NEW__: !name,
-      __SPACING__: spacing || {spacing: 2, col_padding: 2, col_margin: 0}
+      __SPACING__: spacing || {gap: 1, col_padding: "p-0"}
     });
 
     const result = await instance.__init__(ifNotFound);

@@ -1,154 +1,149 @@
 import { Droppable } from "@droppable";
-import { LayoutSelector, gridLayouts } from "./row/LayoutSelector";
+import { LayoutSelector, gridLayouts, parseLayout, sameLayout } from "./row/LayoutSelector";
 import { ComponentDefaults, DEFAULTS, colPadding } from "./base/ComponentDefaults";
-import { loopar } from "loopar";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { cn } from "@cn/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { useDocument } from "@context/@/document-context";
-import { isEqual } from "es-toolkit/predicate";
+import { useDesigner } from "@context/@/designer-context";
 import elementManage from "@@tools/element-manage";
+
+export const STACK_ON = ["never", "sm", "md", "lg"];
+
+const VERTICAL_ALIGN = {
+  top: "start",
+  center: "center",
+  bottom: "end",
+  stretch: "stretch",
+};
+
+const ROW_HEIGHT = {
+  auto: "",
+  25: "min-h-[25vh]",
+  50: "min-h-[50vh]",
+  75: "min-h-[75vh]",
+  100: "min-h-screen",
+};
+
+const newCol = () => ({
+  element: "col",
+  node: elementManage.getUniqueKey(),
+  data: {},
+});
 
 export default function Row(props) {
   const { setElements, set } = ComponentDefaults(props);
-  const data = props.data;
-  const [layout, setLayout] = useState(loopar.utils.JSONparse(data.layout, DEFAULTS.layout));
-  const [cols, setCols] = useState(props.elements || []);
+  const data = props.data || {};
+  const cols = props.elements || [];
   const { webApp = {} } = useWorkspace();
   const { spacing = {} } = useDocument();
-  const prevElementsRef = useRef(props.elements);
+  const { designerMode } = useDesigner();
 
   const config = useMemo(() => ({
     ...DEFAULTS,
     ...data,
-    spacing: data.spacing || spacing.spacing || webApp.spacing || DEFAULTS.spacing,
+    gap: data.gap ?? spacing.gap ?? webApp.gap ?? DEFAULTS.gap,
     col_padding: data.col_padding || spacing.col_padding || webApp.col_padding || DEFAULTS.col_padding,
-    col_margin: data.col_margin || spacing.col_margin || webApp.col_margin || DEFAULTS.col_margin,
   }), [data, spacing, webApp]);
 
-  
-  const handleSetLayout = (layout) => {
-    setLayout(layout);
-    set("layout", JSON.stringify(layout));
+  // --- layout: persisted value is the source of truth; local state only gives
+  // instant feedback while `set` debounces the write to the document.
+  const persistedLayout = useMemo(() => parseLayout(data.layout), [data.layout]);
+  const [layout, setLayout] = useState(persistedLayout);
+
+  useEffect(() => {
+    setLayout(prev => (sameLayout(prev, persistedLayout) ? prev : persistedLayout));
+  }, [persistedLayout]);
+
+  const handleSetLayout = (next) => {
+    if (sameLayout(next, layout)) return;
+    setLayout(next);
+    set("layout", JSON.stringify(next));
   };
 
-  const conciliateCols = useCallback(() => {
-    if (cols.length < layout.length) {
-      const diff = layout.length - cols.length;
-      const addCols = [...cols];
-
-      for (let i = 0; i < diff; i++) {
-        addCols.push({
-          element: "col",
-          node: elementManage.getUniqueKey(),
-          data: {},
-        });
-      }
-
-      setElements(addCols);
-      setCols(addCols);
-    }
-  }, [layout, cols, setElements]);
+  // --- columns: always exactly layout.length cols. Grows on mount/whenever a
+  // col is missing; shrinks only when the *user* changes the layout (never on
+  // mount, so opening a legacy document doesn't rewrite it). Extra columns'
+  // children are merged into the last surviving column — nothing is lost and
+  // undo is available.
+  const prevLayoutLenRef = useRef(null);
 
   useEffect(() => {
-    const newLayout = loopar.utils.JSONparse(data.layout);
-    if (newLayout) {
-      handleSetLayout(newLayout);
+    if (!designerMode) return;
+
+    const n = layout.length;
+    const prevLen = prevLayoutLenRef.current;
+    prevLayoutLenRef.current = n;
+
+    if (cols.length < n) {
+      const grown = [...cols];
+      while (grown.length < n) grown.push(newCol());
+      setElements(grown, null, false);
+      return;
     }
-  }, [data.layout]);
 
-  useEffect(() => {
-    conciliateCols();
-  }, [layout]);
-
-  useEffect(() => {
-    if (loopar.utils.JSONparse(data.layout, []).length === 0) {
-      handleSetLayout(DEFAULTS.layout);
+    if (cols.length > n && prevLen != null && prevLen !== n) {
+      const keep = cols.slice(0, n);
+      const extra = cols.slice(n);
+      const last = keep[n - 1];
+      keep[n - 1] = {
+        ...last,
+        elements: [
+          ...(last.elements || []),
+          ...extra.flatMap(c => c.elements || []),
+        ],
+      };
+      setElements(keep, null, false);
     }
-  }, []);
+  }, [layout.length, cols.length, designerMode]);
 
-  useEffect(() => {
-    if (cols && !isEqual(cols, props.elements)) {
-      setCols(props.elements || []);
-    }
-  }, [props.elements]);
+  const gap = useMemo(() => {
+    const sp = parseInt(config.gap);
+    return Number.isNaN(sp) ? DEFAULTS.gap : sp;
+  }, [config.gap]);
 
-  const _spacing = useMemo(() => {
-    const sp = parseInt(config.spacing);
-    return Number.isNaN(sp) ? DEFAULTS.spacing : sp;
-  }, [config.spacing]);
+  // `Xfr` distributes the space left after the gap by itself; `minmax(0, …)`
+  // keeps wide content (images, code, long words) from breaking the ratio.
+  const columnLayout = useMemo(
+    () => layout.map(l => `minmax(0, ${l}fr)`).join(" "),
+    [layout]
+  );
 
-  const layoutAdjust = useMemo(() => {
-    const total = layout.reduce((acc, val) => acc + val, 0);
-    return layout.map(l => (l / total) * 100);
-  }, [layout]);
-
-  const gapSolver = useMemo(() => {
-    return (_spacing * ((layout.length - 1) / layout.length)) || 0;
-  }, [_spacing, layout.length]);
-  
-  /* const horizontalAlignment = useMemo(() => {
-    return {
-      left: "justify-start",
-      center: "justify-center",
-      right: "justify-end",
-    }[config.horizontal_alignment] || "justify-start";
-  }, [config.horizontal_alignment]);
-
-  const verticalAlignment = useMemo(() => {
-    return {
-      top: "items-start",
-      center: "items-center",
-      bottom: "items-end",
-    }[config.vertical_alignment] || "items-start";
-  }, [config.vertical_alignment]); */
-
-  const rowHeight = useMemo(() => {
-    if (config.full_height) return "min-h-screen";
-    
-    return {
-      auto: "",
-      100: "min-h-screen",
-      75: "min-h-[75vh]",
-      50: "min-h-[50vh]",
-      25: "min-h-[25vh]",
-    }[config.row_height] || "";
-  }, [config.row_height, config.full_height]);
+  const stackOn = STACK_ON.includes(config.stack_on) ? config.stack_on : DEFAULTS.stack_on;
+  const rowHeight = ROW_HEIGHT[config.full_height ? 100 : config.row_height] || "";
+  const verticalAlign = VERTICAL_ALIGN[config.vertical_alignment] || VERTICAL_ALIGN.top;
 
   return (
     <RowContextProvider
       colPadding={config.col_padding}
-      colMargin={config.col_margin}
-      spacing={_spacing}
+      gap={gap}
     >
-      {/* <div className={cn("flex flex-col", rowHeight)}> */}
+      {/* Query container: the grid below responds to the row's own width
+          (not the viewport), so nested rows stack inside narrow columns. */}
+      <div className="@container relative w-full">
         <Droppable
           {...props}
           elements={cols}
+          data-stack={stackOn}
+          data-reverse={config.reverse_on_mobile ? "true" : undefined}
           className={cn(
-            "@container",
-            "grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 w-full",
-            "grid-container dynamic box-border",
-            //horizontalAlignment,
-            //verticalAlignment,
+            "grid-container dynamic w-full box-border",
             rowHeight,
             data.class,
-            
           )}
           style={{
-            "--gap-solver": `${gapSolver}rem`,
-            "--column-layout": `calc(${layoutAdjust.join("% - var(--gap-solver)) calc(")}% - var(--gap-solver))`,
-            gap: `${_spacing}rem`,
+            "--column-layout": columnLayout,
+            "--row-align": verticalAlign,
+            gap: `${gap}rem`,
             ...props.style,
           }}
         />
-      {/* </div> */}
-      <LayoutSelector setLayout={handleSetLayout} current={layout} />
+        <LayoutSelector setLayout={handleSetLayout} current={layout} />
+      </div>
     </RowContextProvider>
   );
 }
-
 
 Row.metaFields = () => {
   return [
@@ -163,13 +158,13 @@ Row.metaFields = () => {
             default_value: `[${DEFAULTS.layout}]`,
           },
         },
-        spacing: {
+        gap: {
           element: SELECT,
           data: {
             label: "Gap",
             options: [0, 1, 2, 3, 4, 5, 6],
-            default_value: DEFAULTS.spacing,
-            description: "Spacing between columns in rem.",
+            default_value: DEFAULTS.gap,
+            description: "Gap between columns in rem.",
           },
         },
         col_padding: {
@@ -180,25 +175,35 @@ Row.metaFields = () => {
             default_value: DEFAULTS.col_padding,
           },
         },
-      },
-    },
-    {
-      group: "alignment",
-      elements: {
-        horizontal_alignment: {
-          element: SELECT,
-          data: {
-            label: "Horizontal",
-            options: ["left", "center", "right"],
-            default_value: DEFAULTS.horizontal_alignment,
-          },
-        },
         vertical_alignment: {
           element: SELECT,
           data: {
-            label: "Vertical",
-            options: ["top", "center", "bottom"],
+            label: "Vertical Align",
+            options: Object.keys(VERTICAL_ALIGN),
             default_value: DEFAULTS.vertical_alignment,
+            description: "How columns align when their heights differ.",
+          },
+        },
+      },
+    },
+    {
+      group: "responsive",
+      elements: {
+        stack_on: {
+          element: SELECT,
+          data: {
+            label: "Stack Below",
+            options: STACK_ON,
+            default_value: DEFAULTS.stack_on,
+            description: "Columns stack into one when the row is narrower than this size (sm 40rem, md 48rem, lg 64rem).",
+          },
+        },
+        reverse_on_mobile: {
+          element: SWITCH,
+          data: {
+            label: "Reverse When Stacked",
+            description: "Show the last column first once columns stack.",
+            default_value: DEFAULTS.reverse_on_mobile,
           },
         },
       },
@@ -209,18 +214,10 @@ Row.metaFields = () => {
         row_height: {
           element: SELECT,
           data: {
-            label: "Height",
-            options: ["auto", "100", "75", "50", "25"],
+            label: "Min Height",
+            options: Object.keys(ROW_HEIGHT),
             default_value: DEFAULTS.row_height,
-            description: "Row height based on viewport.",
-          },
-        },
-        full_height: {
-          element: SWITCH,
-          data: {
-            label: "Full Screen",
-            description: "Override height to 100vh.",
-            default_value: DEFAULTS.full_height,
+            description: "Minimum row height as a share of the viewport.",
           },
         },
       },

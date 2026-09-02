@@ -1,17 +1,15 @@
 import { useContext, createContext } from 'react';
 
 export const RowContext = createContext({
-  spacing: 1,
-  colPadding: "p-2",
-  setEditElement: () => {},
+  gap: 1,
+  colPadding: "p-0",
 });
 
-export const RowContextProvider = ({ children, spacing, colPadding, colMargin }) => {
+export const RowContextProvider = ({ children, gap, colPadding }) => {
   return (
     <RowContext.Provider value={{
-      spacing,
+      gap,
       colPadding,
-      colMargin
     }}>
       {children}
     </RowContext.Provider>
