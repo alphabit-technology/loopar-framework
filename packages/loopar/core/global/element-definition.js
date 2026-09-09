@@ -443,9 +443,12 @@ class DataInterface {
   }
 
   isCurrency() {
-    var regex = /^[1-9]\d*(?:\.\d{0,2})?$/;
+    // Money amounts can be 0 (untouched computed totals), negative (discounts,
+    // volume-tier adjustments) and fractional below 1. Any plain
+    // decimal number is valid; rounding to cents is the caller's job.
+    var regex = /^-?\d+(?:\.\d+)?$/;
     return {
-      valid: regex.test(this.value),
+      valid: regex.test(String(this.value).trim()),
       message: 'Invalid Currency'
     }
   }
