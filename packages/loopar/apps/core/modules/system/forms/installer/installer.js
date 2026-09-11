@@ -34,8 +34,49 @@ export default class Installer extends BaseDocument {
    */
   static roles = [];
 
-  async seedRoles(roles = this.constructor.roles) {
-    if (!Array.isArray(roles) || roles.length === 0) return;
+  /**
+   * Convention — every app gets two roles without declaring anything:
+   *   "<App> Manager": everything in the app, nothing else of the system.
+   *   "<App> User":    reads everything in the app (view/list/search — so
+   *                    selects and catalogs work), writes only its own
+   *                    records (create/update/delete… with scope 'own').
+   * The admin then widens or narrows per document in the permission manager.
+   * Declared `static roles` are added on top; one with the same name replaces
+   * the default. `static defaultRoles = false` opts out (loopar does).
+   */
+  static defaultRoles = true;
+
+  async defaultRoles() {
+    if (this.constructor.defaultRoles === false) return [];
+    const label = loopar.utils.Capitalize(String(this.app_name).replace(/[-_]+/g, ' '));
+    const app = `App:${this.app_name}`;
+    return [
+      {
+        name: `${label} Manager`,
+        description: `Full access to every document of the ${label} app, nothing else of the system.`,
+        is_system_role: 1,
+        grants: [{ document: app, action: "*" }],
+      },
+      {
+        name: `${label} User`,
+        description: `Reads everything in the ${label} app; creates and edits only its own records.`,
+        is_system_role: 1,
+        grants: [
+          { document: app, action: "view",   scope: "all" },
+          { document: app, action: "list",   scope: "all" },
+          { document: app, action: "search", scope: "all" },
+          { document: app, action: "*",      scope: "own" },
+        ],
+      },
+    ];
+  }
+
+  async seedRoles(declared = this.constructor.roles) {
+    const byName = new Map();
+    for (const r of await this.defaultRoles()) byName.set(r.name, r);
+    for (const r of (Array.isArray(declared) ? declared : [])) if (r?.name) byName.set(r.name, r);
+    const roles = [...byName.values()];
+    if (roles.length === 0) return;
 
     for (const role of roles) {
       if (!role?.name) continue;

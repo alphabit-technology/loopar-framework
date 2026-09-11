@@ -26,6 +26,8 @@ export default class Installer extends CoreInstaller {
    * read the whole database", and `*:list own` breaks selects (a user couldn't
    * pick a category created by someone else).
    */
+  static defaultRoles = false;   // System Manager already is "Loopar Manager"
+
   static roles = [
     {
       name: "System Manager",

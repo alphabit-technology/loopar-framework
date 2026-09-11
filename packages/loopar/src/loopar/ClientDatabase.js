@@ -15,7 +15,10 @@ export class ClientDatabase{
     return await this.loopar.call("Db", "getDoc", { query: { document, name }, body: { data, options } })
   }
 
+  /** Always resolves to a number (the server wraps it as `{ count }`). */
   async count(document, options = {}){
-    return await this.loopar.call("Db", "count", { query: { document }, body: options })
+    const r = await this.loopar.call("Db", "count", { query: { document }, body: options })
+    if (typeof r === "number") return r
+    return Number(r?.count ?? 0) || 0
   }
 }

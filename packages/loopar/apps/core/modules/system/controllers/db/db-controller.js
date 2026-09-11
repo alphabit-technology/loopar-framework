@@ -44,7 +44,8 @@ export default class DbController extends BaseController {
       loopar.throw(`You do not have acces to count ${document}`)
     }
 
-    return await loopar.db.count(document, filter);
+    // Wrapped: a bare `0` is falsy and the router turns it into `{}`.
+    return { count: Number(await loopar.db.count(document, filter)) || 0 };
   }
 
   async actionGetAll(){
