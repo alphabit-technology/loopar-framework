@@ -5,11 +5,15 @@ import {
   parseDocument,
   isAuditableEntity,
   coerceDocStatus,
+  CREATED_BY_COLUMN,
+  AUDIT_COLUMN_SET,
 } from "loopar";
 import EventEmitter from "events";
 import Connector from "./core/knex/connector.js";
 import { safeDefaultForType } from "./core/knex/core.js";
 import { applyCondition } from "./core/knex/op-translator.js";
+
+const isAuditColumnName = f => AUDIT_COLUMN_SET.has(f);
 
 export class KnexORM extends Connector {
   transaction = null;
@@ -177,7 +181,7 @@ export class KnexORM extends Connector {
       }
 
       if (meta.default !== null && meta.default !== undefined) {
-        data[meta.name] = meta.default;
+        data[meta.name] = this.#unquoteSqlDefault(meta.default);
       } else if (meta.nullable) {
         data[meta.name] = null;
       } else {
@@ -186,6 +190,23 @@ export class KnexORM extends Connector {
     }
 
     return data;
+  }
+
+  /**
+   * Table introspection returns string defaults as SQL literals — SQLite's
+   * dflt_value for `DEFAULT 'all'` is the 5-char string `'all'` (quotes
+   * included). Padding a missing column with that literal stores the quotes.
+   */
+  #unquoteSqlDefault(value) {
+    if (typeof value !== "string") return value;
+    const v = value.trim();
+    if (v.length >= 2 && v.startsWith("'") && v.endsWith("'")) {
+      return v.slice(1, -1).replace(/''/g, "'");
+    }
+    if (v.length >= 2 && v.startsWith('"') && v.endsWith('"')) {
+      return v.slice(1, -1);
+    }
+    return value;
   }
 
   #isSqlFunctionDefault(value) {
@@ -213,6 +234,7 @@ export class KnexORM extends Connector {
         if (data.__created_at__ == null) data.__created_at__ = now;
         if (data.__updated_at__ == null) data.__updated_at__ = now;
         data.__document_status__ = coerceDocStatus(data.__document_status__);
+        await this.#stampCreatedBy(document, data);
       }
     }
 
@@ -295,9 +317,28 @@ export class KnexORM extends Connector {
     await qb;
   }
 
+  /**
+   * `__created_by__` = username that created the row. Always the request
+   * user — a payload value is ignored (it is not a user-editable column), so a
+   * client can't forge ownership on create. Outside a request (installer,
+   * boot, jobs) there is no user and the column stays NULL. Skipped when the
+   * table hasn't been re-installed yet and lacks the column.
+   */
+  async #stampCreatedBy(document, data) {
+    const colMap = await this.getTableColumns(document);
+    if (!colMap.has(CREATED_BY_COLUMN)) {
+      delete data[CREATED_BY_COLUMN];
+      return;
+    }
+    const user = loopar.auth?.user?.() ?? null;
+    data[CREATED_BY_COLUMN] = user;
+  }
+
   async updateRow(document, name, data = {}) {
     data = this.getParseData(data);
     delete data.id;
+    // Immutable after insert — never accept it on update.
+    delete data[CREATED_BY_COLUMN];
     data = await this.filterToTableColumns(document, data);
 
     const auditable = this.#isAuditable(document);
@@ -405,10 +446,7 @@ export class KnexORM extends Connector {
       : fields.filter(field => ref.__FIELDS__.includes(field));
 
     if (!isAuditableEntity(ref)) {
-      fields = fields.filter(f =>
-        f !== "__created_at__" && f !== "__updated_at__" &&
-        f !== "__deleted_at__" && f !== "__document_status__"
-      );
+      fields = fields.filter(f => !isAuditColumnName(f));
     }
 
     if (!ref.is_single) {

@@ -17,8 +17,21 @@ import { ActionScanner } from "./ActionScanner.js";
  * tenant at fire time, and #reload/#emitUpdate are tenant-scoped, so wiring
  * them per boot stays correct.
  */
+/**
+ * Scope of a grant: how far a permitted action reaches.
+ *   all → any record of the document
+ *   own → only records where the user is the owner (see AuthController /
+ *         BaseController.ownerField). Ownership never grants by itself: the
+ *         action grant is required first, `own` only narrows it.
+ * When the same key is granted twice (user + role, two roles) the widest wins.
+ */
+export const SCOPE = Object.freeze({ ALL: 'all', OWN: 'own' });
+const SCOPE_RANK = { [SCOPE.OWN]: 1, [SCOPE.ALL]: 2 };
+const normalizeScope = s => (String(s ?? '').toLowerCase() === SCOPE.OWN ? SCOPE.OWN : SCOPE.ALL);
+const widest = (a, b) => (!a ? b : !b ? a : (SCOPE_RANK[a] >= SCOPE_RANK[b] ? a : b));
+
 class PermissionManagerClass {
-  // tenant -> Map(username -> Set(permKey))
+  // tenant -> Map(username -> Map(permKey -> scope))
   #storesByTenant = new Map();
   // tenant -> Map(username -> Set(permKey))
   #deniedByTenant = new Map();
@@ -57,6 +70,21 @@ class PermissionManagerClass {
     return `${document.toLowerCase().replaceAll(" ", "")}:${action.toLowerCase()}`;
   }
 
+  /**
+   * App-level grants: `document = "App:<app>"` covers every document of that
+   * app (same idea as the existing `Module:<name>` special case). Resolved
+   * through the document's ref, so entities added to the app later are
+   * covered without touching the grants.
+   */
+  static APP_PREFIX = 'App:';
+
+  #appKeys(document, action) {
+    const app = ActionScanner.getApp(document);
+    if (!app) return [];
+    const doc = `${PermissionManagerClass.APP_PREFIX}${app}`;
+    return [this.#buildKey(doc, '*'), this.#buildKey(doc, action)];
+  }
+
   #registerHooks() {
     loopar.hook("User Role", "afterSave", async ({doc}) => {
       await this.#reload(doc.user);
@@ -91,26 +119,73 @@ class PermissionManagerClass {
     loopar.hook("Module", "afterDelete", async () => { this.#allActionsByTenant.delete(this.#tenant()); });
   }
 
+  /** Boolean gate — unchanged contract: true when granted in ANY scope. */
   can(document, action, username) {
+    return this.scope(document, action, username) !== null;
+  }
+
+  /**
+   * Effective scope for (document, action, user): 'all' | 'own' | null.
+   * null = not permitted. Administrator and public actions are always 'all'.
+   */
+  scope(document, action, username) {
     username = username ?? loopar.auth.user() ?? 'Guest';
-    if (username === 'Administrator') return true;
+    if (username === 'Administrator') return SCOPE.ALL;
 
     const key = this.#buildKey(document, action);
 
-    if (this.#public().has(key)) return true;
+    if (this.#public().has(key)) return SCOPE.ALL;
 
     const denied = this.#denied().get(username);
-    if (denied?.has(key)) return false;
+    if (denied?.has(key)) return null;
 
-    const set = this.#store().get(username);
-    if (!set) return false;
+    const grants = this.#store().get(username);
+    if (!grants) return null;
 
-    return (
-      set.has('*:*') ||
-      set.has(this.#buildKey(document, '*')) ||
-      set.has(this.#buildKey('*', action)) ||
-      set.has(key)
-    );
+    let result = null;
+    for (const k of [
+      '*:*',
+      this.#buildKey(document, '*'),
+      this.#buildKey('*', action),
+      ...this.#appKeys(document, action),
+      key,
+    ]) {
+      const s = grants.get(k);
+      if (s) result = widest(result, s);
+      if (result === SCOPE.ALL) break;
+    }
+    return result;
+  }
+
+  /** Public re-read from DB (for code paths that bypass the ORM hooks). */
+  async reload(username) {
+    await this.#reload(username);
+    this.#emitUpdate(username);
+  }
+
+  async reloadRole(roleName) {
+    await this.#reloadRole(roleName);
+  }
+
+  /**
+   * Can `username` reach anything inside `moduleName`? True with an explicit
+   * `Module:<name> view` grant, or when the user can list/view at least one
+   * document of the module (Frappe-style: a workspace is visible when you
+   * have a role on one of its doctypes). Derived — no extra grants needed.
+   */
+  canAccessModule(moduleName, username) {
+    username = username ?? loopar.auth.user() ?? 'Guest';
+    if (username === 'Administrator') return true;
+    if (this.can(`Module:${moduleName}`, 'view', username)) return true;
+
+    const key = String(moduleName).toLowerCase();
+    for (const ref of Object.values(loopar.getRefs() ?? {})) {
+      if (String(ref.__MODULE__ ?? '').toLowerCase() !== key) continue;
+      if (ref.is_child) continue;
+      const doc = ref.__NAME__;
+      if (this.can(doc, 'list', username) || this.can(doc, 'view', username)) return true;
+    }
+    return false;
   }
 
   invalidate(username) {
@@ -132,14 +207,14 @@ class PermissionManagerClass {
     const rolePerms = roleNames.length > 0
       ? await loopar.db.getAll(
           'Permission',
-          ['document', 'action'],
+          ['document', 'action', 'scope'],
           { relation: 'Role', relation_name: { [Op.in]: roleNames } }
         )
       : [];
 
     const userPerms = await loopar.db.getAll(
       'Permission',
-      ['document', 'action'],
+      ['document', 'action', 'scope'],
       { relation: 'User', relation_name: username, deny: { [Op.ne]: 1 } }
     );
 
@@ -153,11 +228,12 @@ class PermissionManagerClass {
       userDenies.map(r => this.#buildKey(r.document, r.action))
     );
 
-    const merged = new Set();
+    const merged = new Map();
 
     for (const r of [...rolePerms, ...userPerms]) {
       const key = this.#buildKey(r.document, r.action);
-      if (!deniedSet.has(key)) merged.add(key);
+      if (deniedSet.has(key)) continue;
+      merged.set(key, widest(merged.get(key), normalizeScope(r.scope)));
     }
 
     this.#store().set(username, merged);
@@ -202,16 +278,26 @@ class PermissionManagerClass {
     return [...(this.#allActionsByTenant.get(t) ?? [])];
   }
 
+  /**
+   * Snapshot for the client. `private` keeps its shape (array of permKeys)
+   * so existing consumers keep working; `scopes` adds { permKey: scope } for
+   * keys granted as 'own' only — a key absent from `scopes` is 'all'.
+   */
   getPermissions(username) {
     username = username ?? loopar.auth.user() ?? 'Guest';
+    const grants = this.#store().get(username);
+    const isAdmin = username === 'Administrator';
+
+    const scopes = {};
+    if (!isAdmin && grants) {
+      for (const [k, s] of grants) if (s === SCOPE.OWN) scopes[k] = s;
+    }
+
     return {
       public:  [...this.#public()],
-      private: username === 'Administrator'
-        ? null
-        : [...(this.#store().get(username) ?? [])],
-      denied: username === 'Administrator'
-        ? []
-        : [...(this.#denied().get(username) ?? [])],
+      private: isAdmin ? null : [...(grants?.keys() ?? [])],
+      denied:  isAdmin ? [] : [...(this.#denied().get(username) ?? [])],
+      scopes,
     };
   }
 }

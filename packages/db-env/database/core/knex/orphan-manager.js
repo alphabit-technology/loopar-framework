@@ -1,11 +1,11 @@
 'use strict';
 
-import { loopar } from "loopar";
+import { loopar, AUDIT_COLUMN_SET } from "loopar";
 
-const IMMUNE_COLUMNS = new Set([
-  "id", "name",
-  "__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
-]);
+// Built lazily: `loopar` (index.js) imports db-env while it is still
+// evaluating, so reading AUDIT_COLUMN_SET at module top-level hits the TDZ.
+let immuneColumns = null;
+const IMMUNE = () => (immuneColumns ??= new Set(["id", "name", ...AUDIT_COLUMN_SET]));
 
 export class OrphanManager {
   async getOrphanColumns(orm, document) {
@@ -30,7 +30,7 @@ export class OrphanManager {
     return dbFields
       .filter(f =>
         !structureCols.has(f.name.toLowerCase()) &&
-        !IMMUNE_COLUMNS.has(f.name.toLowerCase())
+        !IMMUNE().has(f.name.toLowerCase())
       )
       .map(f => ({
         name: f.name,
@@ -313,7 +313,7 @@ export class OrphanManager {
   }
 
   async assertOrphan(orm, document, columnName) {
-    if (IMMUNE_COLUMNS.has(columnName.toLowerCase())) {
+    if (IMMUNE().has(columnName.toLowerCase())) {
       throw new Error(`Column "${columnName}" is protected and cannot be modified`);
     }
     const orphans  = await this.getOrphanColumns(orm, document);

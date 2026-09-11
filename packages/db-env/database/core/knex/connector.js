@@ -325,12 +325,13 @@ export default class Connector extends Core {
 
     if (entities.length === 0) return false;
 
-    const FRAMEWORK_OWNED = new Set([
-      "__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
-    ]);
-
+    // Audit columns (`__created_at__`, `__created_by__`, …) ARE probed: they
+    // only appear in `__FIELDS__` for auditable entities, and a missing one
+    // must flip __installed__ to false so the tenant is routed through
+    // /system/update (ensureFrameworkColumns adds it) instead of crashing on
+    // the first SELECT that asks for it.
     const testFields = async (entityName, columns, skip) => {
-      const probedCols = columns.filter(c => !FRAMEWORK_OWNED.has(c) && !skip.has(c));
+      const probedCols = columns.filter(c => !skip.has(c));
       if (!probedCols.length) return true;
 
       try {

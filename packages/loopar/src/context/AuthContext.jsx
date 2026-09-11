@@ -6,27 +6,63 @@ import loopar, { useRealtime } from "loopar";
 let _permSet = null;
 let _publicSet = new Set();
 let _deniedSet = new Set();
+// permKey -> 'own' for grants narrowed to the user's own records
+// (a granted key absent here is 'all'). Mirrors PermissionManager.scope().
+let _scopes = {};
+let _userId = null;
 
-function initSets({ private: priv, public: pub, denied = [] } = {}) {
+const OWNER_FIELD = '__created_by__';
+
+function initSets({ private: priv, public: pub, denied = [], scopes = {} } = {}) {
   _permSet = priv === null ? null : new Set(priv ?? []);
   _publicSet = new Set(pub ?? []);
   _deniedSet = new Set(denied);
+  _scopes = scopes ?? {};
+}
+
+const normDoc = d => String(d ?? '').toLowerCase().replaceAll(" ", "");
+const normAct = a => String(a ?? '').toLowerCase();
+
+/**
+ * Effective scope of (document, action) for the current user:
+ * 'all' | 'own' | null (not permitted). Widest scope wins, like the server.
+ */
+function permissionScope(document, action) {
+  const doc = normDoc(document);
+  const act = normAct(action);
+  const key = `${doc}:${act}`;
+
+  if (_publicSet.has(key)) return 'all';
+  if (_permSet === null) return 'all';          // Administrator
+
+  if (_deniedSet.has(key)) return null;
+
+  let result = null;
+  for (const k of ['*:*', `${doc}:*`, `*:${act}`, key]) {
+    if (!_permSet.has(k)) continue;
+    const s = _scopes[k] === 'own' ? 'own' : 'all';
+    if (s === 'all') return 'all';
+    result = 'own';
+  }
+  return result;
 }
 
 function checkPermission(document, action) {
-  const key = `${document}:${action}`.toLowerCase().replaceAll(" ", "");
+  return permissionScope(document, action) !== null;
+}
 
-  if (_publicSet.has(key)) return true;
-  if (_permSet === null) return true;
-
-  if (_deniedSet.has(key)) return false;
-
-  return (
-    _permSet.has('*:*') ||
-    _permSet.has(`${document}:*`) ||
-    _permSet.has(`*:${action}`) ||
-    _permSet.has(key)
-  );
+/**
+ * Can the current user perform `action` on this specific `record`?
+ * Cosmetic only (hide buttons) — the server is the source of truth.
+ * `ownerField` lets an entity that resolves ownership through another
+ * column (e.g. 'customer') pass it; `owner` overrides the comparison value.
+ */
+function checkRecordPermission(document, action, record, { ownerField = OWNER_FIELD, owner } = {}) {
+  const scope = permissionScope(document, action);
+  if (scope === null) return false;
+  if (scope === 'all') return true;
+  const value = owner ?? record?.[ownerField];
+  return value != null && value === _userId;
 }
 
 const AuthContext = createContext(null);
@@ -34,6 +70,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ permissions: initialPermissions, userId, children }) {
   const initialized = useRef(false);
   if (!initialized.current) {
+    _userId = userId ?? null;
     initSets(initialPermissions);
     initialized.current = true;
   }
@@ -60,8 +97,16 @@ export function AuthProvider({ permissions: initialPermissions, userId, children
     return checkPermission(document, action);
   }, []);
 
+  const scope = useCallback((document, action) => {
+    return permissionScope(document, action);
+  }, []);
+
+  const canOn = useCallback((document, action, record, opts) => {
+    return checkRecordPermission(document, action, record, opts);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ award, userId }}>
+    <AuthContext.Provider value={{ award, scope, canOn, userId }}>
       {children}
     </AuthContext.Provider>
   );
@@ -73,4 +118,4 @@ export function useAuth() {
   return ctx;
 }
 
-export { checkPermission as award };
+export { checkPermission as award, permissionScope as scope, checkRecordPermission as canOn };

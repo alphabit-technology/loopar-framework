@@ -28,6 +28,8 @@ export default class BaseController extends CoreController {
       return acc;
     }, {});
 
+    // Scope 'own' is applied by the model (BaseDocument.getList via
+    // auth/record-scope.js), so a controller overriding this action can't skip it.
     const list = await loopar.getList(this.document, { data, q: (data && Object.keys(data).length > 0) ? data : null });
 
     if(this.preloaded == true) {

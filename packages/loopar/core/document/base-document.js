@@ -3,6 +3,8 @@
 import CoreDocument from './core-document.js';
 import { loopar } from '../loopar.js';
 import { Op } from 'db-env';
+import { CREATED_BY_COLUMN } from '../global/audit.js';
+import { requestOwnerFilter } from '../auth/record-scope.js';
 
 function combineSConditions(...conditions) {
   const validConditions = conditions.filter(cond => {
@@ -102,7 +104,17 @@ export default class BaseDocument extends CoreDocument {
     return { [Op.and]: conditions };
   }
 
-  async getList({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
+  async #ownerColumn() {
+    if (!this.__ENTITY__.__REF__?.__FIELDS__?.includes(CREATED_BY_COLUMN)) return [];
+    try {
+      const cols = await loopar.db.getTableColumns(this.__ENTITY__.name);
+      return cols?.has(CREATED_BY_COLUMN) ? [CREATED_BY_COLUMN] : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getList({ fields = null, filters = {}, q = null, rowsOnly = false, unscoped = false } = {}) {
     if (this.__ENTITY__.is_single) {
       return loopar.throw({
         code: 404,
@@ -129,18 +141,25 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = combineSConditions(this.buildCondition(q), filters);
+    // Scope 'own' (auth/record-scope.js): narrows rows AND the count so
+    // pagination matches. Only when this entity is the one the request targets.
+    const scoped = unscoped ? null : await requestOwnerFilter(this.__ENTITY__.name);
+    const condition = combineSConditions(this.buildCondition(q), filters, scoped);
     
     pagination.totalRecords = await this.records(condition);
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
     const selfPagination = JSON.parse(JSON.stringify(pagination));
     loopar.db.pagination = pagination;
 
-    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
+    // `__created_by__` rides along (not a visible column) so the client can
+    // decide per row whether an 'own'-scoped action applies (AuthContext.canOn).
+    // Only when the table has it: child/static entities are not auditable and
+    // an app not yet updated lacks the column.
+    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id", ...(await this.#ownerColumn())], condition);
 
     if (rows.length === 0 && pagination.page > 1) {
       loopar.setPage(this.__ENTITY__.name, 1);
-      return await this.getList({ fields, filters, q, rowsOnly });
+      return await this.getList({ fields, filters, q, rowsOnly, unscoped });
     }
 
     return {...(rowsOnly ? {} : await this.__meta__(false)), ...{
@@ -153,7 +172,7 @@ export default class BaseDocument extends CoreDocument {
     };
   }
 
-  async getListToForm({ fields = null, filters = {}, q = null, rowsOnly = false } = {}) {
+  async getListToForm({ fields = null, filters = {}, q = null, rowsOnly = false, unscoped = false } = {}) {
     if (this.__ENTITY__.is_single) {
       return loopar.throw({
         code: 404,
@@ -177,14 +196,19 @@ export default class BaseDocument extends CoreDocument {
       listFields.push('is_single');
     }
 
-    const condition = combineSConditions(this.buildCondition(q), filters);
+    const scoped = unscoped ? null : await requestOwnerFilter(this.__ENTITY__.name);
+    const condition = combineSConditions(this.buildCondition(q), filters, scoped);
 
     pagination.totalRecords = await this.records(condition);
 
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
     //const selfPagination = JSON.parse(JSON.stringify(pagination));
     loopar.db.pagination = pagination;
-    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id"], condition);
+    // `__created_by__` rides along (not a visible column) so the client can
+    // decide per row whether an 'own'-scoped action applies (AuthContext.canOn).
+    // Only when the table has it: child/static entities are not auditable and
+    // an app not yet updated lacks the column.
+    const rows = await loopar.db.getList(this.__ENTITY__.name, [...listFields, "id", ...(await this.#ownerColumn())], condition);
 
     if (rows.length === 0 && pagination.page > 1) {
       loopar.setPage(this.__ENTITY__.name , 1);
@@ -234,10 +258,10 @@ export default class BaseDocument extends CoreDocument {
 
     const listFields = this.getFieldSelectLabels();
 
-    const rows = await loopar.db.getList(this.__ENTITY__.name, ["name", ...listFields], this.buildConditionToSelect(q));
+    const condition = combineSConditions(this.buildConditionToSelect(q), await requestOwnerFilter(this.__ENTITY__.name));
+    const rows = await loopar.db.getList(this.__ENTITY__.name, ["name", ...listFields], condition);
 
-    
-    pagination.totalRecords = await this.records();
+    pagination.totalRecords = await this.records(condition);
     pagination.totalPages = Math.ceil(pagination.totalRecords / pagination.pageSize);
 
     return Object.assign({

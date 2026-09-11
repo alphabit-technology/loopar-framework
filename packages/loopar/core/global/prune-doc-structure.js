@@ -8,6 +8,7 @@ const FIELD_DEFAULTS = Object.freeze({
 
 const FRAMEWORK_OWNED_FIELDS = new Set([
   "id","__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
+  "__created_by__",
 ]);
 
 const EMPTY_BG_VARIANTS = new Set([

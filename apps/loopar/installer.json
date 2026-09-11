@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "7.0.26"
+    "version": "7.0.29"
   },
   "documents": {
     "Entity:Module": {
@@ -30,10 +30,10 @@
       "type": "Desk App",
       "name": "loopar",
       "description": "Loopar",
-      "version": "7.0.26",
+      "version": "7.0.29",
       "autor": "Administrator",
       "icon": "Infinity",
-      "gap": 1,
+      "gap": "",
       "col_padding": "p-2",
       "logo": "[{\"name\":\"logo.svg\",\"size\":17901,\"type\":\"image\",\"src\":\"/assets/public/logo.svg\"}]",
       "logo_dark": "[{\"name\":\"logo.svg\",\"size\":17901,\"type\":\"image\",\"src\":\"/assets/public/logo.svg\"}]",
@@ -258,6 +258,27 @@
     },
     "Entity:Role": {
       "__root__": "/apps/loopar/modules/auth/entities/role"
+    },
+    "Role:System Manager": {
+      "name": "System Manager",
+      "app": "loopar",
+      "is_system_role": 1,
+      "disabled": 0,
+      "description": "Full access to every document and action (like Administrator, but a regular user)."
+    },
+    "Role:Desk User": {
+      "name": "Desk User",
+      "app": "loopar",
+      "is_system_role": 1,
+      "disabled": 0,
+      "description": "Read-only desk access: can list and view every document."
+    },
+    "Role:Web User": {
+      "name": "Web User",
+      "app": "loopar",
+      "is_system_role": 1,
+      "disabled": 0,
+      "description": "Portal / website account. Apps grant their own documents here, usually with scope 'own'."
     },
     "Entity:Permission": {
       "__root__": "/apps/loopar/modules/auth/entities/permission"

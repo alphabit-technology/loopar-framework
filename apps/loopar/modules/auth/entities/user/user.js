@@ -15,12 +15,24 @@ export default class User extends BaseDocument {
   }
 
   async validateUserName() {
-    const regex = new RegExp("^[a-zA-Z ]+$");
+    // `name` is the document ID: either an email (web signup) or a plain
+    // username (e.g. "Administrator"). The person's name lives in first_name/last_name.
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[\p{L}\p{N}._-]{3,}$/u;
+    const personNameRegex = /^[\p{L} '\-]+$/u;
 
     const excludeSelf = this.id ? { id: { [Op.ne]: this.id } } : {};
-    
-    if (!regex.test(this.name)) {
-      loopar.throw('Your name must be at least 3 characters long');
+
+    const name = (this.name || '').trim();
+    if (!emailRegex.test(name) && !usernameRegex.test(name)) {
+      loopar.throw('User name must be a valid email or at least 3 characters (letters, numbers, ".", "_" or "-").');
+    }
+
+    for (const field of ['first_name', 'last_name']) {
+      const value = (this[field] || '').trim();
+      if (value && !personNameRegex.test(value)) {
+        loopar.throw(`${field === 'first_name' ? 'First' : 'Last'} name may only contain letters, spaces, apostrophes and hyphens.`);
+      }
     }
 
     if (!loopar.installing && this.__IS_NEW__ && this.name === 'Administrator') {

@@ -17,6 +17,56 @@ function entryRoot(ent, entryKey) {
 }
 
 export default class Installer extends BaseDocument {
+  /**
+   * Roles an app declares, seeded (idempotently: only missing rows are
+   * inserted, an admin's later edits are kept) after every install/update.
+   *
+   *   static roles = [
+   *     { name: '<AppName> Manager', description: '…', is_system_role: 1,
+   *       grants: [{ document: 'App:<AppName>', action: '*' }] },
+   *     // extend a role owned by another app (e.g. the base "Web User"):
+   *     { name: 'Web User', grants: [{ document: '<Page Name>, action: 'view', scope: 'own' }] },
+   *   ];
+   *
+   * Grant: { document, action, scope = 'all' | 'own', deny = 0 }.
+   * `document` may be an entity, '*', 'App:<app>' (every document of the
+   * app, including ones added later) or 'Module:<module>' (sidebar).
+   */
+  static roles = [];
+
+  async seedRoles(roles = this.constructor.roles) {
+    if (!Array.isArray(roles) || roles.length === 0) return;
+
+    for (const role of roles) {
+      if (!role?.name) continue;
+
+      if (!(await loopar.db.count("Role", role.name))) {
+        console.log([`[installer] seeding role`, role.name, `(${this.app_name})`]);
+        const doc = await loopar.newDocument("Role", {
+          name: role.name,
+          app: this.app_name,
+          description: role.description ?? "",
+          is_system_role: role.is_system_role ?? 1,
+          disabled: 0,
+        });
+        await doc.save({ validate: false });
+      }
+
+      for (const g of role.grants ?? []) {
+        if (!g?.document || !g?.action) continue;
+        const where = { relation: "Role", relation_name: role.name, document: g.document, action: g.action };
+        if (await loopar.db.count("Permission", where)) continue;
+        await loopar.db.insertRow("Permission", {
+          name: `Role-${role.name}-${g.document}-${g.action}`,
+          ...where,
+          app: this.app_name,
+          deny: g.deny ? 1 : 0,
+          scope: g.scope === "own" ? "own" : "all",
+        });
+      }
+    }
+  }
+
   async getDocumentData(document, root) {
     return await fileManage.getConfigFile(document, root);
   }
@@ -137,6 +187,7 @@ export default class Installer extends BaseDocument {
     }
 
     await this.installData(reinstall);
+    await this.seedRoles();
 
     loopar.installingApp = null;
     

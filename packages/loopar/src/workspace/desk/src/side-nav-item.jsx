@@ -52,7 +52,6 @@ export const SideNavItem = (props) => {
           {word}
         </small>
       ))}
-
     </Link>
   ) : null
 

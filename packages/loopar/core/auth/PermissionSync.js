@@ -1,21 +1,27 @@
 import { ActionScanner } from './ActionScanner.js';
 
+/**
+ * Reconcile the CATALOG rows of `Permission` (relation IS NULL) with the
+ * actions the controllers expose. Grants (rows with `relation` = User|Role)
+ * are never touched here: they belong to the admin (or to an app installer),
+ * and may legitimately use wildcards (`*`) that no controller exposes.
+ */
+const isCatalog = row => row.relation == null || row.relation === '';
+
 export async function PermissionSync(loopar){
   const codeMap = await ActionScanner.getAllActions();
 
-  const dbRows = await loopar.db.getAll(
+  const dbRows = (await loopar.db.getAll(
     'Permission',
-    ['name', 'document', 'action'],
+    ['name', 'document', 'action', 'relation'],
     null
-  );
+  )).filter(isCatalog);
 
   const codeSet = new Set();
   const dbMap = new Map();
 
-  for (const [document, actions] of Object.entries(codeMap)) {
-    for (const action of actions) {
-      codeSet.add(`${document}:${action}`);
-    }
+  for (const { document, action } of codeMap) {
+    codeSet.add(`${document}:${action}`);
   }
 
   for (const row of dbRows) {
@@ -37,21 +43,18 @@ export async function PermissionSync(loopar){
           document,
           action,
           app: app ?? null,
+          relation: null,
+          relation_name: null,
+          scope: 'all',
         });
       }
       inserted++;
     }
   }
 
+  // DELETE — catalog rows whose action no longer exists in code
   for (const [key, dbName] of dbMap) {
     if (!codeSet.has(key)) {
-      const [document, action] = key.split(':');
-
-      await loopar.db.deleteWhere('Permission', {
-        document,
-        action,
-      });
-
       await loopar.db.deleteRow('Permission', dbName);
       deleted++;
     }

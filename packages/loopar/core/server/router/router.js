@@ -191,6 +191,9 @@ export default class Router extends Middleware {
 
       const action = params.action?.length > 0 ? params.action : Controller.defaultAction;
       Controller.action = action;
+      // Record-level scope (auth/record-scope.js) reads the request's
+      // controller to narrow lists of the requested document to the user's own.
+      req.__CONTROLLER__ = Controller;
 
       const result = await Controller.sendAction(action) || {};
 

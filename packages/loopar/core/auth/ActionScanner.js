@@ -61,8 +61,9 @@ export class ActionScanner {
     return ActionScanner.getAllActions(true);
   }
 
+  /** App that owns `documentName` (refs are keyed by normalized entity key). */
   static getApp(documentName) {
-    const ref = loopar.getRefs()?.[documentName];
+    const ref = loopar.getRef(documentName);
     return ref?.__APP__ ?? null;
   }
 }

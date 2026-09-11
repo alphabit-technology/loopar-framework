@@ -17,19 +17,28 @@ export function makeGridCols(commonActions, hasOwn) {
   return `220px ${commonActions.map(() => '72px').join(' ')}${hasOwn ? ' 90px' : ''}`;
 }
 
+// Keys are `${document}:${action.toLowerCase()}` on both sides: the catalog
+// lists actions Capitalized (from `actionList` → "List") while grants may be
+// stored lowercase (seeded roles). The server normalizes the same way.
+export const permKey = (document, action) => `${document}:${String(action ?? '').toLowerCase()}`;
+
 export function buildPermissions(catalog, assignedSet) {
   const hasAll = assignedSet.has('*:*');
+  // App-level grants (`App:<app>` document) — compared case-insensitively.
+  const lower = new Set([...assignedSet].map(k => k.toLowerCase()));
   const result = {};
   for (const [app, docs] of Object.entries(catalog)) {
     result[app] = {};
+    const appAll = lower.has(`app:${app}:*`.toLowerCase());
     for (const [doc, actions] of Object.entries(docs)) {
       const docAll = assignedSet.has(`${doc}:*`);
       result[app][doc] = {};
       for (const action of actions) {
         result[app][doc][action] =
-          hasAll || docAll ||
-          assignedSet.has(`*:${action}`) ||
-          assignedSet.has(`${doc}:${action}`);
+          hasAll || docAll || appAll ||
+          lower.has(`app:${app}:${action}`.toLowerCase()) ||
+          assignedSet.has(permKey('*', action)) ||
+          assignedSet.has(permKey(doc, action));
       }
     }
   }

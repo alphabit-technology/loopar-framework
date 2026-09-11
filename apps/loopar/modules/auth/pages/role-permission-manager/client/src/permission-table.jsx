@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo, useEffect, useCallback } from "react";
 import loopar from "loopar";
-import { cap, getOwnActions, makeGridCols, buildPermissions, expandWildcard, updateCell, updateColumn, updateAllDoc } from "../helper";
+import { cap, getOwnActions, makeGridCols, buildPermissions, expandWildcard, updateCell, updateColumn, updateAllDoc, permKey } from "../helper";
 import { Checkbox } from "./Checkbox.jsx";
 import { OwnChip } from "./own-chip.jsx";
 import { AppTabs } from "./app-tabs.jsx";
@@ -24,6 +24,8 @@ export function PermissionTable({
   const [permissions, setPermissions] = useState({});
   const [inheritedPerms, setInheritedPerms] = useState(new Set());
   const [deniedPerms, setDeniedPerms] = useState(new Set());
+  // permKey -> 'own' (grants narrowed to the user's own records)
+  const [ownScopes, setOwnScopes] = useState({});
   const [currentApp, setCurrentApp] = usePersist(`${manager}currentApp`, null);
   const [search, setSearch] = usePersist(`${manager}search`, "");
   const [saving, setSaving] = useState(null);
@@ -43,6 +45,7 @@ export function PermissionTable({
         setPermissions(buildPermissions(catalog, new Set()));
         setInheritedPerms(new Set());
         setDeniedPerms(new Set());
+        setOwnScopes({});
       });
       return;
     }
@@ -56,10 +59,12 @@ export function PermissionTable({
     const assigned = new Set(resolved?.assigned ?? []);
     const inherited = new Set(resolved?.inherited ?? []);
     const denied = new Set(resolved?.denied ?? []);
+    const scopes = resolved?.scopes ?? {};
 
     startRoleTransition(() => {
       setInheritedPerms(inherited);
       setDeniedPerms(denied);
+      setOwnScopes(scopes);
       setPermissions(buildPermissions(catalog, assigned));
     });
   }, [catalog, role, user]);
@@ -86,7 +91,7 @@ export function PermissionTable({
   }, [refreshKey, refreshResolved]);
 
   const handleToggle = useCallback((document, action, assign) => {
-    const key = `${document}:${action}`;
+    const key = permKey(document, action);
     setSaving(key);
 
     if (!assign) {
@@ -133,6 +138,33 @@ export function PermissionTable({
       });
     }
   }, [permissions, currentApp, inheritedPerms, deniedPerms, onToggle, user, role, refreshResolved]);
+
+  // Scope of a cell: 'own' when every grant covering it is 'own'
+  // (exact key or a wildcard); same resolution as PermissionManager.scope().
+  const cellScope = useCallback((document, action) => {
+    const own = new Set(Object.keys(ownScopes).map(k => k.toLowerCase()));
+    const keys = [
+      permKey(document, action), `${document}:*`, permKey('*', action), '*:*',
+      `App:${currentApp}:*`, permKey(`App:${currentApp}`, action),
+    ].map(k => k.toLowerCase());
+    return keys.some(k => own.has(k)) ? 'own' : 'all';
+  }, [ownScopes, currentApp]);
+
+  const handleSetScope = useCallback((document, action, scope) => {
+    const key = permKey(document, action);
+    setSaving(key);
+    loopar.call("Role Permission Manager", "setScope", {
+      body: { mode: user ? "User" : "Role", entity: user || role, document, action, scope },
+      success: async () => {
+        setSaving(null);
+        await refreshResolved();
+      },
+      error: () => {
+        setSaving(null);
+        refreshResolved();
+      }
+    });
+  }, [user, role, refreshResolved]);
 
   const handleToggleAll = useCallback((document, assign) => {
     setPermissions(prev => updateAllDoc(prev, currentApp, document, assign));
@@ -251,7 +283,7 @@ export function PermissionTable({
 
             {hasAnyOwn && (
               <div className="px-3 py-2 flex items-center">
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Own</span>
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Custom</span>
               </div>
             )}
           </div>
@@ -304,12 +336,15 @@ export function PermissionTable({
                   </div>
 
                   {commonActions.map(action => {
-                    const key = `${doc}:${action}`;
+                    const key = permKey(doc, action);
                     const has = action in acts;
                     const checked = has && acts[action];
                     const isInherited = inheritedPerms.has(key);
                     const isDenied = deniedPerms.has(key);
                     const isSav = effectiveSaving === key;
+                    // Scope is editable only on a direct grant (not inherited from a role).
+                    const isOwn = checked && !isDenied && cellScope(doc, action) === 'own';
+                    const canScope = checked && !isInherited && !isDenied;
 
                     return (
                       <div key={action} className="flex items-center justify-center py-0.5">
@@ -317,13 +352,28 @@ export function PermissionTable({
                           ? <div className="inline-flex items-center justify-center w-8 h-8">
                               <div className="w-3 h-3 border border-border border-t-primary rounded-full animate-spin" />
                             </div>
-                          : <Checkbox
-                              checked={checked && !isInherited}
-                              inherited={isInherited && !isDenied}
-                              denied={isDenied}
-                              na={!has && !isInherited && !isDenied}
-                              onClick={() => (has || isInherited || isDenied) && handleToggle(doc, action, isDenied ? true : !checked)}
-                            />
+                          : <div className="relative group/cell">
+                              <Checkbox
+                                checked={checked && !isInherited}
+                                inherited={isInherited && !isDenied}
+                                denied={isDenied}
+                                own={isOwn}
+                                na={!has && !isInherited && !isDenied}
+                                onClick={() => (has || isInherited || isDenied) && handleToggle(doc, action, isDenied ? true : !checked)}
+                              />
+                              {canScope && (
+                                <button
+                                  type="button"
+                                  title={isOwn ? "Scope: own records only — click for all records" : "Scope: all records — click to restrict to own records"}
+                                  onClick={(e) => { e.stopPropagation(); handleSetScope(doc, action, isOwn ? 'all' : 'own'); }}
+                                  className={`absolute left-1/2 -translate-x-1/2 -bottom-2 z-10 text-[10px] font-semibold leading-none px-1.5 py-[2px] rounded-full border transition-all whitespace-nowrap
+                                    ${isOwn
+                                      ? "bg-amber-500 text-white border-amber-400 shadow opacity-100"
+                                      : "bg-background text-muted-foreground border-border opacity-0 group-hover/cell:opacity-100"}`}>
+                                  {isOwn ? "own" : "all"}
+                                </button>
+                              )}
+                            </div>
                         }
                       </div>
                     );
@@ -344,12 +394,12 @@ export function PermissionTable({
                 {isExpanded && extras.length > 0 && (
                   <div className="border-b border-border/50 bg-muted/20 flex text-xs" style={{ minWidth: 'max-content' }}>
                     <div className="sticky left-0 z-[5] bg-muted/20 px-6 py-2 border-r border-border flex items-center flex-shrink-0" style={{ width: 220 }}>
-                      <span className="text-[9px] text-muted-foreground italic uppercase tracking-wider">Own</span>
+                      <span className="text-[9px] text-muted-foreground italic uppercase tracking-wider">Custom actions</span>
                     </div>
                     <div className="px-3 py-2 flex flex-wrap gap-1.5">
                       {extras.map(action => (
                         <OwnChip key={action} action={action}
-                          checked={acts[action]} saving={effectiveSaving === `${doc}:${action}`}
+                          checked={acts[action]} saving={effectiveSaving === permKey(doc, action)}
                           onClick={() => handleToggle(doc, action, !acts[action])} />
                       ))}
                     </div>

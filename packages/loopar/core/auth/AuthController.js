@@ -1,4 +1,5 @@
-import { loopar, PermissionManager } from "loopar";
+import { loopar, PermissionManager, CREATED_BY_COLUMN } from "loopar";
+import { SCOPE } from "./PermissionManager.js";
 import { validateCsrfToken } from './csrf.js';
 import { workspaceCapabilities, workspaceRequiresAuth, getWorkspaceName } from "../global/router-utils.js";
 
@@ -67,6 +68,71 @@ export default class AuthController {
     }
   }
 
+  // ---- Ownership (record-level scope) --------------------------------------
+  // A grant carries a scope: 'all' (default) or 'own'. Ownership never grants
+  // access on its own — the action grant comes first, 'own' only narrows it to
+  // the records the user owns. Evaluated ONLY for the request's own
+  // (document, action, name); documents a controller loads internally are
+  // never gated here (Invoice.update reading Materials is not a Material
+  // request). Lists are narrowed by `ownerFilters()` in BaseController.
+
+  /** Column that identifies the owner. Override per entity (e.g. 'customer'). */
+  static ownerField = CREATED_BY_COLUMN;
+
+  get ownerField() {
+    return this.constructor.ownerField || CREATED_BY_COLUMN;
+  }
+
+  /** Effective scope for this request: 'all' | 'own' | null. */
+  ownerScope(user = loopar.auth.user()) {
+    return PermissionManager.scope(this.document, this.action, user);
+  }
+
+  /** Filter to narrow a list to the user's records. Override for compound rules (may be async). */
+  async ownerCondition(user = loopar.auth.user()) {
+    return { [this.ownerField]: user ?? '__nobody__' };
+  }
+
+  /** `ownerCondition()` when the request's scope is 'own', else null. */
+  async ownerFilters(user = loopar.auth.user()) {
+    return this.ownerScope(user) === SCOPE.OWN ? await this.ownerCondition(user) : null;
+  }
+
+  /**
+   * Is `user` the owner of record `name`? Override for compound rules.
+   * Returns null when the record doesn't exist so the action can 404 as usual.
+   */
+  async isOwner(name, user = loopar.auth.user()) {
+    const row = await loopar.db.getRow(this.document, name, [this.ownerField]);
+    if (!row) return null;
+    const owner = row[this.ownerField];
+    return owner != null && owner === user;
+  }
+
+  /** Record names targeted by this request (single `name`, or bulk `names`). */
+  #targetNames() {
+    if (this.name) return [this.name];
+    const raw = this.body?.names ?? this.data?.names;
+    if (Array.isArray(raw)) return raw;
+    if (loopar.utils.isJSON(raw)) {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    return [];
+  }
+
+  async #assertOwnership(user) {
+    for (const name of this.#targetNames()) {
+      const owns = await this.isOwner(name, user.name);
+      if (owns === false) {
+        loopar.throw({
+          code: 403,
+          message: 'You do not have permission over this record',
+        });
+      }
+    }
+  }
+
   async isAuthorized(user) {
     if (user.name === 'Administrator') return true;
     const workspace = this.req.__WORKSPACE_NAME__;
@@ -74,32 +140,33 @@ export default class AuthController {
     if (this.#isPublicAction(workspace)) return true;
 
     if ((this.freeActions || []).includes(this.action)) return true;
-  
-    let allowed = await PermissionManager.can(
+
+    let scope = PermissionManager.scope(
       this.document,
       this.action,
       user.name,
     );
 
     if(this.document == "Module"){
-      allowed = await PermissionManager.can(
-        `Module:${this.name}`,
-        "view",
-        user.name,
-      ) || await PermissionManager.can(
-        "Module",
-        this.action,
-        user.name,
-      )
+      // Opening a module (`Module/view?name=x`) is allowed when the user can
+      // reach any document in it (or has `Module:x view` / `Module:<action>`).
+      const isViewLike = ['view', 'list'].includes(String(this.action).toLowerCase());
+      scope = (isViewLike && this.name && PermissionManager.canAccessModule(this.name, user.name))
+        ? SCOPE.ALL
+        : PermissionManager.scope("Module", this.action, user.name);
     }
-  
-    if (!allowed) {
+
+    if (!scope) {
       loopar.throw(
         'You do not have permission to perform this action'
       );
     }
-  
-    return allowed;
+
+    if (scope === SCOPE.OWN) {
+      await this.#assertOwnership(user);
+    }
+
+    return true;
   }
 
   async #award() {

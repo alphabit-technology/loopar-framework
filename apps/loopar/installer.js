@@ -17,6 +17,34 @@ export default class Installer extends CoreInstaller {
   app_name = "loopar";
 
   /**
+   * System roles (seeded by CoreInstaller.seedRoles after every install/update).
+   *
+   * Base roles grant ENTRY, not data: a user with only `Desk User` sees an
+   * empty desk until an application role (declared by each app in its own
+   * installer, e.g. "<AppName> Manager" → App:<AppName>:*) gives it data. Safe by
+   * default — `*:list` for every desk user would turn "can log in" into "can
+   * read the whole database", and `*:list own` breaks selects (a user couldn't
+   * pick a category created by someone else).
+   */
+  static roles = [
+    {
+      name: "System Manager",
+      description: "Full access to every document and action (like Administrator, but a regular user).",
+      grants: [{ document: "*", action: "*" }],
+    },
+    {
+      name: "Desk User",
+      description: "Can enter the desk and manage their own profile. Data access comes from application roles.",
+      grants: [{ document: "Profile", action: "*" }],
+    },
+    {
+      name: "Web User",
+      description: "Portal / website account. Apps grant their own documents here, usually with scope 'own'.",
+      grants: [],
+    },
+  ];
+
+  /**
    * Auto-seed credentials from the tenant env when missing.
    * `CUSTOMER_EMAIL` is set by the control-plane provisioner so the first
    * Administrator is the paying customer, not a generic `admin`. Password is

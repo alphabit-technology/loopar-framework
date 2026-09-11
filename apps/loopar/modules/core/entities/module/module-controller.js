@@ -41,6 +41,7 @@ export default class ModuleController extends BaseController {
 
     const list = await loopar.getList(type, { q: queryData, rowsOnly: this.preloaded === 'true'});
 
+    const before = list.rows.length;
     list.rows = list.rows.filter(row => {
       return PermissionManager.can(row.name, "view") || PermissionManager.can(row.name, "list")
     }).map(row => {
@@ -51,6 +52,14 @@ export default class ModuleController extends BaseController {
         type: ref?.__ENTITY__ || "Entity",
       };
     });
+
+    // Cards are filtered by permission after pagination: keep the counter
+    // honest for what this user actually sees.
+    if (list.pagination && before !== list.rows.length) {
+      const hidden = before - list.rows.length;
+      list.pagination.totalRecords = Math.max(0, (list.pagination.totalRecords ?? before) - hidden);
+      list.pagination.totalPages = Math.max(1, Math.ceil(list.pagination.totalRecords / (list.pagination.pageSize || 10)));
+    }
 
     if(this.preloaded == 'true') return {
       instance: this.getInstance(),

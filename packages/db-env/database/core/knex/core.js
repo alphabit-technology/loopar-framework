@@ -6,6 +6,9 @@ import {
   elementsDict,
   LEGACY_TAG_TO_FORMAT,
   AUDIT_COLUMN_SET,
+  AUDIT_COLUMN_FAMILY,
+  CREATED_BY_COLUMN,
+  CREATED_BY_LENGTH,
   isAuditableEntity,
   addAuditColumns,
   addPrimaryKey,
@@ -503,13 +506,7 @@ export default class Core {
   }
 
   #auditColumnsNeedAlter(existingByName) {
-    const expected = [
-      { name: "__created_at__", family: "datetime" },
-      { name: "__updated_at__", family: "datetime" },
-      { name: "__deleted_at__", family: "datetime" },
-      { name: "__document_status__", family: "int"      },
-    ];
-    for (const { name, family } of expected) {
+    for (const [name, family] of Object.entries(AUDIT_COLUMN_FAMILY)) {
       const existing = existingByName.get(name);
       if (!existing) return true;
       const existingFamily = this.#sqlTypeFamily(existing.type);
@@ -522,7 +519,7 @@ export default class Core {
     const knex = this.qx();
     const ensure = (name, applyDef) => {
       const existing = existingByName.get(name);
-      const expectedFamily = name === "__document_status__" ? "int" : "datetime";
+      const expectedFamily = AUDIT_COLUMN_FAMILY[name];
       if (!existing) {
         applyDef(false);                           // add new
       } else if (this.#sqlTypeFamily(existing.type) !== expectedFamily) {
@@ -554,6 +551,11 @@ export default class Core {
     ensure("__document_status__", (alter) => {
       const c = table.integer("__document_status__").notNullable().defaultTo(1);
       if (alter) c.alter();
+    });
+    ensure(CREATED_BY_COLUMN, (alter) => {
+      const c = table.string(CREATED_BY_COLUMN, CREATED_BY_LENGTH).nullable();
+      if (alter) c.alter();
+      else c.index();
     });
   }
 
@@ -635,10 +637,7 @@ export default class Core {
     };
     fields.forEach(collect);
 
-    const IMMUNE = new Set([
-      "id", "name",
-      "__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
-    ]);
+    const IMMUNE = new Set(["id", "name", ...AUDIT_COLUMN_SET]);
     const orphans = existingFields.filter(
       f => !structureCols.has(f.name.toLowerCase()) && !IMMUNE.has(f.name.toLowerCase())
     );

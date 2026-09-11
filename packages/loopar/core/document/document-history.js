@@ -48,6 +48,7 @@ function buildDiff(before, after) {
   if (!before || !after) return null;
   const SKIP = new Set([
     "__created_at__", "__updated_at__", "__deleted_at__", "__document_status__",
+    "__created_by__",
   ]);
   const diff = {};
   for (const key of Object.keys(after)) {

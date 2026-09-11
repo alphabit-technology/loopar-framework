@@ -1,6 +1,6 @@
-import { Minus, X } from "lucide-react";
+import { Minus, X, UserRound } from "lucide-react";
 
-export function Checkbox({ checked, partial, na, inherited, denied, onClick }) {
+export function Checkbox({ checked, partial, na, inherited, denied, own, onClick }) {
   if (na) return (
     <div className="inline-flex items-center justify-center w-8 h-8 cursor-default">
       <Minus size={11} className="text-border" strokeWidth={1.5} />
@@ -13,6 +13,11 @@ export function Checkbox({ checked, partial, na, inherited, denied, onClick }) {
       {denied ? (
         <div className="w-4 h-4 rounded-[4px] border-[1.5px] border-destructive bg-destructive/15 flex items-center justify-center">
           <X size={9} className="text-destructive" strokeWidth={2.5} />
+        </div>
+      ) : checked && own ? (
+        <div className="w-4 h-4 rounded-[4px] bg-amber-500 ring-2 ring-amber-500/30 flex items-center justify-center shadow-sm"
+             title="Granted — own records only">
+          <UserRound size={10} className="text-white" strokeWidth={2.5} />
         </div>
       ) : checked ? (
         <div className="w-4 h-4 rounded-[4px] bg-primary flex items-center justify-center shadow-sm">

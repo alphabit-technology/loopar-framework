@@ -176,8 +176,21 @@ export default class WorkspaceController extends AuthController {
     return loopar.utils.hash(`${route.pathname}${key}`.toLowerCase());
   }
 
-  static async sidebarData() {
-    return loopar.modulesGroup;
+  /**
+   * Sidebar for the current user: only modules the user can reach (derived
+   * from document permissions, see PermissionManager.canAccessModule) and
+   * only groups with at least one such module. Administrator sees all.
+   */
+  static async sidebarData(username = loopar.auth.user()) {
+    const all = loopar.modulesGroup || [];
+    if (username === 'Administrator') return all;
+
+    const groups = [];
+    for (const g of all) {
+      const modules = (g.modules || []).filter(m => PermissionManager.canAccessModule(m.link, username));
+      if (modules.length) groups.push({ ...g, modules });
+    }
+    return groups;
   }
 
   static async portalMenuData(username) {

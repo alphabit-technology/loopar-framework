@@ -589,7 +589,7 @@ export default class Entity extends BaseDocument {
   async makeJSON() {
     const meta = await this.__meta__();
 
-    const { __created_at__, __updated_at__, __deleted_at__, __document_status__, ...payload } = meta.data;
+    const { __created_at__, __updated_at__, __deleted_at__, __document_status__, __created_by__, ...payload } = meta.data;
     if (__deleted_at__) {
       payload.__deleted_at__ = __deleted_at__;
     }

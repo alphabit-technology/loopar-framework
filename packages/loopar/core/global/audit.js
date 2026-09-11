@@ -33,7 +33,26 @@ export const AUDIT_COLUMN_NAMES = Object.freeze([
   "__updated_at__",
   "__deleted_at__",
   "__document_status__",
+  "__created_by__",
 ]);
+
+/**
+ * Expected SQL type family per audit column — the single source used by
+ * createTable (addAuditColumns) and alterTable (#auditColumnsNeedAlter /
+ * #emitAuditColumnDelta) so a column added later (e.g. `__created_by__`)
+ * reaches existing tables through the same path.
+ */
+export const AUDIT_COLUMN_FAMILY = Object.freeze({
+  __created_at__: "datetime",
+  __updated_at__: "datetime",
+  __deleted_at__: "datetime",
+  __document_status__: "int",
+  __created_by__: "string",
+});
+
+/** Username that created the row. Immutable after insert. */
+export const CREATED_BY_COLUMN = "__created_by__";
+export const CREATED_BY_LENGTH = 140;
 
 export const AUDIT_COLUMN_SET = new Set(AUDIT_COLUMN_NAMES);
 
@@ -65,6 +84,7 @@ export function addAuditColumns(table, knex) {
   table.timestamp("__updated_at__").defaultTo(knex.fn.now());
   table.timestamp("__deleted_at__").nullable();
   table.integer("__document_status__").notNullable().defaultTo(DOC_STATUS.ACTIVE);
+  table.string(CREATED_BY_COLUMN, CREATED_BY_LENGTH).nullable().index();
 }
 
 export const FRAMEWORK_OWNED_COLUMN_NAMES = Object.freeze([

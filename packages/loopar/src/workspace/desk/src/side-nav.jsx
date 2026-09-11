@@ -14,11 +14,11 @@ export function SideNav({ items=[] }) {
 
     return (
       <li key={useId()}>
-        <h5
+        {hasSubitems && (<h5
           className="mb-1 mt-3 font-semibold text-slate-900 dark:text-slate-200"
         >
           {openNav && description}
-        </h5>
+        </h5>)}
         <div>
           {hasSubitems && (
             <ul className="flex flex-col gap-1 px-1">
