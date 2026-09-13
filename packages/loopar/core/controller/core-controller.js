@@ -159,30 +159,41 @@ export default class CoreController extends AuthController {
         title: titleize((meta.title || this.name || this.document || "Document").toString()),
         action: this.action,
       },
+      context: this.clientContext(meta),
       entryPoint: this.clientImporter(meta),
     });
   }
 
-  clientImporter(Document) {
+  /**
+   * Client context kind for this request: which base view renders the
+   * Document when the app ships no `client/<entity>-<kind>.jsx` of its own
+   * (`form` | `list` | `view` | `page` | ...). Resolution: an explicit
+   * `this.client` on the controller wins; Page/View entities are always
+   * `view`; otherwise it follows the action.
+   */
+  clientContext(Document) {
     if (!Document) return null;
+    if (this.client) return this.client;
+    if (["Page", "View"].includes(Document.Entity?.type)) return "view";
 
-    const getClient = () => {
-      if (this.client) return this.client;
-      if(["Page", "View"].includes(Document.Entity.type)) return "view";
-      
-      const action = this.action;
-      if (['create', 'update'].includes(action)) {
-        return "form";
-      } else if (['list', 'index'].includes(action)) {
-        return "list";
-      } else {
-        return "view"
-      }
-    }
+    const action = this.action;
+    if (['create', 'update'].includes(action)) return "form";
+    if (['list', 'index'].includes(action)) return "list";
+    return "view";
+  }
+
+  /**
+   * Optional per-entity client module name (`<entity>-<kind>`). The loader
+   * falls back to the base `<kind>-context` when no such file exists, so apps
+   * only ship one when the view needs custom logic.
+   */
+  clientImporter(Document) {
+    const context = this.clientContext(Document);
+    if (!context) return null;
 
     const name = Document.Entity.name;
 
-    return `${loopar.utils.decamelize(name, { separator: '-' })}-${getClient()}`
+    return `${loopar.utils.decamelize(name, { separator: '-' })}-${context}`
   }
 
   getKey(route = this.dictUrl) {

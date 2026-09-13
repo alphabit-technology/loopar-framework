@@ -85,20 +85,37 @@ const ErrorMessage = (props) => {
 };
 
 
+/**
+ * Resolves the client module for a Document.
+ *
+ * Order:
+ *   1. `Document.entryPoint` (`<entity>-<kind>`) — an app-level view with
+ *      custom logic, if the app ships one.
+ *   2. `<kind>-context` — the framework's base view for `Document.context`
+ *      (form | list | view | page | report | ...). Most entities need
+ *      nothing else, so they ship no client file at all.
+ *   3. An error view.
+ */
 export async function AppSourceLoader(Document) {
   const appSources = Object.entries(import.meta.glob([
-    '/apps/**/modules/**/**/**/client/*.jsx',
-    '../apps/core/modules/**/**/**/client/*.jsx',
-    './context/*.jsx',
+    '/apps/**/modules/**/**/**/client/*.{jsx,tsx}',
+    '../apps/core/modules/**/**/**/client/*.{jsx,tsx}',
+    './context/*-context.{jsx,tsx}',
   ])).reduce((acc, [path, module]) => {
-    acc[path.split('/').pop().replace('.jsx', '')] = module;
+    acc[path.split('/').pop().replace(/\.(jsx|tsx)$/, '')] = module;
     return acc;
   }, {});
 
-  const source = Document?.entryPoint;
-  const moduleImport = appSources[source];
+  const own = appSources[Document?.entryPoint];
+  if (own) return own();
 
-  if (moduleImport) return moduleImport();
+  // Base view for the kind. `<kind>-context` modules export the legacy class
+  // as `default` (for subclasses) and the functional view as `View`.
+  const base = Document?.context && appSources[`${Document.context}-context`];
+  if (base) {
+    const Module = await base();
+    return Module.View ? { ...Module, default: Module.View } : Module;
+  }
 
   return { default: () => <ErrorMessage Document={Document} /> };
 }

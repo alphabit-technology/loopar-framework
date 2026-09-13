@@ -1,23 +1,15 @@
-import MetaComponent from "@meta-component";
-import { FormWrapper } from "./form-provider";
 import BaseForm from "@context/base/base-form";
+import { BareFormLayout } from "./views/layouts";
 
+export { InstallerView as View } from "./views";
+
+/** Legacy class context. Prefer `InstallerView`. */
 export default class InstallerContext extends BaseForm {
   notRequireChanges = true;
   controller = "System";
 
-  constructor(options) {
-    super(options);
-  }
-
   render(content = [], slots) {
-    return super.render(
-      <FormWrapper __DATA__={this.Document.data} STRUCTURE={this.__STRUCTURE__} docRef={this}>
-        <MetaComponent elements={this.__STRUCTURE__} parent={this} />
-        {content}
-      </FormWrapper>,
-      slots
-    );
+    return super.render(<BareFormLayout ctrl={this}>{content}</BareFormLayout>, slots);
   }
 
   async install() {

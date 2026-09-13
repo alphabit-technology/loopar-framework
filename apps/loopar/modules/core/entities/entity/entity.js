@@ -523,7 +523,6 @@ export default class Entity extends BaseDocument {
 
   async makeViews() {
     const documentPath = await this.documentPath();
-    const clientPath = await this.clientPath();
 
     const type = this.getEntityType();
 
@@ -553,37 +552,10 @@ export default class Entity extends BaseDocument {
     });
     /*Entity Controller*/
 
-    const makeView = async (view, context = view) => {
-      const importContext = `${Helpers.Capitalize(context)}Context`;
-      const viewName = this.name + Helpers.Capitalize(view);
-
-      await fileManage.makeClass(clientPath, viewName, {
-        IMPORTS: {
-          [importContext]: `@context/${context}-context`
-        },
-        EXTENDS: importContext
-      }, 'default', "jsx");
-    }
-
-    if (type === "Entity") {
-      for (const context of ["list", "form", "view", "report"]) {
-        await makeView(context);
-      }
-    } else if (type === "Contact Form") {
-      // Record-holding entities from the Contact Form Builder: desk list of
-      // submissions + form view to read/moderate each one.
-      for (const context of ["list", "form"]) {
-        await makeView(context);
-      }
-    } else if (type === "Builder") {
-      if(this._ENTITY__.builder === "Controller") return;
-      
-      for (const context of ["list", "form"]) {
-        await makeView(context);
-      }
-    } else {
-      await makeView(type.toLowerCase(), type.toLowerCase());
-    }
+    // Client views are NOT generated anymore: the loader falls back to the
+    // base `<kind>-context` when no `client/<entity>-<kind>.jsx` exists
+    // (see packages/loopar/src/loader.jsx). An app adds that file by hand
+    // only when the view needs custom logic.
   }
 
   async makeJSON() {

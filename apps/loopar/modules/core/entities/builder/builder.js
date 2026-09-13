@@ -17,7 +17,6 @@ export default class BuilderFactory extends Entity {
 
   async makeViews() {
     const documentPath = await this.documentPath();
-    const clientPath = await this.clientPath();
 
     /*Entity Model*/
     await fileManage.makeClass(documentPath, this.name, {
@@ -38,20 +37,7 @@ export default class BuilderFactory extends Entity {
     });
     /*Entity Controller*/
 
-    const makeView = async (view, context = view) => {
-      const importContext = `${Helpers.Capitalize(context)}Context`;
-      const viewName = this.name + Helpers.Capitalize(view);
-
-      await fileManage.makeClass(clientPath, viewName, {
-        IMPORTS: {
-          [importContext]: `@context/${context}-context`
-        },
-        EXTENDS: importContext
-      }, 'default', "jsx");
-    }
-
-    for (const context of ["list", "form"]) {
-      await makeView(context);
-    }
+    // Client views are not generated: the loader falls back to the base
+    // `<kind>-context` (packages/loopar/src/loader.jsx).
   }
 }
