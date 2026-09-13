@@ -21,8 +21,11 @@ export const SideNavItem = (props) => {
   } = props;
 
   const linkProps = path ? external : {};
-  const { collapseSidebarWidth, activeModule, award } = useWorkspace();
-  if(!award(`Module.${path}`, "view")) return null;
+  const { collapseSidebarWidth, activeModule } = useWorkspace();
+  // Visibility is decided server-side (WorkspaceController.sidebarData →
+  // PermissionManager.canAccessModule): a module is in menu_data only when
+  // the user can reach something inside it. No client-side award here — it
+  // required a `Module.<x> view` grant that nothing seeds any more.
   
   const [active, setActive] = usePersist(path);
 

@@ -14,35 +14,81 @@ export function getOwnActions(acts, commonActions) {
 }
 
 export function makeGridCols(commonActions, hasOwn) {
-  return `220px ${commonActions.map(() => '72px').join(' ')}${hasOwn ? ' 90px' : ''}`;
+  return `260px ${commonActions.map(() => '72px').join(' ')}${hasOwn ? ' 90px' : ''}`;
 }
 
 // Keys are `${document}:${action.toLowerCase()}` on both sides: the catalog
 // lists actions Capitalized (from `actionList` → "List") while grants may be
 // stored lowercase (seeded roles). The server normalizes the same way.
 export const permKey = (document, action) => `${document}:${String(action ?? '').toLowerCase()}`;
+const lc = k => String(k ?? '').toLowerCase();
 
-export function buildPermissions(catalog, assignedSet) {
-  const hasAll = assignedSet.has('*:*');
-  // App-level grants (`App:<app>` document) — compared case-insensitively.
-  const lower = new Set([...assignedSet].map(k => k.toLowerCase()));
+/**
+ * Keys that would cover (document, action) for a document of `app`, most
+ * specific first. Mirrors PermissionManager.scope() on the server.
+ */
+export function coveringKeys(app, document, action) {
+  return [
+    permKey(document, action),
+    `${document}:*`,
+    permKey(`App:${app}`, action),
+    `App:${app}:*`,
+    permKey('*', action),
+    '*:*',
+  ];
+}
+
+/**
+ * Resolve one cell against what the server returned for the subject.
+ *   resolved = { direct: [keys], inherited: {key: [roles]}, denied: [keys], scopes: {key: 'own'} }
+ * Returns { granted, kind: 'deny'|'direct'|'wildcard'|'role'|'none', via, own, key }
+ *   via  – the covering key (wildcard) or the role names (role) that provide it
+ *   own  – scope 'own' (every provider is 'own'); widest wins
+ */
+export function resolveCell(resolved, app, document, action) {
+  const key = permKey(document, action);
+  const direct = new Set((resolved?.direct ?? []).map(lc));
+  const denied = new Set((resolved?.denied ?? []).map(lc));
+  const inherited = {};
+  for (const [k, roles] of Object.entries(resolved?.inherited ?? {})) inherited[lc(k)] = roles;
+  const scopes = {};
+  for (const [k, v] of Object.entries(resolved?.scopes ?? {})) scopes[lc(k)] = v;
+
+  if (denied.has(lc(key))) return { granted: false, kind: 'deny', via: null, own: false, key };
+
+  const keys = coveringKeys(app, document, action);
+  let hit = null;
+  for (const k of keys) {
+    const l = lc(k);
+    if (direct.has(l)) { hit = { kind: l === lc(key) ? 'direct' : 'wildcard', via: k, l }; break; }
+    if (inherited[l]) { hit = { kind: 'role', via: inherited[l], l }; break; }
+  }
+  if (!hit) return { granted: false, kind: 'none', via: null, own: false, key };
+
+  // scope: own only if EVERY provider of this cell is own (widest wins)
+  const providers = keys.map(lc).filter(l => direct.has(l) || inherited[l]);
+  const own = providers.length > 0 && providers.every(l => scopes[l] === 'own');
+  return { granted: true, kind: hit.kind, via: hit.via, own, key, coveringKey: hit.l };
+}
+
+/** permissions map {app: {doc: {action: bool}}} built from a resolved payload. */
+export function buildPermissionsFromResolved(catalog, resolved) {
   const result = {};
-  for (const [app, docs] of Object.entries(catalog)) {
+  for (const [app, docs] of Object.entries(catalog ?? {})) {
     result[app] = {};
-    const appAll = lower.has(`app:${app}:*`.toLowerCase());
     for (const [doc, actions] of Object.entries(docs)) {
-      const docAll = assignedSet.has(`${doc}:*`);
       result[app][doc] = {};
       for (const action of actions) {
-        result[app][doc][action] =
-          hasAll || docAll || appAll ||
-          lower.has(`app:${app}:${action}`.toLowerCase()) ||
-          assignedSet.has(permKey('*', action)) ||
-          assignedSet.has(permKey(doc, action));
+        result[app][doc][action] = resolveCell(resolved, app, doc, action).granted;
       }
     }
   }
   return result;
+}
+
+// Legacy: flat set of keys → permissions map (still used by callers that only have `assigned`).
+export function buildPermissions(catalog, assignedSet) {
+  return buildPermissionsFromResolved(catalog, { direct: [...assignedSet], inherited: {}, denied: [], scopes: {} });
 }
 
 export function expandWildcard(permissions, app, document, action) {

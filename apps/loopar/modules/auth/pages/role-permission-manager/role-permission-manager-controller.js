@@ -27,7 +27,7 @@ async function getActions() {
 
   return [
     ...base,
-    ...models.map(m => ({ document: `Module.${m.name}`, app: m.app_name, action: "view" }))
+    ...models.map(m => ({ document: `Module:${m.name}`, app: m.app_name, action: "view" }))
   ];
 }
 
@@ -451,6 +451,40 @@ export default class RolePermissionManagerController extends PageController {
     return this.success(`${key} scope set to ${value}`, { key, scope: value, notify: { type: 'success' } });
   }
 
+  /**
+   * Drop every direct row (grants AND denies) of a user, leaving only what
+   * its roles provide. The fix for a user that accumulated denies while
+   * experimenting in the grid.
+   */
+  async actionClearOverrides() {
+    const { user } = this.body || {};
+    if (!user) loopar.throw('user is required');
+    const rows = await loopar.db.getAll('Permission', ['name'], { relation: 'User', relation_name: user });
+    for (const { name } of rows) await loopar.db.deleteRow('Permission', name);
+    await PermissionManager.reload(user);
+    return this.success(`${rows.length} override(s) removed for ${user}`, { removed: rows.length, notify: { type: 'warning' } });
+  }
+
+  /**
+   * Reset a role to what its app defines (convention defaults + `static
+   * roles` of apps/<app>/installer.js). Custom roles have no definition and
+   * are refused. Users assigned to the role are untouched.
+   */
+  async actionResetRole() {
+    const { role } = this.body || {};
+    if (!role) loopar.throw('role is required');
+
+    const app = await loopar.db.getValue('Role', 'app', role, { ifNotFound: null });
+    const installer = await loopar.getInstaller(app);
+    if (!installer) loopar.throw(`Role "${role}" belongs to app "${app || '?'}", which has no installer to reset from.`);
+
+    const def = await installer.resetRole(role);
+    if (!def) loopar.throw(`Role "${role}" is not defined by app "${app}" — it is a custom role; edit its grants in the grid.`);
+
+    await PermissionManager.reloadRole(role);
+    return this.success(`${role} reset to its ${def.grants?.length ?? 0} default grant(s)`, { grants: def.grants?.length ?? 0, notify: { type: 'success' } });
+  }
+
   async actionGetUserRoles() {
     const { user } = this.query;
     return await loopar.db.getAll("User Role", ["role"], { user });
@@ -478,94 +512,120 @@ export default class RolePermissionManagerController extends PageController {
     return await loopar.db.getAll("User", ["name"]);
   }
 
+  /**
+   * Subjects for the rail: roles grouped (system / per app / custom) with
+   * grant + user counts, and desk users. One call, cheap enough.
+   */
+  async actionGetSubjects() {
+    const roles = await loopar.db.getAll("Role", ["name", "app", "description", "is_system_role", "disabled"]);
+    const grants = await loopar.db.getAll("Permission", ["relation_name"], { relation: "Role" });
+    const userRoles = await loopar.db.getAll("User Role", ["user", "role"]);
+    const users = await loopar.db.getAll("User", ["name", "email", "user_type", "disabled"], { disabled: 0 });
+
+    const grantCount = {}, userCount = {};
+    for (const g of grants) grantCount[g.relation_name] = (grantCount[g.relation_name] ?? 0) + 1;
+    for (const ur of userRoles) userCount[ur.role] = (userCount[ur.role] ?? 0) + 1;
+
+    const BASE = new Set(["System Manager", "Desk User", "Web User"]);
+    const out = roles.map(r => ({
+      name: r.name,
+      app: r.app || null,
+      description: r.description || "",
+      system: Number(r.is_system_role) === 1,
+      disabled: Number(r.disabled) === 1,
+      group: BASE.has(r.name) || (r.app === "loopar" && Number(r.is_system_role) === 1)
+        ? "system"
+        : (Number(r.is_system_role) === 1 && r.app ? r.app : "custom"),
+      grants: grantCount[r.name] ?? 0,
+      users: userCount[r.name] ?? 0,
+    }));
+
+    return {
+      roles: out,
+      users: users.filter(u => u.name !== "Administrator").map(u => ({
+        name: u.name, email: u.email || "", type: u.user_type || "System",
+        roles: userRoles.filter(ur => ur.user === u.name).map(ur => ur.role),
+      })),
+    };
+  }
+
+  /**
+   * App-level grant (`App:<app>` document): the "whole app" row of the grid.
+   * action '*' or a single action; assign creates/removes that one row.
+   */
+  async actionToggleApp() {
+    const { mode = "Role", entity, app, action = "*", assign, scope = "all" } = this.body || {};
+    if (!entity || !app) loopar.throw("entity and app are required");
+    const where = { relation: mode, relation_name: entity, document: `App:${app}`, action };
+
+    if (assign) {
+      await loopar.db.deleteWhere("Permission", { ...where, deny: 1 });
+      if (!(await loopar.db.count("Permission", { ...where, deny: 0 }))) {
+        await loopar.db.insertRow("Permission", {
+          name: loopar.getUniqueKey(), ...where, deny: 0, app,
+          scope: String(scope).toLowerCase() === "own" ? "own" : "all",
+        });
+      }
+    } else {
+      await loopar.db.deleteWhere("Permission", { ...where, deny: 0 });
+    }
+
+    if (mode === "Role") await this._invalidateRoleUsers(entity);
+    else await PermissionManager.reload(entity);
+
+    return this.success(`App:${app}:${action} ${assign ? "granted" : "removed"}`, { notify: { type: assign ? "success" : "warning" } });
+  }
+
+  /**
+   * Everything the grid needs to paint one subject, keyed by
+   * `document:action(lowercase)` exactly as stored (wildcards included —
+   * the client expands `*`, `App:<app>` and `Doc:*`):
+   *   direct    – keys granted to the subject itself
+   *   inherited – { key: [role, ...] } keys the user gets from roles (User mode only)
+   *   denied    – keys the user explicitly denies (User mode only)
+   *   scopes    – { key: 'own' } for grants narrowed to own records
+   *   assigned  – flat union (kept for existing consumers)
+   */
   async actionGetResolvedPermissions() {
     const { role = "core", user } = this.query ?? {};
-
+    const F = ['document', 'action', 'scope', 'relation_name'];
     const scopesOf = rows => Object.fromEntries(
       rows.filter(r => String(r.scope).toLowerCase() === 'own')
           .map(r => [permKey(r.document, r.action), 'own'])
     );
 
     if (!user) {
-      const rolePerms = await loopar.db.getAll(
-        'Permission',
-        ['document', 'action', 'scope'],
-        { relation: 'Role', relation_name: role }
-      );
-      const assigned = rolePerms.map(r => permKey(r.document, r.action));
-      return { assigned, inherited: [], denied: [], scopes: scopesOf(rolePerms) };
+      const rows = await loopar.db.getAll('Permission', F, { relation: 'Role', relation_name: role, deny: { [Op.or]: [null, 0] } });
+      const direct = [...new Set(rows.map(r => permKey(r.document, r.action)))];
+      return { assigned: direct, direct, inherited: {}, denied: [], scopes: scopesOf(rows) };
     }
 
-    const userRoles = await loopar.db.getAll('User Role', ['role'], { user });
-    const rolePerms = userRoles.length > 0
-      ? await loopar.db.getAll(
-          'Permission',
-          ['document', 'action', 'scope'],
-          { relation: 'Role', relation_name: { [Op.in]: userRoles.map(r => r.role) } }
-        )
+    const userRoles = (await loopar.db.getAll('User Role', ['role'], { user })).map(r => r.role);
+    const rolePerms = userRoles.length
+      ? await loopar.db.getAll('Permission', F, { relation: 'Role', relation_name: { [Op.in]: userRoles }, deny: { [Op.or]: [null, 0] } })
       : [];
+    const userPerms = await loopar.db.getAll('Permission', F, { relation: 'User', relation_name: user, deny: { [Op.or]: [null, 0] } });
+    const userDenies = await loopar.db.getAll('Permission', ['document', 'action'], { relation: 'User', relation_name: user, deny: 1 });
 
-    const userPerms = await loopar.db.getAll(
-      'Permission',
-      ['document', 'action', 'scope'],
-      {
-        relation: 'User',
-        relation_name: user,
-        deny: { [Op.or]: [null, 0] }
-      }
-    );
-
-    const userDenies = await loopar.db.getAll(
-      'Permission',
-      ['document', 'action'],
-      { relation: 'User', relation_name: user, deny: 1 }
-    );
-
-    const deniedSet = new Set(userDenies.map(r => permKey(r.document, r.action)));
-    const deniedDocs = new Set(
-      userDenies
-        .filter(r => r.action === '*')
-        .map(r => r.document)
-    );
-    const denyAll = deniedSet.has('*:*');
-    const inheritedSet = new Set(
-      rolePerms
-        .map(r => permKey(r.document, r.action))
-        .filter(key => {
-          if (denyAll) return false;
-          const [doc] = key.split(':');
-          return !deniedSet.has(key) && !deniedDocs.has(doc);
-        })
-    );
-    const directSet = new Set(
-      userPerms
-        .map(r => permKey(r.document, r.action))
-        .filter(key => {
-          if (denyAll) return false;
-          const [doc] = key.split(':');
-          return !deniedSet.has(key) && !deniedDocs.has(doc);
-        })
-    );
-    const assigned = [...new Set([...inheritedSet, ...directSet])];
-
-    // A key is 'own' only if every grant that provides it is 'own'
-    // (PermissionManager: widest scope wins).
-    const scopeByKey = {};
-    for (const r of [...rolePerms, ...userPerms]) {
-      const key = permKey(r.document, r.action);
-      const own = String(r.scope).toLowerCase() === 'own';
-      scopeByKey[key] = key in scopeByKey ? (scopeByKey[key] && own) : own;
+    const denied = [...new Set(userDenies.map(r => permKey(r.document, r.action)))];
+    const inherited = {};
+    for (const r of rolePerms) {
+      const k = permKey(r.document, r.action);
+      (inherited[k] ??= []).includes(r.relation_name) || inherited[k].push(r.relation_name);
     }
-    const scopes = Object.fromEntries(
-      Object.entries(scopeByKey).filter(([, own]) => own).map(([k]) => [k, 'own'])
-    );
+    const direct = [...new Set(userPerms.map(r => permKey(r.document, r.action)))];
 
-    return {
-      assigned,
-      inherited: [...inheritedSet],
-      denied: [...deniedSet],
-      scopes,
-    };
+    // Scope per key: 'own' only if every grant providing it is 'own' (widest wins).
+    const own = {};
+    for (const r of [...rolePerms, ...userPerms]) {
+      const k = permKey(r.document, r.action);
+      const isOwn = String(r.scope).toLowerCase() === 'own';
+      own[k] = k in own ? (own[k] && isOwn) : isOwn;
+    }
+    const scopes = Object.fromEntries(Object.entries(own).filter(([, v]) => v).map(([k]) => [k, 'own']));
+
+    const assigned = [...new Set([...Object.keys(inherited), ...direct])].filter(k => !denied.includes(k));
+    return { assigned, direct, inherited, denied, scopes };
   }
 
   async actionGetOwnPermissions(){

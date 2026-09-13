@@ -71,17 +71,49 @@ export default class Installer extends BaseDocument {
     ];
   }
 
-  async seedRoles(declared = this.constructor.roles) {
+  /** Roles this app defines: convention defaults + `static roles` (declared wins by name). */
+  async appRoles(declared = this.constructor.roles) {
     const byName = new Map();
     for (const r of await this.defaultRoles()) byName.set(r.name, r);
     for (const r of (Array.isArray(declared) ? declared : [])) if (r?.name) byName.set(r.name, r);
-    const roles = [...byName.values()];
+    return [...byName.values()];
+  }
+
+  /**
+   * Put one role back to what this app defines: drop EVERY grant of the role
+   * (direct edits, denies, split wildcards — tombstones included) and seed
+   * the declared grants again. Users keep the role. Returns the definition
+   * used, or null when this app doesn't define that role.
+   */
+  async resetRole(roleName) {
+    const def = (await this.appRoles()).find(r => r.name === roleName);
+    if (!def) return null;
+    const rows = await loopar.db.getList("Permission", ["name"], { relation: "Role", relation_name: roleName }, { all: true, includeDeleted: true });
+    for (const { name } of rows) await loopar.db.deleteRow("Permission", name, { force: true });
+    await this.seedRoles([def]);
+    return def;
+  }
+
+  async seedRoles(declared = this.constructor.roles) {
+    const roles = await this.appRoles(declared);
     if (roles.length === 0) return;
+
+    // `db.count` also counts soft-deleted rows, so a role/grant the admin
+    // deleted would look "present" and never come back — and its tombstone
+    // would collide with the unique name on re-insert. Seeding means: if it
+    // is not ALIVE, purge any tombstone and create it fresh.
+    const alive = async (document, where) =>
+      (await loopar.db.getAll(document, ["name"], where)).length > 0;
+    const purgeTombstones = async (document, where) => {
+      const rows = await loopar.db.getList(document, ["name"], where, { all: true, includeDeleted: true });
+      for (const { name } of rows) await loopar.db.deleteRow(document, name, { force: true });
+    };
 
     for (const role of roles) {
       if (!role?.name) continue;
 
-      if (!(await loopar.db.count("Role", role.name))) {
+      if (!(await alive("Role", { name: role.name }))) {
+        await purgeTombstones("Role", { name: role.name });
         console.log([`[installer] seeding role`, role.name, `(${this.app_name})`]);
         const doc = await loopar.newDocument("Role", {
           name: role.name,
@@ -96,7 +128,8 @@ export default class Installer extends BaseDocument {
       for (const g of role.grants ?? []) {
         if (!g?.document || !g?.action) continue;
         const where = { relation: "Role", relation_name: role.name, document: g.document, action: g.action };
-        if (await loopar.db.count("Permission", where)) continue;
+        if (await alive("Permission", where)) continue;
+        await purgeTombstones("Permission", where);
         await loopar.db.insertRow("Permission", {
           name: `Role-${role.name}-${g.document}-${g.action}`,
           ...where,

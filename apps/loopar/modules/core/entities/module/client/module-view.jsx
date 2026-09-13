@@ -20,6 +20,7 @@ const ButtonType = ({action, label, actions, current}) => {
 
   return (
     <Link
+      award={false}
       variant={(active === action)? "secondary" : "ghost"}
       className={`${active === action ? "border border-primary/60" : ""}`}
       to={`?type=${action}`}
@@ -33,6 +34,14 @@ export default class ModuleView extends EntityList {
   onlyGrid = true;
   hasSearchForm = true;
   disabledSearchFields = ["module"];
+
+  constructor(props){
+    super(props)
+    this.state = {
+      ...this.state,
+      update: false
+    }
+  }
 
   setCustomActions() {
     super.setCustomActions();

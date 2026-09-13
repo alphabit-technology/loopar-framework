@@ -283,19 +283,40 @@ class PermissionManagerClass {
    * so existing consumers keep working; `scopes` adds { permKey: scope } for
    * keys granted as 'own' only — a key absent from `scopes` is 'all'.
    */
+  /**
+   * The client only knows literal keys (it has no document → app map), so
+   * app-level grants (`app:<app>:<action>`) are expanded here into one key
+   * per document of that app. Widest scope wins when a document already has
+   * its own key.
+   */
+  #expandAppGrants(grants) {
+    const out = new Map(grants);
+    for (const [k, s] of grants) {
+      const m = /^app:([^:]+):(.+)$/.exec(k);
+      if (!m) continue;
+      const [, appKey, action] = m;
+      for (const ref of Object.values(loopar.getRefs() ?? {})) {
+        if (String(ref.__APP__ ?? '').toLowerCase().replaceAll(' ', '') !== appKey) continue;
+        const key = this.#buildKey(ref.__NAME__, action);
+        out.set(key, widest(out.get(key), s));
+      }
+    }
+    return out;
+  }
+
   getPermissions(username) {
     username = username ?? loopar.auth.user() ?? 'Guest';
-    const grants = this.#store().get(username);
     const isAdmin = username === 'Administrator';
+    const grants = isAdmin ? null : this.#expandAppGrants(this.#store().get(username) ?? new Map());
 
     const scopes = {};
-    if (!isAdmin && grants) {
+    if (grants) {
       for (const [k, s] of grants) if (s === SCOPE.OWN) scopes[k] = s;
     }
 
     return {
       public:  [...this.#public()],
-      private: isAdmin ? null : [...(grants?.keys() ?? [])],
+      private: isAdmin ? null : [...grants.keys()],
       denied:  isAdmin ? [] : [...(this.#denied().get(username) ?? [])],
       scopes,
     };

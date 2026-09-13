@@ -7,9 +7,10 @@ export default class RolePermissionManagerPage extends PageContext {
   constructor(props) { super(props); }
   render() {
     const Document = this.props.Document || {};
-    const {role, permissions } = Document;
+    // `?role=` / `?user=` preselect a subject; otherwise the last one used is restored.
+    const { role, user } = Document;
     return super.render([
-      <RolePermissionManager initialRole={role} permissions={permissions} />
+      <RolePermissionManager role={role && role !== "core" ? role : undefined} user={user || undefined} />
     ]);
   }
 }

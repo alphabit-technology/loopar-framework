@@ -136,6 +136,15 @@ export class Core extends Builder {
     return await this.db.getValue('App', 'name', appName) ? 'installed' : 'uninstalled';
   }
 
+  /** The app's installer instance (apps/<app>/installer.js), or null. */
+  async getInstaller(appName) {
+    if (!appName) return null;
+    const route = this.makePath('apps', appName, 'installer.js');
+    const Cls = await fileManage.importClass(route, () => null);
+    if (!Cls) return null;
+    return new Cls({ app_name: appName });
+  }
+
   async unInstallApp(appName) {
     if (this.installing) return;
     const installerRoute = this.makePath('apps', appName, 'installer.js');
