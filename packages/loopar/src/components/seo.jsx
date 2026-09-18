@@ -1,4 +1,4 @@
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import MarkdownPreview from '@uiw/react-markdown-preview';
 
 export default function SEO(props){

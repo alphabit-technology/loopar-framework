@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import {Button} from "@cn/components/ui/button";
-import {useDocument} from "@context/@/document-context";
+import {useDocument} from "@loopar/document";
+import { useViewOptions } from "@loopar/document";
 import { ChevronRight, Check } from "lucide-react";
 import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
@@ -137,11 +138,14 @@ export const SlideButton = ({
 export default function MetaButton(props){
   const data = props.data || {};
   const {docRef} = useDocument();
+  const { handlers } = useViewOptions();
 
   const performAction = () => {
     if (data.action && docRef) {
-      if(!docRef[data.action]) loopar.throw("Action not Defined", `Action ${data.action} not found in model`);
-      docRef[data.action]();
+      // View handlers first, controller methods as fallback; `(ctrl)` and `this` both work.
+      const handler = handlers?.[data.action] ?? docRef[data.action];
+      if (typeof handler !== "function") loopar.throw("Action not Defined", `Action ${data.action} not found in model`);
+      handler.call(docRef, docRef);
     }
   };
 

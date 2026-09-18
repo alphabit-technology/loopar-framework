@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@cn/lib/utils";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { getNodeKey } from "@global/prune-doc-structure";
 import {elementsDict} from "@global/element-definition"
 import Icon from "@icon";

@@ -38,7 +38,7 @@ import '@mdxeditor/editor/style.css';
 import './markdown/mdx-theme.css';
 import { useCallback, useState, useEffect } from 'react';
 import MarkdownPreview from '@uiw/react-markdown-preview';
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { cn } from "@cn/lib/utils";
 
 const codeBlockLanguages = {

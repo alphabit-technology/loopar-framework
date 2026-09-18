@@ -1,8 +1,6 @@
 
 'use strict';
 
-import ViewContext from '@context/view-context';
-
 const ImageWithPlaceholder = ({ data }) => {
   const message = data.message || data.description || 'An error occurred';
   const status = Number(data.code) || 500;
@@ -43,19 +41,14 @@ const ImageWithPlaceholder = ({ data }) => {
   );
 }
 
-export default class ErrorView extends ViewContext {
-  constructor(props) {
-    super(props);
-  }
+/** Standalone: renders outside the document shell on purpose. */
+export default function ErrorView({ Document }) {
+  const data = Document?.data || {};
 
-  render() {
-    const data = this.Document?.data || {};
-
-    return (
-      <ImageWithPlaceholder 
-        src={`/assets/images/illustration/${data.code || '500'}.svg`}
-        data={data}
-      />
-    );
-  }
+  return (
+    <ImageWithPlaceholder
+      src={`/assets/images/illustration/${data.code || '500'}.svg`}
+      data={data}
+    />
+  );
 }

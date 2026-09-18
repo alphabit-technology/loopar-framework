@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useHidden } from "@context/@/hidden-context";
-import { useDesigner } from "@context/@/designer-context";
+import { useHidden } from "@context/hidden-context";
+import { useDesigner } from "@context/designer-context";
 import { cn } from "@cn/lib/utils";
 import loopar from "loopar";
 import MetaComponent from "@meta-component";

@@ -73,8 +73,8 @@ export const MetaRender = ({ meta, metaProps, Comp, docRef, parent, data, thresh
         if (ref) {
           elementRef.current = ref;
         }
-        docRef.__REFS__[data.name] = ref;
-        parent?.__REFS__ && (parent.__REFS__[data.name] = ref);
+        docRef?.fields?.registerRef(data.name, ref);
+        if (parent && parent !== docRef) parent.fields?.registerRef(data.name, ref);
       }}
     />
   );

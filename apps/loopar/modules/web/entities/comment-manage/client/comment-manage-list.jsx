@@ -1,6 +1,6 @@
 'use strict';
 
-import ListContext from '@context/list-context';
+import { ListLayout } from '@loopar/list';
 import { loopar } from 'loopar';
 import { useState } from 'react';
 import { Check, X, Loader2 } from 'lucide-react';
@@ -84,44 +84,42 @@ function ModerationSwitch({ row }) {
   );
 }
 
-export default class CommentManageList extends ListContext {
-  constructor(props) {
-    super(props);
-  }
+const COLUMNS = [
+  {
+    data: { name: 'author', /*  */},
+    render: (row) => <span className="font-medium">{row.author}</span>,
+  },
+  {
+    data: { name: 'comment', label: 'Comment' },
+    render: (row) => (
+      <span className="text-muted-foreground line-clamp-2">{row.comment}</span>
+    ),
+  },
+  {
+    data: { name: 'target', label: 'On' },
+    render: (row) => (
+      <span className="text-xs">
+        <span className="font-medium">{row.document}</span>
+        {row.document_name ? `: ${row.document_name}` : ''}
+      </span>
+    ),
+  },
+  {
+    data: { name: 'event_at', label: 'When' },
+    render: (row) => (
+      <span className="text-xs text-muted-foreground">{fmtDate(row.event_at)}</span>
+    ),
+  },
+  {
+    data: { name: 'status', label: 'Status' },
+    headProps: { className: 'text-center' },
+    cellProps: { className: 'text-center' },
+    render: (row) => <ModerationSwitch row={row} />,
+  },
+];
 
-  customColumns() {
-    return [
-      {
-        data: { name: 'author', /*  */},
-        render: (row) => <span className="font-medium">{row.author}</span>,
-      },
-      {
-        data: { name: 'comment', label: 'Comment' },
-        render: (row) => (
-          <span className="text-muted-foreground line-clamp-2">{row.comment}</span>
-        ),
-      },
-      {
-        data: { name: 'target', label: 'On' },
-        render: (row) => (
-          <span className="text-xs">
-            <span className="font-medium">{row.document}</span>
-            {row.document_name ? `: ${row.document_name}` : ''}
-          </span>
-        ),
-      },
-      {
-        data: { name: 'event_at', label: 'When' },
-        render: (row) => (
-          <span className="text-xs text-muted-foreground">{fmtDate(row.event_at)}</span>
-        ),
-      },
-      {
-        data: { name: 'status', label: 'Status' },
-        headProps: { className: 'text-center' },
-        cellProps: { className: 'text-center' },
-        render: (row) => <ModerationSwitch row={row} />,
-      },
-    ];
-  }
+const columns = () => COLUMNS;
+
+export default function CommentManageList() {
+  return <ListLayout columns={columns} />;
 }

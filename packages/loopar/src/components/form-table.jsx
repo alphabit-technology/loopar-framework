@@ -4,10 +4,10 @@ import {MetaComponent} from "@meta-component";
 import { isEqual } from "es-toolkit/predicate";
 
 import { useFieldArray } from 'react-hook-form';
-import { useFormContext } from "@context/form-provider";
+import { useFormContext } from "@form-provider";
 import {useRef, useMemo, useCallback, useEffect, memo, useState } from "react";
 
-import { FormWrapper } from "@context/form-provider";
+import { FormWrapper } from "@form-provider";
 import { TableProvider, useTable } from "./table/TableContext"
 
 import { PlusIcon, Trash2Icon } from "lucide-react";

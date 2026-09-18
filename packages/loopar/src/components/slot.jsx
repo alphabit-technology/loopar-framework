@@ -1,11 +1,11 @@
-import { useDocument } from "@context/@/document-context";
-import { useDesigner } from "@context/@/designer-context";
+import { useViewOptions } from "@loopar/document";
+import { useDesigner } from "@context/designer-context";
 import { Plug } from "lucide-react";
 
 export default function MetaSlot(props) {
   const data = props.data || {};
   const ref = data?.name;
-  const { slots } = useDocument();
+  const { slots } = useViewOptions();
   const { designerMode: isDesigner } = useDesigner();
 
   if (isDesigner) {

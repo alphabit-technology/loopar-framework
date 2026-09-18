@@ -1,3 +1,4 @@
+import { Entry, entries } from "./document/Entry";
 import { WorkspaceLoader } from "@loopar/workspace-loader";
 import { MetaComponentsLoader } from "@loopar/components-loader";
 import { useEffect, lazy, useState } from "react";
@@ -86,38 +87,43 @@ const ErrorMessage = (props) => {
 
 
 /**
- * Resolves the client module for a Document.
+ * Resolves the component that renders a Document, composed top-down:
  *
- * Order:
- *   1. `Document.entryPoint` (`<entity>-<kind>`) — an app-level view with
- *      custom logic, if the app ships one.
- *   2. `<kind>-context` — the framework's base view for `Document.context`
- *      (form | list | view | page | report | ...). Most entities need
- *      nothing else, so they ship no client file at all.
- *   3. An error view.
+ *   <Entry kind={Document.entry} {...config} {...props}>   ← src/document/Entry.jsx
+ *     <View />                    ← the app's `client/<entity>-<kind>.jsx`, if any
+ *   </Entry>                      ← no view file → the entry renders its default
+ *
+ * The view module may `export const config = {...}` (chrome flags, list
+ * options, `mapDocument`, ...): it is applied as props of the entry. A
+ * Document without `entry` (e.g. the error view) mounts the view alone.
  */
 export async function AppSourceLoader(Document) {
   const appSources = Object.entries(import.meta.glob([
     '/apps/**/modules/**/**/**/client/*.{jsx,tsx}',
     '../apps/core/modules/**/**/**/client/*.{jsx,tsx}',
-    './context/*-context.{jsx,tsx}',
   ])).reduce((acc, [path, module]) => {
     acc[path.split('/').pop().replace(/\.(jsx|tsx)$/, '')] = module;
     return acc;
   }, {});
 
-  const own = appSources[Document?.entryPoint];
-  if (own) return own();
+  const kind = Document?.entry && entries[Document.entry] ? Document.entry : null;
+  const viewImport = Document?.entryPoint && appSources[Document.entryPoint];
+  const { default: View = null, config = null } = viewImport ? await viewImport() : {};
 
-  // Base view for the kind. `<kind>-context` modules export the legacy class
-  // as `default` (for subclasses) and the functional view as `View`.
-  const base = Document?.context && appSources[`${Document.context}-context`];
-  if (base) {
-    const Module = await base();
-    return Module.View ? { ...Module, default: Module.View } : Module;
+  if (!kind && !View) {
+    return { default: () => <ErrorMessage Document={Document} /> };
   }
 
-  return { default: () => <ErrorMessage Document={Document} /> };
+  if (!kind) return { default: View, config };
+
+  const Mount = (props) => (
+    <Entry kind={kind} {...config} {...props}>
+      {View ? <View /> : null}
+    </Entry>
+  );
+  Mount.displayName = View ? `Entry(${kind}:${View.displayName || View.name || "View"})` : `Entry(${kind})`;
+
+  return { default: Mount, config };
 }
 
 export const Loader = async (__META__, ENVIRONMENT) => {

@@ -3,7 +3,7 @@ import { cn } from "@cn/lib/utils";
 import {Droppable} from "@droppable";
 import {loopar} from "loopar";
 import {useState, useRef, useEffect} from "react";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 const Cover = (props) => {
   const {designing} = useDesigner()

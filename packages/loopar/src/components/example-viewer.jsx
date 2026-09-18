@@ -2,8 +2,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ComponentDefaults } from "./base/ComponentDefaults";
 import { Code, Copy, Check } from "lucide-react";
 import loopar from "loopar";
-import { useDesigner, DesignerContext } from "@context/@/designer-context";
-import { FormWrapper } from "@context/form-provider";
+import { useDesigner, DesignerContext } from "@context/designer-context";
+import { FormWrapper } from "@form-provider";
 
 import { EditorState } from '@codemirror/state';
 import { EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';

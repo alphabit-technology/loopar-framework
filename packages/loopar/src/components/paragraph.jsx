@@ -1,5 +1,5 @@
 import BaseText from "@base-text";
-import { useDesigner} from "@context/@/designer-context";
+import { useDesigner} from "@context/designer-context";
 import { ComponentDefaults } from "./base/ComponentDefaults.jsx";
 
 export function Paragraph(props) {

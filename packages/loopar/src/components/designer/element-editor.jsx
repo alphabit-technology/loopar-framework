@@ -7,8 +7,8 @@ import { Separator } from "@cn/components/ui/separator";
 import { Input } from "@cn/components/ui/input";
 import { ChevronDown } from "lucide-react";
 import { getMetaFields } from "@@tools/meta-fields";
-import { DesignerContext, useDesigner } from "@context/@/designer-context";
-import { FormWrapper } from "@context/form-provider";
+import { DesignerContext, useDesigner } from "@context/designer-context";
+import { FormWrapper } from "@form-provider";
 import { isEqual } from 'es-toolkit/predicate';
 
 function mergeGroups(...arrays) {

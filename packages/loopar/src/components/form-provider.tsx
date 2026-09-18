@@ -107,13 +107,7 @@ const buildEmptyValues = (
     const name = el.data?.name;
 
     if (typeof name === "string" && name && fieldIsWritable(el)) {
-      if (el.element === FORM_TABLE) {
-        acc[name] = [];
-      } else if (FILE_ELEMENTS.has(el.element)) {
-        acc[name] = [];
-      } else {
-        acc[name] = "";
-      }
+      acc[name] = el.element === FORM_TABLE || FILE_ELEMENTS.has(el.element) ? [] : "";
     }
 
     if (el.elements?.length) {
@@ -356,6 +350,11 @@ export const FormProvider = ({
     </BaseFormContext.Provider>
   );
 };
+
+/** Live form values, or `undefined` outside a form (safe anywhere). */
+export function useFormValues(): FieldValues | undefined {
+  return useContext(BaseFormContext)?.values;
+}
 
 export function useFormContext(): LooparBaseFormContext {
   const ctx = useContext(BaseFormContext);

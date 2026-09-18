@@ -1,4 +1,4 @@
-import ListContext from '@context/list-context';
+import { ListLayout } from '@loopar/list';
 import loopar from "loopar";
 const {Capitalize, avatar} = loopar.utils;
 
@@ -99,22 +99,11 @@ const CardTemplate = (props) => {
   )
 }
 
-export default class EntityList extends ListContext {
-  cardSize = 230;
-  hiddenColumns = ["is_single"];
-  constructor(props) {
-    super(props);
-  }
+export const gridTemplate = (row, action) => (
+  <CardTemplate row={row} action={row.name == "File Manager" ? "list" : action} />
+);
 
-  onShow() {
-    super.onShow();
-  }
-
-  onLoad() {}
-
-  gridTemplate(row, action){
-    return (
-      <CardTemplate row={row} action={row.name == "File Manager" ? "list" : action} />
-    )
-  }
+/** Entity-like lists (Entity, Module, Builder): card grid per row. */
+export default function EntityList(opts) {
+  return <ListLayout gridTemplate={gridTemplate} {...opts} />;
 }

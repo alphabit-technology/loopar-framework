@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { MonitorPlay, Play } from "lucide-react";
 import { cn } from "@cn/lib/utils";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 /**
  * video_embed — remote video player for the page builder.

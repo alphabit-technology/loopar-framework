@@ -1,6 +1,6 @@
 import { ComponentDefaults } from "./ComponentDefaults";
 import {Droppable} from "@droppable";
-import {useDesigner} from "@context/@/designer-context";
+import {useDesigner} from "@context/designer-context";
 import { useEffect, useId, createContext, useContext} from "react";
 
 const PreassembledContext = createContext({

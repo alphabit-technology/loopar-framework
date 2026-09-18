@@ -1,10 +1,10 @@
 
 'use strict';
 
-import ListContext from '@context/list-context';
+import { ListLayout } from '@loopar/list';
 import loopar, { useRealtime } from "loopar";
 import DragToggle from "./DragToggle.jsx";
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
 
 import {
   Avatar,
@@ -31,13 +31,6 @@ const tenantStatus = (row, site) => {
 }
 
 export const TenantManagerListContext = createContext();
-
-const TenantManagerList = (props) => {
-  const {updateRows, setUpdateRows} = useContext(TenantManagerListContext);
-  return (
-    <TenantManagerListBase {...props} updateRows={updateRows} setUpdateRows={setUpdateRows} />
-  )
-}
 
 const TenantManagerListProvider = ({children}) => {
   const [updateRows=[], setUpdateRows] = useState([]);
@@ -436,81 +429,78 @@ const CoreModeToggle = () => {
   );
 };
 
-class TenantManagerListBase extends ListContext {
-  onlyList=true;
-  constructor(props){
-    super(props);
-  }
+const ACTIONS = {
+  coremode: <CoreModeToggle />,
+  install: <InstallButton />,
+  deploy: <DeployButton />,
+};
 
-  setCustomActions() {
-    super.setCustomActions();
-    this.setCustomAction('coremode', <CoreModeToggle />);
-    this.setCustomAction('install', <InstallButton />);
-    this.setCustomAction('deploy', <DeployButton />);
-  }
+export const config = { onlyList: true };
 
-  customColumns(baseColumns) {
-    const {updateRows, setUpdateRows} = this.props;
-    return [
-      {
-        data: {
-          name: "name:"
-        },
-        render: row => (
-          <NameRender row={row} />
-        ),
+const TenantManagerList = () => {
+  const { updateRows, setUpdateRows } = useContext(TenantManagerListContext);
+
+  const columns = useMemo(() => (baseColumns) => [
+    {
+      data: {
+        name: "name:"
       },
-      {
-        data: {
-          name: "status:",
-          label: "Status"
-        },
-        headProps: {
-          className: "w-10 p-2 text-center",
-        },
-        cellProps: {
-          className: "w-10 p-2 text-center",
-        },
-        render: row => {
-          const status = row.status;
-          
-          return (
-            <DragToggle
-              value={status=="online"}
-              site={row.name}
-              disabled={updateRows.includes(row.name)}
-              onChange={(isOnline, revert) => {
-                setUpdateRows(prev => [...prev, row.name]);
-                sendAction(isOnline ? "start" : "stop", row.name, false, (ok) => {
-                  if (!ok) revert?.();
-                  setUpdateRows(prev => prev.filter(name => name != row.name))
-                });
-              }}
-            />
-          )
-        }
+      render: row => (
+        <NameRender row={row} />
+      ),
+    },
+    {
+      data: {
+        name: "status:",
+        label: "Status"
       },
-      ...baseColumns,
-      {
-        data: {
-          label: () => <EllipsisIcon className="w-full"/>,
-          name: "actions",
-        },
-        headProps: {
-          className: "w-10 p-2 text-center",
-        },
-        render: row => (
-          <Buttons row={row} />
-        ),
+      headProps: {
+        className: "w-10 p-2 text-center",
+      },
+      cellProps: {
+        className: "w-10 p-2 text-center",
+      },
+      render: row => {
+        const status = row.status;
+      
+        return (
+          <DragToggle
+            value={status=="online"}
+            site={row.name}
+            disabled={updateRows.includes(row.name)}
+            onChange={(isOnline, revert) => {
+              setUpdateRows(prev => [...prev, row.name]);
+              sendAction(isOnline ? "start" : "stop", row.name, false, (ok) => {
+                if (!ok) revert?.();
+                setUpdateRows(prev => prev.filter(name => name != row.name))
+              });
+            }}
+          />
+        )
       }
-    ];
-  }
-}
+    },
+    ...baseColumns,
+    {
+      data: {
+        label: () => <EllipsisIcon className="w-full"/>,
+        name: "actions",
+      },
+      headProps: {
+        className: "w-10 p-2 text-center",
+      },
+      render: row => (
+        <Buttons row={row} />
+      ),
+    }
+], [updateRows, setUpdateRows]);
 
-const TenantManagerMiddleware = (props) => {
+  return <ListLayout actions={ACTIONS} columns={columns} />;
+};
+
+const TenantManagerMiddleware = () => {
   return (
     <TenantManagerListProvider>
-      <TenantManagerList {...props} />
+      <TenantManagerList />
     </TenantManagerListProvider>
   )
 }

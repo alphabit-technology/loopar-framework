@@ -1,86 +1,41 @@
 'use strict';
 
-import FormContext from '@context/form-context';
-import {loopar} from 'loopar';
+import { useForm, FormLayout } from '@loopar/form';
+import { loopar } from 'loopar';
 import { Button } from '@cn/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 
-export default class AppForm extends FormContext {
-  /**
-   * @type {FormField} is a field of the form, described in the meta.json file
-   */
-  web_app_settings = {}; /** @type {FormContext} will be set on load document*/
+export default function AppForm() {
+  const { getValue, setValue } = useForm();
 
-  get webAppSettigs() {
-    return this.web_app_settings;
-  }
+  /** AppBar action: bumps one semver segment of the app being edited. */
+  const incrementVersion = (type) => (
+    <Button
+      variant="link"
+      onClick={(e) => {
+        e.preventDefault();
+        const name = getValue('name');
 
-  constructor(props) {
-    super(props);
+        loopar.confirm(`Are you sure you want to increment the ${type} version of the app ${name}?`, () => {
+          loopar.call("App", `increment${type}`, {
+            query: { name },
+            success: (result) => setValue('version', result.version),
+          });
+        });
+      }}
+    >
+      <PlusIcon className="mr-2" />
+      {type}
+    </Button>
+  );
 
-    this.state = {
-      ...this.state,
-      loaded: false,
-    };
-  }
-
-  setCustomActions() {
-    super.setCustomActions();
-
-    const setIncrementVersion = (type) => {
-      this.setCustomAction(`increment${type}`, (
-        <Button
-          variant="link"
-          onClick={(e) => {
-            e.preventDefault();
-            loopar.confirm(`Are you sure you want to increment the ${type} version of the app ${this.getValue("name")}?`, () => {
-              loopar.call("App", `increment${type}`, {
-                query: { name: this.getValue('name') },
-                success: (result) => {
-                  this.setValue('version', result.version);
-                }
-              });
-            });
-          }}
-        >
-          <PlusIcon className="mr-2" />
-          {type}
-        </Button>
-      ))
-    }
-
-    setIncrementVersion('Patch');
-    setIncrementVersion('Minor');
-    setIncrementVersion('Major'); 
-  }
-
-  componentDidMount() {
-    super.componentDidMount();
-    this.setCustomActions();
-
-    /*this.on("type", "change", (e) => {
-      this.setFieldDf('web_app_settings', 'hidden', e.target.value === 'Web App' ? 0 : 1);
-    });
-
-    this.on("has_footer", "change", (e) => {
-      this.setFieldDf('footer', 'hidden', e.target.value ? 0 : 1);
-    });
-
-    this.on("has_copyright", "change", (e) => {
-      this.setFieldDf('copyright', 'hidden', e.target.value ? 0 : 1);
-    });
-
-    setTimeout(() => {
-
-    this.setState({loaded: true});
-    })*/
-
-    /**To prevent screen flashing on initial load */
-    /*setTimeout(() => {
-      super.componentDidMount();
-      //this.context.setLoaded(true);
-
-      this.initScroll();
-    }, 0);*/
-  }
+  return (
+    <FormLayout
+      actions={{
+        incrementPatch: incrementVersion('Patch'),
+        incrementMinor: incrementVersion('Minor'),
+        incrementMajor: incrementVersion('Major'),
+      }}
+    />
+  );
 }

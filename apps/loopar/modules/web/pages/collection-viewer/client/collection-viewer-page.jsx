@@ -1,16 +1,6 @@
 'use strict';
 
-import PageContext from '@context/page-context';
+/** Web page: always opens at the top, never restores the scroll position. */
+export const config = { restoreScroll: false };
 
-export default class CollectionViewerPage extends PageContext {
-  constructor(props) {
-    super(props);
-  }
-
-  initScroll() {
-    if (this.props.inModal) return;
-    window.scrollTo(0, 0);
-  }
-
-  setScrollPosition() {}
-}
+export { DefaultView as default } from '@loopar/document';

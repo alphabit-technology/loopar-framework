@@ -1,6 +1,7 @@
 
 'use strict';
 import {useEffect, useState} from "react";
+import { useDocument } from "@loopar/document";
 import EntityList from "../../entity/client/entity-list";
 import { useLocation } from 'react-router';
 import {Link} from "@link"
@@ -30,35 +31,24 @@ const ButtonType = ({action, label, actions, current}) => {
   );
 }
 
-export default class ModuleView extends EntityList {
-  onlyGrid = true;
-  hasSearchForm = true;
-  disabledSearchFields = ["module"];
+const DISABLED_SEARCH_FIELDS = ["module"];
 
-  constructor(props){
-    super(props)
-    this.state = {
-      ...this.state,
-      update: false
-    }
-  }
+export const config = { onlyGrid: true, hasSearchForm: true, disabledSearchFields: DISABLED_SEARCH_FIELDS };
 
-  setCustomActions() {
-    super.setCustomActions();
-    const {Document} = this.props;
-    const actions = Document?.__TYPES__ || [];
+export default function ModuleView() {
+  const { Document } = useDocument();
+  const types = Document?.__TYPES__ || [];
 
-    actions.forEach((action, index) => {
-      this.setCustomAction(
-        action.name,
-        <ButtonType 
-          key={index} 
-          action={action.name} 
-          label={action.label}
-          actions={actions}
-          current={Document.__TYPE__}
-        />
-      );
-    });
-  }
+  const actions = Object.fromEntries(types.map((action, index) => [
+    action.name,
+    <ButtonType
+      key={index}
+      action={action.name}
+      label={action.label}
+      actions={types}
+      current={Document.__TYPE__}
+    />,
+  ]));
+
+  return <EntityList actions={actions} />;
 }

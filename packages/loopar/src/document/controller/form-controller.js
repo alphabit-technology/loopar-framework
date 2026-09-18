@@ -2,78 +2,79 @@ import { loopar } from 'loopar';
 import { dataInterface } from '@global/element-definition';
 import Sanitize from "sanitize-filename";
 import { buildFormData } from "@@tools/build-form-data";
-import { mixin } from "./mixin";
-import { initDocumentController, documentControllerMethods } from "./document-controller";
+import { DocumentController } from "./document-controller";
 
 /**
- * Form controller — document controller + react-hook-form bridge, submit,
- * validation and file/designer serialization. See `document-controller.jsx`
- * for the host contract. `FormProvider` assigns `docRef.Form` during render,
- * which is what wires the form instance in.
+ * DocumentController + react-hook-form bridge: submit, validation, file /
+ * designer serialization and the save lifecycle. `FormWrapper` assigns
+ * `ctrl.Form` (the react-hook-form instance) during render.
  */
+export class FormController extends DocumentController {
+  #form = null;
+  #events = { beforeSave: new Set(), afterSave: new Set(), saveError: new Set() };
 
-export function initFormController(host) {
-  initDocumentController(host);
-  Object.assign(host, {
-    formFields: {},
-    hasSidebar: true,
-    __FORM_REFS__: {},
-    _form: null,
-    /**
-     * Which controller receives this form's submissions. Resolution order in
-     * `send()` (first non-null wins): `opts.document` → `this.controller` →
-     * `this.Document.Entity.name`. No fallback: a form without a resolvable
-     * controller is an error.
-     */
-    controller: null,
-  });
-  return host;
-}
+  formFields = {};
 
-export const formControllerMethods = {
+  /** Target of `send()` when the caller passes no `document` (falls back to `Entity.name`). */
+  controller = null;
+
   get Form() {
-    return this._form;
-  },
-
-  set Form(Form) {
-    this._form = Form;
-  },
+    return this.#form;
+  }
 
   /**
-   * @param {Object} [options] - Forwarded to `send()`. Notables:
-   *   `extra` (plain object merged into the outgoing body — e.g. anti-bot
-   *   fields from a public form), `success`, `error`, `notRequireChanges`.
-   *
-   * Inside a modal mini-workspace (`this.props.inModal`) the server's
-   * post-save redirect must NOT navigate the browser (the transport is a
-   * global singleton — it would move the BASE page, not the modal). So the
-   * redirect is suppressed (`followRedirect: false`) and the saved document's
-   * name is reported to the modal's opener via `this.props.onSaved(name, r)`.
+   * Save lifecycle. Returns the unsubscribe function.
+   *   beforeSave(values, ctrl) — after validation; return `false` to cancel
+   *   afterSave(response, ctrl) · saveError(error, ctrl)
+   */
+  onFormEvent(event, callback) {
+    const set = this.#events[event];
+    if (!set) throw new Error(`Unknown form event "${event}" (beforeSave | afterSave | saveError)`);
+    set.add(callback);
+    return () => set.delete(callback);
+  }
+
+  #emit(event, payload) {
+    let result = true;
+    for (const cb of this.#events[event]) {
+      if (cb(payload, this) === false) result = false;
+    }
+    return result;
+  }
+
+  set Form(Form) {
+    this.#form = Form;
+  }
+
+  /**
+   * Saves through the entity's `meta.action` (create/update) and runs the
+   * save events. In a modal the server redirect is suppressed (the transport
+   * is global — it would move the base page) and the saved name goes to
+   * `props.onSaved(name, response)` instead.
    */
   save(options = {}) {
-    if (this.props.inModal) {
-      const { success, ...rest } = options;
-      return this.send({
-        action: this.Document.meta.action,
-        followRedirect: false,
-        ...rest,
-        success: (r) => {
-          success?.(r);
-          const name = r?.name
-            ?? new URLSearchParams(String(r?.redirect || "").split("?")[1] || "").get("name");
-          this.props.onSaved?.(name, r);
-        },
-      });
-    }
+    const inModal = this.props.inModal;
+    const success = (r) => {
+      options.success?.(r);
+      if (!inModal) return;
+      const name = r?.name
+        ?? new URLSearchParams(String(r?.redirect || "").split("?")[1] || "").get("name");
+      this.props.onSaved?.(name, r);
+    };
 
-    return this.send({ action: this.Document.meta.action, ...options });
-  },
+    return this.send({
+      action: this.Document.meta.action,
+      ...(inModal && { followRedirect: false }),
+      ...options,
+      success,
+      _isSave: true,
+    });
+  }
 
-  /** `true` when at least one field differs from the form's `defaultValues`. */
   hasChanges() {
-    const dirty = this._form?.formState?.dirtyFields;
+    const dirty = this.#form?.formState?.dirtyFields;
     return !!dirty && Object.keys(dirty).length > 0;
-  },
+  }
 
   checkChanges() {
     if (!this.notRequireChanges && !this.hasChanges()) {
@@ -81,54 +82,20 @@ export const formControllerMethods = {
       return false;
     }
     return true;
-  },
+  }
 
   /**
-   * Submit the form to a controller action.
-   *
-   * @param {Object} opts
-   * @param {string} [opts.document] - Target controller name (overrides
-   *   `this.controller` and the implicit `Document.Entity.name`).
-   * @param {string} opts.action - Controller action to invoke.
-   * @param {Object} [opts.query] - Extra URL query params (merged with `this.queryParams`).
-   * @param {Object} [opts.extra] - Plain object appended to the outgoing body
-   *   AFTER the form values (fields not declared in the entity travel here).
-   * @param {Function} [opts.success]
-   * @param {Function} [opts.error]
+   * Submits the form to `document`/`this.controller`/`Entity.name` → `action`.
+   * `query` merges with `queryParams`; `extra` appends undeclared fields to the
+   * body (anti-bot tokens...). Errors reach `error`/`errorCallback`, or
+   * `loopar.throw` when nobody handles them.
    */
-  send({ document, action, query = {}, extra = null, ...options } = {}, successCallback, errorCallback) {
+  send({ document, action, query = {}, extra = null, _isSave = false, ...options } = {}, successCallback, errorCallback) {
     this.validate();
-
     if (!options.notRequireChanges && !this.checkChanges()) return;
+    if (_isSave && this.#emit("beforeSave", this.getFormValues()) === false) return;
 
-    const handleSuccess = (r) => {
-      if (this._form && !options.notRequireChanges) {
-        this._form.reset(this._form.getValues(), { keepValues: true });
-      }
-      if (options.success) options.success(r);
-      if (successCallback) successCallback(r);
-    };
-
-    const handleError = (r) => {
-      if (options.error) options.error(r);
-      if (errorCallback) errorCallback(r);
-      else loopar.throw(r);
-    };
-
-    const mergedQuery = { ...this.queryParams, ...query };
-    const body = this._getFormData(true);
-
-    if (extra && typeof extra === "object") {
-      for (const [key, value] of Object.entries(extra)) {
-        if (value === undefined || value === null) continue;
-        body.append(key, value);
-      }
-    }
-
-    // Every submission MUST name its controller — the RPC channel is
-    // /{Document}/{action}. Fail loudly instead of sending a broken request.
     const targetDocument = document || this.controller || this.Document?.Entity?.name;
-
     if (!targetDocument) {
       return loopar.throw({
         title: "Form without target controller",
@@ -136,15 +103,30 @@ export const formControllerMethods = {
       });
     }
 
+    const body = this.#getFormData(true);
+    for (const [key, value] of Object.entries(extra || {})) {
+      if (value !== undefined && value !== null) body.append(key, value);
+    }
+
     return loopar.call(targetDocument, action, {
       body,
-      query: mergedQuery,
-      success: handleSuccess,
-      error: handleError,
+      query: { ...this.queryParams, ...query },
       freeze: true,
-      ...(options.followRedirect === false ? { followRedirect: false } : {}),
+      ...(options.followRedirect === false && { followRedirect: false }),
+      success: (r) => {
+        if (this.#form && !options.notRequireChanges) this.#form.reset(this.#form.getValues(), { keepValues: true });
+        options.success?.(r);
+        successCallback?.(r);
+        if (_isSave) this.#emit("afterSave", r);
+      },
+      error: (e) => {
+        options.error?.(e);
+        errorCallback?.(e);
+        if (_isSave) this.#emit("saveError", e);
+        if (!options.error && !errorCallback) loopar.throw(e);
+      },
     });
-  },
+  }
 
   get queryParams() {
     const searchParams = new URLSearchParams(window.location.search);
@@ -152,7 +134,7 @@ export const formControllerMethods = {
       name: this.__DOCUMENT_NAME__,
       ...(Object.fromEntries(searchParams.entries()) || {}),
     };
-  },
+  }
 
   validate() {
     const errors = [];
@@ -181,19 +163,19 @@ export const formControllerMethods = {
         message: errors.map(e => e.message).join('\n')
       });
     }
-  },
+  }
 
   getField(name) {
     return this.formFields.defaultValues[name] || null;
-  },
+  }
 
   getValue(name) {
-    return this._form ? this._form.getValues(name) : undefined;
-  },
+    return this.#form ? this.#form.getValues(name) : undefined;
+  }
 
   getFormValues(toSave = false) {
-    return this._getFormValues(toSave);
-  },
+    return this.#getFormValues(toSave);
+  }
 
   buildDesignerToSave(structure, toSave = false) {
     const __files = [];
@@ -268,17 +250,16 @@ export const formControllerMethods = {
     });
 
     return { files: __files, remote: __remote, designer: fixElements(structure) };
-  },
+  }
 
-  _getFormValues(toSave = false) {
+  /** Form values as the server expects them; with `toSave`, files/designer are serialized and staged. */
+  #getFormValues(toSave = false) {
     if (!this.Form) return this.Document.data || {};
 
-    let __FILES__ = [];
-    let __REMOTE_FILES__ = [];
+    const __FILES__ = [];
+    const __REMOTE_FILES__ = [];
 
-    const values = this.Form.getValues();
-
-    return Object.entries(values).reduce((obj, [name, value]) => {
+    const out = Object.entries(this.Form.getValues()).reduce((obj, [name, value]) => {
       const field = this.__FIELD__(name);
 
       if (!field) return obj;
@@ -301,63 +282,55 @@ export const formControllerMethods = {
           }
 
           obj[name] = metaFiles.length > 0 ? JSON.stringify(metaFiles) : value;
-          obj.__FILES__ = __FILES__;
-          obj.__REMOTE_FILES__ = __REMOTE_FILES__;
           return obj;
         }
 
-        if (field.def.element === DESIGNER && toSave) {
+        if (field.def.element === DESIGNER) {
           const { files, remote, designer } = this.buildDesignerToSave(JSON.parse(value), toSave);
           obj[name] = JSON.stringify(designer);
-          __FILES__ = [...(__FILES__ || []), ...(files || [])];
-          __REMOTE_FILES__ = [...(__REMOTE_FILES__ || []), ...(remote || [])];
+          __FILES__.push(...files);
+          __REMOTE_FILES__.push(...remote);
+          return obj;
+        }
 
-          obj.__FILES__ = __FILES__;
-          obj.__REMOTE_FILES__ = __REMOTE_FILES__;
+        if (field.def.element === FORM_TABLE) {
+          obj[name] = JSON.stringify(value || []);
           return obj;
         }
       }
 
-      if ([FORM_TABLE].includes(field.def.element) && toSave) {
-        obj[name] = JSON.stringify(value || []);
-        return obj;
-      }
-
-      if ([CHECKBOX, SWITCH].includes(field.def.element)) {
-        obj[name] = value ? 1 : 0;
-        return obj;
-      }
-
-      obj.__FILES__ = __FILES__;
-      obj.__REMOTE_FILES__ = __REMOTE_FILES__;
-      obj[name] = value;
+      obj[name] = [CHECKBOX, SWITCH].includes(field.def.element) ? (value ? 1 : 0) : value;
       return obj;
     }, {});
-  },
 
-  _getFormData(toSave) {
+    out.__FILES__ = __FILES__;
+    out.__REMOTE_FILES__ = __REMOTE_FILES__;
+    return out;
+  }
+
+  #getFormData(toSave) {
     return buildFormData(this.getFormValues(toSave));
-  },
+  }
 
   setError(name, error) {
     this.Form.control.setError(name, error);
-  },
+  }
 
   setValue(name, value) {
     this.Form.setValue(name, value, { shouldDirty: true, shouldValidate: false });
-  },
+  }
 
   /**
-   * Exposes every writable field as a property of the controller
-   * (`ctrl.user_name` ↔ `form.getValues/setValue`). Kept for the legacy
-   * class views; functional views should prefer `getValue/setValue`.
+   * `ctrl.<field>` ↔ form value, for every writable field whose name does not
+   * collide with a controller member (prefer `getValue`/`setValue`).
    */
   buildSettersAndGetters() {
     this.__WRITABLE_FIELDS__.forEach(field => {
       const fieldName = field.data.name;
+      if (!fieldName || fieldName in this) return;
 
       Object.defineProperty(this, fieldName, {
-        get: () => (this._form ? this._form.getValues(fieldName) : undefined),
+        get: () => (this.#form ? this.#form.getValues(fieldName) : undefined),
         set: (value) => {
           if (this.Form) {
             this.Form.setValue(fieldName, value, { shouldDirty: true, shouldValidate: true });
@@ -367,21 +340,10 @@ export const formControllerMethods = {
         configurable: true
       });
     });
-  },
+  }
 
   mount() {
-    documentControllerMethods.mount.call(this);
+    super.mount();
     this.buildSettersAndGetters();
-  },
-};
-
-/** Standalone form controller for functional hosts (see `createDocumentController`). */
-export function createFormController(env, overrides) {
-  const host = {};
-  Object.defineProperty(host, "props", { get: () => env.props, configurable: true });
-  host.rerender = env.rerender;
-  initFormController(host);
-  mixin(host, documentControllerMethods);
-  mixin(host, formControllerMethods);
-  return mixin(host, overrides);
+  }
 }

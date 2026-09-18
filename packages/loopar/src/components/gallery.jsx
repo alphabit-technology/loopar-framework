@@ -3,8 +3,8 @@ import Preassembled from "@preassembled";
 import fileManager from "@@file/file-manager";
 import {loopar} from "loopar"
 import {useState, useCallback, useRef, useMemo, useEffect, useLayoutEffect} from "react"
-import { useDesigner } from "@context/@/designer-context";
-import { useDocument } from "@context/@/document-context";
+import { useDesigner } from "@context/designer-context";
+import { useDocument } from "@loopar/document";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 

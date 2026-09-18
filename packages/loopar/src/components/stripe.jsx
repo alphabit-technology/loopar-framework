@@ -1,253 +1,129 @@
-import Component from "@component";
+import { useEffect, useRef, useState } from "react";
 import loopar from "loopar";
 import { Modal } from "@dialog";
 
-export default class StripeClass extends Component {
-  className = "";
-  stripeElementsList = [];
-  completeComponent = false;
+const STRIPE_JS = "https://js.stripe.com/v3/";
 
-  constructor(props) {
-    super(props);
+const cardStyle = (dark) => ({
+  base: {
+    color: dark ? "#fff" : "#000",
+    iconColor: dark ? "#fff" : "#000",
+    lineHeight: "40px",
+    fontWeight: 300,
+    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+    fontSize: "15px",
+    "::placeholder": { color: dark ? "" : "#42425da9" },
+  },
+});
 
-    this.state = {
-      ...this.state,
-      open: props.open,
+/**
+ * Card payment button + modal. Mounts a Stripe card element when the modal
+ * opens and confirms the payment against `Stripe/clientSecret`.
+ * Needs `publishable_key`; `label` names the button, `amount_label` the pay button.
+ */
+export default function Stripe({ data = {}, designer, buttonClassName, onClose }) {
+  const [open, setOpen] = useState(false);
+  const cardRef = useRef(null);
+  const nameRef = useRef(null);
+  const stripeRef = useRef({ stripe: null, card: null });
+
+  // Mount the card element while the modal is open.
+  useEffect(() => {
+    if (!open || designer || !data.publishable_key) return;
+    let disposed = false;
+
+    loopar.require(STRIPE_JS).then(() => {
+      if (disposed || !cardRef.current || !window.Stripe) return;
+      const stripe = window.Stripe(data.publishable_key);
+      const card = stripe.elements().create("card", {
+        hidePostalCode: true,
+        style: cardStyle(localStorage.getItem("skin") === "dark"),
+      });
+      card.mount(cardRef.current);
+      stripeRef.current = { stripe, card };
+    });
+
+    return () => {
+      disposed = true;
+      stripeRef.current.card?.destroy();
+      stripeRef.current = { stripe: null, card: null };
     };
-  }
+  }, [open, designer, data.publishable_key]);
 
-  get open() {
-    return this.state.open === true;
-  }
+  const pay = async (e) => {
+    e.preventDefault();
+    const { stripe, card } = stripeRef.current;
+    if (!stripe || !card) return;
 
-  render(content = null) {
-    const data = this.props.data;
+    const { message: intent } = await loopar.call("Stripe", "clientSecret");
+    const { error } = await stripe.confirmCardPayment(intent.client_secret, {
+      payment_method: { card, billing_details: { name: nameRef.current?.value } },
+    });
 
-    return (
-      <>
-        <button
-          className={this.props.buttonClassName || "btn btn-primary btn-block"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.setState({
-              open: true,
-            });
-          }}
-        >
-          <span className="fas fa-lock mr-2"></span>
-          <span>{data.label}</span>
-        </button>
-        <Modal
-          size="md"
-          title={this.data.label || "Payment"}
-          id="payment_modal"
-          open={this.open}
-          icon="fa fa-lock"
-          onClose={() => {
-            this.setState(
-              {
-                open: false,
-              },
-              () => {
-                this.props.onClose && this.props.onClose();
-              }
-            );
-          }}
-          hasFooter={false}
-          buttons={[]}
-          onShow={() => {
-            this.makeStripeComponent();
-          }}
-        >
-          <small className="text-muted">
-            Your payment is secure with us. We've partnered with Stripe, a
-            trusted and industry-leading payment platform. Rest assured that
-            your transaction is protected by Stripe's state-of-the-art security
-            measures. Your trust and peace of mind are our top priorities.
-          </small>
-          <form
-            className="card-form"
-            action={data.action}
-            method={data.method}
-            ref={(form) => {
-              if (form) this.form = form;
-            }}
-          >
-            <div className="card-body">
-              <div className="row">
-                <div className="col-12">
-                  <div className="form-group">
-                    <div className="row">
-                      <input
-                        className="form-control"
-                        name="name"
-                        type="text"
-                        placeholder="Name on card"
-                        aria-label="Name on card"
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <div className="row">
-                      <div className="form-control" style={{ height: 55 }}>
-                        <div
-                          id="card-element"
-                          aria-label="Credit or debit card"
-                          style={{ color: "#fff" }}
-                          ref={(card) => {
-                            if (card) {
-                              this.card = card;
-                            }
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <div className="row">
-                      <button
-                        className="btn btn-primary btn-block"
-                        type="submit"
-                      >
-                        <span className="fas fa-lock mr-2"></span>
-                        <span>Pay $25</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <div className="row">
-                      <div
-                        role="alert"
-                        ref={(messageContainter) =>
-                          (this.messageContainter = messageContainter)
-                        }
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-                <div id="payment-request-button"></div>
-                <div className="col-12 text-center">
-                  <span className="fab fa-stripe fa-5x"></span>
-                </div>
+    if (error) {
+      loopar.dialog({ title: "Error", type: "error", content: error.message });
+      return;
+    }
+    loopar.dialog({ title: "Success", type: "success", content: "Payment success" });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        className={buttonClassName || "btn btn-primary btn-block"}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
+      >
+        <span className="fas fa-lock mr-2" />
+        <span>{data.label}</span>
+      </button>
+
+      <Modal
+        size="md"
+        id="payment_modal"
+        title={data.label || "Payment"}
+        icon="fa fa-lock"
+        open={open}
+        hasFooter={false}
+        buttons={[]}
+        onClose={() => { setOpen(false); onClose?.(); }}
+      >
+        <small className="text-muted">
+          Your payment is secure with us. We've partnered with Stripe, a trusted
+          and industry-leading payment platform.
+        </small>
+        <form className="card-form" onSubmit={pay}>
+          <div className="card-body">
+            <div className="form-group">
+              <input ref={nameRef} className="form-control" name="name" type="text" placeholder="Name on card" aria-label="Name on card" />
+            </div>
+            <div className="form-group">
+              <div className="form-control" style={{ height: 55 }}>
+                <div ref={cardRef} aria-label="Credit or debit card" />
               </div>
             </div>
-          </form>
-        </Modal>
-      </>
-    );
-  }
-
-  componentDidUpdate() {
-    super.componentDidUpdate();
-    const theme = localStorage.getItem("skin");
-    if (this.theme === theme) return;
-    this.theme = theme;
-
-    this.stripeElementsList.card?.update({
-      style: {
-        base: {
-          color: theme === "dark" ? "#fff" : "#000",
-          iconColor: theme === "dark" ? "#fff" : "#000",
-          "::placeholder": {
-            color: theme === "dark" ? "" : "#42425da9",
-          },
-        },
-      },
-    });
-  }
-
-  addMessage(message) {
-    this.messageContainter.node.style.display = "block";
-    this.messageContainter.node.innerHTML += ">" + message + "<br>";
-  }
-
-  async makeStripeComponent() {
-    if (!this.card.node || this.completeComponent || this.props.designer)
-      return;
-    this.completeComponent = true;
-    this.theme = localStorage.getItem("skin");
-    const key =
-      "pk_test_51NK8ILAxg5LsnkU6R3Q7gsH2lEFxQpNr4TkIjebYgbnAOVwHphL7mtT7aUWYA8v40EMVE3ihTE5XK0nLVx90fKvg00LN8ONS2m";
-    this.stripe = Stripe(key);
-    this.stripe_elements = this.stripe.elements();
-
-    const base = {
-      color: theme === "dark" ? "#fff" : "#000",
-      iconColor: theme === "dark" ? "#fff" : "#000",
-      "::placeholder": {
-        color: theme === "dark" ? "" : "#42425da9",
-      },
-    };
-
-    this.stripeElementsList["card"] = this.stripe_elements.create("card", {
-      hidePostalCode: true,
-      style: {
-        base: {
-          iconColor: "white",
-          color: "white",
-          backGroundColor: "#2d2d3f",
-          lineHeight: "40px",
-          fontWeight: 300,
-          fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-          fontSize: "15px",
-
-          "::placeholder": {
-            //color: '#42425da9',
-          },
-          ...base,
-        },
-      },
-    });
-
-    this.stripeElementsList.card.mount(this.card.node);
-
-    this.form.node.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      const { message: stripeData } = await loopar.call(
-        "Stripe",
-        "clientSecret"
-      );
-      const clientSecret = stripeData.client_secret;
-
-      const nameIput = this.form.node.querySelector('input[name="name"]');
-      const { error: stripeError, paymentIntent } =
-        await this.stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: this.stripeElementsList.card,
-            billing_details: {
-              name: nameIput.value,
-            },
-          },
-        });
-
-      if (stripeError) {
-        loopar.dialog({
-          title: "Error",
-          type: "error",
-          content: stripeError.message,
-        });
-        return;
-      } else {
-        loopar.dialog({
-          title: "Success",
-          type: "success",
-          content: "Payment success",
-        });
-        this.setState({
-          open: false,
-        });
-        return;
-      }
-    });
-  }
-
-  componentDidMount() {
-    super.componentDidMount();
-  }
+            <div className="form-group">
+              <button className="btn btn-primary btn-block" type="submit">
+                <span className="fas fa-lock mr-2" />
+                <span>{data.amount_label || "Pay"}</span>
+              </button>
+            </div>
+            <div className="col-12 text-center">
+              <span className="fab fa-stripe fa-5x" />
+            </div>
+          </div>
+        </form>
+      </Modal>
+    </>
+  );
 }
 
-export const StripeComponent = (props) => {
-  return React.createElement(StripeClass, props);
-};
+Stripe.metaFields = () => [
+  {
+    group: "custom",
+    elements: {
+      publishable_key: { element: INPUT },
+      amount_label: { element: INPUT },
+    },
+  },
+];

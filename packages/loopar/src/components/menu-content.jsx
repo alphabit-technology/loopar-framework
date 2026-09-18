@@ -1,5 +1,5 @@
 import MetaComponent from "@meta-component";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { useEffect, useRef, forwardRef, useState } from "react";
 import { Link } from "@link"
 import { Droppable } from "./droppable/droppable";

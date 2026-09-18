@@ -334,12 +334,12 @@ export default class AuthController extends BaseController {
       return this.#oauthFinish(tx, { ok: false, reason: 'profile_failed' });
     }
 
-    console.log('[auth/oauth] profile resolved:', {
+    /* console.log('[auth/oauth] profile resolved:', {
       provider: tx.provider,
       email: profile?.email,
       email_verified: profile?.email_verified,
       sub: profile?.sub,
-    });
+    }); */
 
     if (!profile?.email || !profile.email_verified) {
       return this.#oauthFinish(tx, { ok: false, reason: 'email_unverified' });
@@ -409,6 +409,7 @@ export default class AuthController extends BaseController {
 
   async #makeAction(form, fn) {
     this.client = "form";
+    this.entry = "auth"; // bare auth form (no desk chrome)
     form = await loopar.newDocument(form, this.data);
     if (this.hasData()) {
       return await fn(form);

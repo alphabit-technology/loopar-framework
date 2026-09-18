@@ -15,6 +15,7 @@ export default class ProfileController extends PageController {
 
   async actionView(){
     this.client = "profile"
+    this.entry = "form"; // desk form; profile-form.jsx sets canUpdate/hasHeader
     const user = await loopar.newDocument("Profile")
 
     return await super.render(user)

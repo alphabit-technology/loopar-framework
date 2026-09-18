@@ -4,7 +4,7 @@ import fileManager from "@global/file-manager.js";
 import {loopar} from "loopar";
 import {useMemo} from "react";
 
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 export function designElementProps(el) {
   if (!el.data) {

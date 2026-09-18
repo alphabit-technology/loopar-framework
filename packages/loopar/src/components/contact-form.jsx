@@ -4,8 +4,8 @@ import { cn } from '@cn/lib/utils';
 import loopar from "loopar";
 import { useCaptcha, CaptchaSlot } from './captcha-widget';
 import { Entity } from "../loader.jsx";
-import { useDocument } from "@context/@/document-context";
-import { useDesigner } from "@context/@/designer-context";
+import { useDocument } from "@loopar/document";
+import { useDesigner } from "@context/designer-context";
 import { SendHorizonalIcon } from "lucide-react";
 
 export const SendButton = ({ captcha, getBotFields, onSent, onError, children }) => {

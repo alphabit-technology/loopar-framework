@@ -1,11 +1,12 @@
-import InstallerContext from '@context/installer-context';
+import { useHandlers } from '@loopar/document';
+import { useForm, BareLayout } from '@loopar/form';
 
-export default class InstallerForm extends InstallerContext {
-   constructor(props) {
-      super(props);
-   }
+export default function InstallerForm() {
+  const { send } = useForm();
 
-   async install() {
-      this.send({ action: "install", query: { app_name: "loopar" } });
-   }
+  useHandlers({
+    install: () => send({ action: "install", query: { app_name: "loopar" } }),
+  });
+
+  return <BareLayout />;
 }

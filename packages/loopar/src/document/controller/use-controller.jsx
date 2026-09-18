@@ -1,32 +1,22 @@
-import { useEffect, useMemo, useReducer, useRef } from "react";
-import { createDocumentController } from "../controller/document-controller";
-import { createFormController } from "../controller/form-controller";
-import { mixin } from "../controller/mixin";
+import { useEffect, useMemo, useRef } from "react";
+import { DocumentController } from "./document-controller";
+import { FormController } from "./form-controller";
 
 /**
- * Hook-side host for the controllers.
- *
- * Returns a controller object with a STABLE identity (created once per
- * mount) so children can keep it in memo deps / mutate its registries
- * (`__REFS__`, `__META_DEFS__`) exactly like they did with class instances.
- * `props` is a live getter, so methods always see the latest props.
- *
- * `overrides` is the functional replacement for subclass overrides
- * (`customColumns`, `getSidebar`, `primaryAction`, `setCustomActions`,
- * `controller`, `canUpdate`, ...). It is re-applied on every render so
- * closures stay fresh; getters/setters are preserved.
+ * One controller instance per mount (stable identity), wired to React:
+ * `props` is a live getter. `overrides`
+ * (static controller options: `controller`, `notRequireChanges`,
+ * `getFormValues`, `save`...) are assigned once and shadow class methods.
  */
-function useControllerHost(create, props, overrides) {
-  const [, bump] = useReducer((x) => x + 1, 0);
+export function useController(Controller, props, overrides) {
   const propsRef = useRef(props);
   propsRef.current = props;
 
-  const ctrl = useMemo(() => create({
-    get props() { return propsRef.current; },
-    rerender: () => bump(),
-  }), [create]);
-
-  mixin(ctrl, overrides);
+  const ctrl = useMemo(() => Object.assign(
+    new Controller({ get props() { return propsRef.current; } }),
+    overrides,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [Controller]);
 
   useEffect(() => {
     ctrl.mount();
@@ -36,12 +26,5 @@ function useControllerHost(create, props, overrides) {
   return ctrl;
 }
 
-/** Document-level controller (pages, lists, web views). */
-export function useDocumentController(props, overrides) {
-  return useControllerHost(createDocumentController, props, overrides);
-}
-
-/** Form-level controller (forms, views, installers, auth forms). */
-export function useFormController(props, overrides) {
-  return useControllerHost(createFormController, props, overrides);
-}
+export const useDocumentController = (props, overrides) => useController(DocumentController, props, overrides);
+export const useFormController = (props, overrides) => useController(FormController, props, overrides);

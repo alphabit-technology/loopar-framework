@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { __META_COMPONENTS__ } from "@loopar/components-loader";
 import { ElementTitle } from "@element-title";
-import { HiddenContext, useHidden } from "@context/@/hidden-context";
+import { HiddenContext, useHidden } from "@context/hidden-context";
 import { useDroppable } from "../../droppable/DroppableContext.jsx";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { useDragAndDrop } from "@@droppable/DragAndDropContext";
 import { cn } from "@cn/lib/utils";
 import { getNodeKey } from "@global/prune-doc-structure";

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, createContext, useContext } from "react";
 import {Button} from "@cn/components/ui/button";
-import {useDocument} from "@context/@/document-context";
+import {useDocument} from "@loopar/document";
 
 import { AIPrompt, AIStructureSchema, sanitizeAIStructure, loopar } from "loopar";
 

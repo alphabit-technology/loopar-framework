@@ -2,7 +2,7 @@ import {ComponentDefaults, tagDontHaveChild, validTags} from "./base/ComponentDe
 import loopar from "loopar";
 import React from "react";
 import { Droppable } from "@droppable";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 export default function Generic({ ...props }) {
   const {elementsDict, data} = ComponentDefaults(props);

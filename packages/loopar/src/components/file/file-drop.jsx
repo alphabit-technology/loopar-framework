@@ -7,7 +7,7 @@ import { MonitorUpIcon, DatabaseIcon, Globe2Icon, UploadCloudIcon, Trash2Icon, L
 import loopar from "loopar";
 import { validateFile } from "@@file/defaults";
 import { isEqual } from 'es-toolkit/predicate';
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 const origins = [
   { name: "Local", icon: MonitorUpIcon, color: "bg-secondary" },

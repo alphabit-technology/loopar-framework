@@ -5,11 +5,11 @@ import { FormField } from "./form-field";
 import { cn } from "@cn/lib/utils";
 import elementManage from "@@tools/element-manage";
 import loopar from "loopar";
-import { useHidden } from "@context/@/hidden-context";
-import { useDesigner } from "@context/@/designer-context";
+import { useHidden } from "@context/hidden-context";
+import { useDesigner } from "@context/designer-context";
 import { isEqual } from 'es-toolkit/predicate';
 import { debounce } from 'es-toolkit/function';
-import { useDocument } from "@context/@/document-context";
+import { useDocument } from "@loopar/document";
 
 const inputReducer = (state, action) => {
   switch (action.type) {
@@ -90,9 +90,9 @@ const BaseInput = (props) => {
     
     const fieldName = state.data.name;
     if (fieldName) {
-      docRef.__REFS__[fieldName] = state.data;
+      docRef.fields?.registerRef(fieldName, state.data);
       return () => {
-        delete docRef.__REFS__[fieldName];
+        docRef.fields?.unregisterRef(fieldName);
       };
     }
   }, [docRef, state.data]);

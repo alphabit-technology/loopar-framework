@@ -1,10 +1,6 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
+/** Single document: its "view" action is editable. */
+export const config = { canUpdate: true };
 
-export default class SystemSettingsView extends FormContext {
-    constructor(props){
-        super(props);
-    }
-}
+export { DefaultView as default } from '@loopar/document';

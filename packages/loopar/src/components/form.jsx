@@ -1,10 +1,10 @@
-import { FormWrapper } from "@context/form-provider";
+import { FormWrapper } from "@form-provider";
 import { useRef, useState, useEffect } from "react";
 import { Droppable } from "@droppable";
 import { loopar } from "loopar";
 import { Button } from "@cn/components/ui/button";
 import { cn } from "@cn/lib/utils";
-import { useDocument } from "@context/@/document-context";
+import { useDocument } from "@loopar/document";
 import { buildFormData } from "@@tools/build-form-data";
 import { useCaptcha, CaptchaSlot } from "./captcha-widget";
 

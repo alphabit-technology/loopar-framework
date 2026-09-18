@@ -1,6 +1,6 @@
 import BaseText from "@base-text";
 import { ComponentDefaults } from "./base/ComponentDefaults";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { cn } from "@cn/lib/utils";
 import {useCallback} from "react"
 

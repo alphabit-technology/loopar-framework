@@ -1,11 +1,11 @@
 import { memo } from "react";
 import { BrushIcon, EyeIcon, XIcon, SaveIcon, HandGrab, Undo2, Redo2 } from "lucide-react";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import {Button as BaseButton} from "@cn/components/ui/button";
 import {DesignerForm} from "./designer-form";
 import {ElementEditor} from "./element-editor";
 import {Separator} from "@cn/components/ui/separator";
-import {useDocument} from "@context/@/document-context";
+import {useDocument} from "@loopar/document";
 import { getNodeKey } from "@global/prune-doc-structure";
 
 function Button({...props}){

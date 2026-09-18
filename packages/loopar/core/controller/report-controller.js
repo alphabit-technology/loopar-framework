@@ -4,7 +4,7 @@ import BaseController from './base-controller.js';
 import { loopar } from "loopar";
 
 export default class ReportController extends BaseController {
-   /** Base client view: `report-context` (ReportView). */
+   /** Client entry: `report`. */
    client = "report";
 
    constructor(props) {

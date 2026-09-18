@@ -1,17 +1,10 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
-import ThemeCustomizer from "./src/theme"
+import { FormLayout } from '@loopar/form';
+import ThemeCustomizer from "./src/theme";
 
-export default class SystemSettingsForm extends FormContext {
-  constructor(props) {
-      super(props);
-  }
+const SLOTS = { theme: ThemeCustomizer };
 
-  render(){
-    return super.render(null, {
-      theme: ThemeCustomizer
-    })
-  }
+export default function SystemSettingsForm() {
+  return <FormLayout slots={SLOTS} />;
 }

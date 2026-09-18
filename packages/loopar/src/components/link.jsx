@@ -5,7 +5,7 @@ import { cn } from "@cn/lib/utils";
 import { buttonVariants } from "@cn/components/ui/button";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { activeLink } from "@workspace/defaults";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { VARIANTS } from "./base/ComponentDefaults";
 import { RouteParsing, setDefaultParams, buildUrl } from "@global/router-utils";
 import { EntryModal } from "@app/entry-modal";

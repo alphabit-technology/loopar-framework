@@ -5,8 +5,8 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { cn } from "@cn/lib/utils";
 import { RowContextProvider } from "./row/RowContext";
 import { useWorkspace } from "@workspace/workspace-provider";
-import { useDocument } from "@context/@/document-context";
-import { useDesigner } from "@context/@/designer-context";
+import { useDocument } from "@loopar/document";
+import { useDesigner } from "@context/designer-context";
 import elementManage from "@@tools/element-manage";
 
 export const STACK_ON = ["never", "sm", "md", "lg"];

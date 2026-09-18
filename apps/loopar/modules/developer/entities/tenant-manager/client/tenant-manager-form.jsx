@@ -1,27 +1,27 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
+import { useHandlers } from '@loopar/document';
+import { useForm, FormLayout } from '@loopar/form';
 import loopar from "loopar";
 
-export default class TenantManagerForm extends FormContext {
-  notRequireChanges = true;
-  
-  constructor(props){
-    super(props);
-  }
+export const config = { notRequireChanges: true };
 
-  async setOnProduction(){
-    loopar.confirm(`Are you sure you want to set ${this.name} on production?`, () => {
-      loopar.call("Tenant Manager", "setOnProduction", {
-        query: { name: this.name },
-        success: () => {
-          loopar.refresh();
-        },
-        error: (message) => {
-          loopar.throw(message);
-        },
+export default function TenantManagerForm() {
+  const { getValue } = useForm();
+
+  useHandlers({
+    setOnProduction: () => {
+      const name = getValue("name");
+
+      loopar.confirm(`Are you sure you want to set ${name} on production?`, () => {
+        loopar.call("Tenant Manager", "setOnProduction", {
+          query: { name },
+          success: () => loopar.refresh(),
+          error: (message) => loopar.throw(message),
+        });
       });
-    });
-  }
+    },
+  });
+
+  return <FormLayout />;
 }

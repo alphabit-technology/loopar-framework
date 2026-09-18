@@ -1,22 +1,17 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
+import { useDocument } from '@loopar/document';
+import { FormLayout } from '@loopar/form';
 import { RolePermissionManager } from '../../../pages/role-permission-manager/client/src/role-permission-manager';
 
-export default class UserForm extends FormContext {
-  constructor(props){
-    super(props);
-  }
+export default function UserForm() {
+  const { Document } = useDocument();
 
-  render(){
-    const data = this.props.Document || {};
-    return super.render(null,
-      {
-        "user_roles": () => {
-          return <RolePermissionManager manager="user" user={data.name} />
-        }
-      }
-    )
-  }
+  return (
+    <FormLayout
+      slots={{
+        user_roles: () => <RolePermissionManager manager="user" user={Document.name} />,
+      }}
+    />
+  );
 }

@@ -23,6 +23,7 @@ export default class AppManagerController extends SystemController {
 
   async actionView() {
     this.client = "view";
+    this.entry = "list"; // a grid of app cards, not a document view
     const appsList = [];
     const apps = await loopar.getList('App', { fields: ["*"] });
     const dir = await fs.promises.opendir(loopar.makePath(loopar.pathRoot, "apps"));

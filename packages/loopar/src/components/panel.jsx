@@ -1,6 +1,6 @@
 import { cn } from "@cn/lib/utils";
 import {Droppable} from "@droppable";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 const DEFAULTS = {
   variant: "glass",
   rounded: "xl",

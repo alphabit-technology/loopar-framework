@@ -1,6 +1,6 @@
 import Preassembled from "@preassembled";
 import { cn } from "@cn/lib/utils";
-import {useDesigner} from "@context/@/designer-context";
+import {useDesigner} from "@context/designer-context";
 
 const defaultElements = [
   {

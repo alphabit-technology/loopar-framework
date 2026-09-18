@@ -4,7 +4,7 @@ import { useLocation } from 'react-router';
 import { useCookies } from "@services/cookie";
 import { usePersist } from "@services/persist-state";
 import { AppSourceLoader } from "@loopar/loader";
-import {useAuth} from "@context/AuthContext"
+import {useAuth} from "@context/auth-context"
 import Emitter from "@services/emitter/emitter";
 import { LoopSocket } from "@services/realtime/LoopSocket";
 

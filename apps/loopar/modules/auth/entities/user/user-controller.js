@@ -9,7 +9,7 @@ export default class UserController extends BaseController {
   }
 
   async actionUpdate() {
-    this.context ??= 'form';
+    this.entry ??= 'form';
     const document = await loopar.getDocument("User", this.name, this.hasData() ? this.data : null);
 
     if (!this.hasData()) {

@@ -1,6 +1,6 @@
 import BaseCarousel from "./carousel/base-carousel.jsx";
 import Preassembled from "@preassembled";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 export default function Carousel(props){
   const { updateElements } = useDesigner();

@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from "@cn/components/ui/avatar";
 import { Badge } from "@cn/components/ui/badge";
 import { useTable } from "./TableContext"
+import { useViewOptions } from "@loopar/document";
 import { TableSearch } from "./TableSearch";
 import { EmptyTable } from "./EmptyTable";
 import { DropdownListGridActions } from "./DropdownListGridActions";
@@ -32,7 +33,7 @@ export function GridView(props) {
     deleteRow,
   } = useTable();
 
-  const {hasSearchForm, hasSelectAll} = docRef;
+  const { hasSearchForm, hasSelectAll, gridTemplate } = useViewOptions();
 
   const rows = props.rows || useTable().rows || [];
 
@@ -55,8 +56,8 @@ export function GridView(props) {
           {rows.length ? rows.map((row) => {
             const action = defaultAction(row);
             const color = loopar.bgColor(row.name);
-            return docRef.gridTemplate ? (
-              docRef.gridTemplate(row, action)
+            return gridTemplate ? (
+              gridTemplate(row, action)
             ) : (
               <div key={row.name}>
                 <Card className="w-full min-w-[300px]">

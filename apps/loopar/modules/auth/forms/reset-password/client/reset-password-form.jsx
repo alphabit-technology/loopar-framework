@@ -1,6 +1,6 @@
 'use strict';
 
-import AuthContext from '@context/auth-context';
+import { BareLayout } from '@loopar/form';
 import { loopar } from 'loopar';
 import { useEffect, useState } from "react";
 import { Clock, XCircle, ArrowRight, ArrowLeft } from "lucide-react";
@@ -83,27 +83,18 @@ const ResetPassword = ({ children }) => {
   return children;
 };
 
-export default class ResetPasswordForm extends AuthContext {
-  constructor(props) {
-    super(props);
-  }
-
-  get Document(){
+/**
+ * The reset token travels in the URL; expose it as form data so the hidden
+ * `token` field is submitted with the new password.
+ */
+export const config = {
+  mapDocument: (Document) => {
     const token = new URLSearchParams(global?.location?.search).get("token");
-    return {
-      ...super.Document,
-      data: {
-        ...super.Document?.data,
-        token
-      }
-    }
-  }
+    return { ...Document, data: { ...Document?.data, token } };
+  },
+};
 
-  render() {
-    return (
-      <ResetPassword>
-        {super.render()}
-      </ResetPassword>
-    );
-  }
+export default function ResetPasswordForm() {
+
+  return <ResetPassword><BareLayout /></ResetPassword>;
 }

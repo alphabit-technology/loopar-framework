@@ -4,6 +4,7 @@ import { loopar, fileManage, BaseController } from "loopar";
 
 export default class SystemController extends BaseController {
   client = "form";
+  entry = "installer";
   static publicActions = ['connect', 'install', 'update', 'reinstall'];
 
   constructor(props) {

@@ -1,6 +1,6 @@
 import {DesignElement} from "./design-element";
 import { ELEMENT_GROUPS, paletteDefinition } from "@global/element-definition";
-import { useDocument } from "@context/@/document-context";
+import { useDocument } from "@loopar/document";
 import { Input } from "@cn/components/ui/input";
 import { ChevronDown } from "lucide-react";
 import loopar from "loopar";

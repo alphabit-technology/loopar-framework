@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
 import BaseInput from "@base-input";
 import { Designer } from "./designer/base-designer";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 
 function DesignerField({ field, node, data, designerMode }) {
   // Memoize so metaComponents keeps a stable reference; parsing on every render

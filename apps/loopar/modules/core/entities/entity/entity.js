@@ -552,10 +552,10 @@ export default class Entity extends BaseDocument {
     });
     /*Entity Controller*/
 
-    // Client views are NOT generated anymore: the loader falls back to the
-    // base `<kind>-context` when no `client/<entity>-<kind>.jsx` exists
-    // (see packages/loopar/src/loader.jsx). An app adds that file by hand
-    // only when the view needs custom logic.
+    // Client views are NOT generated anymore: the document entry renders its
+    // default when no `client/<entity>-<kind>.jsx` exists (see
+    // packages/loopar/src/loader.jsx). An app adds that file by hand only
+    // when the view needs custom logic.
   }
 
   async makeJSON() {

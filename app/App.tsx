@@ -5,7 +5,7 @@ import {PersistStateProvider} from '@services/persist-state';
 import { WorkspaceProvider } from "@workspace/workspace-provider";
 import { useNavigate } from 'react-router';
 import { RealtimeProvider } from "@services/realtime/RealtimeContext";
-import { AuthProvider} from "@context/AuthContext"
+import { AuthProvider} from "@context/auth-context"
 import { RouterBridge } from "@@tools/router/router-bridge";
 
 type ViewType = "module" | "app" | "page" | "list" | "view" | "form";

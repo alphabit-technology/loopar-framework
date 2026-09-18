@@ -1,6 +1,6 @@
 'use strict';
 
-import ListContext from '@context/list-context'
+import { ListLayout } from '@loopar/list';
 import loopar from "loopar";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from '@card';
@@ -306,212 +306,200 @@ function AppCard({app, action}) {
   )
 }
 
-export default class AppManagerView extends ListContext {
-  onlyGrid = true;
-  hasSearchForm = false;
-  hasSelectAll = false;
-  hasSelectRow = false;
+function cloneApp() {
+  loopar.prompt({
+    title: "Get App",
+    label: "Enter the Github URL of the app you want to install",
+    placeholder: "Github URL",
+    ok: (gitRepo) => {
+      loopar.call('App Manager', 'clone', { body: { git_repo: gitRepo } });
+    },
+    validate: (gitRepo) => {
+      if (!gitRepo || gitRepo.length === 0) return loopar.throw("Please enter a valid Github URL");
+      return true;
+    },
+  });
+}
 
-  constructor(props) {
-    super(props);
+function sendAppAction(appName, action, optsOrSlide = false) {
+  const opts = typeof optsOrSlide === 'object' && optsOrSlide !== null
+    ? optsOrSlide
+    : { slide: optsOrSlide };
+  const slide = !!opts.slide;
+  const wasInstalled = !!opts.wasInstalled;
+  const isFramework = appName === 'loopar';
+
+  const GIT_VERBS = ['pull', 'push', 'commit', 'discard', 'publish'];
+  const dispatch = (verb, body, ctx = {}) => {
+    const result = loopar.call("App Manager", verb, {
+      body,
+      query: { app_name: appName },
+    });
+    if (!GIT_VERBS.includes(verb)) return;
+    if (!result || typeof result.then !== 'function') return;
+
+    result.then((response) => {
+      const payload = (response && typeof response === 'object' && 'data' in response)
+        ? response.data
+        : response;
+      if (payload && payload.success === false) return;
+
+      setTimeout(() => loopar.refresh(), 600);
+    }).catch(() => {
+
+    });
+  };
+
+  if (action === 'commit') {
+    return loopar.call('App Manager', 'diff', {
+      body: { app_name: appName },
+      query: { app_name: appName },
+    }).then((res) => {
+      const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
+      if (payload && payload.success === false) {
+        return loopar.confirm(
+          `Couldn't read git status: ${payload.message || 'unknown error'}`,
+          () => {}
+        );
+      }
+      const diff = payload || {};
+      const files = Array.isArray(diff.files) ? diff.files : [];
+
+      if (files.length === 0) {
+        return loopar.confirm(
+          `Nothing to commit in ${isFramework ? 'monorepo' : appName}. Working tree is already clean.`,
+          () => {}
+        );
+      }
+
+      const MAX_ROWS = 30;
+      const head = files.slice(0, MAX_ROWS).map((f) => {
+        const status = `<span class='inline-block w-6 font-mono text-xs text-zinc-400'>${f.status || '?'}</span>`;
+        const stats = (f.insertions || f.deletions)
+          ? ` <span class='text-xs'><span class='text-green-500'>+${f.insertions}</span> <span class='text-red-500'>-${f.deletions}</span></span>`
+          : '';
+        return `<div class='font-mono text-xs leading-relaxed'>${status}${f.path}${stats}</div>`;
+      }).join('');
+      const more = files.length > MAX_ROWS
+        ? `<div class='mt-1 text-xs italic text-zinc-500'>…and ${files.length - MAX_ROWS} more</div>`
+        : '';
+
+      const branchLine = diff.branch
+        ? `<div class='mb-2 text-xs text-zinc-500'>on branch <strong>${diff.branch}</strong></div>`
+        : '';
+      const lastLine = (diff.recent_commits && diff.recent_commits[0])
+        ? `<div class='mt-2 border-t border-zinc-700 pt-2 text-xs text-zinc-500'>Last commit: <code>${diff.recent_commits[0].sha}</code> ${diff.recent_commits[0].subject || ''}</div>`
+        : '';
+
+      const summary = `
+        ${branchLine}
+        <strong>${files.length} file${files.length === 1 ? '' : 's'} to commit:</strong>
+        <div class='mt-2 max-h-64 overflow-y-auto rounded border border-zinc-800 bg-black/30 p-2'>${head}${more}</div>
+        ${lastLine}
+      `;
+
+      loopar.dialog({
+        type: "confirm",
+        title: `Commit ${isFramework ? 'framework' : appName}`,
+        content: summary,
+        size: "lg",
+      },  () => {
+        loopar.prompt({
+          title: `Commit ${isFramework ? 'framework' : appName}`,
+          label: 'Commit message',
+          placeholder: 'Describe your changes',
+          initialValue: diff.suggested_message || '',
+          ok: (message) => {
+            dispatch('commit', { app_name: appName, message });
+          },
+          validate: (message) => {
+            if (!message || message.trim().length === 0) {
+              return loopar.throw('Commit message is required');
+            }
+            return true;
+          },
+        });
+      });
+    });
   }
 
-  clone() {
-    loopar.prompt({
-      title: "Get App",
-      label: "Enter the Github URL of the app you want to install",
-      placeholder: "Github URL",
-      ok: (gitRepo) => {
-        loopar.call('App Manager', 'clone', { body: { git_repo: gitRepo } });
+  if (action === 'publish') {
+    return loopar.prompt({
+      title: `Publish ${appName} to remote`,
+      label: 'Remote repository URL',
+      placeholder: 'https://github.com/user/repo.git',
+      ok: (remote_url) => {
+        dispatch('publish', { app_name: appName, remote_url });
       },
-      validate: (gitRepo) => {
-        if (!gitRepo || gitRepo.length === 0) return loopar.throw("Please enter a valid Github URL");
+      validate: (remote_url) => {
+        if (!remote_url || remote_url.trim().length === 0) {
+          return loopar.throw('Remote URL is required');
+        }
         return true;
       },
     });
   }
 
-  componentDidMount() {
-    super.componentDidMount();
-    this.setCustomActions();
-  }
+  const confirmMessages = {
+    uninstall: `<br/><br/><span class='fa fa-circle text-red pr-2'></span> <strong class='text-red'>All data and Documents related to ${appName} will be deleted.</strong>`,
+    pull: isFramework
+      ? `<span class='text-amber-500'>This pulls the whole framework. After completion the tenant must restart (nodemon will reload in dev) to apply changes. Local uncommitted changes anywhere in the monorepo will block this operation.</span>`
+      : `<<span class='text-amber-500'>Local uncommitted changes in this app will block this operation. Commit, push, or <code>git reset --hard</code> first.</span>`,
+    push: `<span class='text-amber-500'>Working tree must be clean and up-to-date with remote.</span>`,
+    discard: `<strong class='text-red-500'>This is destructive and cannot be undone.</strong> All uncommitted changes${isFramework ? ' anywhere in the monorepo' : ` in apps/${appName}`} will be lost, and untracked files will be removed.`,
+  };
 
-  setCustomActions() {
-    super.setCustomActions();
+  const verbs = {
+    install: 'install',
+    reinstall: 'reinstall',
+    uninstall: 'uninstall',
+    pull: 'pull from remote for',
+    push: 'push to remote from',
+    discard: 'DISCARD all local changes for',
+  };
 
-    this.setCustomAction('addApp', <Link
+  const verb = verbs[action] || action;
+  const trailing = confirmMessages[action] || '';
+
+  loopar.confirm({
+    title: `${titleize(action)} ${appName}?`,
+    content: trailing,
+    slide: slide,
+    slideText: `Slide to ${action} ${appName}`,
+    ok: () => {
+      dispatch(action, { app_name: appName }, { wasInstalled });
+    },
+  });
+}
+
+
+const ACTIONS = {
+  addApp: (
+    <Link
       variant="secondary"
       className="bg-success text-white hover:bg-success/80"
       to="/desk/App/create"
     >
       <PlusIcon className="mr-2"/> Add App
-    </Link>);
-
-     this.setCustomAction('getApp', <Button
+    </Link>
+  ),
+  getApp: (
+    <Button
       variant="primeblue"
       onClick={(e) => {
         e.preventDefault();
-        this.clone();
+        cloneApp();
       }}
     >
       <DownloadIcon className="mr-2"/> Get App
-    </Button>);
-  }
+    </Button>
+  ),
+};
 
-  gridTemplate(app){
-    return (
-      <AppCard app={app} action={this.sendAppAction} />
-    )
-  }
+const gridTemplate = (app) => <AppCard app={app} action={sendAppAction} />;
 
-  sendAppAction(appName, action, optsOrSlide = false) {
-    const opts = typeof optsOrSlide === 'object' && optsOrSlide !== null
-      ? optsOrSlide
-      : { slide: optsOrSlide };
-    const slide = !!opts.slide;
-    const wasInstalled = !!opts.wasInstalled;
-    const isFramework = appName === 'loopar';
+export const config = { onlyGrid: true, hasSearchForm: false, hasSelectAll: false, hasSelectRow: false };
 
-    const GIT_VERBS = ['pull', 'push', 'commit', 'discard', 'publish'];
-    const dispatch = (verb, body, ctx = {}) => {
-      const result = loopar.call("App Manager", verb, {
-        body,
-        query: { app_name: appName },
-      });
-      if (!GIT_VERBS.includes(verb)) return;
-      if (!result || typeof result.then !== 'function') return;
-
-      result.then((response) => {
-        const payload = (response && typeof response === 'object' && 'data' in response)
-          ? response.data
-          : response;
-        if (payload && payload.success === false) return;
-
-        setTimeout(() => loopar.refresh(), 600);
-      }).catch(() => {
-
-      });
-    };
-
-    if (action === 'commit') {
-      return loopar.call('App Manager', 'diff', {
-        body: { app_name: appName },
-        query: { app_name: appName },
-      }).then((res) => {
-        const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
-        if (payload && payload.success === false) {
-          return loopar.confirm(
-            `Couldn't read git status: ${payload.message || 'unknown error'}`,
-            () => {}
-          );
-        }
-        const diff = payload || {};
-        const files = Array.isArray(diff.files) ? diff.files : [];
-
-        if (files.length === 0) {
-          return loopar.confirm(
-            `Nothing to commit in ${isFramework ? 'monorepo' : appName}. Working tree is already clean.`,
-            () => {}
-          );
-        }
-
-        const MAX_ROWS = 30;
-        const head = files.slice(0, MAX_ROWS).map((f) => {
-          const status = `<span class='inline-block w-6 font-mono text-xs text-zinc-400'>${f.status || '?'}</span>`;
-          const stats = (f.insertions || f.deletions)
-            ? ` <span class='text-xs'><span class='text-green-500'>+${f.insertions}</span> <span class='text-red-500'>-${f.deletions}</span></span>`
-            : '';
-          return `<div class='font-mono text-xs leading-relaxed'>${status}${f.path}${stats}</div>`;
-        }).join('');
-        const more = files.length > MAX_ROWS
-          ? `<div class='mt-1 text-xs italic text-zinc-500'>…and ${files.length - MAX_ROWS} more</div>`
-          : '';
-
-        const branchLine = diff.branch
-          ? `<div class='mb-2 text-xs text-zinc-500'>on branch <strong>${diff.branch}</strong></div>`
-          : '';
-        const lastLine = (diff.recent_commits && diff.recent_commits[0])
-          ? `<div class='mt-2 border-t border-zinc-700 pt-2 text-xs text-zinc-500'>Last commit: <code>${diff.recent_commits[0].sha}</code> ${diff.recent_commits[0].subject || ''}</div>`
-          : '';
-
-        const summary = `
-          ${branchLine}
-          <strong>${files.length} file${files.length === 1 ? '' : 's'} to commit:</strong>
-          <div class='mt-2 max-h-64 overflow-y-auto rounded border border-zinc-800 bg-black/30 p-2'>${head}${more}</div>
-          ${lastLine}
-        `;
-
-        loopar.dialog({
-          type: "confirm",
-          title: `Commit ${isFramework ? 'framework' : appName}`,
-          content: summary,
-          size: "lg",
-        },  () => {
-          loopar.prompt({
-            title: `Commit ${isFramework ? 'framework' : appName}`,
-            label: 'Commit message',
-            placeholder: 'Describe your changes',
-            initialValue: diff.suggested_message || '',
-            ok: (message) => {
-              dispatch('commit', { app_name: appName, message });
-            },
-            validate: (message) => {
-              if (!message || message.trim().length === 0) {
-                return loopar.throw('Commit message is required');
-              }
-              return true;
-            },
-          });
-        });
-      });
-    }
-
-    if (action === 'publish') {
-      return loopar.prompt({
-        title: `Publish ${appName} to remote`,
-        label: 'Remote repository URL',
-        placeholder: 'https://github.com/user/repo.git',
-        ok: (remote_url) => {
-          dispatch('publish', { app_name: appName, remote_url });
-        },
-        validate: (remote_url) => {
-          if (!remote_url || remote_url.trim().length === 0) {
-            return loopar.throw('Remote URL is required');
-          }
-          return true;
-        },
-      });
-    }
-
-    const confirmMessages = {
-      uninstall: `<br/><br/><span class='fa fa-circle text-red pr-2'></span> <strong class='text-red'>All data and Documents related to ${appName} will be deleted.</strong>`,
-      pull: isFramework
-        ? `<span class='text-amber-500'>This pulls the whole framework. After completion the tenant must restart (nodemon will reload in dev) to apply changes. Local uncommitted changes anywhere in the monorepo will block this operation.</span>`
-        : `<<span class='text-amber-500'>Local uncommitted changes in this app will block this operation. Commit, push, or <code>git reset --hard</code> first.</span>`,
-      push: `<span class='text-amber-500'>Working tree must be clean and up-to-date with remote.</span>`,
-      discard: `<strong class='text-red-500'>This is destructive and cannot be undone.</strong> All uncommitted changes${isFramework ? ' anywhere in the monorepo' : ` in apps/${appName}`} will be lost, and untracked files will be removed.`,
-    };
-
-    const verbs = {
-      install: 'install',
-      reinstall: 'reinstall',
-      uninstall: 'uninstall',
-      pull: 'pull from remote for',
-      push: 'push to remote from',
-      discard: 'DISCARD all local changes for',
-    };
-
-    const verb = verbs[action] || action;
-    const trailing = confirmMessages[action] || '';
-
-    loopar.confirm({
-      title: `${titleize(action)} ${appName}?`,
-      content: trailing,
-      slide: slide,
-      slideText: `Slide to ${action} ${appName}`,
-      ok: () => {
-        dispatch(action, { app_name: appName }, { wasInstalled });
-      },
-    });
-  }
+export default function AppManagerView() {
+  return <ListLayout actions={ACTIONS} gridTemplate={gridTemplate} />;
 }

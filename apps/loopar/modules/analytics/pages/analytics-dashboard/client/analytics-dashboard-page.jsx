@@ -1,6 +1,7 @@
 'use strict';
 
-import PageContext from '@context/page-context';
+import { useDocument } from '@loopar/document';
+import { PageLayout } from '@loopar/page';
 import { loopar } from "loopar";
 import {
   LineChart, Line,
@@ -370,13 +371,11 @@ function AnalyticsDashboard({data}) {
   );
 }
 
-export default class AnalyticsDashboardPage extends PageContext {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    const {Document} = this.props;
-    return super.render(<AnalyticsDashboard data={Document.data}/>);
-  }
+export default function AnalyticsDashboardPage() {
+  const { Document } = useDocument();
+  return (
+    <PageLayout>
+      <AnalyticsDashboard data={Document?.data} />
+    </PageLayout>
+  );
 }

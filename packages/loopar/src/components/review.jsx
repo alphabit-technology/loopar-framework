@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { loopar, useRealtime } from "loopar";
-import {useDocument} from "@context/@/document-context";
-import { useDesigner} from "@context/@/designer-context";
+import {useDocument} from "@loopar/document";
+import { useDesigner} from "@context/designer-context";
 import { useCaptcha, CaptchaSlot } from "./captcha-widget";
 
 function getInitials(name = "") {

@@ -1,7 +1,8 @@
 'use strict';
 
-import React, {useImperativeHandle, useEffect, useState} from 'react';
-import AuthContext from '@context/auth-context';
+import { useEffect, useRef, useState } from 'react';
+import { useDocument, useHandlers } from '@loopar/document';
+import { useForm, BareLayout } from '@loopar/form';
 import {useNavigate} from 'react-router';
 import loopar from 'loopar';
 
@@ -50,8 +51,8 @@ function OAuthButtons({ inModal, onClose }) {
   const [providers, setProviders] = useState([]);
   const [connecting, setConnecting] = useState(null); // provider key or null
   const [error, setError] = useState(null);
-  const popupRef = React.useRef(null);
-  const watchdogRef = React.useRef(null);
+  const popupRef = useRef(null);
+  const watchdogRef = useRef(null);
 
   useEffect(() => {
     let alive = true;
@@ -176,102 +177,61 @@ function OAuthButtons({ inModal, onClose }) {
   );
 }
 
-function Login(props){
-  const {children, ref} = props;
+/** Only the credentials travel to `Auth/login` (no other form state). */
+export const config = {
+  overrides: {
+    getFormValues() {
+      return {
+        user_name: this.getValue('user_name'),
+        password: this.getValue('password'),
+      };
+    },
+  },
+};
+
+export default function LoginForm() {
+  const { inModal, onClose } = useDocument();
+  const { send, setError } = useForm();
   const navigate = useNavigate();
-
-  const afterLogin = async () => {
-    if (props.inModal) {
-      // In-place login: close the modal and flip the session reactively
-      // (chrome + comment form switch to logged-in) WITHOUT reloading the
-      // document, so anything the user already typed (e.g. a draft comment)
-      // is preserved.
-      props.onClose?.();
-      loopar.emit('auth:changed');
-      return;
-    }
-    // Full-page login: the server returns a hard redirect to the right place
-    // (?redirect= or user-type landing); http handles the navigation.
-  };
-
-  useImperativeHandle(ref, () => ({
-    afterLogin: afterLogin
-  }));
 
   useEffect(() => {
     // Normalize to /auth/login WITHOUT stripping the ?redirect= return URL.
-    if (props.inModal) return;
+    if (inModal) return;
     if (window.location.pathname !== '/auth/login') {
-      navigate('/auth/login' + window.location.search, {replace: true});
+      navigate('/auth/login' + window.location.search, { replace: true });
     }
   }, []);
 
-  return children
-}
-
-export default class LoginForm extends AuthContext {
-  controller = "Auth";
-
-  constructor(props) {
-    super(props);
-    this.afterLogin = React.createRef();
-  }
-
-  async login() {
-    await this.send({
+  useHandlers({
+    /** "Login" button (`data.action: "login"`). */
+    login: () => send({
       action: 'login',
-      query: this.props.inModal ? { inModal: 1 } : {},
+      query: inModal ? { inModal: 1 } : {},
       error: () => {
         setTimeout(() => {
-          this.setError("user_name", { message: "Invalid user name or password" });
-          this.setError("password", { message: "Invalid user name or password" });
+          setError("user_name", { message: "Invalid user name or password" });
+          setError("password", { message: "Invalid user name or password" });
         }, 10);
       },
       success: () => {
-        this.afterLogin.current.afterLogin();
-      }
-    });
-  }
-
-  getFormValues() {
-    return {
-      user_name: this.user_name,
-      password: this.password,
-    }
-  }
-
-  render() {
-    return (
-      <Login ref={this.afterLogin} {...this.props}>
-        {super.render()}
-        <OAuthButtons inModal={this.props.inModal} onClose={this.props.onClose} />
-      </Login>
-    )
-  }
-
-  /* makeEvents() {
-    super.makeEvents();
-
-    this.formFields.user_name.on('keyUp', e => {
-      if (e.keyCode == 13) {
-        if (e.target.value.length == 0) {
-          this.formFields.password.focus();
-        } else if (this.formFields.password.val().length == 0) {
-          this.formFields.password.focus();
-        } else {
-          this.login();
+        if (inModal) {
+          // In-place login: close the modal and flip the session reactively
+          // (chrome + comment form switch to logged-in) WITHOUT reloading the
+          // document, so anything the user already typed (e.g. a draft
+          // comment) is preserved.
+          onClose?.();
+          loopar.emit('auth:changed');
         }
-      }
-    });
+        // Full-page login: the server returns a hard redirect to the right
+        // place (?redirect= or user-type landing); http handles the navigation.
+      },
+    }),
+  });
 
-    this.formFields.password.on('keyUp', e => {
-      if (e.keyCode == 13) {
-        if (e.target.value.length == 0 || this.formFields.user_name.val().length == 0) {
-          this.formFields.user_name.focus();
-        } else {
-          this.login();
-        }
-      }
-    });
-  } */
+  return (
+    <>
+      <BareLayout />
+      <OAuthButtons inModal={inModal} onClose={onClose} />
+    </>
+  );
 }

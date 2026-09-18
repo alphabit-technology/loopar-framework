@@ -1,8 +1,8 @@
 
 'use strict';
 
-import ViewContext from '@context/view-context';
-import DeskGUI from "@context/base/desk-gui";
+import DeskUI from "@loopar/document/chrome/desk-ui";
+import { useDocument } from "@loopar/document";
 
 import { fileIcons } from "@@file/defaults";
 
@@ -63,38 +63,29 @@ export function FallbackFile({ src, ...props }) {
   )
 }
 
-export default class FileManagerView extends ViewContext {
-  has_header = false;
-  constructor(props) {
-    super(props);
-  }
+/** Custom body (no structure fields): the asset itself, full size. */
+export default function FileManagerView() {
+  const { ctrl, Document } = useDocument();
+  const file = JSON.parse(Document.data.file_ref)[0];
 
-  render() {
-    const {data} = this.Document;
-    const file = JSON.parse(data.file_ref)[0];
+  const type = fileManager.getFileType(file);
+  const icon = fileIcons[type] || fileIcons["default"];
+  const Icon = icon.icon;
 
-    const type = fileManager.getFileType(file);
-
-    const icon = fileIcons[type] || fileIcons["default"];
-    const Icon = icon.icon;
-    
-    return (
-      <DeskGUI
-        docRef={this}
-      >
-        <div className='flex flex-1 flex-col items-center justify-between w-full h-full p-3'>
-          <div className="container">
-            <FallbackFile
-              // Full-size first on the view page. The 200x200 preview
-              // (`previewSrc`) is meant for thumbnails in lists/cards;
-              // here the user is looking at the asset directly.
-              src={file.src || file.previewSrc}
-              icon={Icon}
-              iconColor={file.color}
-            />
-          </div>
+  return (
+    <DeskUI docRef={ctrl}>
+      <div className='flex flex-1 flex-col items-center justify-between w-full h-full p-3'>
+        <div className="container">
+          <FallbackFile
+            // Full-size first on the view page. The 200x200 preview
+            // (`previewSrc`) is meant for thumbnails in lists/cards;
+            // here the user is looking at the asset directly.
+            src={file.src || file.previewSrc}
+            icon={Icon}
+            iconColor={file.color}
+          />
         </div>
-      </DeskGUI>
-    )
-  }
+      </div>
+    </DeskUI>
+  );
 }

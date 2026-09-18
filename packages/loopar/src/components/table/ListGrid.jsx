@@ -1,6 +1,7 @@
 import loopar from "loopar";
 import {Link} from "@link";
 import { useTable } from "./TableContext.jsx"
+import { useViewOptions } from "@loopar/document";
 import BaseTable from "./BaseTable.jsx"
 import {useCallback, useMemo} from "react";
 import {Trash2Icon} from "lucide-react";
@@ -17,6 +18,7 @@ import { TableSearch } from "./TableSearch";
 
 export function ListGrid(props) {
   const { docRef } = props;
+  const { columns } = useViewOptions();
   const {baseColumns, Document, selectorCol, deleteRow, search} = useTable();
 
   const getDocumentTitle = (row) => {
@@ -55,8 +57,8 @@ export function ListGrid(props) {
         return col;
       });
 
-    if(docRef.customColumns){
-      const customCols = docRef.customColumns(baseCols);
+    if(columns){
+      const customCols = columns(baseCols);
       return [
         selectorCol({deleteOnServer: true}),
         ...customCols
@@ -134,7 +136,7 @@ export function ListGrid(props) {
         },
       }
     ];
-  }, [mappedColumns]);
+  }, [mappedColumns, columns]);
 
   return (
     <>

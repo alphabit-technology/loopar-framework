@@ -55,6 +55,14 @@ export default defineConfig(({ command }) => {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.d.ts'],
       dedupe: ['react', 'react-dom'],
       alias: {
+        // Framework namespaces (the document system) FIRST: Vite matches
+        // aliases in key order, and `Alias(src)` below also emits a generic
+        // '@loopar' key (from src/loopar.jsx) that would swallow these.
+        '@loopar/document': resLoopar('src/document'),
+        '@loopar/form': resLoopar('src/document/form'),
+        '@loopar/list': resLoopar('src/document/list'),
+        '@loopar/page': resLoopar('src/document/page'),
+
         ...Alias(resLoopar('src/components')),
         ...Alias(resLoopar('src'), true),
         '@cn': resolve('node_modules/cn/src'),

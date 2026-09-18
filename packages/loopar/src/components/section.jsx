@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { Droppable } from "@droppable";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { usePersist } from "@services/persist-state";
-import { useDesigner } from "@context/@/designer-context";
-import { useDocument } from "@context/@/document-context";
+import { useDesigner } from "@context/designer-context";
+import { useDocument } from "@loopar/document";
 import { cn } from "@cn/lib/utils";
 
 const DEFAULTS = {

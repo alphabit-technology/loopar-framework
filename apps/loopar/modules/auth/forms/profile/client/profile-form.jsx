@@ -1,7 +1,8 @@
 
 'use strict';
 
-import FormContext from "@context/form-context"
+import { useDocument } from "@loopar/document";
+import { FormLayout } from "@loopar/form";
 import { loopar } from "loopar";
 import fileManager from "@global/file-manager.js";
 
@@ -34,20 +35,11 @@ const UserInfo = ({user}) => {
   )
 }
 
-export default class ProfileForm extends FormContext {
-  canUpdate = false;
-  hasHeader = false;
-  constructor(props){
-    super(props);
-  }
+export const config = { canUpdate: false, hasHeader: false };
 
-  render(){
-    const {Document} = this.props;
-    
-    return super.render(null, {
-      user_info: () => (
-        <UserInfo user={Document.data}/>
-      )
-    })
-  }
+export default function ProfileForm() {
+  const { Document } = useDocument();
+  const user = Document?.data || {};
+
+  return <FormLayout slots={{ user_info: () => <UserInfo user={user} /> }} />;
 }

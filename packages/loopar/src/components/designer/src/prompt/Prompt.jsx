@@ -5,7 +5,7 @@ import { Scaner } from "./src/Scaner.jsx";
 import loopar from "loopar";
 import { GeminiSend, GeminiStatus, GeminiContextProvider } from "../AI/local/Gemini.jsx";
 import { AIPrompt, sanitizeAIStructure } from "loopar";
-import {useDocument} from "@context/@/document-context";
+import {useDocument} from "@loopar/document";
 
 export const Prompt = ({
   onSend,

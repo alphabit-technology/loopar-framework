@@ -12,8 +12,12 @@ const getTypes = () => Object.values(loopar.getTypes()).reduce((acc, type) => {
 }, []);
 
 export default class ModuleController extends BaseController {
+  /** The module "view" is a list of its documents (cards). */
+  
+
   async privateActionTest(){}
   async actionView() {
+    this.entry = "list";
     const data = this.data || {};
     const q = data.q || data;
 

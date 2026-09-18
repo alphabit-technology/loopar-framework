@@ -1,24 +1,20 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
+import { useFieldEvent } from '@loopar/document';
+import { useForm, FormLayout } from '@loopar/form';
 
-export default class FileManagerForm extends FormContext {
-  readOnly = true;
-  constructor(props) {
-    super(props);
-  }
+export default function FileManagerForm() {
+  const { setValue } = useForm();
 
-  componentDidMount() {
-    super.componentDidMount();
+  // Derive name/extension/size/type from the picked file.
+  useFieldEvent("file_ref", "change", (e) => {
+    const data = e.target?.value ? e.target?.value[0] || {} : {};
 
-    this.on("file_ref", "change", (e) => {
-      const data = e.target?.value ? e.target?.value[0] || {} : {};
+    setValue("name", data.name || "");
+    setValue("extention", (data.name || "").split(".").pop());
+    setValue("size", data.size || 0);
+    setValue("type", data.type || "");
+  });
 
-      this.name = data.name || "";
-      this.extention = (data.name || "").split(".").pop();
-      this.size = data.size || 0;
-      this.type = data.type || "";
-    });
-  }
+  return <FormLayout />;
 }

@@ -37,7 +37,7 @@ export default class BuilderFactory extends Entity {
     });
     /*Entity Controller*/
 
-    // Client views are not generated: the loader falls back to the base
-    // `<kind>-context` (packages/loopar/src/loader.jsx).
+    // Client views are not generated: the document entry renders its default
+    // (packages/loopar/src/loader.jsx).
   }
 }

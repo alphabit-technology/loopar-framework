@@ -2,7 +2,7 @@
 
 import elementManage from "@@tools/element-manage";
 import { Tabs as BaseTabs, TabsContent, TabsList, TabsTrigger } from "@cn/components/ui/tabs";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { useEffect, useMemo, useId } from "react";
 import {usePersist} from "@services/persist-state";
 import { Droppable } from "@droppable";

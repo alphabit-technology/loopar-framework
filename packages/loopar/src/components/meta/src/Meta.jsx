@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, memo } from "react";
 import { elementsDict as baseElementsDict } from "@global/element-definition";
 import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { cn } from "@cn/lib/utils";
-import { useDocument } from "@context/@/document-context";
+import { useDocument } from "@loopar/document";
+import { useFieldMeta } from "@loopar/document";
+import { useFormValues } from "@form-provider";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { extractFieldNames, evaluateCondition, useBuildMetaProps } from "./meta";
 import { MetaRender } from "./MetaRender";
@@ -26,9 +28,13 @@ export const Meta = memo(function Meta(props) {
   );
 
   const designer = useDesigner();
-  const { docRef, formValues } = useDocument();
+  const { docRef, Document } = useDocument();
+  // Live values for `display_on`: the form when inside one, the document data otherwise.
+  const formValues = useFormValues() ?? Document?.data ?? {};
   const isDesigner = designer.designerMode// && designer.designerModeType != "preview";
   const metaProps = useBuildMetaProps({ meta: liveMeta, parent, isDesigner });
+  // Runtime overrides of this field (setFieldDf / on): reactive, per field.
+  const fieldMeta = useFieldMeta(docRef?.fields, metaProps.data?.name);
   
   const [loadComponent, setLoadedComponents] = useState(Object.keys(__META_COMPONENTS__).find(c => c === meta.element));
   const Comp = __META_COMPONENTS__[loadComponent]?.default || __META_COMPONENTS__[loadComponent];
@@ -88,13 +94,13 @@ export const Meta = memo(function Meta(props) {
       data?.class
     );
 
-    if (docRef.__META_DEFS__[data.name]) {
+    if (fieldMeta) {
       const newData = {
         ...data,
-        ...docRef.__META_DEFS__[data.name]?.data || {}
+        ...(fieldMeta.data || {})
       };
 
-      Object.assign(metaProps, docRef.__META_DEFS__[data.name], { data: newData });
+      Object.assign(metaProps, fieldMeta, { data: newData });
     }
 
     if (isDesigner && Comp && data.wrapper !== true) {

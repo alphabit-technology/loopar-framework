@@ -159,20 +159,24 @@ export default class CoreController extends AuthController {
         title: titleize((meta.title || this.name || this.document || "Document").toString()),
         action: this.action,
       },
-      context: this.clientContext(meta),
+      entry: this.clientEntry(meta),
       entryPoint: this.clientImporter(meta),
     });
   }
 
   /**
-   * Client context kind for this request: which base view renders the
-   * Document when the app ships no `client/<entity>-<kind>.jsx` of its own
-   * (`form` | `list` | `view` | `page` | ...). Resolution: an explicit
-   * `this.client` on the controller wins; Page/View entities are always
-   * `view`; otherwise it follows the action.
+   * Client entry for this request: which document entry (`form` | `list` |
+   * `view` | `page` | `report` | `auth` | `installer` | ...) mounts the
+   * Document on the client (see src/document/entry/entries.js). The app's own
+   * view (if any) renders inside it.
+   *
+   * Resolution: `this.entry` (explicit, when the entry differs from the view
+   * file suffix — e.g. a list rendered by a `view` action) → `this.client` →
+   * Page/View entities are `view` → by action.
    */
-  clientContext(Document) {
+  clientEntry(Document) {
     if (!Document) return null;
+    if (this.entry) return this.entry;
     if (this.client) return this.client;
     if (["Page", "View"].includes(Document.Entity?.type)) return "view";
 
@@ -183,17 +187,19 @@ export default class CoreController extends AuthController {
   }
 
   /**
-   * Optional per-entity client module name (`<entity>-<kind>`). The loader
-   * falls back to the base `<kind>-context` when no such file exists, so apps
-   * only ship one when the view needs custom logic.
+   * Optional per-entity view module name (`<entity>-<suffix>`), where the
+   * suffix is `this.client` or the action-derived kind. Apps only ship that
+   * file when the view needs custom logic; otherwise the entry renders its default.
    */
   clientImporter(Document) {
-    const context = this.clientContext(Document);
-    if (!context) return null;
+    if (!Document) return null;
+    const suffix = this.client || (["Page", "View"].includes(Document.Entity?.type) ? "view"
+      : ['create', 'update'].includes(this.action) ? "form"
+      : ['list', 'index'].includes(this.action) ? "list" : "view");
 
     const name = Document.Entity.name;
 
-    return `${loopar.utils.decamelize(name, { separator: '-' })}-${context}`
+    return `${loopar.utils.decamelize(name, { separator: '-' })}-${suffix}`
   }
 
   getKey(route = this.dictUrl) {

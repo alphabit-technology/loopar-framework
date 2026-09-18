@@ -1,51 +1,26 @@
-import Component from "@component";
+import { useEffect } from "react";
 import loopar from "loopar";
-import React from "react";
 
-export default class StripeEmbebedClass extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      open: props.open,
-    };
-  }
-
-  get open() {
-    return this.state.open === true;
-  }
-
-  render() {
-    const data = this.props.data;
-
-    return ([
-      React.createElement("stripe-pricing-table", {
-        "pricing-table-id": data.pricing_table_id,
-        "publishable-key": data.publishable_key,
-      }),
-    ]);
-  }
-
-  componentDidMount() {
-    super.componentDidMount();
-
+/** Stripe pricing table (embedded). Needs `pricing_table_id` and `publishable_key`. */
+export default function StripeEmbebed({ data = {} }) {
+  useEffect(() => {
     loopar.require("https://js.stripe.com/v3/pricing-table");
-  }
+  }, []);
 
-  get metaFields() {
-    return [
-      {
-        group: "custom",
-        elements: {
-          pricing_table_id: { element: INPUT },
-          publishable_key: { element: INPUT },
-        },
-      },
-    ];
-  }
+  return (
+    <stripe-pricing-table
+      pricing-table-id={data.pricing_table_id}
+      publishable-key={data.publishable_key}
+    />
+  );
 }
 
-export const StripeEmbedebComponent = (props) => {
-  return React.createElement(StripeClass, props);
-};
+StripeEmbebed.metaFields = () => [
+  {
+    group: "custom",
+    elements: {
+      pricing_table_id: { element: INPUT },
+      publishable_key: { element: INPUT },
+    },
+  },
+];

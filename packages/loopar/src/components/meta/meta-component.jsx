@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { __META_COMPONENTS__, ComponentsLoader } from "@loopar/components-loader";
-import { useDesigner } from "@context/@/designer-context";
+import { useDesigner } from "@context/designer-context";
 import { DesignElement } from "./src/DesignElement.jsx";
 import { Meta } from "./src/Meta.jsx"
 import { useWorkspace } from "@workspace/workspace-provider";

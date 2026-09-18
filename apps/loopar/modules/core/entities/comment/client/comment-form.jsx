@@ -1,12 +1,5 @@
-
 'use strict';
 
-import FormContext from '@context/form-context';
+export const config = { hasHistory: false };
 
-export default class CommentForm extends FormContext {
-  hasHistory = false;
-
-  constructor(props) {
-    super(props);
-  }
-}
+export { DefaultView as default } from '@loopar/document';

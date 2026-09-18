@@ -1,6 +1,6 @@
 
 import fileManager from "@@file/file-manager";
-import {useDesigner} from "@context/@/designer-context";
+import {useDesigner} from "@context/designer-context";
 import { getNodeKey } from "@global/prune-doc-structure";
 
 export function ComponentDefaults(props) {
