@@ -4,11 +4,11 @@
   "type": "module",
   "exports": "./index.js",
   "dependencies": {
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "13.0.3",
     "knex": "3.3.0",
-    "mysql2": "^3.11.0",
+    "mysql2": "3.24.4",
     "oracledb": "6.10.0",
-    "pg": "8.20.0",
+    "pg": "8.23.0",
     "tedious": "19.2.1"
   }
 }

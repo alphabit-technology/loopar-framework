@@ -7,7 +7,6 @@ import { loopar, getOrCreateTenantInstance, getTenantInstance } from "../loopar.
 import Router from "./router/router.js";
 import path from "pathe";
 import compression from 'compression';
-import serveStatic from 'serve-static';
 import { createServer as createViteServer } from 'vite';
 import tenantContextMiddleware from "./tenant-context.js"
 import { zstdMiddleware } from './zstd-compression.js';
@@ -143,7 +142,7 @@ export class Server extends Router {
 
   async #exposePublicDirectories() {
     if (this.serveProduction) {
-      server.use(serveStatic(path.join(loopar.pathRoot, 'dist/client')));
+      server.use(express.static(path.join(loopar.pathRoot, 'dist/client')));
     }
 
     // Tenant-aware static assets: handlers built from the active tenant's roots
@@ -155,7 +154,7 @@ export class Server extends Router {
 
       let chain = assetChains.get(tenantId);
       if (!chain) {
-        chain = loopar.getAssetRoots("public").map((root) => serveStatic(root));
+        chain = loopar.getAssetRoots("public").map((root) => express.static(root));
         assetChains.set(tenantId, chain);
       }
 

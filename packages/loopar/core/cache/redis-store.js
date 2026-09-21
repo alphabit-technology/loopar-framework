@@ -8,6 +8,7 @@ export class RedisStore {
     this.#ttl = ttl;
     this.#client = new Redis({
       host, port, password,
+      protocol: 2, // RESP2 — see redis-client.js
       lazyConnect: true,
       retryStrategy: (times) => Math.min(times * 200, 5000),
       enableOfflineQueue: false,

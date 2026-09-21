@@ -39,11 +39,11 @@ const Layout = (({ ...props }) => {
             data={{
               "particles_settings": JSON.stringify({
                 "particles.number.value":6,
-                "particles.shape.type":"edge",
+                "particles.shape.type":"square",
                 "particles.opacity.value.max":0.31,
                 "particles.size.value.min":10,
                 "particles.size.value.max":1000,
-                "particles.color.value":"#433271",
+                "particles.paint.color.value":"#433271",
                 "particles.move.enable":true,
                 "particles.move.speed.min":1,
                 "particles.move.speed.max":3,

@@ -101,10 +101,6 @@ export default defineConfig(({ command }) => {
         "react-dom",
         "lucide-react",
       ],
-      exclude: [
-        '@uiw/react-codemirror',
-        '@uiw/codemirror-extensions-basic-setup',
-      ]
     },
     
     ssr: {

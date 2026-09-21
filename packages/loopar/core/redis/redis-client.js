@@ -28,6 +28,10 @@ export function createRedisClient(overrides = {}) {
     host: c.host,
     port: c.port,
     password: c.password || undefined,
+    // ioredis 6 defaults to RESP3, which changes reply shapes (maps, sets,
+    // doubles). Pin RESP2 so socket.io-redis-adapter and rate-limit-redis keep
+    // seeing the v5 wire format; opt in per client via overrides if needed.
+    protocol: 2,
     retryStrategy: (times) => Math.min(times * 200, 5000),
     ...overrides,
   });

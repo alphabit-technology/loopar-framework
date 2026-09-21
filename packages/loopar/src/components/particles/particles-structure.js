@@ -10,15 +10,28 @@ export const structure = {
     },
     density: {
       enable: { type: "checkbox", value: true },
-      value_area: { type: "slide", value: 800, step:10, range: [0, 2000] }
+      width: { type: "slide", value: 1920, range: [0, 4000] },
+      height: { type: "slide", value: 1080, range: [0, 4000] }
     },
-    color: {
-      value: { type: "input", format: "color", value: "#ffffff" }
+    paint: {
+      color: {
+        value: { type: "input", format: "color", value: "#ffffff" }
+      },
+      fill: {
+        enable: { type: "checkbox", value: true },
+        opacity: { type: "slide", value: 1, range: [0, 1] }
+      },
+      stroke: {
+        width: { type: "slide", value: 0, range: [0, 20] },
+        opacity: { type: "slide", value: 1, range: [0, 1] },
+        color: {
+          value: { type: "input", format: "color", value: "#ffffff" }
+        }
+      }
     },
     shape: {
-      type: { type: "select", value: "circle", options: ["circle", "edge", "triangle", "polygon", "star", "image"] },
+      type: { type: "select", value: "circle", options: ["circle", "square", "triangle", "polygon", "star", "image"] },
       close: { type: "checkbox", value: true },
-      fill: { type: "checkbox", value: true },
     },
     opacity: {
       value: {
@@ -44,26 +57,18 @@ export const structure = {
         frequency: { type: "slide", value: 1, range: [0, 10] }
       }
     },
-    repulse: {
+    attract: {
       enable: { type: "checkbox", value: false },
-      distance: { type: "slide", value: 100, range: [0, 1000] },
-      duration: { type: "slide", value: 0.4, range: [0, 2] },
-      factor: { type: "slide", value: 1, range: [0, 10] },
-      speed: { type: "slide", value: 1, range: [0, 10] }
+      distance: { type: "slide", value: 200, range: [0, 1000] },
+      rotate: {
+        x: { type: "slide", value: 600, range: [0, 3000] },
+        y: { type: "slide", value: 1200, range: [0, 3000] }
+      }
     },
     move: {
       enable: { type: "checkbox", value: true },
       random: { type: "checkbox", value: false },
       angle: { type: "slide", value: 90, range: [0, 360] },
-      attract: {
-        enable: { type: "checkbox", value: true },
-        distance: { type: "slide", value: 200, range: [0, 1000] },
-        enable: { type: "checkbox", value: false },
-        rotate: { 
-          x: { type: "slide", value: 600, range: [0, 3000] },
-          y: { type: "slide", value: 1200, range: [0, 3000] }
-        }
-      },
       direction: { type: "select", value: "none", options: ["none", "top", "top-right", "right", "bottom-right", "bottom", "bottom-left", "left", "top-left"] },
       gravity: {
         enable: { type: "checkbox", value: false },

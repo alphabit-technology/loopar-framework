@@ -7,7 +7,7 @@
   "repository": "github:alphabit-technology/loopar-framework",
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.22.0"
   },
   "packageManager": "yarn@4.13.0",
   "workspaces": [
