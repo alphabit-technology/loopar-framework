@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -26,14 +30,67 @@
         "./.loopar/*",
         "./.loopar/service/*",
         "./apps/loopar/modules/core/entities/*"
+      ],
+      "@loopar/document/*": [
+        "./node_modules/loopar/src/document/*"
+      ],
+      "@loopar/form/*": [
+        "./node_modules/loopar/src/document/form/*"
+      ],
+      "@loopar/list/*": [
+        "./node_modules/loopar/src/document/list/*"
+      ],
+      "@loopar/page/*": [
+        "./node_modules/loopar/src/document/page/*"
+      ],
+      "@loopar/*": [
+        "./node_modules/loopar/src/*"
+      ],
+      "loopar": [
+        "./node_modules/loopar/src/loopar.jsx"
+      ],
+      "@cn/*": [
+        "./node_modules/cn/src/*"
+      ],
+      "@app/*": [
+        "./app/*"
+      ],
+      "@global/*": [
+        "./node_modules/loopar/core/global/*"
+      ],
+      "@workspace/*": [
+        "./node_modules/loopar/src/workspace/*"
+      ],
+      "@context/*": [
+        "./node_modules/loopar/src/context/*"
+      ],
+      "@services/*": [
+        "./node_modules/loopar/services/*"
+      ],
+      "/app/*": [
+        "./app/*"
+      ],
+      "@@*": [
+        "./node_modules/loopar/src/*",
+        "./node_modules/loopar/src/components/*"
+      ],
+      "@*": [
+        "./node_modules/loopar/src/components/*"
       ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".loopar/src/**/*.ts", ".loopar/src/**/*.tsx", ".loopar/services/**/*.ts", ".loopar/services/**/*.tsx",
-    "src/**/*.ts", "src/**/*.tsx"
-, ".loopar/src/components/base/base-icons.jsx"  ],
-  "exclude": ["node_modules"]
+    ".loopar/src/**/*.ts",
+    ".loopar/src/**/*.tsx",
+    ".loopar/services/**/*.ts",
+    ".loopar/services/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".loopar/src/components/base/base-icons.jsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

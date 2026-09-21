@@ -11,7 +11,9 @@ import { DocumentController } from "./document-controller";
  */
 export class FormController extends DocumentController {
   #form = null;
-  #events = { beforeSave: new Set(), afterSave: new Set(), saveError: new Set() };
+  #events = Object.fromEntries(
+    ["validate", "beforeSend", "afterSend", "sendError", "beforeSave", "afterSave", "saveError"].map((e) => [e, new Set()])
+  );
 
   formFields = {};
 
@@ -23,21 +25,24 @@ export class FormController extends DocumentController {
   }
 
   /**
-   * Save lifecycle. Returns the unsubscribe function.
-   *   beforeSave(values, ctrl) — after validation; return `false` to cancel
-   *   afterSave(response, ctrl) · saveError(error, ctrl)
+   * Form lifecycle. Returns the unsubscribe function. See README.md § Form lifecycle.
+   *   validate(values, ctrl) — after the built-in field validation; return an error
+   *     (string | { field, message } | array of them) to add it, nothing to pass
+   *   beforeSend(values, ctrl, { action }) — return `false` to cancel
+   *   afterSend(response, ctrl, { action }) · sendError(error, ctrl, { action })
+   * `*Save` fire in addition to `*Send` when the send comes from `save()`.
    */
   onFormEvent(event, callback) {
     const set = this.#events[event];
-    if (!set) throw new Error(`Unknown form event "${event}" (beforeSave | afterSave | saveError)`);
+    if (!set) throw new Error(`Unknown form event "${event}" (${Object.keys(this.#events).join(" | ")})`);
     set.add(callback);
     return () => set.delete(callback);
   }
 
-  #emit(event, payload) {
+  #emit(event, payload, info) {
     let result = true;
     for (const cb of this.#events[event]) {
-      if (cb(payload, this) === false) result = false;
+      if (cb(payload, this, info) === false) result = false;
     }
     return result;
   }
@@ -93,7 +98,10 @@ export class FormController extends DocumentController {
   send({ document, action, query = {}, extra = null, _isSave = false, ...options } = {}, successCallback, errorCallback) {
     this.validate();
     if (!options.notRequireChanges && !this.checkChanges()) return;
-    if (_isSave && this.#emit("beforeSave", this.getFormValues()) === false) return;
+    const info = { action };
+    const values = this.getFormValues();
+    if (this.#emit("beforeSend", values, info) === false) return;
+    if (_isSave && this.#emit("beforeSave", values, info) === false) return;
 
     const targetDocument = document || this.controller || this.Document?.Entity?.name;
     if (!targetDocument) {
@@ -117,12 +125,14 @@ export class FormController extends DocumentController {
         if (this.#form && !options.notRequireChanges) this.#form.reset(this.#form.getValues(), { keepValues: true });
         options.success?.(r);
         successCallback?.(r);
-        if (_isSave) this.#emit("afterSave", r);
+        this.#emit("afterSend", r, info);
+        if (_isSave) this.#emit("afterSave", r, info);
       },
       error: (e) => {
         options.error?.(e);
         errorCallback?.(e);
-        if (_isSave) this.#emit("saveError", e);
+        this.#emit("sendError", e, info);
+        if (_isSave) this.#emit("saveError", e, info);
         if (!options.error && !errorCallback) loopar.throw(e);
       },
     });
@@ -136,6 +146,7 @@ export class FormController extends DocumentController {
     };
   }
 
+  /** Built-in field validation, then `validate` listeners. Sets field errors and throws a dialog. */
   validate() {
     const errors = [];
     const values = this.Form ? this.Form.getValues() : {};
@@ -155,8 +166,17 @@ export class FormController extends DocumentController {
       }
     });
 
+    for (const cb of this.#events.validate) {
+      const result = cb(this.getFormValues(), this);
+      for (const e of [].concat(result ?? [])) {
+        if (e === false) errors.push({ message: "Validation failed" });
+        else if (typeof e === "string") errors.push({ message: e });
+        else if (e?.message) errors.push(e);
+      }
+    }
+
     if (errors.length > 0) {
-      errors.forEach(e => this.setError(e.field, { message: e.message }));
+      errors.forEach(e => e.field && this.setError(e.field, { message: e.message }));
       loopar.throw({
         type: 'error',
         title: 'Validation error',

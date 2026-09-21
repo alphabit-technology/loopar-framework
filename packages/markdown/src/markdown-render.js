@@ -7,15 +7,45 @@ import { renderToString } from "react-dom/server";
 // must be separated by blank lines so CommonMark re-enters markdown mode.
 const BLOCK_TAGS = 'div|section|header|footer|article|aside|main|nav|ul|ol|table';
 
-function preprocessMarkdown(source) {
-  if (!source) return '';
+// Split source into alternating segments: prose (markdown/HTML) and fenced
+// code blocks (``` or ~~~). Fenced content must be passed through untouched —
+// dedenting or inserting blank lines inside it corrupts code/JSON indentation.
+function splitFences(source) {
+  const segments = [];
+  const lines = source.split('\n');
+  let buffer = [];
+  let fence = null; // { char, len } while inside a fence
 
-  let result = source.replace(/\r\n/g, '\n');
+  const flush = (isCode) => {
+    if (buffer.length) segments.push({ isCode, text: buffer.join('\n') });
+    buffer = [];
+  };
 
+  for (const line of lines) {
+    const m = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (!fence) {
+      if (m) {
+        flush(false);
+        fence = { char: m[1][0], len: m[1].length };
+      }
+      buffer.push(line);
+    } else {
+      buffer.push(line);
+      if (m && m[1][0] === fence.char && m[1].length >= fence.len && /^\s{0,3}(`{3,}|~{3,})\s*$/.test(line)) {
+        flush(true);
+        fence = null;
+      }
+    }
+  }
+  flush(!!fence);
+  return segments;
+}
+
+function preprocessProse(text) {
   // Strip leading whitespace from every line. Editors (mdxeditor included)
   // pretty-print HTML with indentation, and 4+ leading spaces would otherwise
   // be interpreted by CommonMark as an indented code block.
-  result = result.split('\n').map(line => line.trimStart()).join('\n');
+  let result = text.split('\n').map(line => line.trimStart()).join('\n');
 
   // Insert a blank line AFTER block-tag openings and BEFORE block-tag closings.
   // CommonMark rule: an HTML block ends at a blank line, after which markdown
@@ -34,7 +64,17 @@ function preprocessMarkdown(source) {
   // Collapse 3+ consecutive newlines, normalize escaped mailto.
   return result
     .replace(/\n{3,}/g, '\n\n')
-    .replace(/mailto\\:/g, 'mailto:')
+    .replace(/mailto\\:/g, 'mailto:');
+}
+
+function preprocessMarkdown(source) {
+  if (!source) return '';
+
+  const normalized = source.replace(/\r\n/g, '\n');
+
+  return splitFences(normalized)
+    .map(seg => (seg.isCode ? seg.text : preprocessProse(seg.text)))
+    .join('\n')
     .trim();
 }
 

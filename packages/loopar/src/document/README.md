@@ -16,7 +16,7 @@ Workspace
 
 | Folder | What lives there | Public import |
 |---|---|---|
-| `Entry.jsx` | The chain above + the entry registry (`entries`: middleware, layout, defaults per kind) | — (used by `loader.jsx`) |
+| `Entry.jsx` | The chain above + the entry registry (`entries`: middleware, layout and what differs per kind) | — (used by `loader.jsx`) |
 | `base/` | Base layer: `DocumentProvider`, `useDocument`, view options, `Layout` (generic), `DefaultView`, extension hooks | `@loopar/document` |
 | `form/` | Form kind: `FormProvider`, `useForm`, `useFormEvents`, `FormLayout`, `ReportLayout`, `BareLayout` | `@loopar/form` |
 | `list/` | List kind: `ListProvider`, `useList`, `ListLayout` | `@loopar/list` |
@@ -72,14 +72,82 @@ No file at all? The entry renders `DefaultView` = its layout with defaults.
 Rules: framework API comes through hooks; your own data and callbacks go
 through props of your own components. Views never receive props.
 
+## Hooks reference
+
+All hooks accept inline objects/functions (they keep a ref and subscribe by key), so
+they can be called unconditionally at the top of a view.
+
+### `@loopar/document` — every entry
+
+| Hook | Returns / does |
+|---|---|
+| `useDocument()` | `{ ctrl, Document, name, entity, entityMenu, layout, inModal, onClose, onSaved, sidebarOpen, handleSetSidebarOpen }` |
+| `useViewOptions()` | Merged view options (see vocabulary below) |
+| `useActions({ name: <Node> })` | AppBar buttons while mounted |
+| `useHandlers({ name: (ctrl) => … })` | Targets for JSON buttons (`data.action`) |
+| `useDocumentConfig({ hasSidebar: false, … })` | Runtime patch of view flags |
+| `useFieldEvent(field, event, (e, ctrl) => …)` | Subscribes to a rendered field (`change`, `changed`…) |
+| `useFieldMeta(ctrl.fields, name)` | Live meta of one field (visibility, df) |
+
+### `@loopar/form` — form, view, report, installer, auth
+
+`useForm()` → `{ getValue, setValue, setError, getFormValues, getField, save, send,
+validate, hasChanges, checkChanges, onFormEvent, ctrl, form }` (`form` = react-hook-form).
+
+`useFormEvents({ … })` — the form lifecycle. Every `send()` (a `save()` or a custom
+action from a handler) runs, in order:
+
+```
+validate()      built-in field validation (dataInterface per field)
+                → `validate` listeners add errors      → dialog + field errors, stops
+checkChanges()  unless notRequireChanges                → "No changes to save", stops
+beforeSend      (values, ctrl, { action })  return false → stops
+beforeSave      same, only from save()
+── request ──
+success:  form reset → options.success → afterSend → afterSave
+error:    options.error → sendError → saveError → loopar.throw if nobody handled it
+```
+
+| Event | Signature | Return |
+|---|---|---|
+| `validate` | `(values, ctrl)` | `"msg"` · `{ field, message }` · array of them · nothing = ok |
+| `beforeSend` / `beforeSave` | `(values, ctrl, { action })` | `false` cancels |
+| `afterSend` / `afterSave` | `(response, ctrl, { action })` | — |
+| `sendError` / `saveError` | `(error, ctrl, { action })` | — |
+
+`values` is `ctrl.getFormValues()`, so a `config.overrides.getFormValues` shapes them too.
+There is no `onSave`: the save itself is `save()` from `useForm()`; wrap it with
+`before*/after*`, or replace it with `config.overrides.save` when it must change.
+
+```jsx
+useFormEvents({
+  validate: ({ start, end }) => start > end && { field: "end", message: "End before start" },
+  beforeSave: (values) => values.total > 0 || (loopar.notify("Empty order", "warning"), false),
+  afterSave: (r) => navigate(`/desk/order/${r.name}/update`),
+});
+```
+
+### `@loopar/list` — list
+
+`useList()` → table API (`rows`, `selectedRows`, `search`, `setPage`, `deleteRow`, `viewType`,
+`setViewType`…) + `ctrl`. Layout: `<ListLayout columns gridTemplate />`.
+
+### Extending the controller
+
+`config.overrides` assigns methods on the controller instance once (the functional
+`extends`): `getFormValues(toSave)`, `save(options)`, `initScroll()`… `this` is the
+controller. Prefer events; override only when the built-in behaviour must be replaced.
+
 ## Options vocabulary (`controller/view-options.js`)
 
 **View options** (React state, read by chrome/layouts): `slots` `actions` `handlers`
 `columns` `gridTemplate` `sidebar` `sidebarHeader` `primaryAction` `canUpdate`
 `hasSidebar` `hasHeader` `hasBreadcrumb` `hasHistory` `hasSearchForm` `hasSelectAll`
 `hasSelectRow` `disabledSearchFields` `onlyList` `onlyGrid`.
-Precedence: entry defaults < view `config` < hooks (`useActions`, `useHandlers`,
-`useDocumentConfig`) < layout props.
+`has*` flags are opt-out: everything is on unless a `config` or a layout prop says `false`.
+`canUpdate` is opt-in: only the `form` entry grants it.
+Precedence: layout defaults (`defineLayout(name, Body, defaults)`) < entry defaults < view `config`
+< hooks (`useActions`, `useHandlers`, `useDocumentConfig`) < layout props.
 
 **Controller options** (applied once on mount): `controller` `notRequireChanges`
 `restoreScroll` `overrides` (raw methods, e.g. `getFormValues`) `mapDocument`.

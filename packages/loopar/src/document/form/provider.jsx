@@ -40,8 +40,13 @@ export function useForm() {
 }
 
 /**
- * `useFormEvents({ beforeSave(values) → false cancels, afterSave(r), saveError(e) })`
- * while the caller is mounted. Inline objects are safe (ref + keys).
+ * Subscribes to the form lifecycle while the caller is mounted (inline objects are safe: ref + keys).
+ *   useFormEvents({
+ *     validate:   (values, ctrl) => "msg" | { field, message } | [...] | undefined,
+ *     beforeSend: (values, ctrl, { action }) => false to cancel,
+ *     afterSend:  (r, ctrl, { action }),   sendError: (e, ctrl, { action }),
+ *     beforeSave, afterSave, saveError     // same, only when the send comes from save()
+ *   })
  */
 export function useFormEvents(listeners) {
   const { onFormEvent } = useForm();

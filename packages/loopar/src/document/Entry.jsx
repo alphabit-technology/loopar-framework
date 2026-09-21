@@ -20,15 +20,18 @@ import { pickViewOptions, pickControllerOverrides, mergeViewOptions } from "./co
  *                         └─ <FormLayout/> …  the chrome the view decides to paint
  */
 
-/** Per kind: middleware, layout and default options (a view's `config` overrides them). */
+/**
+ * Per kind: middleware, layout and what makes the kind different (a view's `config` overrides it).
+ * `has*` flags are opt-out (true unless a config/layout says false); `canUpdate` is opt-in, granted here.
+ */
 export const entries = {
-  form:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: true,  hasSidebar: true, hasHeader: true, hasHistory: true } },
-  view:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: false, hasSidebar: true, hasHeader: true, hasHistory: true } },
-  report:     { middleware: "form", layout: ReportLayout, defaults: { hasSidebar: true, hasHeader: true } },
+  form:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: true } },
+  view:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: false } },
+  report:     { middleware: "form", layout: ReportLayout },
   installer:  { middleware: "form", layout: BareLayout,   defaults: { controller: "System", notRequireChanges: true,
                 handlers: { install: (ctrl) => ctrl.send({ action: "install" }), connect: (ctrl) => ctrl.send({ action: "connect" }) } } },
   auth:       { middleware: "form", layout: BareLayout,   defaults: { controller: "Auth" }, form: { schema: false } },
-  list:       { middleware: "list", layout: ListLayout,   defaults: { hasSidebar: true, hasHeader: true, hasSearchForm: true, hasSelectAll: true, hasSelectRow: true } },
+  list:       { middleware: "list", layout: ListLayout },
   page:       { layout: PageLayout },
   web:        { layout: WebLayout },
   controller: { layout: null },

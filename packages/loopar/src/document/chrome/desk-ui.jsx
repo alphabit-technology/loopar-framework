@@ -41,8 +41,8 @@ export default function DeskUI(props) {
   const {headerHeight} = useWorkspace();
 
   // No sidebar in a modal: it is `position: fixed` and would paint over the base page.
-  const hasSidebar = !inModal && !!options.hasSidebar;
-  const hasHeader = !!options.hasHeader;
+  const hasSidebar = !inModal && options.hasSidebar !== false;
+  const hasHeader = options.hasHeader !== false;
   const hasBreadcrumb = options.hasBreadcrumb !== false;
 
   const toggleSidebar = (e) => {

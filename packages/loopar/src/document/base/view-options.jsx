@@ -3,7 +3,8 @@ import { mergeViewOptions, pickViewOptions } from "../controller/view-options";
 
 /**
  * Presentation options of an entry as React state. Precedence, low → high:
- * entry defaults + view `config` (`base`) < hook patches (useActions...) < layout props (scope).
+ * layout defaults < entry defaults + view `config` (`base`) < hook patches (useActions...) < layout props.
+ * `has*` flags are opt-out: consumers read `x !== false`.
  */
 const ViewOptionsContext = createContext({ options: {}, patch: () => {} });
 
@@ -19,12 +20,12 @@ export function ViewOptionsProvider({ base, children }) {
   return <ViewOptionsContext.Provider value={value}>{children}</ViewOptionsContext.Provider>;
 }
 
-/** Adds options for a subtree (layout props). */
-export function ViewOptionsScope({ options: extra, children }) {
+/** Adds options for a subtree: `defaults` go under the inherited ones, `options` (layout props) on top. */
+export function ViewOptionsScope({ defaults, options: extra, children }) {
   const ctx = useContext(ViewOptionsContext);
   const value = useMemo(
-    () => ({ ...ctx, options: mergeViewOptions(ctx.options, pickViewOptions(extra)) }),
-    [ctx, extra]
+    () => ({ ...ctx, options: mergeViewOptions(defaults, ctx.options, pickViewOptions(extra)) }),
+    [ctx, defaults, extra]
   );
 
   return <ViewOptionsContext.Provider value={value}>{children}</ViewOptionsContext.Provider>;

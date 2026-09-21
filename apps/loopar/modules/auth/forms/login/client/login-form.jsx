@@ -184,6 +184,7 @@ export const config = {
       return {
         user_name: this.getValue('user_name'),
         password: this.getValue('password'),
+        keep_me_sign_in: this.getValue('keep_me_sign_in')
       };
     },
   },

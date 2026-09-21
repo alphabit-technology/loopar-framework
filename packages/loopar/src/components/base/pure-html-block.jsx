@@ -1,11 +1,5 @@
 import { cn } from "@cn/lib/utils";
 import { useEffect, memo } from 'react';
-import Prism from 'prismjs';
-
-// Ensure Prism is available globally for any dependent code
-if (typeof window !== 'undefined') {
-  window.Prism = Prism;
-}
 
 export const Markdown = memo(({ className, content }) => {
   const markup = { __html: content };

@@ -48,8 +48,8 @@ export function GridView(props) {
   return (
     <>
       <div className="flex gap-2">
-        {hasSelectAll && <DropdownListGridActions deleteOnServer={true}/>}
-        {hasSearchForm && <TableSearch onChange={search} />}
+        {hasSelectAll !== false && <DropdownListGridActions deleteOnServer={true}/>}
+        {hasSearchForm !== false && <TableSearch onChange={search} />}
       </div>
       <div className="border">
         <div className="flex flex-wrap gap-3 border p-2">
