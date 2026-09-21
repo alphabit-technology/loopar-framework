@@ -19,12 +19,12 @@ const InnerSidebar = ({ toggleSidebar, ...props }) => {
         <div>
           <button 
             className="absolute right-2 top-1 z-10 flex h-8 w-8 items-center justify-center text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300" 
-            tab-index="0"
+            tabIndex={0}
             onClick={toggleSidebar}
           >
             <span className="sr-only">Close navigation</span>
             <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 overflow-visible">
-              <path d="M0 0L10 10M10 0L0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M0 0L10 10M10 0L0 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"></path>
             </svg>
           </button>
         </div>

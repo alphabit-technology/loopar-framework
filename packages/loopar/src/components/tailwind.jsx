@@ -92,15 +92,15 @@ export default function Tailwind(props) {
       )}
 
       <FormDescription className="flex flex-col border border-input rounded-xm p-2 bg-muted mt-2">
-      <label>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://tailwindcss.com/docs/installation/using-vite" target="_blank">Tailwind</a></label>
+        <span>Powered by <a className="text-blue-600 visited:text-purple-600" href="https://tailwindcss.com/docs/installation/using-vite" target="_blank" rel="noreferrer">Tailwind</a></span>
         <span className="text-muted-foreground text-xs">
           Use Tailwind classes like <code className="bg-muted px-1 rounded">bg-red-500</code>. 
           Custom classes require your own CSS file.
         </span>
-        <p className="text-xs text-amber-500 flex items-center gap-1 mt-1">
+        <span className="text-xs text-amber-500 flex items-center gap-1 mt-1">
           <AlertTriangle className="h-3 w-3" />
           Classes preview only works in development mode
-        </p>
+        </span>
       </FormDescription>
     </div>
   ));

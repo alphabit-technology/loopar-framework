@@ -52,7 +52,7 @@ const applyDataToPlainStructure = (plainStructure, data, configStructure) => {
   return updatedStructure;
 };
 
-export default function MetaParticles(props) {
+export default function MetaParticles({ fullScreen, ...props }) {
   const data = props.data || {};
   const particlesData = useMemo(() => utils.JSONparse(data.particles_settings, {}), [data.particles_settings]);
   const options = useMemo(() => applyDataToPlainStructure(singleStructure, particlesData, structure), [particlesData]);
@@ -62,7 +62,7 @@ export default function MetaParticles(props) {
       {...props}
     >
       <div className="absolute inset-0 z-0">
-        <ParticlesMaster options={options} id={data.key} fullScreen={props.fullScreen}/>
+        <ParticlesMaster options={options} id={data.key} fullScreen={fullScreen}/>
         {props.children}
       </div>
     </Droppable>

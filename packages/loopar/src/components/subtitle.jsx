@@ -22,8 +22,8 @@ export default function SubTitle(props) {
                 maxHeight: "3em",
                 overflow: "auto",
                 display: "-webkit-box",
-                "-webkit-line-clamp": 5,
-                "-webkit-box-orient": "vertical",
+                WebkitLineClamp: 5,
+                WebkitBoxOrient: "vertical",
               },
             }
           : {

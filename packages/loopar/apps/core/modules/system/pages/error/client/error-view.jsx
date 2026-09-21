@@ -44,11 +44,17 @@ const ImageWithPlaceholder = ({ data }) => {
 /** Standalone: renders outside the document shell on purpose. */
 export default function ErrorView({ Document }) {
   const data = Document?.data || {};
+  // Standalone view: no DocumentProvider around it, so it sets its own
+  // <title> (React 19 hoists it into <head>).
+  const title = Document?.meta?.title || data.title || `${data.code || 500} Error`;
 
   return (
-    <ImageWithPlaceholder
+    <>
+      <title>{title}</title>
+      <ImageWithPlaceholder
       src={`/assets/images/illustration/${data.code || '500'}.svg`}
       data={data}
     />
+    </>
   );
 }

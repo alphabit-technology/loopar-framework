@@ -3,7 +3,7 @@
 import { SideNavItem } from "./side-nav-item";
 import { useWorkspace } from "@workspace/workspace-provider";
 import {ChevronLeftIcon} from "lucide-react";
-import { useId, useEffect } from "react";
+import { useEffect } from "react";
 
 export function SideNav({ items=[] }) {
   const { openNav, setOpenNav, toogleSidebarNav } = useWorkspace();
@@ -13,7 +13,7 @@ export function SideNav({ items=[] }) {
     const hasSubitems = modules && modules.length > 0
 
     return (
-      <li key={useId()}>
+      <li key={item.description ?? i}>
         {hasSubitems && (<h5
           className="mb-1 mt-3 font-semibold text-slate-900 dark:text-slate-200"
         >
@@ -26,6 +26,7 @@ export function SideNav({ items=[] }) {
                 const active = module.link ? true : false;
                 return (
                   <SideNavItem
+                    key={module.link ?? module.description ?? key}
                     active={active}
                     disabled={module.disabled}
                     external={module.external}
@@ -68,7 +69,7 @@ export function SideNav({ items=[] }) {
     >
         <div 
           className={`fixed inset-0 backdrop-blur-sm ${!openNav && "hidden" } lg:hidden`}
-          area-hidden 
+          aria-hidden="true"
           data-headlessui-state
           onClick={() => setOpenNav(false)}
         />
@@ -78,12 +79,12 @@ export function SideNav({ items=[] }) {
           {openNav && <button 
             type="button" 
             className="absolute right-5 top-1 z-10 flex h-8 w-8 items-center justify-center text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 lg:hidden" 
-            tab-index="0"
+            tabIndex={0}
             onClick={() => setOpenNav(false)}
           >
             <span className="sr-only">Close navigation</span>
             <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 overflow-visible">
-              <path d="M0 0L10 10M10 0L0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M0 0L10 10M10 0L0 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"></path>
             </svg>
           </button>}
         <div className="relative lg:text-sm lg:leading-6">

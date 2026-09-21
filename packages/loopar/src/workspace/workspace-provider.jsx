@@ -209,7 +209,10 @@ export function WorkspaceProvider({
       data: {
         code: e.code || 404,
         title: e.title || "Source not found",
-        description: e.message
+        message: e.message,
+        description: e.message,
+        ...(e.frame ? { frame: e.frame } : {}),
+        ...(e.stack && typeof e.stack === "string" ? { stack: e.stack } : {}),
       }
     };
 

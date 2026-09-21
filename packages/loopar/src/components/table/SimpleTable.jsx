@@ -31,7 +31,7 @@ export function SimpleTable(props) {
         const RowTemplate = props.rowTemplate
         return (
           <RowTemplate
-            //key={`${tableId}-${row.name}-${index}`}
+            key={`${tableId}-${row.name}-${index}`}
             row={row}
             index={index}
             columns={availableColumns}
@@ -64,7 +64,6 @@ export function SimpleTable(props) {
 
   return (
     <Table 
-      stickyHeader 
       aria-label="sticky table" 
       className="w-full overflow-hidden"
     >
@@ -73,7 +72,7 @@ export function SimpleTable(props) {
           {availableColumns.filter(c => c.data?.label).map((c) => {
             const { data, headProps = {} } = c;
             return (
-              <TableCell {...headProps}>
+              <TableCell key={data.name} {...headProps}>
                 {typeof data.label === "function" ? data.label() : loopar.utils.UPPERCASE(data.label || "")}
               </TableCell>
             );

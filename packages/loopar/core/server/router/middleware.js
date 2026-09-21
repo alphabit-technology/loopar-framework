@@ -306,9 +306,22 @@ export class Middleware {
       }
 
       if (!res || res.headersSent) return;
-      
+
       const redirect = err?.redirect;
+      const original = err;
       err = getHttpError(err);
+
+      // Always leave a trace in the core log: the browser only gets the
+      // normalised payload, and a 5xx with no server-side line is
+      // undebuggable. 4xx are expected traffic — one line, no stack.
+      if (Number(err.status) >= 500) {
+        console.error(
+          `[${err.status}] ${req.method} ${req.originalUrl || req.url} — ${err.message}`,
+          original instanceof Error ? `\n${original.stack}` : (err.stack ? `\n${err.stack}` : ''),
+        );
+      } else if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[${err.status}] ${req.method} ${req.originalUrl || req.url} — ${err.message}`);
+      }
 
       try {
         if (RouterUtils.isAjaxRequest(req)) {
@@ -338,6 +351,13 @@ export class Middleware {
           }
         );
 
+        // `getError()` runs through render(), which assigns a client entry
+        // ("view"). Inside <Entry> the view is mounted as a bare child and
+        // never receives `Document` as a prop, so ErrorView rendered with
+        // empty data ("An error occurred", no message, no stack). The error
+        // view is standalone by design (see AppSourceLoader): drop the entry.
+        delete req.__WORKSPACE__.Document.entry;
+
         // The error can fire before the workspace middleware ran (asset 404s,
         // body-parser failures…), in which case there is no per-request App
         // to render with — fall back to the bare HTML error template.
@@ -345,7 +365,7 @@ export class Middleware {
 
         return this.render(req, res, await req.__APP__.render(req.__WORKSPACE__, true));
       } catch (renderErr) {
-        console.log(["Internal Server Error", renderErr])
+        console.error('[500] error page itself failed to render:', renderErr);
         return this.throw(renderErr, res);
       }
     };

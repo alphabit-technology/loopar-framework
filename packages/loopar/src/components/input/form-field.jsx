@@ -12,7 +12,7 @@ export const FormField = ({ render, onChange, ...props }) => {
 
   /**If fields is not controller by Form */
   const dontHaveForm = props.dontHaveForm;
-  const [value, setValue] = React.useState(props.value || null);
+  const [value, setValue] = React.useState(props.value || "");
 
   const handleChange = (e) => {
     setValue(e && e.target ? (e.target.files || e.target.value) : e);

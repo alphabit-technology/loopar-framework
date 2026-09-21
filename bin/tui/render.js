@@ -248,6 +248,32 @@ function renderTenants(lines, width, height) {
     : ` ${icon} ${msgColor}${state.message}${A.reset}  ${url}`);
 }
 
+// ─── Log line classification ─────────────────────────────────────────────────
+// pm2 only tells us the STREAM (stdout/stderr); everything React, Node and the
+// core write as a warning also lands on stderr, so painting the whole stream
+// red buried the actual error. Color by what the line IS instead:
+//   error headline  → bold red      [500] … / SyntaxError: … / Error: …
+//   stack frame     → gray, but frames in OUR code keep the normal color
+//   4xx / warning   → yellow        [404] … / Warning: … / React key warnings
+//   anything else   → stream default (stderr = plain, not red)
+const FRAME_RE = /^\s+at\s/;
+const ERROR_RE = /^(\[5\d\d\]|\s*(?:[A-Z][A-Za-z]*Error|Error)\b\s*:|Uncaught\b|UnhandledPromiseRejection|FATAL\b)/;
+const HTTP_WARN_RE = /^\[[34]\d\d\]/;
+// Chatter: real warnings, but ones you rarely act on from the log tail.
+const NOISE_WARN_RE = /^(\(node:\d+\)\s*(?:\[\w+\]\s*)?Warning:|Warning:|Each child in a list|Check the render method|In HTML,|\[Cache\]|.*⚠)/;
+// Continuation lines of a warning ("(Use `node --trace-warnings ...`", "See https://…").
+const CONT_RE = /^(\(Use `node --trace-warnings|See https?:\/\/|\s{2,}\S)/;
+const NOISE_FRAME_RE = /node_modules|node:internal|<anonymous>|react-dom-server|react\.development/;
+
+function paintLog(text, stream) {
+  if (FRAME_RE.test(text)) return NOISE_FRAME_RE.test(text) ? A.gray : `${A.bold}${A.cyan}`;
+  if (ERROR_RE.test(text)) return `${A.bold}${A.red}`;
+  if (HTTP_WARN_RE.test(text)) return A.yellow;
+  if (NOISE_WARN_RE.test(text)) return `${A.dim}${A.yellow}`;
+  if (CONT_RE.test(text)) return A.gray;
+  return "";
+}
+
 function renderLogs(lines, width, height) {
   const L = state.logs;
   const scopeInfo = L.name
@@ -274,8 +300,8 @@ function renderLogs(lines, width, height) {
     const pName = e.p ? (e.p.length > 12 ? e.p.slice(0, 12) : e.p) : "";
     const pfx = e.p ? `${nameColor(e.p)}${pName.padEnd(12)}${A.reset} ${A.gray}│${A.reset} ` : "";
     const pfxW = e.p ? 15 : 0;
-    const color = e.s === "err" ? A.red : "";
     const plain = stripAnsi(e.text);
+    const color = paintLog(plain, e.s);
     const room = width - 2 - timeW - pfxW;
     // Keep the app's own ANSI when the line fits; drop it when truncating
     // (slicing mid-escape corrupts the frame).

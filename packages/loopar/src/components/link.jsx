@@ -100,6 +100,9 @@ export function Link({
   activeClassName,
   onClick,
   bare = false,
+  award: awardProp,
+  active: activeProp,
+  renderOnRestrict,
   ...props
 }) {
   const { setOpenNav, currentPage, workspace, award, navigate: wsNavigate, isModal } = useWorkspace();
@@ -120,13 +123,13 @@ export function Link({
   }, [url, workspace]);
 
   const canRender = useMemo(() => {
-    if (props.award === false || workspace != "desk" || isAbsolute) return true;
+    if (awardProp === false || workspace != "desk" || isAbsolute) return true;
     
     const doc = params.document?.toLowerCase().replaceAll(" ", "") ?? '';
     const action = params.action ?? 'view';
 
     return award(doc, action, false);
-  }, [params, award, props.award, workspace, url, to]);
+  }, [params, award, awardProp, workspace, url, to]);
 
   const handleClick = useCallback((e) => {
     if (isHashLink) {
@@ -139,11 +142,11 @@ export function Link({
   }, [isHashLink, scrollToSection, onClick, workspace, setOpenNav]);
 
   const isActive = useMemo(() => {
-    if (props.active) return true;
+    if (activeProp) return true;
     return currentPage && currentPage === to;
-  }, [props.active, to, currentPage]);
+  }, [activeProp, to, currentPage]);
 
-  if (!canRender && !props.renderOnRestrict) return null;
+  if (!canRender && !renderOnRestrict) return null;
 
   // `bare` opts out of the shadcn button styling — useful when the Link
   // is a wrapper around custom content (cards, image tiles, sections) and
@@ -152,14 +155,14 @@ export function Link({
   // inside.
   const className = bare
     ? cn(
-        canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
+        canRender && !renderOnRestrict && activeLink(isActive, activeClassName),
         props.className,
       )
     : (() => {
         const classVariant = buttonVariants({ variant, size }).replaceAll("text-primary", "");
         return cn(
           "justify-normal cursor-pointer p-2",
-          canRender && !props.renderOnRestrict && activeLink(isActive, activeClassName),
+          canRender && !renderOnRestrict && activeLink(isActive, activeClassName),
           classVariant,
           "justify-start",
           props.className,
@@ -193,7 +196,7 @@ export function Link({
     );
   }
 
-  if(!canRender && props.renderOnRestrict){
+  if(!canRender && renderOnRestrict){
     return <div {...commonProps} disabled={true}>
       {children}
     </div>

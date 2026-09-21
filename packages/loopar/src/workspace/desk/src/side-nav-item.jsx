@@ -21,7 +21,7 @@ export const SideNavItem = (props) => {
   } = props;
 
   const linkProps = path ? external : {};
-  const { collapseSidebarWidth, activeModule } = useWorkspace();
+  const { activeModule } = useWorkspace();
   // Visibility is decided server-side (WorkspaceController.sidebarData →
   // PermissionManager.canAccessModule): a module is in menu_data only when
   // the user can reach something inside it. No client-side award here — it
@@ -49,8 +49,7 @@ export const SideNavItem = (props) => {
       { title && (title.replace(" ", "-")).split('-').map((word, index) => (
         <small 
           key={path + index} 
-          className="truncate text-center h-auto" 
-          style={{maxWidth: collapseSidebarWidth - 10}}
+          className="w-full truncate text-center h-auto"
         >
           {word}
         </small>

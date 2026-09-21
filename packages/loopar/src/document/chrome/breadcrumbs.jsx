@@ -45,7 +45,7 @@ export function Breadcrumbs({ Document }) {
   const dataLinks = makeLinks();
 
   const getItem = (link, index, attrs={}) => (
-    <li className="inline-flex items-center" {...attrs}>
+    <li key={link.link ?? link.text ?? index} className="inline-flex items-center" {...attrs}>
       <Link
         variant="link"
         className="px-0"

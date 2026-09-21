@@ -58,6 +58,7 @@ export function TableSearch(props){
               
               return (
                 <MetaComponent
+                  key={c.data.name}
                   component={c.element}
                   render={Component => (
                     <Component

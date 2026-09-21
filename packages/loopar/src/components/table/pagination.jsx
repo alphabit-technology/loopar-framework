@@ -71,9 +71,10 @@ export function Pagination() {
               <ChevronLeftIcon />
             </Button>
           </li>
-          {getPages().map((p) => {
+          {getPages().map((p, i) => {
             return (
               <Button
+                key={`${p}-${i}`}
                 onClick={() => p !== "..." && setPage(p)}
                 variant={p === page ? "destructive" : "ghost"}
               >{p}</Button>
