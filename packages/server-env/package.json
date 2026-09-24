@@ -3,16 +3,22 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "chroma-js": "3.2.0",
     "compression": "1.8.2",
     "cookie-parser": "1.4.7",
+    "crypto-js": "4.2.0",
+    "eventemitter3": "5.0.4",
     "express": "5.2.1",
     "express-rate-limit": "8.7.0",
     "express-session": "1.19.0",
     "express-useragent": "2.2.3",
     "js-cookie": "3.0.8",
+    "jsonwebtoken": "9.0.3",
     "multer": "2.4.0",
+    "sha1": "1.1.1",
+    "sharp": "0.35.4",
+    "simple-git": "3.36.0",
     "socket.io": "4.8.3",
-    "socket.io-client": "4.8.3",
-    "universal-cookie": "8.1.2"
+    "socket.io-client": "4.8.3"
   }
 }

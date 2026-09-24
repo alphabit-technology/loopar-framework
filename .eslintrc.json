@@ -1,19 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/eslintrc",
   "root": true,
-  "extends": [
-    "prettier",
-    "plugin:tailwindcss/recommended"
-  ],
-  "plugins": ["tailwindcss"],
+  "extends": ["prettier"],
+  "plugins": ["react"],
   "rules": {
-    "react/jsx-key": "off",
-    "tailwindcss/no-custom-classname": "off"
-  },
-  "settings": {
-    "tailwindcss": {
-      "callees": ["cn"]
-    }
+    "react/jsx-key": "off"
   },
   "overrides": [
     {

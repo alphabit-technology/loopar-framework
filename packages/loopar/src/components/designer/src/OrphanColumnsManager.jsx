@@ -94,7 +94,7 @@ const CONFIRM_CONFIG = {
       <>
         <code className="text-xs bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">{col.name}</code>
         {" "}will be permanently removed from{" "}
-        <code className="text-xs bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">tbl{doc}</code>.
+        <code className="text-xs bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-mono">{doc}</code>.
         {" "}<strong className="text-red-500">All data in this column will be lost</strong> and this action cannot be undone.
       </>
     ),
@@ -368,7 +368,7 @@ export function OrphanColumnsManager({
                 Orphan columns
               </h2>
               <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                <code className="font-mono">tbl{doc}</code> — {cols.length} column{cols.length !== 1 ? "s" : ""} removed from field structure
+                <code className="font-mono">{doc}</code> — {cols.length} column{cols.length !== 1 ? "s" : ""} removed from field structure
               </p>
             </div>
           </div>

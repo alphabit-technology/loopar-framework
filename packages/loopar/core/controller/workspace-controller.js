@@ -1,5 +1,6 @@
 'use strict'
 
+import { pathToFileURL } from 'node:url';
 import AuthController from "../auth/AuthController.js";
 import { signWorkspaceToken } from "../auth/workspace-token.js";
 import { loopar, fileManager, PermissionManager } from "loopar";
@@ -68,7 +69,7 @@ export default class WorkspaceController extends AuthController {
 
     const [{ render }, template] = await Promise.all([
       isProduction
-        ? import(_p("dist/server/entry-server.js"))
+        ? import(pathToFileURL(_p("dist/server/entry-server.js")).href)
         : vite.ssrLoadModule(_p("app/entry-server.jsx")),
       isProduction
         ? fs.readFileSync("dist/client/main.html", "utf-8")

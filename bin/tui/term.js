@@ -25,6 +25,25 @@ export const A = {
   clear: `${ESC}[2J${ESC}[H`,
 };
 
+// 24-bit color when the terminal advertises it (iTerm2, Kitty, WezTerm,
+// Ghostty, VS Code, Windows Terminal); otherwise the bright ANSI (9x) slot,
+// which is still far more vivid than the base 3x colors used above.
+const TRUECOLOR = /^(truecolor|24bit)$/i.test(process.env.COLORTERM || "")
+  || /^(iTerm\.app|WezTerm|ghostty|vscode)$/i.test(process.env.TERM_PROGRAM || "")
+  || !!process.env.KITTY_WINDOW_ID || !!process.env.WT_SESSION;
+
+const tc = (r, g, b, fallback) => (TRUECOLOR ? `${ESC}[38;2;${r};${g};${b}m` : `${ESC}[${fallback}m`);
+
+/** Log-line palette (see render.js paintLog). */
+export const LOG = {
+  error:    `${A.bold}${tc(255, 92, 92, 91)}`,   // 5xx headline, "SyntaxError: …"
+  ownFrame: `${A.bold}${tc(86, 214, 255, 96)}`,  // stack frames in OUR code
+  frame:    tc(112, 120, 135, 90),               // node_modules / internals
+  http:     tc(255, 200, 70, 93),                // [4xx]
+  noise:    tc(168, 150, 90, 33),                // React/Node warnings, [Cache]
+  cont:     tc(112, 120, 135, 90),               // continuation lines
+};
+
 /**
  * OSC 8 hyperlink — renders `text` as a real clickable link (Cmd/Ctrl+click)
  * in iTerm2, Kitty, WezTerm, Ghostty, Windows Terminal and VS Code; terminals

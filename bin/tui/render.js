@@ -1,4 +1,4 @@
-import { A, pad, link, stripAnsi } from "./term.js";
+import { A, LOG, pad, link, stripAnsi } from "./term.js";
 import { state, NO_PM2 } from "./state.js";
 import { corePort, coreEnv } from "loopar/core/config/core-config.js";
 
@@ -260,17 +260,17 @@ const FRAME_RE = /^\s+at\s/;
 const ERROR_RE = /^(\[5\d\d\]|\s*(?:[A-Z][A-Za-z]*Error|Error)\b\s*:|Uncaught\b|UnhandledPromiseRejection|FATAL\b)/;
 const HTTP_WARN_RE = /^\[[34]\d\d\]/;
 // Chatter: real warnings, but ones you rarely act on from the log tail.
-const NOISE_WARN_RE = /^(\(node:\d+\)\s*(?:\[\w+\]\s*)?Warning:|Warning:|Each child in a list|Check the render method|In HTML,|\[Cache\]|.*⚠)/;
+const NOISE_WARN_RE = /^(\(node:\d+\)\s*(?:\[\w+\]\s*)?Warning:|Warning:|Each child in a list|Check the render method|React does not recognize|Received `|Invalid DOM property|Unsupported style property|In HTML,|\[Cache\]|.*⚠)/;
 // Continuation lines of a warning ("(Use `node --trace-warnings ...`", "See https://…").
 const CONT_RE = /^(\(Use `node --trace-warnings|See https?:\/\/|\s{2,}\S)/;
 const NOISE_FRAME_RE = /node_modules|node:internal|<anonymous>|react-dom-server|react\.development/;
 
 function paintLog(text, stream) {
-  if (FRAME_RE.test(text)) return NOISE_FRAME_RE.test(text) ? A.gray : `${A.bold}${A.cyan}`;
-  if (ERROR_RE.test(text)) return `${A.bold}${A.red}`;
-  if (HTTP_WARN_RE.test(text)) return A.yellow;
-  if (NOISE_WARN_RE.test(text)) return `${A.dim}${A.yellow}`;
-  if (CONT_RE.test(text)) return A.gray;
+  if (FRAME_RE.test(text)) return NOISE_FRAME_RE.test(text) ? LOG.frame : LOG.ownFrame;
+  if (ERROR_RE.test(text)) return LOG.error;
+  if (HTTP_WARN_RE.test(text)) return LOG.http;
+  if (NOISE_WARN_RE.test(text)) return LOG.noise;
+  if (CONT_RE.test(text)) return LOG.cont;
   return "";
 }
 
