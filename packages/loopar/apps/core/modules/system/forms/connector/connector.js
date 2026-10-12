@@ -23,6 +23,9 @@ export default class Connector extends BaseDocument {
     }
 
     loopar.throw({
+      status: 503,
+      code: 'DB_UNREACHABLE',
+      title: 'Database connection',
       message: `Could not connect to the database server.<br><br>
         Check that the server is running, the credentials are correct,
         and (for remote servers) that the firewall allows the connection.`,

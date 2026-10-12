@@ -62,6 +62,7 @@ export default defineConfig(({ command }) => {
         '@loopar/form': resLoopar('src/document/form'),
         '@loopar/list': resLoopar('src/document/list'),
         '@loopar/page': resLoopar('src/document/page'),
+        '@loopar/print': resLoopar('src/document/print'),
 
         ...Alias(resLoopar('src/components')),
         ...Alias(resLoopar('src'), true),

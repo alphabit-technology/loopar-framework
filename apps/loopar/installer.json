@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "7.0.31"
+    "version": "7.1.0"
   },
   "documents": {
     "Entity:Module": {
@@ -190,6 +190,12 @@
     },
     "Contact Form Builder:Contact Form": {
       "__root__": "/apps/loopar/modules/mail/contact-forms/contact-form"
+    },
+    "Entity:Letterhead": {
+      "__root__": "/apps/loopar/modules/core/entities/letterhead"
+    },
+    "Builder:Print Format Builder": {
+      "__root__": "/apps/loopar/modules/developer/builders/print-format-builder"
     },
     "Entity:Document History": {
       "__root__": "/apps/loopar/modules/core/entities/document-history"
@@ -405,6 +411,7 @@
     "Entity:AI": "link",
     "Entity:Resources": "link",
     "Entity:Module": "link",
-    "Entity:Page View": "link"
+    "Entity:Page View": "link",
+    "Entity:Letterhead": "link"
   }
 }

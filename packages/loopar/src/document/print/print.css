@@ -1,0 +1,257 @@
+/*
+ * Print entry (src/document/print). Plain CSS on purpose: the sheet is paper,
+ * so it uses fixed light colors instead of the theme tokens — it looks the
+ * same in dark mode and never prints a dark background.
+ *
+ * `data-print-hide`  anything that must not reach paper (desk chrome, AppBar)
+ * `data-print-root`  the desk content column (paddings/overflow reset)
+ * `data-print-sheet` the paper itself
+ */
+
+.lp-print-sheet {
+  --lp-ink: #1a1a1a;
+  --lp-muted: #5f6368;
+  --lp-border: #d9d9d9;
+  --lp-soft: #f4f4f5;
+
+  /* Paper is light whatever the theme: re-point the theme tokens for everything
+     inside the sheet (designed formats use regular elements that color with
+     text-foreground, text-muted-foreground, border…). Both layers are set: the
+     raw HSL vars and Tailwind's --color-* (resolved at :root, so they don't
+     follow a raw-var override on their own). */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 0 0% 10%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 220 4% 39%;
+  --accent: 240 5% 96%;
+  --accent-foreground: 0 0% 10%;
+  --border: 0 0% 85%;
+  --input: 0 0% 85%;
+  --color-background: #fff;
+  --color-foreground: var(--lp-ink);
+  --color-card: #fff;
+  --color-card-foreground: var(--lp-ink);
+  --color-popover: #fff;
+  --color-popover-foreground: var(--lp-ink);
+  --color-primary: var(--lp-ink);
+  --color-primary-foreground: #fff;
+  --color-secondary: var(--lp-soft);
+  --color-secondary-foreground: var(--lp-ink);
+  --color-muted: var(--lp-soft);
+  --color-muted-foreground: var(--lp-muted);
+  --color-accent: var(--lp-soft);
+  --color-accent-foreground: var(--lp-ink);
+  --color-border: var(--lp-border);
+  --color-input: var(--lp-border);
+
+  width: min(100%, var(--lp-sheet-width, 8.5in));
+  min-height: 60vh;
+  box-sizing: border-box;
+  padding: var(--lp-page-margin, 12mm);
+  background: #fff;
+  color: var(--lp-ink);
+  color-scheme: light;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 8px 24px rgb(0 0 0 / 0.08);
+}
+
+.lp-print-stage {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0 3rem;
+}
+
+/* ---- header ---- */
+.lp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--lp-ink);
+}
+.lp-title { font-size: 18pt; font-weight: 700; line-height: 1.15; }
+.lp-subtitle { font-size: 11pt; color: var(--lp-muted); margin-top: 2px; }
+.lp-header-aside { font-size: 9pt; color: var(--lp-muted); text-align: right; }
+
+/* ---- structure ---- */
+.lp-stack { display: flex; flex-direction: column; gap: 10px; }
+
+.lp-row {
+  display: grid;
+  grid-template-columns: repeat(var(--lp-cols, 1), minmax(0, 1fr));
+  gap: 10px 28px;
+}
+
+.lp-section { break-inside: auto; margin-top: 6px; }
+.lp-section-title {
+  color: var(--lp-ink);
+  font-size: 11pt;
+  font-weight: 600;
+  margin: 0 0 8px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--lp-border);
+  break-after: avoid;
+}
+
+.lp-field { break-inside: avoid; min-width: 0; }
+.lp-label {
+  font-size: 7.5pt;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lp-muted);
+  margin-bottom: 1px;
+}
+.lp-value { overflow-wrap: anywhere; }
+.lp-field-inline { display: flex; align-items: baseline; gap: 8px; }
+.lp-field-inline > .lp-label { margin: 0; flex: none; }
+.lp-multiline { white-space: pre-wrap; }
+.lp-num { text-align: right; font-variant-numeric: tabular-nums; }
+.lp-value .lp-num { text-align: inherit; }
+
+.lp-block { break-inside: auto; }
+
+.lp-images { display: flex; flex-wrap: wrap; gap: 6px; }
+.lp-images img { max-height: 2.2in; max-width: 100%; object-fit: contain; }
+
+.lp-keyvalue { display: grid; grid-template-columns: auto 1fr; gap: 2px 16px; margin: 0; }
+.lp-keyvalue > div { display: contents; }
+.lp-keyvalue dt { color: var(--lp-muted); }
+.lp-keyvalue dd { margin: 0; }
+
+.lp-markdown .wmde-markdown { background: transparent !important; color: inherit !important; font-size: inherit; }
+
+/* ---- regular elements on paper ---- */
+
+/* Rows keep the designed columns: Row stacks below its container breakpoint
+   (md = 48rem by default) and a Letter sheet is ~7.5in wide — it would always
+   stack. A format's layout is meant for the page, so it holds. */
+.lp-print-sheet .grid-container.dynamic {
+  display: grid;
+  grid-template-columns: var(--column-layout);
+  align-items: var(--row-align, stretch);
+}
+
+/* The desk may be in dark mode, and Tailwind's `dark:` variants still match
+   inside the sheet (they key off `.dark` on <html>), painting light text on
+   white paper. Paper ink wins over any dark: text/background color. */
+.dark .lp-print-sheet [class*="dark:text-"] { color: var(--lp-ink); }
+.dark .lp-print-sheet [class*="dark:bg-"] { background-color: transparent; }
+
+.lp-block { margin-top: 4px; }
+
+/* ---- letterhead ---- */
+.lp-letterhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--lp-border);
+}
+.lp-letterhead-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lp-letterhead-logo { max-height: 0.8in; max-width: 1.8in; object-fit: contain; }
+.lp-letterhead-name { font-size: 15pt; font-weight: 700; line-height: 1.15; }
+.lp-letterhead-muted { color: var(--lp-muted); }
+.lp-letterhead-contact { text-align: right; font-size: 9pt; color: var(--lp-muted); }
+.lp-letterhead-footer {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid var(--lp-border);
+  font-size: 8.5pt;
+  color: var(--lp-muted);
+  break-inside: avoid;
+}
+
+/* ---- print elements while designing (no record) ---- */
+.lp-placeholder {
+  border: 1px dashed currentColor;
+  border-radius: 4px;
+  padding: 6px 8px;
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+.lp-placeholder-muted { opacity: 0.7; font-style: italic; }
+
+.lp-page-break { break-after: page; height: 0; }
+.lp-page-break-design {
+  border-top: 2px dashed currentColor;
+  opacity: 0.5;
+  text-align: center;
+  font-size: 0.75rem;
+  padding-top: 2px;
+}
+
+/* ---- child tables ---- */
+.lp-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.lp-table thead { display: table-header-group; }
+.lp-print-sheet .lp-table { border: 0 !important; }
+
+/* Every cell sets all four borders with !important: a global `td { border … !important }`
+   (markdown-custom.css, `.lp-markdown table th, td`) would otherwise draw a full grid. */
+.lp-print-sheet .lp-table :is(th, td) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--lp-border) !important;
+}
+
+.lp-table th {
+  text-align: left;
+  font-size: 7.5pt;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lp-muted);
+  background: var(--lp-soft);
+  border-bottom: 1px solid var(--lp-border);
+  padding: 5px 6px;
+}
+.lp-table td { padding: 5px 6px; border-bottom: 1px solid var(--lp-border); vertical-align: top; }
+.lp-table tr { break-inside: avoid; }
+
+/* ---- paper ---- */
+@media print {
+  [data-print-hide] { display: none !important; }
+  .lp-page-break-design { border: 0; padding: 0; font-size: 0; }
+
+  html:has([data-print-sheet]),
+  body:has([data-print-sheet]) {
+    background: #fff !important;
+    color: #1a1a1a !important;
+  }
+
+  [data-print-root] {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .lp-print-stage { display: block; padding: 0; }
+
+  /* @page carries the margins on paper. */
+  .lp-print-sheet {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .lp-print-sheet,
+  .lp-print-sheet * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

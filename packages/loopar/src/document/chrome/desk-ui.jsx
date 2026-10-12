@@ -6,12 +6,16 @@ import { useDocument, useViewOptions } from "@loopar/document";
 import {cn} from "@cn/lib/utils";
 import { SaveButton } from "./app-bar";
 
+const SIDEBAR_WIDTH = "w-[300px]";
+const DOCUMENT_WIDTH_WITH_SIDEBAR = "lg:w-[calc(100%-300px)] w-full";
+
 const InnerSidebar = ({ toggleSidebar, ...props }) => {
   return (
     <div
       className={cn(
         "fixed flex flex-col right-0 h-full z-10 p-2 border-l bg-background transition-all",
         "border-l border-border dark:border-border-dark",
+        SIDEBAR_WIDTH,
       )}
       style={{top: "4rem", height: "calc(100% - 4rem)", transition: "width 0.2s"}}
     >
@@ -61,7 +65,7 @@ export default function DeskUI(props) {
         <MoreVertical/>
       </Button>}
       <div 
-        className={`flex flex-col flex-1 space-y-4 ${sidebarOpen ? "" : "w-full"}`}
+        className={`flex flex-col flex-1 space-y-4 ${hasSidebar && sidebarOpen ? DOCUMENT_WIDTH_WITH_SIDEBAR : "w-full"}`}
       >
         {hasHeader && 
           <AppBar 
@@ -69,7 +73,8 @@ export default function DeskUI(props) {
             toggleSidebar={toggleSidebar}
             viewTypeToggle={props.viewTypeToggle}
             viewType={props.viewType}
-            sidebarOpen={sidebarOpen}
+            sidebarOpen={hasSidebar && sidebarOpen}
+            hasSidebar={hasSidebar}
             hasBreadcrumb={hasBreadcrumb}
           />
         }
@@ -80,7 +85,7 @@ export default function DeskUI(props) {
         <InnerSidebar toggleSidebar={toggleSidebar}>
           <div>
             {options.sidebarHeader}
-            <SaveButton/>
+            <SaveButton variant="secondary"/>
           </div>
           {options.sidebar}
         </InnerSidebar>

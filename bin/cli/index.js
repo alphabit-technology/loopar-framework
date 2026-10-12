@@ -4,6 +4,7 @@
  * Loopar CLI — lifecycle for the project-local pm2 daemon.
  *
  */
+import '../../packages/loopar/bin/check-node.js';
 import { existsSync } from 'fs';
 import { spawnSync, execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';

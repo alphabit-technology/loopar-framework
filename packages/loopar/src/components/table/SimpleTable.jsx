@@ -39,7 +39,7 @@ export function SimpleTable(props) {
         )
       } 
       return (
-        <TableRow key={`${tableId}-${row.name}-${index}`} className="p-0 m-0">
+        <TableRow key={`${tableId}-${row.name}-${index}`} className="group p-0 m-0 hover:bg-muted/40">
           {
             availableColumns.map((col) => {
               const cellProps = col.cellProps || {};
@@ -67,13 +67,13 @@ export function SimpleTable(props) {
       aria-label="sticky table" 
       className="w-full overflow-hidden"
     >
-      <TableHeader className="bg-slate-300/50 dark:bg-slate-800/50">
-        <TableRow>
+      <TableHeader className="bg-muted/40">
+        <TableRow className="[&>td]:h-10 [&>td]:py-2 [&>td]:text-xs [&>td]:font-medium [&>td]:text-muted-foreground">
           {availableColumns.filter(c => c.data?.label).map((c) => {
             const { data, headProps = {} } = c;
             return (
               <TableCell key={data.name} {...headProps}>
-                {typeof data.label === "function" ? data.label() : loopar.utils.UPPERCASE(data.label || "")}
+                {typeof data.label === "function" ? data.label() : (data.label || "")}
               </TableCell>
             );
           })}

@@ -42,17 +42,21 @@ export const Meta = memo(function Meta(props) {
   const def = baseElementsDict[meta.element]?.def || {};
   const { ENVIRONMENT } = useWorkspace();
 
+  const runtimeData = fieldMeta?.data;
+  const displayOn = runtimeData?.display_on ?? metaProps.data?.display_on;
+  const hiddenFlag = runtimeData?.hidden ?? metaProps.data?.hidden;
+
   const display = useMemo(() => {
-    if (metaProps.data?.display_on) {
-      const fields = extractFieldNames(metaProps.data.display_on);
+    if (displayOn) {
+      const fields = extractFieldNames(displayOn);
       const values = fields.reduce((acc, field) => {
         acc[field] = formValues[field];
         return acc;
       }, {});
-      return evaluateCondition(metaProps.data.display_on, values);
+      return evaluateCondition(displayOn, values);
     }
-    return ![true, "true", "1", 1].includes(metaProps.data?.hidden);
-  }, [metaProps.data?.display_on, metaProps.data?.hidden, formValues]);
+    return ![true, "true", "1", 1].includes(hiddenFlag);
+  }, [displayOn, hiddenFlag, formValues]);
 
   /*const [display, setDisplay] = useState(isDisplay());
 
@@ -80,34 +84,37 @@ export const Meta = memo(function Meta(props) {
     // Hydrate metaFields defaults here — the common point for SSR, the public
     // page and the designer — so the base render no longer depends on the
     // element editor mounting to see values like feature-card's default icon.
-    const data = applyMetaDefaults(Comp, metaProps.data || {});
-    metaProps.data = data;
+    //
+    // `metaProps` is memoized (useBuildMetaProps) — never mutate it. It used to
+    // be mutated here (data, className, runtime overrides), so each render
+    // started from the previous one's leftovers: a `setFieldDf(name, "disabled"
+    // | "hidden", …)` showed up one render late, and the wrapper below read the
+    // pre-override data (a button could look disabled while being clickable).
+    // Each render now builds its own props: defaults, then runtime overrides.
+    const baseData = applyMetaDefaults(Comp, metaProps.data || {});
+    const data = fieldMeta ? { ...baseData, ...(fieldMeta.data || {}) } : baseData;
 
-    metaProps.className = cn(
-      "relative",
-      def.designerClasses,
-      metaProps.className, 
-      meta.className, 
-      className, 
-      (!isDesigner || !designer.designing) && 'space-y-4 gap-4',
-      (designer.designing && def.droppable) && "pt-4 overflow-y-auto",
-      data?.class
-    );
-
-    if (fieldMeta) {
-      const newData = {
-        ...data,
-        ...(fieldMeta.data || {})
-      };
-
-      Object.assign(metaProps, fieldMeta, { data: newData });
-    }
+    const renderProps = {
+      ...metaProps,
+      ...(fieldMeta || {}),
+      data,
+      className: cn(
+        "relative",
+        def.designerClasses,
+        metaProps.className,
+        meta.className,
+        className,
+        (!isDesigner || !designer.designing) && 'space-y-4 gap-4',
+        (designer.designing && def.droppable) && "pt-4 overflow-y-auto",
+        data?.class
+      ),
+    };
 
     if (isDesigner && Comp && data.wrapper !== true) {
       return (
         <DesignElement
           Comp={Comp}
-          element={metaProps}
+          element={renderProps}
           parent={parent}
           parentKey={parentKey}
           def={def}
@@ -128,7 +135,7 @@ export const Meta = memo(function Meta(props) {
             docRef={docRef}
             data={data}
             threshold={0.1}
-            metaProps={metaProps}
+            metaProps={renderProps}
           />
         </Wrapper>
       )

@@ -133,8 +133,10 @@ class Loopar {
   }
 
   notify() {
-    const { message, type = "success", title="success" } = loopar.utils.args(["message", "type", "title"], arguments);
-    this.emit('notify', { message, type, title });
+    const { message, type = "success", title } = loopar.utils.args(["message", "type", "title"], arguments);
+    // Default title follows the type — a hardcoded "success" mislabeled error toasts.
+    const resolvedTitle = title || (type.charAt(0).toUpperCase() + type.slice(1));
+    this.emit('notify', { message, type, title: resolvedTitle });
   }
 
   emit(event, data) {

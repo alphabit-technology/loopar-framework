@@ -167,12 +167,6 @@ class PermissionManagerClass {
     await this.#reloadRole(roleName);
   }
 
-  /**
-   * Can `username` reach anything inside `moduleName`? True with an explicit
-   * `Module:<name> view` grant, or when the user can list/view at least one
-   * document of the module (Frappe-style: a workspace is visible when you
-   * have a role on one of its doctypes). Derived — no extra grants needed.
-   */
   canAccessModule(moduleName, username) {
     username = username ?? loopar.auth.user() ?? 'Guest';
     if (username === 'Administrator') return true;

@@ -61,18 +61,32 @@ export class Middleware {
         req.__ROUTE_MODE__ === "rpc" &&
         String(req.__params__?.document || '').toLowerCase() === 'system';
 
+      // A system-state redirect must NEVER be a 302 on the AJAX channel:
+      // fetch() follows it silently (POST→GET, keeping X-Requested-With /
+      // X-Workspace-Token), the redirected page is then served as JSON meta
+      // and the SPA renders ANOTHER document under the unchanged URL (e.g.
+      // Desk welcome on /desk/App Manager/view after a discard restarts the
+      // tenant). Ship the redirect inside the JSON instead — http.jsx does a
+      // hard window.location.replace, so URL and content stay in sync.
+      const sendRedirect = (url) => {
+        if (RouterUtils.isAjaxRequest(req)) {
+          return this.renderAjax(res, { redirect: url, hardRedirect: true });
+        }
+        return this.redirect(req, res, url);
+      };
+
       if (!isSystemRpc) {
         const requiredPath = RouterUtils.SystemValidation.getRedirectPath(loopar);
 
         if (requiredPath) {
           if (currentUrlLower !== requiredPath.toLowerCase()) {
-            return this.redirect(req, res, requiredPath);
+            return sendRedirect(requiredPath);
           }
         } else {
           const spentPages = [status.connectPath, status.installPath, status.updatePath]
             .map((path) => path.toLowerCase());
           if (spentPages.includes(currentUrlLower)) {
-            return this.redirect(req, res, '/desk');
+            return sendRedirect('/desk');
           }
         }
       }
@@ -82,7 +96,7 @@ export class Middleware {
         req.__WORKSPACE_NAME__ === "loopar" &&
         req.__ROUTE_MODE__ === "navigation"
       ) {
-        return this.redirect(req, res, '/desk');
+        return sendRedirect('/desk');
       }
 
       next();
@@ -442,9 +456,13 @@ export class Middleware {
   /**
    * Renders AJAX/JSON response with a single, stable wire shape.
    *
-   * Error responses (status >= 400): { status, code, title, message }
+   * Error responses (status >= 400): { status, success: false, code, title, message }
    * Success responses: { status, success: true, message?, notify?, ...payload }
-   * 
+   *
+   * `success` is ALWAYS derived from the HTTP status — whatever the handler put
+   * there is overwritten. A negative domain outcome that is not a request failure
+   * goes in a domain field (available: false, state: 'failed', …), never `success`.
+   *
    */
   renderAjax(res, response) {
     if (res.headersSent) return;
@@ -461,6 +479,7 @@ export class Middleware {
     if (response instanceof Error) {
       res.status(500).set(headers).json({
         status: 500,
+        success: false,
         code: response.code || 'INTERNAL_ERROR',
         title: response.title || 'Internal Server Error',
         message: response.message || 'An unexpected error occurred'
@@ -473,9 +492,17 @@ export class Middleware {
       return;
     }
 
+    // Raw data payloads (actions returning a list) go out as-is: spreading an
+    // array into the envelope turns it into { 0: …, 1: …, status, success }
+    // and the client loses the array (e.g. getUserRoles → data.map crash).
+    if (Array.isArray(response)) {
+      res.status(200).set(headers).json(response);
+      return;
+    }
+
     const raw = Number(response.status) || Number(response.code) || 200;
     const status = (raw >= 100 && raw <= 599) ? raw : 200;
-    res.status(status).set(headers).json(response);
+    res.status(status).set(headers).json({ ...response, status, success: status < 400 });
   }
 
   makeUrl = (href, currentURL) => RouterUtils.buildUrl(href, currentURL);

@@ -1,0 +1,18 @@
+/* Read-only view fields (read-field.jsx). The value renderers come from
+   @loopar/print, whose styles use the paper palette (--lp-*); here they follow
+   the theme instead. */
+.lp-read-field {
+  --lp-ink: hsl(var(--foreground));
+  --lp-muted: hsl(var(--muted-foreground));
+  --lp-border: hsl(var(--border));
+  --lp-soft: hsl(var(--muted));
+}
+.lp-read-value { overflow-wrap: anywhere; }
+.lp-read-value .lp-table { border: 0 !important; }
+.lp-read-value .lp-table :is(th, td) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--lp-border) !important;
+}
+.lp-read-value .lp-table th { font-size: 0.7rem; }
+.lp-read-value .lp-table td { font-size: 0.875rem; }
+.lp-read-value .lp-images img { max-height: 10rem; border-radius: 0.375rem; }

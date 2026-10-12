@@ -10,7 +10,7 @@ import {Link} from "@link"
 import { buttonVariants } from "@cn/components/ui/button"
 import { 
   ComponentIcon, CircuitBoardIcon, FilesIcon, LayoutGridIcon, Settings2Icon, 
-  User2Icon, CogIcon, ServerCogIcon, BrushIcon, LockKeyhole, ChartSpline, StarIcon
+  User2Icon, CogIcon, ServerCogIcon, BrushIcon, LockKeyhole, ChartSpline, StarIcon, PrinterIcon
 } from "lucide-react"
 
 const MakeButton = ({ Icon, text, link}) => (
@@ -47,10 +47,11 @@ export function AppsMenu() {
           <MakeButton Icon={Settings2Icon} text="Settings" link="/desk/System Settings/update" />
           <MakeButton Icon={FilesIcon} text="Files" link="/desk/File Manager/list" />
           <MakeButton Icon={ServerCogIcon} text="Tenant Manager" link="/desk/Tenant Manager/list" />
-          <MakeButton Icon={ChartSpline} text="Analytics" link="/desk/Analytics%20Dashboard/view" />
+          <MakeButton Icon={ChartSpline} text="Analytics" link="/desk/Analytics Dashboard/view" />
           <MakeButton Icon={User2Icon} text="Users" link="/desk/user/list" />
           <MakeButton Icon={LockKeyhole} text="Auth Manager" link="/desk/Role Permission Manager/view" />
           <MakeButton Icon={StarIcon} text="Reviews" link="/desk/Review/list" />
+          <MakeButton Icon={PrinterIcon} text="Print Formats" link="/desk/Print Format Builder/list" />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

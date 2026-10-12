@@ -63,7 +63,7 @@ export default class TenantManager extends BaseDocument {
     await this.validate();
 
     if (this.__IS_NEW__ && this.allApps.find(a => a.name === this.name)) {
-      return loopar.throw("Tenant already exists, try another name");
+      return loopar.throw({ status: 409, title: 'Conflict', message: 'Tenant already exists, try another name' });
     }
 
     await tenant.saveTenant({...await this.rawValues(), ID: this.id || this.name});
@@ -119,7 +119,7 @@ export default class TenantManager extends BaseDocument {
         a => a.domain === this.domain && a.name !== this.name
       );
       if (conflict) {
-        return loopar.throw(`Domain ${this.domain} is already used by tenant ${conflict.name}`);
+        return loopar.throw({ status: 409, title: 'Conflict', message: `Domain ${this.domain} is already used by tenant ${conflict.name}` });
       }
     }
     await super.validate();

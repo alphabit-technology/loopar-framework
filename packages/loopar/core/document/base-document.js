@@ -277,6 +277,74 @@ export default class BaseDocument extends CoreDocument {
     return Object.values(values).map(value => value).join(" - ");
   }
 
+  /**
+   * Titles of the records this document links to, for read-only renderings
+   * (print): `{ [Entity]: { [name]: "Title" } }`. Covers the entity selects of
+   * the document and of its child tables, one query per linked entity. A title
+   * follows the linked entity's `title_fields` (joined " - ", like
+   * getValueDescriptive); entities without title_fields are left out, their
+   * name already is the title.
+   */
+  async linkTitles() {
+    const values = await this.rawValues();
+    const wanted = {};
+
+    const linkedEntity = (options) => {
+      const entity = typeof options === "string" ? options.trim() : "";
+      if (!entity || entity.includes("\n")) return null;   // inline options, not a link
+      return loopar.getRef(entity, false) ? entity : null;
+    };
+
+    const collect = async (structure, rows) => {
+      for (const el of structure || []) {
+        const data = el.data || {};
+
+        if (el.element === SELECT) {
+          const entity = linkedEntity(data.options);
+          if (entity) {
+            for (const row of rows) {
+              const value = row?.[data.name];
+              if (value !== null && value !== undefined && value !== "") {
+                (wanted[entity] ??= new Set()).add(String(value));
+              }
+            }
+          }
+        } else if (el.element === FORM_TABLE) {
+          const ref = linkedEntity(data.options) && loopar.getRef(data.options.trim());
+          if (ref) {
+            const childStructure = loopar.utils.JSONparse(
+              await loopar.db.getValue(ref.__ENTITY__, "doc_structure", ref.__NAME__), []
+            );
+            const childRows = rows.flatMap(row => {
+              const v = row?.[data.name];
+              return Array.isArray(v) ? v : loopar.utils.JSONparse(v, []) || [];
+            });
+            await collect(childStructure, childRows);
+          }
+        }
+
+        if (el.elements) await collect(el.elements, rows);
+      }
+    };
+
+    await collect(loopar.utils.JSONparse(this.__ENTITY__.doc_structure, []), [values]);
+
+    const titles = {};
+    for (const [entity, names] of Object.entries(wanted)) {
+      const linked = await loopar.newDocument(entity);
+      const fields = linked.getFieldSelectLabels().filter(f => f !== "name");
+      if (!fields.length) continue;
+
+      const rows = await loopar.db.getAll(entity, ["name", ...fields], { name: { [Op.in]: [...names] } });
+      titles[entity] = Object.fromEntries(rows.map(row => [
+        row.name,
+        fields.map(f => row[f]).filter(v => v !== null && v !== undefined && v !== "").join(" - ") || row.name,
+      ]));
+    }
+
+    return titles;
+  }
+
   async records(condition = []) {
     return await loopar.db.count(this.__ENTITY__.name, condition);
   }

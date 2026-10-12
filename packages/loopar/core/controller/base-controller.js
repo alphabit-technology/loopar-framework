@@ -2,6 +2,7 @@
 
 import { loopar, DOC_STATUS, coerceDocStatus } from "loopar";
 import CoreController from './core-controller.js';
+import { printPayload } from '../document/print-format.js';
 
 const HISTORY_TABLE = 'Document History';
 const COMMENT_TABLE = 'Comment';
@@ -88,9 +89,34 @@ export default class BaseController extends CoreController {
     }
   }
 
+  /**
+   * Read-only rendering of one record: the form with every field shown as its
+   * value (`Document.readOnly`). Link titles let selects show titles, not names.
+   * A GET to `update` without the update permission lands here too
+   * (AuthController downgrades it when the user may view).
+   */
   async actionView() {
     const document = await loopar.getDocument(this.document, this.name);
-    return await this.render(document);
+    // Records only: pages, views, reports and singles render through `view` too.
+    const readOnly = !loopar.entityIsSingle(document.__ENTITY__ || {});
+    return await this.render(document, { linkTitles: await document.linkTitles(), readOnly });
+  }
+
+  /**
+   * Printable rendering of one record (`/desk/<Entity>/print?name=X`).
+   * `print` is its own permission (ActionScanner derives it from this method),
+   * and a grant with scope 'own' is enforced by AuthController like any other
+   * record action. `?format=<name>|standard` picks the format (default: the
+   * entity's default Print Format). The client mounts the `print` entry: a
+   * designed format wins, then the app's `client/<entity>-print.jsx`, then
+   * the automatic format.
+   */
+  async actionPrint() {
+    const document = await loopar.getDocument(this.document, this.name);
+    return await this.render(document, {
+      linkTitles: await document.linkTitles(),
+      print: await printPayload(this.document, { requested: this.query?.format }),
+    });
   }
 
   async actionDelete() {
@@ -229,7 +255,7 @@ export default class BaseController extends CoreController {
     const d = this.data || {};
     const target = this.commentTarget();
     const ref = loopar.getRef?.(target) || {};
-    if (!ref.enable_comments) loopar.throw('Comments are not enabled for this document');
+    if (!ref.enable_comments) loopar.throw({ status: 403, title: 'Forbidden', message: 'Comments are not enabled for this document' });
 
     const documentName = d.documentName ? String(d.documentName).trim() : null;
     const comment = String(d.comment || '').trim();
@@ -241,7 +267,7 @@ export default class BaseController extends CoreController {
 
     const authedName = loopar.currentUser?.name;
     const isGuest = !authedName || authedName === 'Guest';
-    if (ref.require_login_to_comment && isGuest) loopar.throw('Sign in to comment');
+    if (ref.require_login_to_comment && isGuest) loopar.throw({ status: 401, title: 'Sign in required', message: 'Sign in to comment' });
 
     const status = isGuest ? DOC_STATUS.PENDING : DOC_STATUS.APPROVED;
     const commentDocument = d.document === HISTORY_TABLE ? HISTORY_TABLE : target;
@@ -264,13 +290,13 @@ export default class BaseController extends CoreController {
    * on the public web). Body: { name, status }
    */
   async actionModerate() {
-    if (this.req?.__WORKSPACE_NAME__ === 'web') loopar.throw('Not allowed');
+    if (this.req?.__WORKSPACE_NAME__ === 'web') loopar.throw({ status: 403, title: 'Forbidden', message: 'Not allowed' });
 
     const d = this.data || {};
     if (!d.name) loopar.throw('name is required');
 
     const doc = await loopar.getDocument(COMMENT_TABLE, d.name);
-    if (!doc) loopar.throw(`Comment "${d.name}" not found`);
+    if (!doc) loopar.throw({ status: 404, title: 'Not found', message: `Comment "${d.name}" not found` });
 
     doc.status = coerceDocStatus(d.status);
     await doc.save({ validate: false });

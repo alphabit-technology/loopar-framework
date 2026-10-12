@@ -7,6 +7,17 @@ import { loopar } from 'loopar';
 
 const execFile = promisify(execFileCb);
 
+/**
+ * Failures are thrown as typed errors (status + code + title) and rendered by
+ * the error middleware. Negative-but-valid outcomes (nothing to push/commit)
+ * are returned with `noop: true` — they are not request failures.
+ */
+function fail(status, code, message, title = 'Git error') {
+  loopar.throw({ status, code, title, message });
+}
+
+const stderrOf = (e, fallback) => (e?.stderr || e?.message || fallback).toString().trim();
+
 export function getCwdForApp(name) {
   const appPath = loopar.makePath(loopar.pathRoot, 'apps', name);
   const ownGitPath = loopar.makePath(appPath, '.git');
@@ -17,12 +28,9 @@ export function getCwdForApp(name) {
   }
 
   if (!hasOwnGit) {
-    const err = new Error(
+    fail(404, 'NO_GIT_DIR',
       `App '${name}' has no git repository at ${appPath}. ` +
-      `Use 'Get App' to clone it from a remote first.`
-    );
-    err.code = 'NO_GIT_DIR';
-    throw err;
+      `Use 'Get App' to clone it from a remote first.`);
   }
 
   return { cwd: appPath, isFramework: false };
@@ -40,8 +48,12 @@ export function getAppVersion(name) {
 }
 
 async function git(cwd, args) {
-  const { stdout, stderr } = await execFile('git', args, { cwd, maxBuffer: 4 * 1024 * 1024 });
-  return { stdout: (stdout || '').trim(), stderr: (stderr || '').trim() };
+  try {
+    const { stdout, stderr } = await execFile('git', args, { cwd, maxBuffer: 4 * 1024 * 1024 });
+    return { stdout: (stdout || '').trim(), stderr: (stderr || '').trim() };
+  } catch (e) {
+    fail(500, 'GIT_ERROR', stderrOf(e, `git ${args[0]} failed`));
+  }
 }
 
 export async function getStatus(cwd) {
@@ -73,27 +85,13 @@ export async function pullApp(name) {
 
   const status = await getStatus(cwd);
   if (!status.clean) {
-    return {
-      success: false,
-      reason: 'DIRTY',
-      message:
-        `Uncommitted changes detected${isFramework ? ' in monorepo' : ` in apps/${name}`} ` +
-        `(${status.files.length} file${status.files.length === 1 ? '' : 's'}). ` +
-        `Commit/push them, or 'git reset --hard' to discard.`,
-      files: status.files,
-    };
+    fail(409, 'DIRTY',
+      `Uncommitted changes detected${isFramework ? ' in monorepo' : ` in apps/${name}`} ` +
+      `(${status.files.length} file${status.files.length === 1 ? '' : 's'}). ` +
+      `Commit/push them, or 'git reset --hard' to discard.`);
   }
 
-  let pullOut;
-  try {
-    pullOut = await git(cwd, ['pull', '--ff-only']);
-  } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_ERROR',
-      message: (e.stderr || e.message || 'git pull failed').toString().trim(),
-    };
-  }
+  const pullOut = await git(cwd, ['pull', '--ff-only']);
 
   const after = (await git(cwd, ['rev-parse', 'HEAD'])).stdout;
   const changed = before !== after;
@@ -107,7 +105,6 @@ export async function pullApp(name) {
   }
 
   return {
-    success: true,
     is_framework: isFramework,
     before_sha: before,
     after_sha: after,
@@ -122,43 +119,20 @@ export async function pushApp(name) {
   const status = await getStatus(cwd);
 
   if (!status.clean) {
-    return {
-      success: false,
-      reason: 'DIRTY',
-      message:
-        `Uncommitted changes${isFramework ? ' in monorepo' : ` in apps/${name}`}: ` +
-        `commit them before pushing.`,
-      files: status.files,
-    };
+    fail(409, 'DIRTY',
+      `Uncommitted changes${isFramework ? ' in monorepo' : ` in apps/${name}`}: ` +
+      `commit them before pushing.`);
   }
   if (status.behind > 0) {
-    return {
-      success: false,
-      reason: 'BEHIND',
-      message: `Local is behind remote by ${status.behind} commit(s). Pull first.`,
-    };
+    fail(409, 'BEHIND', `Local is behind remote by ${status.behind} commit(s). Pull first.`);
   }
   if (status.ahead === 0) {
-    return {
-      success: false,
-      reason: 'NOTHING_TO_PUSH',
-      message: 'Nothing to push. Local is in sync with remote.',
-    };
+    return { noop: true, message: 'Nothing to push. Local is in sync with remote.' };
   }
 
-  let pushOut;
-  try {
-    pushOut = await git(cwd, ['push']);
-  } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_ERROR',
-      message: (e.stderr || e.message || 'git push failed').toString().trim(),
-    };
-  }
+  const pushOut = await git(cwd, ['push']);
 
   return {
-    success: true,
     is_framework: isFramework,
     pushed: status.ahead,
     message: pushOut.stdout || pushOut.stderr || `Pushed ${status.ahead} commit(s).`,
@@ -167,11 +141,7 @@ export async function pushApp(name) {
 
 export async function commitApp(name, message) {
   if (!message || !message.trim()) {
-    return {
-      success: false,
-      reason: 'NO_MESSAGE',
-      message: 'Commit message is required.',
-    };
+    fail(400, 'NO_MESSAGE', 'Commit message is required.', 'Commit');
   }
 
   const { cwd, isFramework } = getCwdForApp(name);
@@ -179,37 +149,17 @@ export async function commitApp(name, message) {
 
   if (status.clean) {
     return {
-      success: false,
-      reason: 'NOTHING_TO_COMMIT',
+      noop: true,
       message: `Nothing to commit${isFramework ? ' in monorepo' : ` in apps/${name}`}. Working tree is already clean.`,
     };
   }
 
-  try {
-    await git(cwd, ['add', '.']);
-  } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_ADD_ERROR',
-      message: (e.stderr || e.message || 'git add failed').toString().trim(),
-    };
-  }
-
-  let commitOut;
-  try {
-    commitOut = await git(cwd, ['commit', '-m', message.trim()]);
-  } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_COMMIT_ERROR',
-      message: (e.stderr || e.message || 'git commit failed').toString().trim(),
-    };
-  }
+  await git(cwd, ['add', '.']);
+  const commitOut = await git(cwd, ['commit', '-m', message.trim()]);
 
   const sha = (await git(cwd, ['rev-parse', 'HEAD'])).stdout;
 
   return {
-    success: true,
     is_framework: isFramework,
     sha,
     files_committed: status.files.length,
@@ -220,19 +170,10 @@ export async function commitApp(name, message) {
 export async function discardApp(name) {
   const { cwd, isFramework } = getCwdForApp(name);
 
-  try {
-    await git(cwd, ['reset', '--hard', 'HEAD']);
-    await git(cwd, ['clean', '-fd']);
-  } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_ERROR',
-      message: (e.stderr || e.message || 'discard failed').toString().trim(),
-    };
-  }
+  await git(cwd, ['reset', '--hard', 'HEAD']);
+  await git(cwd, ['clean', '-fd']);
 
   return {
-    success: true,
     is_framework: isFramework,
     message: `Discarded local changes${isFramework ? ' in monorepo' : ` in apps/${name}`}.`,
   };
@@ -255,23 +196,15 @@ export async function getRemoteUrl(name) {
 
 export async function publishApp(name, remoteUrl, message = 'Initial commit') {
   if (name === 'loopar') {
-    return {
-      success: false,
-      reason: 'IS_FRAMEWORK',
-      message: 'Framework is published with the monorepo, not from App Manager.',
-    };
+    fail(409, 'IS_FRAMEWORK', 'Framework is published with the monorepo, not from App Manager.', 'Publish');
   }
   if (!remoteUrl || !remoteUrl.trim()) {
-    return { success: false, reason: 'NO_URL', message: 'Remote URL is required.' };
+    fail(400, 'NO_URL', 'Remote URL is required.', 'Publish');
   }
 
   const appPath = loopar.makePath(loopar.pathRoot, 'apps', name);
   if (!fs.existsSync(appPath)) {
-    return {
-      success: false,
-      reason: 'NO_DIR',
-      message: `App directory ${appPath} does not exist.`,
-    };
+    fail(404, 'NO_DIR', `App directory ${appPath} does not exist.`, 'Publish');
   }
 
   const url = remoteUrl.trim();
@@ -289,11 +222,7 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
   }
 
   if (hasGit && hasOrigin) {
-    return {
-      success: false,
-      reason: 'ALREADY_CONNECTED',
-      message: `'${name}' already has a remote configured. Use Push to send changes.`,
-    };
+    fail(409, 'ALREADY_CONNECTED', `'${name}' already has a remote configured. Use Push to send changes.`, 'Publish');
   }
 
   try {
@@ -316,11 +245,7 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
           await git(appPath, ['add', '.']);
           await git(appPath, ['commit', '-m', msg]);
         } catch {
-          return {
-            success: false,
-            reason: 'EMPTY_REPO',
-            message: `'${name}' has .git but no commits and nothing stageable. Add content before publishing.`,
-          };
+          fail(409, 'EMPTY_REPO', `'${name}' has .git but no commits and nothing stageable. Add content before publishing.`, 'Publish');
         }
       }
     }
@@ -333,7 +258,6 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
     await git(appPath, ['push', '-u', 'origin', branch]);
 
     return {
-      success: true,
       remote_url: url,
       branch,
       message: hasGit
@@ -341,14 +265,10 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
         : `Published '${name}' to ${url} on branch ${branch}.`,
     };
   } catch (e) {
-    return {
-      success: false,
-      reason: 'GIT_ERROR',
-      message: (e.stderr || e.message || 'Publish failed').toString().trim(),
-      hint: hasGit
-        ? `Local .git was preserved. To undo the connection: 'cd apps/${name} && git remote remove origin'.`
-        : `Local .git was left in place. To start over: 'rm -rf apps/${name}/.git'.`,
-    };
+    const hint = hasGit
+      ? `Local .git was preserved. To undo the connection: 'cd apps/${name} && git remote remove origin'.`
+      : `Local .git was left in place. To start over: 'rm -rf apps/${name}/.git'.`;
+    fail(Number(e.status) || 500, e.code || 'GIT_ERROR', `${stderrOf(e, 'Publish failed')}\n\n${hint}`, e.title || 'Publish');
   }
 }
 

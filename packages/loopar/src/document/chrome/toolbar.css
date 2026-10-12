@@ -1,0 +1,33 @@
+/* Desk toolbar (toolbar.jsx). */
+
+/* In the "⋯" menu every entry reads as a menu row, whatever variant the
+   action was given for the toolbar. */
+.lp-toolbar-menu-item > :is(button, a) {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+  /* One geometry for every row, whatever the action's variant/size: icons and
+     labels line up (a Link and a Button pad differently). */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.lp-toolbar-menu-item > :is(button, a) > svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  margin: 0;
+  padding: 0;
+}
+.lp-toolbar-menu-item > :is(button, a):hover {
+  background: hsl(var(--accent));
+}
+
+/* A label only the menu shows (icon-only buttons in the row, e.g. the list's
+   view toggle). */
+.lp-toolbar-item .lp-menu-label { display: none; }

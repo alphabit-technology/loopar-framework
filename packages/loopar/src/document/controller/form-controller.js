@@ -133,7 +133,10 @@ export class FormController extends DocumentController {
         errorCallback?.(e);
         this.#emit("sendError", e, info);
         if (_isSave) this.#emit("saveError", e, info);
-        if (!options.error && !errorCallback) loopar.throw(e);
+        // http.jsx already toasted the error — only propagate so awaiting callers stop.
+        if (!options.error && !errorCallback) {
+          throw Object.assign(new Error(e?.message || 'Request failed'), e);
+        }
       },
     });
   }

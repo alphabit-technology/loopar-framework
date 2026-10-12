@@ -43,6 +43,9 @@
       "@loopar/page/*": [
         "./node_modules/loopar/src/document/page/*"
       ],
+      "@loopar/print/*": [
+        "./node_modules/loopar/src/document/print/*"
+      ],
       "@loopar/*": [
         "./node_modules/loopar/src/*"
       ],

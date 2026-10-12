@@ -197,7 +197,7 @@ export const TableProvider = ({
         colSpan: colSpan || 2
       },
       cellProps: {
-        className: "align-middle text-truncate w-10 p-4"
+        className: "align-middle text-truncate w-10 px-4 py-2"
       },
       render: (row) => (
         <Checkbox

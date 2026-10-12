@@ -2,6 +2,7 @@ import {Link} from "@link";
 import { useWorkspace } from "@workspace/workspace-provider";
 import { usePersist } from "@services/persist-state";
 import { useEffect } from "react";
+import {ChevronRightIcon} from "lucide-react"
 import Icon from "@icon";
 
 import { useLocation } from 'react-router';
@@ -45,7 +46,7 @@ export const SideNavItem = (props) => {
       active={active}
       //activeClassName="bg-red-500 font-medium text-primary-foreground hover:bg-primary"
     >
-      <Icon data={{icon}} className="h-6 w-8"/>
+      {icon ? <Icon data={{icon}} className="h-6 w-8"/> : <ChevronRightIcon className="h-6 w-8"/>}
       { title && (title.replace(" ", "-")).split('-').map((word, index) => (
         <small 
           key={path + index} 
@@ -65,7 +66,7 @@ export const SideNavItem = (props) => {
       to={`/desk/${path}`}
       active={active}
     >
-      <Icon data={{icon}} className="mr-2 h-6 w-6"/>
+      {icon ? <Icon data={{icon}} className="mr-2 h-6 w-6"/> : <ChevronRightIcon className="mr-2 h-6 w-6"/>}
       <span className="w-full">{title}</span>
     </Link>
   );

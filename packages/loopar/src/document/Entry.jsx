@@ -4,6 +4,7 @@ import { DocumentProvider, DefaultView } from "./base/provider";
 import { FormProvider, FormLayout, ReportLayout, BareLayout } from "./form";
 import { ListProvider, ListLayout } from "./list";
 import { PageLayout, WebLayout } from "./page";
+import { PrintLayout } from "./print";
 import { DocumentController } from "./controller/document-controller";
 import { FormController } from "./controller/form-controller";
 import { useController } from "./controller/use-controller";
@@ -28,6 +29,7 @@ export const entries = {
   form:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: true } },
   view:       { middleware: "form", layout: FormLayout,   defaults: { canUpdate: false } },
   report:     { middleware: "form", layout: ReportLayout },
+  print:      { middleware: "form", layout: PrintLayout,  defaults: { canUpdate: false, hasSidebar: false, hasHistory: false } },
   installer:  { middleware: "form", layout: BareLayout,   defaults: { controller: "System", notRequireChanges: true,
                 handlers: { install: (ctrl) => ctrl.send({ action: "install" }), connect: (ctrl) => ctrl.send({ action: "connect" }) } } },
   auth:       { middleware: "form", layout: BareLayout,   defaults: { controller: "Auth" }, form: { schema: false } },

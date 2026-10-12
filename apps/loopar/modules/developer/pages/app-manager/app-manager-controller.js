@@ -42,8 +42,13 @@ export default class AppManagerController extends SystemController {
           app.installed_version = installedApp ? installedApp.version : app.version;
           app.valid_repo = loopar.gitRepositoryIsValid(app.git_repo);
 
-          const ownGitPath = loopar.makePath(loopar.pathRoot, 'apps', dirent.name, '.git');
-          app.has_git = fs.existsSync(ownGitPath);
+          // Every app operation resolves apps/<App.name>; a folder named
+          // differently (e.g. cloned under the repo name) is unmanageable.
+          app.folder = dirent.name;
+          app.folder_mismatch = dirent.name !== app.name;
+
+          const ownGitPath = loopar.makePath(loopar.pathRoot, 'apps', app.name, '.git');
+          app.has_git = !app.folder_mismatch && fs.existsSync(ownGitPath);
           app.is_framework = (app.name === 'loopar' && !app.has_git);
 
           appsList.push(app);
@@ -100,12 +105,6 @@ export default class AppManagerController extends SystemController {
     const app_name = this.#requireAppName();
     const result = await pullApp(app_name);
 
-    if (!result.success) {
-      return await this.success(result, {
-        notify: { type: 'error', message: result.message }
-      });
-    }
-
     const restartNote = result.needs_restart
       ? ' Restart the tenant (nodemon will reload in dev) to apply.'
       : '';
@@ -141,10 +140,8 @@ export default class AppManagerController extends SystemController {
     const app_name = this.#requireAppName();
     const result = await pushApp(app_name);
 
-    if (!result.success) {
-      return await this.success(result, {
-        notify: { type: 'error', message: result.message }
-      });
+    if (result.noop) {
+      return await this.success(result, { notify: { type: 'info', message: result.message } });
     }
 
     return await this.success(result, {
@@ -159,19 +156,10 @@ export default class AppManagerController extends SystemController {
     const app_name = this.#requireAppName();
     const message = (this.body && this.body.message) || (this.query && this.query.message);
 
-    if (!message || !message.trim()) {
-      return await this.success(
-        { success: false, reason: 'NO_MESSAGE', message: 'Commit message is required.' },
-        { notify: { type: 'error', message: 'Commit message is required.' } }
-      );
-    }
-
     const result = await commitApp(app_name, message);
 
-    if (!result.success) {
-      return await this.success(result, {
-        notify: { type: 'error', message: result.message }
-      });
+    if (result.noop) {
+      return await this.success(result, { notify: { type: 'info', message: result.message } });
     }
 
     return await this.success(result, {
@@ -187,12 +175,6 @@ export default class AppManagerController extends SystemController {
     const app_name = this.#requireAppName();
     const result = await discardApp(app_name);
 
-    if (!result.success) {
-      return await this.success(result, {
-        notify: { type: 'error', message: result.message }
-      });
-    }
-
     await this.unInstallApp(app_name, {}, true);
 
     return await this.success(result, {
@@ -205,20 +187,7 @@ export default class AppManagerController extends SystemController {
     const remote_url = (this.body && this.body.remote_url) || (this.query && this.query.remote_url);
     const message = (this.body && this.body.message) || (this.query && this.query.message) || 'Initial commit';
 
-    if (!remote_url || !remote_url.trim()) {
-      return await this.success(
-        { success: false, reason: 'NO_URL', message: 'Remote URL is required.' },
-        { notify: { type: 'error', message: 'Remote URL is required.' } }
-      );
-    }
-
     const result = await publishApp(app_name, remote_url, message);
-
-    if (!result.success) {
-      return await this.success(result, {
-        notify: { type: 'error', message: result.message }
-      });
-    }
 
     return await this.success(result, {
       notify: {
@@ -229,21 +198,11 @@ export default class AppManagerController extends SystemController {
   }
 
   async actionDiff() {
-    const app_name = this.#requireAppName();
-    try {
-      return await getDiff(app_name);
-    } catch (e) {
-      return { success: false, message: e.message || 'Diff failed' };
-    }
+    return await getDiff(this.#requireAppName());
   }
 
   async actionStatus() {
-    const app_name = this.#requireAppName();
-    try {
-      return await statusApp(app_name);
-    } catch (e) {
-      return { success: false, reason: e.code || 'ERROR', message: e.message };
-    }
+    return await statusApp(this.#requireAppName());
   }
 
   #requireAppName() {

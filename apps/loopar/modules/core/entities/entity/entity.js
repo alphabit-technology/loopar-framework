@@ -25,7 +25,7 @@ export default class Entity extends BaseDocument {
   }
 
   entityIsSingle() {
-    return (["Page", "Form", "Report", "View", "Controller"].includes(this.getEntityType()) || this.is_single) ? 1 : 0;
+    return (["Page", "Form", "Report", "View", "Controller", "Print Format"].includes(this.getEntityType()) || this.is_single) ? 1 : 0;
   }
 
   validateEntityName() {
@@ -542,7 +542,9 @@ export default class Entity extends BaseDocument {
 
     const extendController = type === "Contact Form"
       ? "BaseContactFormController"
-      : (["Single", "View", "Page", "Form", "Report"].includes(type) ? type : "Base") + "Controller";
+      : type === "Print Format"
+        ? "PrintFormatController"
+        : (["Single", "View", "Page", "Form", "Report"].includes(type) ? type : "Base") + "Controller";
 
     await fileManage.makeClass(documentPath, `${this.name}Controller`, {
       IMPORTS: {

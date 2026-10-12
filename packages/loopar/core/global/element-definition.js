@@ -252,6 +252,9 @@ export const ELEMENT_GROUPS = Object.freeze({
   meta:       { label: "Meta",       writable: false },
   form:       { label: "Form",       writable: true },
   system:     { label: "System",     writable: true },
+  // Print-format building blocks. `contextOnly`: offered only by a document
+  // context that lists the group (Print Format Builder) — never on pages.
+  print:      { label: "Print",      writable: false, contextOnly: true },
 });
 
 export const elementsDefinition = {
@@ -347,6 +350,17 @@ export const elementsDefinition = {
     { element: "designer", icon: "Brush", type: TYPES.longtext },
     { element: "slot", icon: "Plug"},
     { element: "metadata", icon: "Code", type: TYPES.json}
+  ],
+  // Read the record being printed (src/document/print/record.jsx); outside a
+  // print they render a design placeholder.
+  print: [
+    { element: "letterhead", icon: "Building2", droppable: false },
+    { element: "doc_header", icon: "Heading", droppable: false },
+    { element: "doc_field", icon: "Tag", droppable: false },
+    { element: "doc_table", icon: "Table", droppable: false },
+    { element: "doc_section", icon: "LayoutPanelTop" },
+    { element: "doc_body", icon: "LayoutList", droppable: false },
+    { element: "page_break", icon: "SeparatorHorizontal", droppable: false },
   ]
 }
 
@@ -668,7 +682,16 @@ const DOCUMENT_CONTEXTS = Object.freeze({
     aiGroups: ["form"],
     paletteGroups: ["form", "system"],
   },
+  print: {
+    documentTypes: ["Print Format Builder"],
+    extra: [],
+    aiGroups: ["layout", "content", "print"],
+    paletteGroups: ["layout", "content", "media", "print"],
+  },
 });
+
+/** Groups that only a context listing them may offer (see ELEMENT_GROUPS.print). */
+const isContextOnly = (group) => ELEMENT_GROUPS[group]?.contextOnly === true;
 
 const contextFor = (document_type) =>
   Object.values(DOCUMENT_CONTEXTS)
@@ -679,7 +702,7 @@ const aiAllowedElements = (document_type) => {
 
   const allowed = new Set(ctx?.extra || []);
   for (const [el, { def }] of Object.entries(elementsDict)) {
-    if (ctx ? ctx.aiGroups.includes(def.group) : def.group !== "system") {
+    if (ctx ? ctx.aiGroups.includes(def.group) : (def.group !== "system" && !isContextOnly(def.group))) {
       allowed.add(el);
     }
   }
@@ -695,7 +718,9 @@ const aiAllowedElements = (document_type) => {
  */
 export const paletteDefinition = (document_type) => {
   const ctx = contextFor(document_type);
-  if (!ctx) return elementsDefinition;
+  if (!ctx) {
+    return Object.fromEntries(Object.entries(elementsDefinition).filter(([group]) => !isContextOnly(group)));
+  }
 
   const groups = ctx.paletteGroups || ctx.aiGroups;
   const extra = new Set(ctx.extra || []);

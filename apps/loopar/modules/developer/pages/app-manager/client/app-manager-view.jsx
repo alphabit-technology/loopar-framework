@@ -138,6 +138,13 @@ function AppCard({app, action}) {
           )}
         </div>
 
+        {app.folder_mismatch && (
+          <div className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            Folder <code>apps/{app.folder}</code> doesn't match App name <code>{app.name}</code>.
+            Rename it to <code>apps/{app.name}</code> to install or manage it.
+          </div>
+        )}
+
         {hasGitDir && (
           <div className="space-y-1 rounded border border-border/50 bg-background/40 px-3 py-2 text-xs">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -338,31 +345,17 @@ function sendAppAction(appName, action, optsOrSlide = false) {
     if (!GIT_VERBS.includes(verb)) return;
     if (!result || typeof result.then !== 'function') return;
 
-    result.then((response) => {
-      const payload = (response && typeof response === 'object' && 'data' in response)
-        ? response.data
-        : response;
-      if (payload && payload.success === false) return;
-
+    // Failures are non-2xx: http.jsx toasts them and the promise rejects.
+    result.then(() => {
       setTimeout(() => loopar.refresh(), 600);
-    }).catch(() => {
-
-    });
+    }).catch(() => {});
   };
 
   if (action === 'commit') {
     return loopar.call('App Manager', 'diff', {
       body: { app_name: appName },
       query: { app_name: appName },
-    }).then((res) => {
-      const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
-      if (payload && payload.success === false) {
-        return loopar.confirm(
-          `Couldn't read git status: ${payload.message || 'unknown error'}`,
-          () => {}
-        );
-      }
-      const diff = payload || {};
+    }).then((diff) => {
       const files = Array.isArray(diff.files) ? diff.files : [];
 
       if (files.length === 0) {
@@ -420,7 +413,7 @@ function sendAppAction(appName, action, optsOrSlide = false) {
           },
         });
       });
-    });
+    }).catch(() => {}); // error already toasted by http.jsx
   }
 
   if (action === 'publish') {
@@ -444,7 +437,7 @@ function sendAppAction(appName, action, optsOrSlide = false) {
     uninstall: `<br/><br/><span class='fa fa-circle text-red pr-2'></span> <strong class='text-red'>All data and Documents related to ${appName} will be deleted.</strong>`,
     pull: isFramework
       ? `<span class='text-amber-500'>This pulls the whole framework. After completion the tenant must restart (nodemon will reload in dev) to apply changes. Local uncommitted changes anywhere in the monorepo will block this operation.</span>`
-      : `<<span class='text-amber-500'>Local uncommitted changes in this app will block this operation. Commit, push, or <code>git reset --hard</code> first.</span>`,
+      : `<span class='text-amber-500'>Local uncommitted changes in this app will block this operation. Commit, push, or <code>git reset --hard</code> first.</span>`,
     push: `<span class='text-amber-500'>Working tree must be clean and up-to-date with remote.</span>`,
     discard: `<strong class='text-red-500'>This is destructive and cannot be undone.</strong> All uncommitted changes${isFramework ? ' anywhere in the monorepo' : ` in apps/${appName}`} will be lost, and untracked files will be removed.`,
   };

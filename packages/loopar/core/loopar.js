@@ -4,7 +4,7 @@ import {KnexORM} from 'db-env';
 import sha1 from "sha1";
 import * as Helpers from "./global/helper.js";
 import * as dateUtils from "./global/date-utils.js";
-import { simpleGit, CleanOptions } from 'simple-git';
+import { simpleGit } from 'simple-git';
 import Auth from './auth/Auth.js';
 import { Document } from './loopar/document.js';
 import { tailwinInit } from './loopar/tailwindbase.js';
@@ -290,7 +290,6 @@ export class Loopar extends Document {
   }
 
   git(app) {
-    simpleGit().clean(CleanOptions.FORCE);
     return simpleGit(this.gitAppOptions(app));
   }
 
@@ -332,10 +331,18 @@ export class Loopar extends Document {
     return await this.getDocument("System Settings");
   }
 
+  /**
+   * Throw a typed error; the error middleware turns it into the wire response.
+   *   status — HTTP status (number). Falls back to a numeric `code`, else 500.
+   *   code   — domain identifier ('GIT_ERROR', 'DIRTY', …) or legacy numeric code.
+   *   title  — short label for the UI.
+   */
   throw(error, redirect = null) {
     error = typeof error === 'string' ? { code: 400, message: error } : error
     const err = new Error(error.message);
+    err.status = error.status;
     err.code = error.code;
+    err.title = error.title;
     err.redirect = redirect;
     // With redirects are always auth / session / csrf failures:
     // force hard reload to discard client state (csrf, user,

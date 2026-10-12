@@ -17,6 +17,16 @@
  */
 @import "../../auto/tailwind-apps.css";
 
+/*
+ * Framework chrome/print styles, linked from <head> with the rest (main.html)
+ * instead of imported by their components: a JS-imported stylesheet arrives
+ * with its chunk, after the SSR HTML has painted — the print sheet showed as
+ * plain text for a moment.
+ */
+@import "../../../packages/loopar/src/document/print/print.css";
+@import "../../../packages/loopar/src/document/chrome/toolbar.css";
+@import "../../../packages/loopar/src/components/input/read-field.css";
+
 @variant dark (&:where(.dark, .dark *));
 
 @theme {

@@ -18,9 +18,15 @@ export default class CoreController extends AuthController {
     loopar.server.use(express.static(loopar.makePath(loopar.pathRoot, this.controllerPath, "client")));
   }
 
+  #actionMethod(action) {
+    const name = loopar.utils.Capitalize(action);
+    return this[`publicAction${name}`] ? `publicAction${name}` : `action${name}`;
+  }
+
   async sendAction(action) {
-    action = this[`publicAction${loopar.utils.Capitalize(action)}`] ? `publicAction${loopar.utils.Capitalize(action)}` : `action${loopar.utils.Capitalize(action)}`;
-    
+    const requested = action;
+    action = this.#actionMethod(action);
+
     if (typeof this[action] !== 'function') {
       return await this.notFound({
         code: 404,
@@ -30,6 +36,9 @@ export default class CoreController extends AuthController {
     }
 
     await this.beforeAction();
+
+    // Authorization may downgrade the action (update → view for read-only users).
+    if (this.action && this.action !== requested) action = this.#actionMethod(this.action);
 
     return await this[action]();
   }
@@ -172,12 +181,13 @@ export default class CoreController extends AuthController {
    *
    * Resolution: `this.entry` (explicit, when the entry differs from the view
    * file suffix — e.g. a list rendered by a `view` action) → `this.client` →
-   * Page/View entities are `view` → by action.
+   * the `print` action → Page/View entities are `view` → by action.
    */
   clientEntry(Document) {
     if (!Document) return null;
     if (this.entry) return this.entry;
     if (this.client) return this.client;
+    if (this.action === "print") return "print";
     if (["Page", "View"].includes(Document.Entity?.type)) return "view";
 
     const action = this.action;
@@ -193,7 +203,8 @@ export default class CoreController extends AuthController {
    */
   clientImporter(Document) {
     if (!Document) return null;
-    const suffix = this.client || (["Page", "View"].includes(Document.Entity?.type) ? "view"
+    const suffix = this.client || (this.action === "print" ? "print"
+      : ["Page", "View"].includes(Document.Entity?.type) ? "view"
       : ['create', 'update'].includes(this.action) ? "form"
       : ['list', 'index'].includes(this.action) ? "list" : "view");
 

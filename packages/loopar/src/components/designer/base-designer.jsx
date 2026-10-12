@@ -19,6 +19,7 @@ import {elementsNames} from "@global/element-definition";
 import {OrphanColumnsManager} from "./src/OrphanColumnsManager.jsx"
 import { ElementStore, ElementStoreContext } from "./element-store.js";
 import { getNodeKey, pruneDocStructure } from "@global/prune-doc-structure";
+import Emitter from "@services/emitter/emitter";
 
 const updateE = (structure, data, node, merge) => {
   return structure.map((el) => {
@@ -128,7 +129,7 @@ export const BaseDesigner = (props) => {
   const {data, node, metaComponents} = props;
   const [activeId] = useState(null);
   const {designerMode} = useDesigner();
-  const {name, sidebarOpen, handleSetSidebarOpen} = useDocument();
+  const {name, entity, sidebarOpen, handleSetSidebarOpen} = useDocument();
   const [dragEnabled, setDragEnable] = useState(true);
 
   const [updatingElementName, setUpdatingElementName] = usePersist(name + "updatingElementName");
@@ -138,7 +139,10 @@ export const BaseDesigner = (props) => {
   const [updatingFromEditor, setUpdatingFromEditor] = useState(false);
   const selfKey = node || data.key;
 
-  const draftKey = `loopar-designer-draft:${name || ""}:${selfKey}`;
+  // Scoped by entity AND record: new records have no name, so a key without the
+  // entity made every unsaved design (Page, Form, Print Format…) share one
+  // draft. A new record keeps one draft per entity ("__new__").
+  const draftKey = `loopar-designer-draft:${entity || ""}:${name || "__new__"}:${selfKey}`;
   const readDraft = () => {
     if (typeof window === "undefined") return null;
     try {
@@ -366,6 +370,26 @@ export const BaseDesigner = (props) => {
       stateRef.current.onChange?.(json);
     }, 300);
   }, [syncHistory, draftKey, rememberEmitted]);
+
+  // External content loaded INTO the design as a user edit (history entry,
+  // unsaved badge, draft, echo-filtered onChange) — never as a server reset,
+  // which would drop the undo history and could raise a false draft conflict.
+  //   Emitter.emit("designer:load", { field: "doc_structure", elements, mode: "replace" | "append" })
+  // Used by the Print Format Builder's "Load entity".
+  useEffect(() => {
+    const onLoad = ({ field, elements, mode = "replace" } = {}) => {
+      if (!field || field !== data?.name) return;
+      const incoming = fixMeta(Array.isArray(elements) ? elements : []);
+      const next = mode === "append"
+        ? [...(stateRef.current.localMetaComponents || []), ...incoming]
+        : incoming;
+      storeRef.current.populate(next);
+      setLocalMetaComponents(next);
+      scheduleCommit();
+    };
+    Emitter.on("designer:load", onLoad);
+    return () => Emitter.off("designer:load", onLoad);
+  }, [data?.name, scheduleCommit]);
 
   const applyHistory = useCallback((json) => {
     if (commitTimerRef.current) { clearTimeout(commitTimerRef.current); commitTimerRef.current = null; }

@@ -140,7 +140,12 @@ export default function MetaButton(props){
   const {docRef} = useDocument();
   const { handlers } = useViewOptions();
 
+  // Static (`data.disabled`) or runtime (`ctrl.setFieldDf(name, "disabled", …)`,
+  // merged into data by Meta): a disabled button neither looks nor acts clickable.
+  const disabled = loopar.utils.trueValue(data.disabled);
+
   const performAction = () => {
+    if (disabled) return;
     if (data.action && docRef) {
       // View handlers first, controller methods as fallback; `(ctrl)` and `this` both work.
       const handler = handlers?.[data.action] ?? docRef[data.action];
@@ -175,6 +180,7 @@ export default function MetaButton(props){
       {...loopar.utils.renderizableProps(props)}
       variant={getVariant()}
       onClick={handleClick}
+      disabled={disabled}
       className={props.className}
     >
       {data.label || "Button"}

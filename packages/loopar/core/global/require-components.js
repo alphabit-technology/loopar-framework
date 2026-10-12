@@ -48,6 +48,7 @@ export function requireComponents(__META__) {
 
   const entityDocStructure = loopar.utils.JSONparse(Entity.doc_structure, []);
   const documentDocStructure = loopar.utils.JSONparse(data.doc_structure, []);
+  const printDocStructure = loopar.utils.JSONparse(Document.print?.format?.doc_structure, []);
 
   if (action === "list") {
     return [
@@ -58,6 +59,7 @@ export function requireComponents(__META__) {
     return [
       ...(Array.isArray(entityDocStructure) ? entityDocStructure : []),
       ...(Array.isArray(documentDocStructure) ? documentDocStructure : []),
+      ...(Array.isArray(printDocStructure) ? printDocStructure : []),
     ];
   }
 }

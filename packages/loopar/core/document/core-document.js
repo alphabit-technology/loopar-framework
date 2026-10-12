@@ -645,7 +645,7 @@ export default class CoreDocument {
 
     if (connections.length > 0 && !force) {
       loopar.throw({
-        ...{ VALIDATION_ERROR },
+        ...VALIDATION_ERROR,
         message: message
       });
       return;

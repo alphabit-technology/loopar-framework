@@ -21,10 +21,11 @@ Workspace
 | `form/` | Form kind: `FormProvider`, `useForm`, `useFormEvents`, `FormLayout`, `ReportLayout`, `BareLayout` | `@loopar/form` |
 | `list/` | List kind: `ListProvider`, `useList`, `ListLayout` | `@loopar/list` |
 | `page/` | Page kind: `PageLayout`, `WebLayout` (no logic layer) | `@loopar/page` |
+| `print/` | Print kind: `PrintLayout`, `PrintHeader`, `PrintStructure`, `formatPrintValue` (automatic print format + paper sheet) | `@loopar/print` |
 | `controller/` | `DocumentController`, `FormController` (plain classes), field store, view-options vocabulary, `useController` | internal |
-| `chrome/` | Desk UI pieces used by layouts: `DeskUI`, `AppBar`, `Breadcrumbs` | internal |
+| `chrome/` | Desk UI pieces used by layouts: `DeskUI`, `AppBar` (one row: ← · Entity (big) record (small) · save state · `Toolbar`; phones: record in bold under a small entity), `Toolbar` (record ⇄ print toggle icon right before the primary button, same spot on both pages; framework buttons — Go to, view toggle — on wide screens, in "⋯" on phones; the view's `actions` always in "⋯", in order; Save/New the only filled button) | internal |
 
-Kinds (`Document.entry`): `form` `view` `report` `installer` `auth` → form middleware ·
+Kinds (`Document.entry`): `form` `view` `report` `installer` `auth` `print` → form middleware ·
 `list` → list middleware · `page` `web` `controller` → base only.
 The server picks the kind in the controller (`entry = "list"`); the view file
 suffix (`-form`, `-list`, `-view`...) is only a file name.
@@ -64,6 +65,7 @@ No file at all? The entry renders `DefaultView` = its layout with defaults.
 | I want to… | Where |
 |---|---|
 | Fixed flags (`canUpdate`, `hasSidebar`, `hasHistory`, `notRequireChanges`, `mapDocument`) | `export const config` |
+| Order of AppBar buttons | the view's `actions` live in the "⋯" menu, in the order they're passed; give them an icon and a text label (menu rows) |
 | Content in the structure (`slot`), AppBar buttons, sidebar, list columns/cards | layout props: `slots`, `actions`, `sidebar`, `columns`, `gridTemplate`, `primaryAction` |
 | React to save / a field change / a JSON button (`data.action`) | `useFormEvents`, `useFieldEvent`, `useHandlers` |
 | Read / write values, submit | `useForm()` → `getValue`, `setValue`, `setError`, `save`, `send` |
@@ -140,12 +142,18 @@ controller. Prefer events; override only when the built-in behaviour must be rep
 
 ## Options vocabulary (`controller/view-options.js`)
 
-**View options** (React state, read by chrome/layouts): `slots` `actions` `handlers`
-`columns` `gridTemplate` `sidebar` `sidebarHeader` `primaryAction` `canUpdate`
+**View options** (React state, read by chrome/layouts): `slots` `actions` `rowActions` `handlers`
+`columns` `gridTemplate` `sidebar` `sidebarHeader` `primaryAction` `canUpdate` `readOnly`
 `hasSidebar` `hasHeader` `hasBreadcrumb` `hasHistory` `hasSearchForm` `hasSelectAll`
 `hasSelectRow` `disabledSearchFields` `onlyList` `onlyGrid`.
 `has*` flags are opt-out: everything is on unless a `config` or a layout prop says `false`.
 `canUpdate` is opt-in: only the `form` entry grants it.
+`rowActions(row)` → `{ key: node }`: extra entries on top of each list row's "⋯" menu (above Edit/View · Print · Delete).
+`readOnly`: fields show their value instead of their control (label + value in an inert box,
+formatted like on paper via `@loopar/print`; checkboxes stay, inert). The server turns it on for
+records opened with `view` (`Document.readOnly`, set by `BaseController.actionView`); a view's
+`config`/props can force it either way. A GET to `update` without the update permission but with
+`view` lands on the read-only view (AuthController). On it, "Edit" replaces Save when the user may edit.
 Precedence: layout defaults (`defineLayout(name, Body, defaults)`) < entry defaults < view `config`
 < hooks (`useActions`, `useHandlers`, `useDocumentConfig`) < layout props.
 
@@ -158,3 +166,56 @@ Precedence: layout defaults (`defineLayout(name, Body, defaults)`) < entry defau
 (`setFieldDf`, `on`) as immutable snapshots with subscribers. `Meta.jsx` reads a
 field's meta with `useFieldMeta(fields, name)`, so changing one field's
 visibility re-renders that field only.
+
+## Printing
+
+Every record can be printed from `/desk/<Entity>/print?name=X` (`BaseController.actionPrint`).
+`print` is its own permission (derived from the action like any other), and a
+grant with scope `own` only prints the user's records. The AppBar shows **Print**
+on a saved record when the user holds it.
+
+The sheet shows, in order of preference:
+
+1. **A Print Format** (`?format=<name>`, else the entity's default) — designed in the
+   **Print Format Builder**, saved as app files under `modules/<module>/print-formats/<name>/`
+   (type "Print Format", no table). `?format=standard` skips it.
+2. **`client/<entity>-print.jsx`** if the app ships one — a regular view that paints `<PrintLayout>`.
+3. **The automatic format**: letterhead + `<PrintHeader/>` + `<PrintStructure/>`, built from the
+   doc_structure (rows keep their columns, tabs/sections/cards become titled sections,
+   form_tables become tables using the child's `in_list_view` columns, empty fields and
+   sections are omitted, `hidden`/`print_hide` fields never print). Entity selects print the
+   linked record's title (`title_fields`), sent by the action as `linkTitles`.
+
+```jsx
+import { PrintLayout, PrintHeader, PrintStructure, LetterheadBlock } from "@loopar/print";
+
+export default function QuotePrint() {
+  return (
+    <PrintLayout>
+      <LetterheadBlock />
+      <PrintHeader title="Quotation" />
+      <PrintStructure />
+      <p className="mt-6 text-sm">Valid for 30 days.</p>
+    </PrintLayout>
+  );
+}
+```
+
+**Designing a format** — the Print Format Builder's designer offers the *Print* elements
+(only there): `letterhead`, `doc_header`, `doc_field`, `doc_table`, `doc_body` (the automatic
+body) and `page_break`, next to layout/content/media. They read the record through
+`usePrintRecord()`; in the designer they show placeholders. **Load entity** (button in the builder's form, next to the entity; disabled until one is picked)
+drops the entity's own form layout into the designer as print elements — fields → `doc_field`,
+form_tables → `doc_table`, cards/tabs → `doc_section`, rows/cols kept — replacing or appending,
+as an undoable edit (`Emitter.emit("designer:load", { field, elements, mode })`). Start from the
+real view and remove what paper doesn't need. "Go to <Format>" opens
+`/desk/<Format>/view?name=<record>` (latest record when omitted): the format on real data.
+
+**Letterhead** — a core entity with the company data (one marked default). A format may pick
+one; otherwise the default is used. Code views read it with `useLetterhead()` or
+`<LetterheadBlock/>` / `<LetterheadFooter/>` (outside the print entry they fetch the default).
+
+`PrintLayout` owns the paper: sheet width and `@page` follow the paper/orientation of the
+format, or the user's pick in the toolbar; inside the sheet the theme tokens are re-pointed to a
+light palette. On paper everything marked `data-print-hide` (desk chrome, AppBar) disappears.
+PDF: the browser's print dialog ("Save as PDF").

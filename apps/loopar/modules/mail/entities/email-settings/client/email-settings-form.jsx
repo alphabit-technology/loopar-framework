@@ -10,15 +10,8 @@ export default function EmailSettingsForm() {
   useHandlers({
     /** "Test Connection" button (`data.action: "testConnection"`). */
     testConnection: () => {
-      send({ action: "testConnection", notRequireChanges: true, query: getFormValues() }, (r) => {
-        if (r.success) {
-          loopar.notify("Connection successful", "success");
-        } else {
-          loopar.notify(r.message, "error", "Connection failed");
-        }
-      }, () => {
-        loopar.notify("Connection failed", "error");
-      });
+      // Both outcomes are toasted by http.jsx (server notify on 2xx, error title/message on 502).
+      send({ action: "testConnection", notRequireChanges: true, query: getFormValues() }, null, () => {});
     },
   });
 

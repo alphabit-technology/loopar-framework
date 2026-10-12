@@ -56,7 +56,7 @@ export default class SystemController extends BaseController {
     model.app_name ??= appName || this.getAppName();
     
     if (loopar.__installed__ && await loopar.appStatus(model.app_name) === 'installed' && !reinstall) {
-      loopar.throw("App already installed please refresh page");
+      loopar.throw({ status: 409, title: 'Conflict', message: 'App already installed, please refresh the page' });
     }
 
     await model.install(reinstall);
@@ -108,16 +108,6 @@ export default class SystemController extends BaseController {
 
   async actionReinstall() {
     return await this.publicActionInstall(true);
-  }
-
-  async actionPull() {
-    const model = await this.getInstallerModel();
-
-    Object.assign(model, { app_name: this.data.app_name });
-
-    if (await model.pull()) {
-      return await this.render({ success: true, data: 'App updated successfully' });
-    }
   }
 
   async actionUninstall() {

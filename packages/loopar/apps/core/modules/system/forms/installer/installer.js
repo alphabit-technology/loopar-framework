@@ -1,4 +1,5 @@
 import path from "pathe";
+import fs from "fs";
 import { loopar, fileManage } from "loopar";
 import BaseDocument from "../../../../../../core/document/base-document.js";
 
@@ -236,16 +237,45 @@ export default class Installer extends BaseDocument {
     return `App ${this.app_name} uninstalled successfully!`;
   }
 
+  /**
+   * Clones `repo` into apps/<App.name>, NOT apps/<repo-name>. The whole
+   * framework (installer, uploads, git actions, entity paths) resolves an app
+   * as apps/<app_name>, so the folder must match installer.json App.name
+   * regardless of what the remote repository is called.
+   */
   async clone(repo) {
-    return new Promise((resolve, reject) => {
-      console.log(["Cloning", repo]);
+    const appsDir = loopar.makePath(loopar.pathRoot, 'apps');
+    const tmpName = `.clone-${Date.now()}`;
+    const tmpPath = path.join(appsDir, tmpName);
 
-      loopar.git().clone(repo, async (err, update) => {
-        if(err) return reject(err);
-        //await loopar.rebuildVite();
-        resolve(true);
-      });
-    });
+    console.log(["Cloning", repo]);
+    await loopar.git().clone(repo, tmpName);
+
+    try {
+      const installerPath = path.join(tmpPath, 'installer.json');
+      if (!fs.existsSync(installerPath)) {
+        loopar.throw({ status: 422, code: 'NOT_A_LOOPAR_APP', title: 'Get App',
+          message: `${repo} has no installer.json at its root — it is not a Loopar app.` });
+      }
+
+      const name = JSON.parse(fs.readFileSync(installerPath, 'utf8'))?.App?.name;
+      if (!name || name !== path.basename(name) || name.startsWith('.')) {
+        loopar.throw({ status: 422, code: 'INVALID_APP_NAME', title: 'Get App',
+          message: `installer.json in ${repo} has a missing or invalid App.name (${JSON.stringify(name)}).` });
+      }
+
+      const target = path.join(appsDir, name);
+      if (fs.existsSync(target)) {
+        loopar.throw({ status: 409, code: 'APP_EXISTS', title: 'Get App',
+          message: `App '${name}' already exists at apps/${name}.` });
+      }
+
+      await fs.promises.rename(tmpPath, target);
+      return name;
+    } catch (e) {
+      await fs.promises.rm(tmpPath, { recursive: true, force: true });
+      throw e;
+    }
   }
 
   async install(reinstall = false) {
@@ -448,29 +478,4 @@ export default class Installer extends BaseDocument {
     return this.ensureFrameworkColumns();
   }
 
-  async pull(repo) {
-    const exist = await loopar.db.getValue('App', "name", this.app_name, null, null);
-    const appFile = fileManage.getConfigFile("installer", path.join("apps", this.app_name));
-
-    loopar.validateGitRepository(this.app_name, repo || appFile.App[this.app_name].git_repo);
-
-    if (!exist) {
-      loopar.throw(`App ${this.app_name} is not installed, please install it first`);
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      loopar.git(this.app_name).pull(async (err, update) => {
-        err && loopar.throw(err);
-
-        if (update && update.summary.changes) {
-          await this.installData();
-          await loopar.build();
-          resolve(true);
-        } else {
-          loopar.throw(`App ${this.app_name} is already updated`);
-        }
-      });
-    });
-  }
 }

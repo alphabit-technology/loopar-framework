@@ -76,7 +76,7 @@ export function SideNav({ items=[] }) {
         <div 
           className="w-full"
         >
-          {openNav && <button 
+          {openNav && <button
             type="button" 
             className="absolute right-5 top-1 z-10 flex h-8 w-8 items-center justify-center text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 lg:hidden" 
             tabIndex={0}

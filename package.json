@@ -17,7 +17,7 @@
     "loopar": "./bin/cli/index.js"
   },
   "scripts": {
-    "preinstall": "node bin/setup/installer-clean.js",
+    "preinstall": "node packages/loopar/bin/check-node.js && node bin/setup/installer-clean.js",
     "postinstall": "node bin/setup/ensure-site.js",
     "start": "node bin/tui/index.js",
     "tui": "node bin/tui/index.js",

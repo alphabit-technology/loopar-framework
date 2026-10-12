@@ -4,20 +4,13 @@ import { useTable } from "./TableContext.jsx"
 import { useViewOptions } from "@loopar/document";
 import BaseTable from "./BaseTable.jsx"
 import {useCallback, useMemo} from "react";
-import {Trash2Icon} from "lucide-react";
 import {DynamicIcon} from "@icon-input";
 
-import {
-  Avatar,
-  AvatarFallback
-} from "@cn/components/ui/avatar"
-
-import { Button } from "@cn/components/ui/button";
-import { Badge } from "@cn/components/ui/badge";
+import { CheckIcon } from "lucide-react";
 import { TableSearch } from "./TableSearch";
+import { RowMenu } from "./RowMenu.jsx";
 
 export function ListGrid(props) {
-  const { docRef } = props;
   const { columns } = useViewOptions();
   const {baseColumns, Document, selectorCol, deleteRow, search} = useTable();
 
@@ -26,7 +19,7 @@ export function ListGrid(props) {
     const titleFields = Document.Entity.title_fields?.split(",");
 
     if(titleFields){
-      return titleFields.map((field) => row[field]).join(" ");
+      return titleFields.map((field) => row[field?.trim()]).filter(Boolean).join(" ");
     }
 
     return row.name;
@@ -40,18 +33,14 @@ export function ListGrid(props) {
     const baseCols = (mappedColumns() || []).filter(col => col.data.name !== "name")
       .map((col) => {
         if([SWITCH, CHECKBOX].includes(col.element)) {
-          col.headProps = {
-            className: "text-center",
-          };
-          col.render = (row) => {
-            return (
-              <div className="flex justify-center">
-                <Badge variant="secondary" className={row[col.data.name] ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"}>
-                  {row[col.data.name] ? "YES" : "NO"}
-                </Badge>
-              </div>
-            )
-          }
+          col.headProps = { className: "text-center" };
+          col.render = (row) => (
+            <div className="flex justify-center">
+              {loopar.utils.trueValue(row[col.data.name])
+                ? <CheckIcon className="h-4 w-4 text-green-500" aria-label="Yes" />
+                : <span className="text-muted-foreground" aria-label="No">—</span>}
+            </div>
+          );
         }
 
         return col;
@@ -72,22 +61,19 @@ export function ListGrid(props) {
           name: "mame",
           label: null//because first column is selector and spands 2 columns
         },
+        cellProps: { className: "py-2" },
         render: (row) => {
-          const color = loopar.bgColor(row.name);
+          const title = getDocumentTitle(row) || row.name;
+          const showName = String(title).toLowerCase() !== String(row.name).toLowerCase();
 
           return (
             <Link
               to={`update?name=${row.name}`}
               renderOnRestrict={true}
-              className="justify-left flex gap-3 align-middle justify-start"
+              className="flex min-w-0 flex-col items-start justify-center gap-0 p-0 leading-tight hover:underline"
             >
-              <Avatar className={`rounded-3 h-11 w-11`} style={{ backgroundColor: color }}>
-                <AvatarFallback className={`bg-transparent text-xl font-bold`}>{loopar.utils.avatar(row.name || "")}</AvatarFallback>
-              </Avatar>
-              <div className="h-ful items-left flex flex-col justify-center">
-                <h2>{row.name}</h2>
-                <h5 className='font-bold text-slate-500 dark:text-slate-400'>{loopar.utils.UPPERCASE(getDocumentTitle(row))}</h5>
-              </div>
+              <span className="truncate font-medium text-foreground">{title}</span>
+              {showName && <span className="truncate text-xs text-muted-foreground">{row.name}</span>}
             </Link>
           );
         }
@@ -104,39 +90,19 @@ export function ListGrid(props) {
           }
         }
 
-        return col
+        return col.cellProps ? col : { ...col, cellProps: { className: "align-middle py-2" } };
       }),
       {
         data: {
           name: "actions",
-          label: "...",
+          label: () => <span className="sr-only">Actions</span>,
         },
-        headProps: {
-          className: "w-10 p-2 text-center",
-        },
-        rowsProps: {
-          className: "align-middle text-truncate text-center",
-        },
-        cellProps: {
-          style: { width: 50 },
-          className: "align-middle text-center",
-        },
-        render: (row) => {
-          return (
-            <Button
-              variant="outline"
-              onClick={(e) => {
-                e.preventDefault();
-                deleteRow(row, true);
-              }}
-            >
-              <Trash2Icon className="text-red-500" />
-            </Button>
-          );
-        },
+        headProps: { className: "w-12 p-2" },
+        cellProps: { className: "w-12 py-1 pr-2 text-right align-middle" },
+        render: (row) => <RowMenu row={row} Entity={Document.Entity} onDelete={(r) => deleteRow(r, true)} />,
       }
     ];
-  }, [mappedColumns, columns]);
+  }, [mappedColumns, columns, Document, deleteRow]);
 
   return (
     <>

@@ -30,9 +30,9 @@ export default class SingleController extends BaseController {
     }
   }
 
-  async actionView() {
+  /* async actionView() {
     return await this.sendDocument();
-  }
+  } */
 
   async publicActionCollection(action = this.document, data = {}) {
     const webApp = loopar.webApp || { menu_items: [] };

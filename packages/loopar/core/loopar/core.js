@@ -52,7 +52,9 @@ export class Core extends Builder {
               // active ones, so the FS read aligns with the DB row.
               if (!data.__deleted_at__) {
                 data.entityRoot = this.makePath(app.appRoot, "modules", module.name, core.name, entity.name);
-                data.type = titleize(singularize(core.name));
+                // Folder → type: "print-formats" → "Print Format" (dashes are word
+                // separators; titleize alone keeps them: "Print-Format").
+                data.type = titleize(singularize(core.name.replaceAll("-", " ")));
                 data.__MODULE__ = module.name;
                 //replace all - with space and titleize
                 data.__APP__ = app.name//titleize(humanize(app.name)).replace(/-/g, ' ');
@@ -71,7 +73,7 @@ export class Core extends Builder {
   }
 
   entityIsSingle(ENT) {
-    return (["Page", "Form", "Report", "View", "Controller"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
+    return (["Page", "Form", "Report", "View", "Controller", "Print Format"].includes(ENT.type) || ENT.is_single) ? 1 : 0;
   }
 
   getRef(entity) {

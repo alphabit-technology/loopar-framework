@@ -14,10 +14,10 @@ export default class EmailSettingsController extends BaseController {
         data.password = await loopar.db.getValue("Email Settings", "password");
       }
       const test = await loopar.mail.testConnection(data);
-      if(test.success){
-        return { success: true, sccessMessage: test.message };
-      } else {
-        return { success: false, errorMessage: test.error };
+      if (!test.success) {
+        // SMTP server rejected/unreachable: upstream failure, not a request bug.
+        loopar.throw({ status: 502, code: 'SMTP_CONNECTION_FAILED', title: 'Connection failed', message: test.error });
       }
+      return await this.success('Connection successful');
     }
 }

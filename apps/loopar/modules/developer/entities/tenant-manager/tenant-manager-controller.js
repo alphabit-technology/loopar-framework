@@ -24,7 +24,7 @@ export default class TenantManagerController extends BaseController {
     const isControlPlane = ["1", "true"].includes(String(process.env.CONTROL_PLANE))
       || ["loopar", "dev", "cloud"].includes(loopar.tenantId);
 
-    if(!test || !isControlPlane) loopar.throw("Access restricted")
+    if(!test || !isControlPlane) loopar.throw({ status: 403, title: 'Forbidden', message: 'Access restricted' })
   }
 
   async getTenant(name = this.name) {

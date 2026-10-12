@@ -133,6 +133,13 @@ export default class AuthController {
     }
   }
 
+  /** A plain GET of `update` (opening the record, not saving it). */
+  #canDowngradeToView() {
+    return String(this.action).toLowerCase() === 'update'
+      && String(this.method || 'GET').toUpperCase() === 'GET'
+      && typeof this.actionView === 'function';
+  }
+
   async isAuthorized(user) {
     if (user.name === 'Administrator') return true;
     const workspace = this.req.__WORKSPACE_NAME__;
@@ -154,6 +161,16 @@ export default class AuthController {
       scope = (isViewLike && this.name && PermissionManager.canAccessModule(this.name, user.name))
         ? SCOPE.ALL
         : PermissionManager.scope("Module", this.action, user.name);
+    }
+
+    // Opening a record to edit without the update permission: show it
+    // read-only (`view`) when the user may see it, instead of refusing.
+    if (!scope && this.#canDowngradeToView()) {
+      const viewScope = PermissionManager.scope(this.document, 'view', user.name);
+      if (viewScope) {
+        this.action = 'view';
+        scope = viewScope;
+      }
     }
 
     if (!scope) {

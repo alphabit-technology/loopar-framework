@@ -9,7 +9,8 @@ import { useHidden } from "@context/hidden-context";
 import { useDesigner } from "@context/designer-context";
 import { isEqual } from 'es-toolkit/predicate';
 import { debounce } from 'es-toolkit/function';
-import { useDocument } from "@loopar/document";
+import { useDocument, useViewOptions } from "@loopar/document";
+import { ReadField, readsAsValue } from "./read-field";
 
 const inputReducer = (state, action) => {
   switch (action.type) {
@@ -45,8 +46,12 @@ const BaseInput = (props) => {
   );
   
   const parentHidden = useHidden();
-  const { docRef } = useDocument();
+  const { docRef, Document: ownerDocument } = useDocument();
   const { designerMode } = useDesigner();
+  // Read-only record (server `actionView` sets Document.readOnly; a view's
+  // `readOnly` option overrides it): fields show their value, nothing is editable.
+  const { readOnly: readOnlyOption } = useViewOptions();
+  const readMode = !designerMode && (readOnlyOption ?? ownerDocument?.readOnly) === true;
   
   const getInitialData = useCallback(() => {
     if (element) {
@@ -225,8 +230,24 @@ const BaseInput = (props) => {
             handleInputChange(e);
           }, [field.onChange, isDisabled]);
 
+          const elementName = typeof element === "string" ? element : element?.element;
+          if (readMode && readsAsValue(elementName, state.data)) {
+            return (
+              <ReadField
+                element={elementName}
+                data={state.data}
+                value={field.value}
+                el={props}
+                withoutLabel={withoutLabel === true}
+              />
+            );
+          }
+
           return (
-            <FormItem className={cn("flex flex-col rounded shadow-sm", className)}>
+            <FormItem
+              className={cn("flex flex-col rounded shadow-sm", readMode && "pointer-events-none", className)}
+              aria-readonly={readMode || undefined}
+            >
               {input({ 
                 ...field, 
                 onChange: combinedOnChange, 
@@ -250,7 +271,10 @@ const BaseInput = (props) => {
     state.isInvalid,
     state.isUpdating,
     handleInputChange, 
-    extractValue
+    extractValue,
+    readMode,
+    element,
+    withoutLabel,
   ]);
 
   if (propRender) {
@@ -281,6 +305,7 @@ BaseInput.metaFields = () => {
         set_only_time: { element: SWITCH },
         readonly: { element: SWITCH },
         in_list_view: { element: SWITCH },
+        print_hide: { element: SWITCH },
         searchable: { element: SWITCH }
       },
     },

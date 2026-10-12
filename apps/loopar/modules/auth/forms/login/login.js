@@ -21,7 +21,7 @@ export default class Login extends BaseDocument {
       return loopar.auth.login(user);
     } else {
       loopar.auth.killSession();
-      loopar.throw({ code: 401, trow: 'Login Error', message: 'Invalid user or password' });
+      loopar.throw({ code: 401, title: 'Login Error', message: 'Invalid user or password' });
     }
   }
 

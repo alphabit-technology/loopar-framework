@@ -59,6 +59,8 @@ a:not([class]) {
   text-decoration: underline;
 }
 
-a:hover{
+/* Plain links only: styled links (buttons as links, nav items) set their own
+   hover color — a filled primary button turned its text invisible on hover. */
+a:not([class]):hover{
   color: hsl(var(--primary)) !important;
 }

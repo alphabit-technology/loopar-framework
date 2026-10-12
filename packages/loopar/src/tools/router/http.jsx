@@ -225,6 +225,7 @@ export default class HTTP {
 
       if (options.error) {
         this.#ui.notify(error.notify || {
+          title: error.title,
           message: error.message,
           type: "error"
         });

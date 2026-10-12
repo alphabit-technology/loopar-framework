@@ -150,8 +150,9 @@ export default class CaddyManager {
         }],
       };
 
-      // Replace ALL per-tenant routes with the single host route.
-      const ok = await this._writeFullConfig([route]);
+      const external = (await this._readCurrentRoutes())
+        .filter(r => r?.["@id"] && !String(r["@id"]).startsWith("loopar_"));
+      const ok = await this._writeFullConfig([...external, route]);
       if (ok) console.log(`✅ Caddy host route: [${hosts.join(", ")}] → localhost:${hostPort}`);
       return ok;
     } catch (e) {

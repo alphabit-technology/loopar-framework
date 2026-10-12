@@ -5,6 +5,7 @@
  * + per-request tenant resolution); no tenant is loaded until one is turned On.
  * Every tenant domain routes here via Caddy's catch-all.
  */
+import "./check-node.js";
 import { coreEnvVars } from "../core/config/core-config.js";
 
 // Fill process.env from config/core.json when not set (e.g. run directly, not

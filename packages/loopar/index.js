@@ -25,6 +25,8 @@ import PageController from "./core/controller/page-controller.js";
 import ViewController from "./core/controller/view-controller.js";
 import ReportController from "./core/controller/report-controller.js";
 import FormController from "./core/controller/form-controller.js";
+import PrintFormatController from "./core/controller/print-format-controller.js";
+import { listPrintFormats, getPrintFormat, getLetterhead } from "./core/document/print-format.js";
 import SystemController from "./apps/core/modules/system/controllers/system/system-controller.js";
 import CoreInstaller from "./apps/core/modules/system/forms/installer/installer.js";
 import * as Helpers from "./core/global/helper.js";
@@ -94,6 +96,10 @@ export {
   ViewController,
   ReportController,
   FormController,
+  PrintFormatController,
+  listPrintFormats,
+  getPrintFormat,
+  getLetterhead,
   fileManage,
   fileManager,
   Helpers,

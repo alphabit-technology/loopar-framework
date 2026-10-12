@@ -3,12 +3,11 @@
 import { useForm, FormLayout } from '@loopar/form';
 import { loopar } from 'loopar';
 import { Button } from '@cn/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 export default function AppForm() {
   const { getValue, setValue } = useForm();
 
-  /** AppBar action: bumps one semver segment of the app being edited. */
   const incrementVersion = (type) => (
     <Button
       variant="link"
@@ -24,8 +23,8 @@ export default function AppForm() {
         });
       }}
     >
-      <PlusIcon className="mr-2" />
-      {type}
+      <ArrowUp className="mr-2" />
+      {type === 'Patch' ? 'Increment Patch' : type === 'Minor' ? 'Increment Minor' : 'Increment Major'}
     </Button>
   );
 

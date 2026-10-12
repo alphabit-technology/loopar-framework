@@ -412,15 +412,19 @@ function errorFrame(input) {
 
 export function getHttpError(err) {
   const input = (err && typeof err === "object") ? err : { code: err };
-  const rawCode = input.code ?? 500;
+
+  // HTTP status comes from an explicit `status` (or Express' `statusCode`),
+  // then from a numeric `code`; symbolic codes ('GIT_ERROR') never become a status.
+  const isHttp = (n) => Number.isInteger(n) && n >= 100 && n <= 599;
+  const status = [input.status, input.statusCode, input.code].map(Number).find(isHttp) ?? 500;
+  const rawCode = input.code ?? status;
 
   const catalogEntry =
     Object.values(httpErrors).find(e => e.code == rawCode) ||
     httpErrors[rawCode] ||
+    Object.values(httpErrors).find(e => e.code == status) ||
     httpErrors["500 Internal Server Error"];
 
-  const numericCode = Number(rawCode);
-  const status = Number.isFinite(numericCode) ? numericCode : 500;
   const code = rawCode;
   const title = input.title || `${catalogEntry.code} Error`;
   const message = formatMessage(input) || catalogEntry.message;

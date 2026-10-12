@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
   "author": "",
   "license": "ISC",
   "files": [
@@ -26,6 +29,7 @@
     "radix-env": "workspace:*",
     "rate-limit-redis": "6.0.1",
     "react-env": "workspace:*",
+    "semver": "^7.8.1",
     "server-env": "workspace:*",
     "shared": "workspace:*",
     "tailwind-env": "workspace:*",
