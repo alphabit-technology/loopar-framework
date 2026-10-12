@@ -4,6 +4,7 @@ import { loopar } from '../loopar.js';
 import { fileManage } from '../file-manage.js';
 import { parseDocStructure, stripEphemeralDocStructure, injectCookieIndexes } from './tools.js';
 import { FRAMEWORK_OWNED_COLUMN_NAMES } from '../global/audit.js';
+import { isHashedSecret } from '../global/secrets.js';
 
 export default class CoreDocument {
   #fields = {};
@@ -299,6 +300,7 @@ export default class CoreDocument {
     this.setUniqueName();
     this.beforeSave && await this.beforeSave();
     if (validate) await this.validate();
+    await this.#hashSecrets();
 
     if (this.__IS_NEW__ || this.__ENTITY__.is_single) {
       await loopar.db.insertRow(this.__ENTITY__.name, this.stringifyValues(true), this.__ENTITY__.is_single);
@@ -767,6 +769,21 @@ export default class CoreDocument {
     }, {});
   }
 
+  /**
+   * Hash-mode password fields are hashed here (async) right before persisting;
+   * encrypt-mode ones are encrypted synchronously in DynamicField.stringifyValue.
+   * Masked (untouched), empty and already-hashed values are left alone, so a
+   * stored hash loaded back into the document is never hashed twice.
+   */
+  async #hashSecrets() {
+    for (const field of Object.values(this.#fields)) {
+      if (field.element !== PASSWORD || field.secretMode !== 'hash') continue;
+      const value = field.value;
+      if (!value || value === this.protectedPassword || isHashedSecret(value)) continue;
+      field.value = await loopar.hash(String(value));
+    }
+  }
+
   async rawValues() {
     const value = async (field) => {
       if (field.element === DESIGNER) {
@@ -814,7 +831,7 @@ export default class CoreDocument {
     return Object.values(this.#fields).filter(field => {
       if ((this.__IS_NEW__ && field.set_only_time) || field.element === FORM_TABLE) return false;
 
-      if (field.type === PASSWORD) {
+      if (field.element === PASSWORD) {
         return field.value !== this.protectedPassword;
       }
 

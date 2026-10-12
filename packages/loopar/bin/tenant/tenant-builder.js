@@ -41,6 +41,9 @@ function normalize(name, c = {}) {
     status,
     online: status === 'active',
     jwtSecret: c.jwtSecret || null,
+    // Key for reversible field secrets (password fields in `encrypt` mode).
+    // Independent of jwtSecret: rotating sessions must not brick secrets.
+    secretKey: c.secretKey || null,
     // Transient install gate for cloud-provisioned tenants (scrubbed after
     // install); read in-core via loopar.installToken.
     installToken: c.installToken || null,
@@ -105,6 +108,8 @@ function translatePatch(data) {
   if (status !== undefined) out.status = String(status).toLowerCase();
   const jwt = data.jwtSecret ?? data.JWT_SECRET;
   if (jwt !== undefined) out.jwtSecret = jwt;
+  const sk = data.secretKey ?? data.SECRET_KEY;
+  if (sk !== undefined) out.secretKey = sk;
   const it = data.installToken ?? data.INSTALL_TOKEN;
   if (it !== undefined) out.installToken = it;
 
@@ -142,10 +147,12 @@ export async function saveTenant(data = {}) {
     domain: patch.domain ?? current.domain ?? `${name}.localhost`,
     status: patch.status ?? current.status ?? 'suspended',
     jwtSecret: patch.jwtSecret ?? current.jwtSecret ?? null,
+    secretKey: patch.secretKey ?? current.secretKey ?? null,
     installToken: patch.installToken ?? current.installToken ?? null,
     cloud: { ...(current.cloud || {}), ...(patch.cloud || {}) },
   };
   if (!next.jwtSecret) delete next.jwtSecret;
+  if (!next.secretKey) delete next.secretKey;
   if (!next.installToken) delete next.installToken;   // empty → scrubbed
   // Drop empty cloud fields, then the object if nothing's left.
   if (next.cloud) {
@@ -165,6 +172,19 @@ export async function ensureJwtSecret(name) {
   if (t?.jwtSecret) return t.jwtSecret;
   const secret = crypto.randomBytes(32).toString('hex');
   await saveTenant({ NAME: name, JWT_SECRET: secret });
+  return secret;
+}
+
+/**
+ * Ensure a tenant has a random secret-encryption key; generate + persist on
+ * first need. LOSING THIS KEY MAKES THE TENANT'S ENCRYPTED SECRETS
+ * UNRECOVERABLE — include sites/<tenant>/config.json in backups.
+ */
+export async function ensureSecretKey(name) {
+  const t = readTenant(name);
+  if (t?.secretKey) return t.secretKey;
+  const secret = crypto.randomBytes(32).toString('hex');
+  await saveTenant({ NAME: name, SECRET_KEY: secret });
   return secret;
 }
 
@@ -214,6 +234,7 @@ export const tenant = {
   getTenantData,
   saveTenant,
   ensureJwtSecret,
+  ensureSecretKey,
   tenantUrl,
   saveDbConfig,
 };

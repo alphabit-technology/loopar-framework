@@ -57,7 +57,11 @@ export default class TenantManager extends BaseDocument {
     if (!this.#isSelf()) evictTenantInstance(this.name);
   }
 
-  async __data__() { return tenant.getTenantData(this.name); }
+  async __data__() {
+    // Never hand tenant secrets to the form; saveTenant keeps them when absent.
+    const { jwtSecret, secretKey, installToken, ...data } = tenant.getTenantData(this.name);
+    return data;
+  }
 
   async save() {
     await this.validate();

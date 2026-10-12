@@ -4,6 +4,8 @@ import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import { loopar } from 'loopar';
+import { resolveGitAccount, loadGitAccount, getAskpassScript } from './git-accounts.js';
+import { getRepository, createRepository } from './github-api.js';
 
 const execFile = promisify(execFileCb);
 
@@ -47,13 +49,55 @@ export function getAppVersion(name) {
   }
 }
 
-async function git(cwd, args) {
+const AUTH_FAILURE = /\b403\b|permission to .* denied|authentication failed|could not read (username|password)|repository not found/i;
+
+/**
+ * Run git. With `account`, the command authenticates with that account's
+ * token (via GIT_ASKPASS; machine credential helpers are disabled so the
+ * keychain can't win) and commits are authored as that account.
+ */
+async function git(cwd, args, account = null) {
+  const opts = { cwd, maxBuffer: 4 * 1024 * 1024 };
+  let fullArgs = args;
+
+  if (account) {
+    fullArgs = [
+      '-c', 'credential.helper=',
+      ...(account.author?.name ? ['-c', `user.name=${account.author.name}`] : []),
+      ...(account.author?.email ? ['-c', `user.email=${account.author.email}`] : []),
+      ...args,
+    ];
+    opts.env = {
+      ...process.env,
+      GIT_ASKPASS: getAskpassScript(),
+      GIT_TERMINAL_PROMPT: '0',
+      LOOPAR_GIT_USERNAME: account.username,
+      LOOPAR_GIT_TOKEN: account.token,
+    };
+  }
+
   try {
-    const { stdout, stderr } = await execFile('git', args, { cwd, maxBuffer: 4 * 1024 * 1024 });
+    const { stdout, stderr } = await execFile('git', fullArgs, opts);
     return { stdout: (stdout || '').trim(), stderr: (stderr || '').trim() };
   } catch (e) {
-    fail(500, 'GIT_ERROR', stderrOf(e, `git ${args[0]} failed`));
+    const detail = stderrOf(e, `git ${args[0]} failed`);
+    if (account && AUTH_FAILURE.test(detail)) {
+      fail(403, 'GIT_ACCESS_DENIED',
+        `The git account ${account.name} has no access to this repository (or its token expired).\n\n${detail}`);
+    }
+    fail(500, 'GIT_ERROR', detail);
   }
+}
+
+/** The acting user's account for the app's origin remote (null when none). */
+async function accountFor(cwd) {
+  let url = '';
+  try {
+    url = (await execFile('git', ['remote', 'get-url', 'origin'], { cwd })).stdout.trim();
+  } catch {
+    return null;
+  }
+  return await resolveGitAccount(url);
 }
 
 export async function getStatus(cwd) {
@@ -66,17 +110,18 @@ export async function getStatus(cwd) {
     branch = (await git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout || 'HEAD';
   } catch {}
 
-  let ahead = 0, behind = 0;
+  let ahead = 0, behind = 0, upstream = true;
   try {
     const { stdout } = await git(cwd, ['rev-list', '--left-right', '--count', '@{u}...HEAD']);
     const [b, a] = stdout.split(/\s+/).map(n => parseInt(n, 10) || 0);
     behind = b;
     ahead = a;
   } catch {
-    // No upstream tracking. Leave at 0; UI will show as "no remote tracking".
+    // No upstream tracking (never pushed, or pushed without -u).
+    upstream = false;
   }
 
-  return { clean, files, ahead, behind, branch };
+  return { clean, files, ahead, behind, branch, upstream };
 }
 
 export async function pullApp(name) {
@@ -91,7 +136,7 @@ export async function pullApp(name) {
       `Commit/push them, or 'git reset --hard' to discard.`);
   }
 
-  const pullOut = await git(cwd, ['pull', '--ff-only']);
+  const pullOut = await git(cwd, ['pull', '--ff-only'], await accountFor(cwd));
 
   const after = (await git(cwd, ['rev-parse', 'HEAD'])).stdout;
   const changed = before !== after;
@@ -126,11 +171,12 @@ export async function pushApp(name) {
   if (status.behind > 0) {
     fail(409, 'BEHIND', `Local is behind remote by ${status.behind} commit(s). Pull first.`);
   }
-  if (status.ahead === 0) {
+  if (status.upstream && status.ahead === 0) {
     return { noop: true, message: 'Nothing to push. Local is in sync with remote.' };
   }
 
-  const pushOut = await git(cwd, ['push']);
+  // No upstream yet (first push, or a publish whose push failed): set it.
+  const pushOut = await git(cwd, status.upstream ? ['push'] : ['push', '-u', 'origin', status.branch], await accountFor(cwd));
 
   return {
     is_framework: isFramework,
@@ -155,7 +201,7 @@ export async function commitApp(name, message) {
   }
 
   await git(cwd, ['add', '.']);
-  const commitOut = await git(cwd, ['commit', '-m', message.trim()]);
+  const commitOut = await git(cwd, ['commit', '-m', message.trim()], await accountFor(cwd));
 
   const sha = (await git(cwd, ['rev-parse', 'HEAD'])).stdout;
 
@@ -194,12 +240,16 @@ export async function getRemoteUrl(name) {
   }
 }
 
-export async function publishApp(name, remoteUrl, message = 'Initial commit') {
+/**
+ * Connect an app to a remote and push it.
+ *  - With `account` (one of the acting user's Git Accounts): the repository
+ *    is `owner/repo` on GitHub (owner defaults to the account's user) and is
+ *    created through the API when it doesn't exist yet.
+ *  - With `remoteUrl` instead: any host, using the machine's credentials.
+ */
+export async function publishApp(name, { account, owner, repo, isPrivate = true, remoteUrl, message = 'Initial commit' } = {}) {
   if (name === 'loopar') {
     fail(409, 'IS_FRAMEWORK', 'Framework is published with the monorepo, not from App Manager.', 'Publish');
-  }
-  if (!remoteUrl || !remoteUrl.trim()) {
-    fail(400, 'NO_URL', 'Remote URL is required.', 'Publish');
   }
 
   const appPath = loopar.makePath(loopar.pathRoot, 'apps', name);
@@ -207,7 +257,28 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
     fail(404, 'NO_DIR', `App directory ${appPath} does not exist.`, 'Publish');
   }
 
-  const url = remoteUrl.trim();
+  let acc = null;
+  let url;
+  let created = false;
+  if (account) {
+    acc = await loadGitAccount(account);
+    owner = String(owner || acc.username).trim();
+    repo = String(repo || '').trim().replace(/\.git$/i, '');
+    if (!/^[A-Za-z0-9._-]+$/.test(repo)) {
+      fail(400, 'INVALID_REPO', 'Repository name may only contain letters, digits, ".", "-" and "_".', 'Publish');
+    }
+    const existing = await getRepository(acc.token, owner, repo);
+    if (!existing) {
+      await createRepository(acc.token, { owner, repo, isPrivate, username: acc.username });
+      created = true;
+    }
+    url = `https://github.com/${owner}/${repo}.git`;
+  } else if (remoteUrl && remoteUrl.trim()) {
+    url = remoteUrl.trim();
+  } else {
+    fail(400, 'NO_REMOTE', 'Choose a git account and repository (or give a remote URL).', 'Publish');
+  }
+
   const msg = (message || 'Initial commit').trim();
   const hasGit = fs.existsSync(loopar.makePath(appPath, '.git'));
 
@@ -230,7 +301,7 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
       await git(appPath, ['init']);
       await git(appPath, ['remote', 'add', 'origin', url]);
       await git(appPath, ['add', '.']);
-      await git(appPath, ['commit', '-m', msg]);
+      await git(appPath, ['commit', '-m', msg], acc);
     } else {
       await git(appPath, ['remote', 'add', 'origin', url]);
 
@@ -243,7 +314,7 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
       if (!hasHead) {
         try {
           await git(appPath, ['add', '.']);
-          await git(appPath, ['commit', '-m', msg]);
+          await git(appPath, ['commit', '-m', msg], acc);
         } catch {
           fail(409, 'EMPTY_REPO', `'${name}' has .git but no commits and nothing stageable. Add content before publishing.`, 'Publish');
         }
@@ -255,20 +326,24 @@ export async function publishApp(name, remoteUrl, message = 'Initial commit') {
       branch = (await git(appPath, ['symbolic-ref', '--short', 'HEAD'])).stdout || 'main';
     } catch {}
 
-    await git(appPath, ['push', '-u', 'origin', branch]);
+    await git(appPath, ['push', '-u', 'origin', branch], acc);
 
     return {
       remote_url: url,
       branch,
-      message: hasGit
+      created,
+      message: `${created ? `Created ${url}. ` : ''}` + (hasGit
         ? `Connected '${name}' to ${url} and pushed ${branch}.`
-        : `Published '${name}' to ${url} on branch ${branch}.`,
+        : `Published '${name}' to ${url} on branch ${branch}.`),
     };
   } catch (e) {
-    const hint = hasGit
-      ? `Local .git was preserved. To undo the connection: 'cd apps/${name} && git remote remove origin'.`
-      : `Local .git was left in place. To start over: 'rm -rf apps/${name}/.git'.`;
-    fail(Number(e.status) || 500, e.code || 'GIT_ERROR', `${stderrOf(e, 'Publish failed')}\n\n${hint}`, e.title || 'Publish');
+    // Roll back the connection so a failed publish (auth, missing repo…)
+    // doesn't leave the app looking connected. Local commits are kept; the
+    // next Publish just re-adds origin and pushes.
+    await execFile('git', ['remote', 'remove', 'origin'], { cwd: appPath }).catch(() => {});
+    fail(Number(e.status) || 500, e.code || 'GIT_ERROR',
+      `${stderrOf(e, 'Publish failed')}\n\nThe remote was not connected; fix the issue and Publish again.`,
+      e.title || 'Publish');
   }
 }
 

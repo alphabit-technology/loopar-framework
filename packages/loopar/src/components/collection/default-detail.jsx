@@ -164,7 +164,93 @@ export default function DefaultDetail(props) {
 
   const shared = { item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack, galleryMode, galleryColumns };
   if (layout === "gallery") return <DetailGallery {...shared} />;
+  if (layout === "article") return <DetailArticle {...shared} />;
   return <DetailPage {...shared} />;
+}
+
+const WORDS_PER_MINUTE = 220;
+
+function readingMinutes(item, descField) {
+  const stored = parseInt(item.reading_time, 10);
+  if (stored > 0) return stored;
+  const text = descField ? String(item[descField.name] || "") : "";
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return words ? Math.max(1, Math.round(words / WORDS_PER_MINUTE)) : null;
+}
+
+function DetailArticle({ item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack }) {
+  const coverField = useMemo(() => firstField(fields, f => f.element === "image_input" && !f.multiple), [fields]);
+  const dateField = useMemo(() => firstField(fields, f => f.element === "date" || f.element === "date_time"), [fields]);
+  const descField = useMemo(() =>
+    firstField(fields, f => f.element === "markdown_input" && f.name === "description")
+    || firstField(fields, f => f.element === "markdown_input"),
+  [fields]);
+
+  const cover = useMemo(() => {
+    if (!coverField) return null;
+    const mapped = fileManager.getMappedFiles(item[coverField.name]) || [];
+    return mapped.find(f => f && f.src) || null;
+  }, [item, coverField]);
+
+  const date = fmtDate(dateField ? item[dateField.name] : item.__created_at__);
+  const minutes = readingMinutes(item, descField);
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const meta = [item.author, date, minutes ? `${minutes} min read` : null].filter(Boolean);
+
+  return (
+    <article className="w-full animate-fade-in-up">
+      <header className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-8 flex flex-col gap-4">
+        {showBack ? (
+          <a href={backHref} onClick={handleBack} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit">
+            <ArrowLeftIcon className="w-4 h-4" />
+            {backLabel}
+          </a>
+        ) : null}
+        {meta.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wide text-muted-foreground">
+            <span className="w-3 h-px bg-primary" />
+            {meta.map((m, i) => (
+              <span key={i} className="inline-flex items-center gap-2">
+                {i > 0 ? <span aria-hidden="true">·</span> : null}
+                {m}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <h1 className="text-3xl md:text-5xl font-semibold leading-tight tracking-tight">
+          {item.title || item.name}
+        </h1>
+        {item.summary ? (
+          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">{item.summary}</p>
+        ) : null}
+        {tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map(t => (
+              <span key={t} className="text-xs px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground">#{t}</span>
+            ))}
+          </div>
+        ) : null}
+      </header>
+
+      {cover ? (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-secondary border">
+            <img src={cover.src} alt={cover.name || item.title} loading="eager" className="w-full h-full object-cover" />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14 flex flex-col gap-12">
+        {descField && item[descField.name] ? (
+          <div className="prose-container">
+            <MarkdownPreview source={item[descField.name]} />
+          </div>
+        ) : null}
+
+        {enableComments ? <CommentsBlock entity={entity} item={item} /> : null}
+      </div>
+    </article>
+  );
 }
 
 function DetailPage({ item, fields, entity, enableComments, backHref, backLabel, showBack, handleBack, galleryMode = "carousel", galleryColumns = 3 }) {

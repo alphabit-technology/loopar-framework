@@ -2,6 +2,7 @@
 
 import { ListLayout } from '@loopar/list';
 import loopar from "loopar";
+import { useState } from "react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from '@card';
 
@@ -26,6 +27,62 @@ import {
   InfinityIcon,
   CloudUploadIcon,
 } from 'lucide-react';
+
+const fieldClass = "w-full rounded border border-border bg-background px-2 py-1.5 text-sm text-foreground";
+
+/**
+ * Publish form. The dialog's OK button reads `state`, which this component
+ * keeps in sync (the dialog API has no form-value channel).
+ */
+function PublishForm({ appName, accounts, state }) {
+  const initial = accounts[0];
+  const [account, setAccount] = useState(initial.name);
+  const current = accounts.find(a => a.name === account) || initial;
+  const [owner, setOwner] = useState(current.username);
+  const [repo, setRepo] = useState(appName);
+  const [isPrivate, setIsPrivate] = useState(true);
+
+  Object.assign(state, { account, owner, repo, private: isPrivate ? 1 : 0 });
+
+  const owners = current.owners.length ? current.owners : [current.username];
+
+  return (
+    <div className="space-y-3 text-left">
+      <label className="block space-y-1">
+        <span className="text-xs text-muted-foreground">Git account</span>
+        <select className={fieldClass} value={account} onChange={(e) => {
+          const next = accounts.find(a => a.name === e.target.value);
+          setAccount(e.target.value);
+          setOwner(next?.username || '');
+        }}>
+          {accounts.map(a => (
+            <option key={a.name} value={a.name}>{a.name}{a.is_default ? ' (default)' : ''}</option>
+          ))}
+        </select>
+      </label>
+      <div className="flex items-end gap-2">
+        <label className="block flex-1 space-y-1">
+          <span className="text-xs text-muted-foreground">Owner</span>
+          <select className={fieldClass} value={owner} onChange={(e) => setOwner(e.target.value)}>
+            {owners.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
+        <span className="pb-2 text-muted-foreground">/</span>
+        <label className="block flex-1 space-y-1">
+          <span className="text-xs text-muted-foreground">Repository</span>
+          <input className={fieldClass} value={repo} onChange={(e) => setRepo(e.target.value)} />
+        </label>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+        Private (only used when the repository is created)
+      </label>
+      <p className="text-xs text-muted-foreground">
+        If <code>{owner}/{repo}</code> doesn't exist it will be created, then the app is committed and pushed.
+      </p>
+    </div>
+  );
+}
 
 function compareVersion(a, b) {
   const pa = (a || '0.0.0').split('.').map(n => parseInt(n, 10) || 0);
@@ -159,7 +216,10 @@ function AppCard({app, action}) {
                 <span className={isDirty ? 'text-amber-400' : 'text-green-500'}>
                   {isDirty ? `${dirtyCount} dirty` : 'clean'}
                 </span>
-                {hasRemote && (
+                {hasRemote && status.upstream === false && (
+                  <span className="text-amber-400">not pushed</span>
+                )}
+                {hasRemote && status.upstream !== false && (
                   <>
                     <span className={ahead > 0 ? 'text-blue-400' : ''}>↑{ahead}</span>
                     <span className={behind > 0 ? 'text-yellow-400' : ''}>↓{behind}</span>
@@ -417,9 +477,9 @@ function sendAppAction(appName, action, optsOrSlide = false) {
   }
 
   if (action === 'publish') {
-    return loopar.prompt({
+    const promptUrl = () => loopar.prompt({
       title: `Publish ${appName} to remote`,
-      label: 'Remote repository URL',
+      label: 'Remote repository URL (uses this machine\'s git credentials)',
       placeholder: 'https://github.com/user/repo.git',
       ok: (remote_url) => {
         dispatch('publish', { app_name: appName, remote_url });
@@ -431,6 +491,35 @@ function sendAppAction(appName, action, optsOrSlide = false) {
         return true;
       },
     });
+
+    return loopar.call('App Manager', 'gitAccounts', {
+      query: { app_name: appName },
+    }).then(({ accounts = [] } = {}) => {
+      if (!accounts.length) {
+        return loopar.dialog({
+          type: "confirm",
+          title: `Publish ${appName}`,
+          content: `You have no Git Account yet. Add one (a GitHub access token) to publish with your own identity, or use a remote URL with this machine's credentials.`,
+          buttons: [
+            { name: "account", text: "Add Git Account", variant: "default", dismiss: true,
+              onClick: () => loopar.navigate('/desk/Git Account/create') },
+            { name: "url", text: "Use a URL", variant: "secondary", dismiss: true, onClick: promptUrl },
+          ],
+        });
+      }
+
+      const state = {};
+      loopar.dialog({
+        type: "confirm",
+        title: `Publish ${appName}`,
+        content: <PublishForm appName={appName} accounts={accounts} state={state} />,
+        size: "md",
+        ok: () => {
+          if (!state.repo || !state.repo.trim()) return loopar.throw('Repository name is required');
+          dispatch('publish', { app_name: appName, ...state });
+        },
+      });
+    }).catch(() => {}); // error already toasted by http.jsx
   }
 
   const confirmMessages = {

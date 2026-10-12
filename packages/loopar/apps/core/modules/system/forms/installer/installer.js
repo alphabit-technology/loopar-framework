@@ -170,6 +170,17 @@ export default class Installer extends BaseDocument {
       loopar.throw("You can't uninstall app Loopar");
     }
 
+    // installingApp short-circuits loopar.build(); a failure that doesn't go
+    // through loopar.throw (e.g. a SqliteError) must not leave it stuck.
+    try {
+      return await this.#unInstall();
+    } finally {
+      loopar.installingApp = null;
+    }
+  }
+
+  async #unInstall() {
+
     console.log("Uninstalling App", this.app_name);
     loopar.installingApp = this.app_name;
 
@@ -193,7 +204,13 @@ export default class Installer extends BaseDocument {
 
     const unInstallDocument = async (e, ent) => {
       const [constructor, name] = e.split(':');
-      if (constructor !== "Module Group" && await loopar.db.count(constructor, name)) {
+      if (constructor === "Module Group") return;
+      // A partial install can leave docs whose entity (table) was never created.
+      if (!await loopar.db.hasEntity("Entity", constructor) && !await loopar.db.hasEntity("Builder", constructor)) {
+        console.log([`[installer] ${constructor} not installed in this tenant, skipping ${e}`]);
+        return;
+      }
+      if (await loopar.db.count(constructor, name)) {
         console.warn([`Deleting ${constructor}:${name}`]);
         const doc = await loopar.getDocument(constructor, name);
         await doc.delete({ sofDelete: false, force: true, build: false });
@@ -279,6 +296,14 @@ export default class Installer extends BaseDocument {
   }
 
   async install(reinstall = false) {
+    try {
+      return await this.#install(reinstall);
+    } finally {
+      loopar.installingApp = null;
+    }
+  }
+
+  async #install(reinstall) {
     loopar.installingApp = this.app_name;
     console.log("Installing App", this.app_name);
 
@@ -391,25 +416,38 @@ export default class Installer extends BaseDocument {
       }
     }
 
+    // Preflight: every entry owned by another app must already exist in this
+    // tenant. Checked up-front so a missing dependency aborts BEFORE anything
+    // is written (otherwise App:<name> gets inserted and the app looks
+    // installed while half its documents are missing).
+    const missing = [];
+    for (const e of Object.keys(appData.documents)) {
+      const ent = appData.documents[e];
+      if (!ent || (typeof ent === 'object' && Object.keys(ent).length === 0)) continue;
+
+      const owner = entryAppOwner(ent, e);
+      if (!owner || owner === this.app_name) continue;
+
+      const [constructor, name] = e.split(':');
+      if (!await loopar.db.count(constructor, name)) missing.push({ owner, e });
+    }
+    if (missing.length) {
+      const owners = [...new Set(missing.map(m => m.owner))].join(', ');
+      loopar.throw({
+        status: 409, code: 'MISSING_DEPENDENCY', title: 'Install',
+        message:
+          `App "${this.app_name}" needs these documents from ${owners}, not present in this tenant: ` +
+          `${missing.map(m => m.e).join(', ')}. Update ${owners} first (they may be newer than the installed version).`,
+      });
+    }
+
     for (const e of Object.keys(appData.documents)) {
       const ent = appData.documents[e];
 
       if (!ent || (typeof ent === 'object' && Object.keys(ent).length === 0)) continue;
 
       const owner = entryAppOwner(ent, e);
-      if (owner && owner !== this.app_name) {
-        const [constructor, name] = e.split(':');
-        const exists = await loopar.db.count(constructor, name);
-        if (exists) {
-          console.log([`[installer] ${e} owned by "${owner}" — found in DB, ok`]);
-        } else {
-          loopar.throw(
-            `App "${this.app_name}" requires "${owner}" to be installed first ` +
-            `(missing dependency: ${e})`
-          );
-        }
-        continue;
-      }
+      if (owner && owner !== this.app_name) continue; // verified in preflight
 
       if(entryRoot(ent, e)){
         await installEntity(e, ent);

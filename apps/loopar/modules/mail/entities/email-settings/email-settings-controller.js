@@ -11,7 +11,8 @@ export default class EmailSettingsController extends BaseController {
     async actionTestConnection(){
       const data = this.query;
       if(data.password == "********"){
-        data.password = await loopar.db.getValue("Email Settings", "password");
+        // Stored encrypted: read through the document so it gets decrypted.
+        data.password = (await loopar.getDocument("Email Settings")).password;
       }
       const test = await loopar.mail.testConnection(data);
       if (!test.success) {

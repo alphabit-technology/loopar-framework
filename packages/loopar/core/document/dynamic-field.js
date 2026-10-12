@@ -19,7 +19,28 @@ export default class DynamicField {
   }
 
   set value(value) {
+    // Encrypted secrets arrive only from storage: keep the plain value in
+    // memory (masked by values()/rawValues()), re-encrypt on save.
+    if (this.element === PASSWORD && loopar.isEncryptedSecret(value)) {
+      try {
+        value = loopar.decryptSecret(value);
+      } catch (e) {
+        // Wrong key (e.g. a record copied from another tenant) or tampering:
+        // the secret is unrecoverable and must be entered again.
+        console.warn(`[secrets] could not decrypt "${this.name}": ${e.message}`);
+        value = '';
+      }
+    }
     this.#value = loopar.utils.nullValue(value) ? this.default_value : value;
+  }
+
+  /**
+   * Password fields store either a one-way hash (`hash`: login passwords,
+   * verified, never read back) or a reversible ciphertext (`encrypt`, the
+   * default: credentials Loopar must send out — SMTP, API keys, tokens).
+   */
+  get secretMode() {
+    return this.secret === 'hash' ? 'hash' : 'encrypt';
   }
 
   get isParsed() {
@@ -38,6 +59,10 @@ export default class DynamicField {
 
   stringifyValue(toSave = false) {
     const value = this.#value;
+
+    if (toSave && this.element === PASSWORD && this.secretMode === 'encrypt') {
+      return value ? loopar.encryptSecret(String(value)) : '';
+    }
     if ([DATE, TIME, DATE_TIME].includes(this.element)) {
       const fn = this.element === DATE ? 'getDate' : this.element === DATE_TIME ? 'getDateTime' : 'getTime';
       return loopar.dateUtils[fn](value, 'DB');

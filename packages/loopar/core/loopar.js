@@ -22,6 +22,8 @@ import { StorageManager } from "./global/storage/index.js";
 import argon2 from 'argon2';
 import crypto from 'node:crypto';
 import { tenant } from '../bin/tenant/tenant-builder.js';
+import { deriveSecretKey, encryptSecret, decryptSecret, isEncryptedSecret } from './global/secrets.js';
+import { migratePlaintextSecrets } from './global/secrets-migration.js';
 
 
 export class Loopar extends Document {
@@ -89,6 +91,7 @@ export class Loopar extends Document {
     registerTenantInstance(tenantId, this);
 
     await this.#resolveJwtSecret();
+    await this.#resolveSecretKey();
 
     this.auth = new Auth(
       this.authTokenName,
@@ -105,6 +108,11 @@ export class Loopar extends Document {
     await cacheManager.initialize(this);
     await this.db.initialize();
     await this.build();
+    try {
+      await migratePlaintextSecrets(this);
+    } catch (error) {
+      console.error('[secrets] plaintext migration failed:', error?.message || error);
+    }
     try {
       await this.buildIcons();
     } catch (error) {
@@ -187,6 +195,39 @@ export class Loopar extends Document {
       console.warn('[loopar] Could not persist JWT secret for tenant:', err.message);
       this.#jwtSecret = crypto.randomBytes(32).toString('hex');
     }
+  }
+
+  #secretKey = null;
+
+  /**
+   * Per-tenant key for reversible field secrets (see global/secrets.js).
+   * LOOPAR_SECRET_KEY (process env) takes precedence, salted per tenant;
+   * otherwise a random key persisted in sites/<tenant>/config.json.
+   * No in-process fallback: a key that changes on restart would make every
+   * stored secret unreadable, so failing loudly is the safer outcome.
+   */
+  async #resolveSecretKey() {
+    const master = process.env.LOOPAR_SECRET_KEY;
+    this.#secretKey = master
+      ? deriveSecretKey(master, this.tenantId)
+      : deriveSecretKey(await tenant.ensureSecretKey(this.tenantId));
+  }
+
+  #requireSecretKey() {
+    if (!this.#secretKey) throw new Error('[loopar] secret key requested before init() resolved it');
+    return this.#secretKey;
+  }
+
+  encryptSecret(plain) {
+    return encryptSecret(plain, this.#requireSecretKey());
+  }
+
+  decryptSecret(value) {
+    return decryptSecret(value, this.#requireSecretKey());
+  }
+
+  isEncryptedSecret(value) {
+    return isEncryptedSecret(value);
   }
 
   #server = {};

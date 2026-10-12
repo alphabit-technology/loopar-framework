@@ -69,19 +69,11 @@ export default class User extends BaseDocument {
       loopar.throw('The password and confirmation password do not match.');
     }
 
-    if (this.__IS_NEW__) {
-      this.password = await loopar.hash(password);
-      this.confirm_password = await loopar.hash(confirmPassword);
-    } else {
-      const user = await loopar.getDocument('User', this.name);
-
-      if (password && password.length > 0 && password !== this.protectedPassword) {
-        this.password = await loopar.hash(password);
-        this.confirm_password = await loopar.hash(confirmPassword);
-      } else {
-        this.password = user.password;
-        this.confirm_password = user.confirm_password;
-      }
+    // Hashing is done by the core (password fields in `hash` mode). For an
+    // existing user, an empty password means "unchanged", not "remove it".
+    if (!this.__IS_NEW__ && !password) {
+      this.password = this.protectedPassword;
+      this.confirm_password = this.protectedPassword;
     }
 
     await super.save(arguments[0]);

@@ -75,9 +75,36 @@ export class KnexORM extends Connector {
   #emitAfter(event, payload) {
     // Same tenant stamp as #emitBefore — see comment there.
     payload = { tenant: loopar.tenantId, ...payload };
+
+    // after* listeners are fire-and-forget and may query (Document History
+    // inserts a row). Emitted mid-transaction they race endTransaction and
+    // hit "Transaction query already complete". Queue them and dispatch once
+    // the commit lands; drop them on rollback (the change never happened).
+    if (this.transaction) {
+      this.#pendingAfter.push([event, payload]);
+      return;
+    }
+    KnexORM.#dispatchAfter(event, payload);
+  }
+
+  static #dispatchAfter(event, payload) {
     const document = payload?.document;
     KnexORM._bus.emit(event, payload);
     if (document) KnexORM._bus.emit(`${event}:${document}`, payload);
+  }
+
+  #pendingAfter = [];
+
+  async endTransaction() {
+    const pending = this.#pendingAfter;
+    this.#pendingAfter = [];
+    await super.endTransaction(); // throws (and rolls back) on commit failure → pending dropped
+    for (const [event, payload] of pending) KnexORM.#dispatchAfter(event, payload);
+  }
+
+  async safeRollback() {
+    this.#pendingAfter = [];
+    return await super.safeRollback();
   }
 
   dbFielTypeCanHaveDefaultValue(fieldType) {

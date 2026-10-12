@@ -16,10 +16,7 @@ export default function CollectionView({ data = {} }) {
   const entityName = data.options ? String(data.options).trim() : null;
   const preloaded = data.preloaded;
   const layout = data.detail_layout || "page";
-  const Detail = useMemo(
-    () => (layout === "page" ? DefaultDetail : lookupDetail(entityName)),
-    [layout, entityName]
-  );
+  const Detail = useMemo(() => lookupDetail(entityName), [entityName]);
 
   if (!entityName) {
     return (
@@ -70,8 +67,8 @@ CollectionView.metaFields = () => {
           element: SELECT,
           data: {
             label: "Detail layout",
-            options: "page\ngallery",
-            description: "page: cover hero + metadata table + gallery. gallery: hero with carousel.",
+            options: "page\ngallery\narticle",
+            description: "page: cover hero + metadata table + gallery. gallery: hero with carousel. article: single reading column for long-form content. An <entity>-detail.jsx override takes precedence.",
           },
         },
         gallery_mode: {

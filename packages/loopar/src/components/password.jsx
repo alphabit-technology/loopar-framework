@@ -13,5 +13,20 @@ export default function Password(props){
 Password.metaFields = () => {
   return [
     ...BaseInput.metaFields(),
+    {
+      group: "form",
+      elements: {
+        secret: {
+          element: SELECT,
+          data: {
+            label: "Storage",
+            options: "encrypt\nhash",
+            description:
+              "encrypt (default): reversible, for credentials the system must send out (SMTP, API keys, tokens). " +
+              "hash: one-way, for login passwords that are only verified.",
+          },
+        },
+      },
+    },
   ]
 }

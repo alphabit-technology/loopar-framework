@@ -7,6 +7,7 @@ import path from 'path';
 
 import { pullApp, pushApp, commitApp, discardApp, publishApp, statusApp, getDiff, getRemoteUrl, getCwdForApp } from './git-actions.js';
 import { enqueueBuild, setEmitter } from '../../build-service.js';
+import { listGitAccounts } from './git-accounts.js';
 
 setEmitter((event, payload) => loopar.emit(event, payload));
 
@@ -184,17 +185,28 @@ export default class AppManagerController extends SystemController {
 
   async actionPublish() {
     const app_name = this.#requireAppName();
-    const remote_url = (this.body && this.body.remote_url) || (this.query && this.query.remote_url);
-    const message = (this.body && this.body.message) || (this.query && this.query.message) || 'Initial commit';
+    const input = { ...(this.query || {}), ...(this.body || {}) };
 
-    const result = await publishApp(app_name, remote_url, message);
+    const result = await publishApp(app_name, {
+      account: input.account,
+      owner: input.owner,
+      repo: input.repo,
+      isPrivate: input.private === undefined ? true : loopar.utils.trueValue(input.private),
+      remoteUrl: input.remote_url,
+      message: input.message || 'Initial commit',
+    });
 
     return await this.success(result, {
       notify: {
         type: 'success',
-        message: `Published ${app_name} → ${result.remote_url} (${result.branch}).`
+        message: `${result.created ? 'Created and published' : 'Published'} ${app_name} → ${result.remote_url} (${result.branch}).`
       }
     });
+  }
+
+  /** The acting user's git accounts (no tokens) for the Publish dialog. */
+  async actionGitAccounts() {
+    return { accounts: await listGitAccounts() };
   }
 
   async actionDiff() {

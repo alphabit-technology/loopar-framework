@@ -1,6 +1,9 @@
 'use strict';
 
 import { Helpers, loopar } from "../../index.js";
+import { isEncryptedSecret } from '../global/secrets.js';
+
+const isSecretValue = (v) => isEncryptedSecret(v) || (typeof v === 'string' && v.startsWith('$argon2'));
 
 const HISTORY_TABLE = "Document History";
 
@@ -57,7 +60,11 @@ function buildDiff(before, after) {
     const b = before[key];
 
     if (JSON.stringify(a) !== JSON.stringify(b)) {
-      diff[key] = { before: b ?? null, after: a ?? null };
+      // Secrets (encrypted or hashed password fields) must not leak into the
+      // history timeline: record that they changed, not their values.
+      diff[key] = (isSecretValue(a) || isSecretValue(b))
+        ? { before: b ? '********' : null, after: a ? '********' : null }
+        : { before: b ?? null, after: a ?? null };
     }
   }
   return Object.keys(diff).length ? diff : null;

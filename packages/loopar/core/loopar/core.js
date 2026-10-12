@@ -148,7 +148,6 @@ export class Core extends Builder {
   }
 
   async unInstallApp(appName) {
-    if (this.installing) return;
     const installerRoute = this.makePath('apps', appName, 'installer.js');
 
     const installer = await fileManage.importClass(installerRoute, () => {
