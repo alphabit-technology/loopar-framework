@@ -117,7 +117,9 @@ export function tenantList() {
 function translatePatch(data) {
   const out = {};
   const domain = data.domain ?? data.DOMAIN;
-  if (domain !== undefined) out.domain = domain || undefined;
+  // Sent but empty = "remove it": the tenant falls back to <name>.localhost.
+  // (Only an absent key means "unchanged".)
+  if (domain !== undefined) out.domain = String(domain || '').trim().toLowerCase() || null;
   const status = data.status ?? data.STATUS;
   if (status !== undefined) out.status = String(status).toLowerCase();
   const jwt = data.jwtSecret ?? data.JWT_SECRET;
@@ -159,7 +161,7 @@ export async function saveTenant(data = {}) {
   const patch = translatePatch(data);
 
   const next = {
-    domain: patch.domain ?? current.domain ?? `${name}.localhost`,
+    domain: ('domain' in patch ? patch.domain : current.domain) || `${name}.localhost`,
     status: patch.status ?? current.status ?? 'suspended',
     jwtSecret: patch.jwtSecret ?? current.jwtSecret ?? null,
     secretKey: patch.secretKey ?? current.secretKey ?? null,
