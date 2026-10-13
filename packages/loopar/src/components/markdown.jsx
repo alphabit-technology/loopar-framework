@@ -37,7 +37,7 @@ import { ComponentDefaults } from "./base/ComponentDefaults";
 import '@mdxeditor/editor/style.css';
 import './markdown/mdx-theme.css';
 import { useCallback, useState, useEffect } from 'react';
-import MarkdownPreview from '@uiw/react-markdown-preview';
+import { Preview } from './markdown/preview.jsx';
 import { useDesigner } from "@context/designer-context";
 import { cn } from "@cn/lib/utils";
 
@@ -71,13 +71,7 @@ const VIEW_MODES = {
   ],
 };
 
-export function Preview({ source }) {
-  return (
-    <div className="lp-markdown p-2">
-      <MarkdownPreview source={source} />
-    </div>
-  );
-}
+export { Preview };
 
 function EditorTabs({ 
   currentMode, 

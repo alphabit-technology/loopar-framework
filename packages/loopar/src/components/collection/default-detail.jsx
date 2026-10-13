@@ -4,7 +4,7 @@ import fileManager from "@@file/file-manager";
 import { ArrowLeftIcon, Loader2, ExternalLinkIcon } from "lucide-react";
 import ImageCarousel from "./image-carousel.jsx";
 import ImageGrid from "./image-grid.jsx";
-import { Preview as MarkdownPreview } from "@markdown";
+import { Preview as MarkdownPreview } from "../markdown/preview.jsx";
 import DocumentHistory from "../document-history.jsx";
 
 function CommentsBlock({ entity, item }) {

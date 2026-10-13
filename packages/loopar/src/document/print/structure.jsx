@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import loopar from "loopar";
 import fileManager from "@@file/file-manager";
-import { Preview as MarkdownPreview } from "@markdown";
+// Lazy: this module sits under base-input (read-only fields), so it is on
+// every form; the markdown renderer loads only when a value needs it.
+const MarkdownPreview = lazy(() => import("../../components/markdown/preview.jsx"));
 import { elementsDict } from "@global/element-definition";
 import { useDocument } from "../base/provider";
 import { printKind, formatPrintValue, isEmptyValue, isNumericKind, DEFAULT_LOCALE } from "./format-value";
@@ -57,7 +59,11 @@ export function PrintValue({ element, data = {}, value }) {
   if (kind === "keyvalue") return isEmptyValue(value) ? null : <PrintKeyValue value={value} />;
   if (kind === "markdown") {
     return isEmptyValue(value) ? null : (
-      <div className="lp-markdown"><MarkdownPreview source={String(value)} /></div>
+      <div className="lp-markdown">
+        <Suspense fallback={<div className="whitespace-pre-wrap">{String(value)}</div>}>
+          <MarkdownPreview source={String(value)} />
+        </Suspense>
+      </div>
     );
   }
 
