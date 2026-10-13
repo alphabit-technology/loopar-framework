@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { loopar } from '../loopar.js';
 import { CSRF_COOKIE_NAME, generateCsrfToken } from './csrf.js';
-import { getRequest } from '../server/router/request-context.js';
+import { getRequest, getTenant } from '../server/router/request-context.js';
 
 const getJWTSecret = () => loopar.jwtSecret;
 const REFRESH_THRESHOLD = 1800;
@@ -193,6 +193,15 @@ export default class Auth {
   }
 
   login(user) {
+    // On a website domain (tenant `sites`) only Web users may sign in: desk
+    // accounts never authenticate there, so its login can't be used to probe
+    // or brute-force administrators. Same message as a wrong password — no
+    // oracle about which accounts exist or what type they are.
+    if (getTenant()?.webApp && user?.user_type !== 'Web') {
+      this.killSession();
+      loopar.throw({ code: 401, title: 'Login Error', message: 'Invalid user or password' });
+    }
+
     const payload = {
       name: user.name,
       email: user.email,

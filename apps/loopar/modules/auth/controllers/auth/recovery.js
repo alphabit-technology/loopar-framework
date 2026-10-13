@@ -2,6 +2,16 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import {loopar} from "loopar"
 
+/**
+ * On a website domain (tenant `sites`) password recovery only serves Web
+ * users — same rule as Auth.login. Desk accounts are treated as unknown
+ * there: no email is sent and links don't validate, with the same responses
+ * as a non-existent account.
+ */
+function blockedOnSite(user) {
+  return !!loopar.requestSite && user?.user_type !== 'Web';
+}
+
 function hashToken(raw) {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
@@ -9,7 +19,7 @@ function hashToken(raw) {
 export async function generatePasswordResetToken(email) {
   const user = await loopar.db.getDoc('User', { email });
 
-  if (!user) return { ok: true };
+  if (!user || blockedOnSite(user)) return { ok: true };
 
   const rawToken = jwt.sign(
     { sub: user.name, purpose: 'password-reset' },
@@ -39,7 +49,7 @@ export async function validatePasswordResetToken(rawToken) {
 
   const user = await loopar.db.getDoc('User', { name: payload.sub });
 
-  if (!user || user.reset_password_token !== hashToken(rawToken)) {
+  if (!user || blockedOnSite(user) || user.reset_password_token !== hashToken(rawToken)) {
     return { valid: false, reason: 'invalid' };
   }
 

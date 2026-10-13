@@ -50,7 +50,7 @@ export default class AnalyticsDashboard extends BaseDocument {
         this.getCampaigns(),
       ]);
 
-    return { kpis, visits, pages, countries, devices, browsers, referrers, hourly, campaigns };
+    return { kpis, visits, pages, countries, devices, browsers, referrers, hourly, campaigns, sites: await this.getSites(), site: this.site || '' };
   }
 
   async __meta__() {
@@ -59,9 +59,21 @@ export default class AnalyticsDashboard extends BaseDocument {
 
   get from() { return getFromDate(this.days); }
 
+  /** Sites that recorded traffic (for the dashboard's site filter). */
+  async getSites() {
+    const rows = await loopar.db.query(ENTITY)
+      .distinct('site')
+      .whereNotNull('site')
+      .andWhere('site', '<>', '')
+      .orderBy('site');
+    return rows.map(r => r.site);
+  }
+
   #baseQuery(from = this.from) {
+    const site = this.site;
     return loopar.db.query(ENTITY)
       .where('workspace', WORKSPACE)
+      .modify(qb => { if (site) qb.andWhere('site', site); })
       .andWhere('visit_date', '>=', from)
       // Exclude own/logged-in traffic; null-safe so pre-migration rows
       // (is_internal NULL) keep counting.

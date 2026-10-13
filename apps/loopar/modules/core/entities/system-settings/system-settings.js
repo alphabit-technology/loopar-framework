@@ -1,7 +1,8 @@
 
 'use strict';
 
-import { loopar, BaseDocument, generateThemeCSS } from 'loopar';
+import { loopar, BaseDocument } from 'loopar';
+import { buildThemeCSS } from './theme-css.js';
 import fs from 'fs'
 
 export default class SystemSettings extends BaseDocument {
@@ -20,33 +21,9 @@ export default class SystemSettings extends BaseDocument {
     await super.onLoad();
   }
 
-  clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
-  validateConfig() {
-    const config = loopar.utils.JSONparse(this.theme, {});
-    return {
-      theme: config.theme || 'slate',
-      darkMode: ['auto', 'custom'].includes(config.darkMode) ? config.darkMode : 'auto',
-      darkIntensity: this.clamp(config.darkIntensity ?? 0.95, 0, 1),
-      darkCustomColor: config.darkCustomColor || '#0a0a0a',
-      includeTitles: config.includeTitles !== false
-    };
-  }
-
   async setTheme() {
-    const config = this.validateConfig();
-
-    const css = generateThemeCSS(config.theme, {
-      darkMode: config.darkMode,
-      darkIntensity: config.darkIntensity,
-      darkCustomColor: config.darkCustomColor,
-      includeTitles: config.includeTitles,
-      minify: true,
-      contrastThreshold: 4.5
-    });
-    
+    // The tenant theme: used by every site whose web app has no theme of its own.
+    const css = buildThemeCSS(this.theme, { fallbackTheme: 'slate' });
     fs.writeFileSync(loopar.makePath(loopar.tenantPath, 'theme.css'), css, 'utf8');
   }
 }

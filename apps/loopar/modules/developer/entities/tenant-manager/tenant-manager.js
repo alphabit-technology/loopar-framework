@@ -1,5 +1,6 @@
 'use strict';
 
+import fs from 'fs';
 import {
   BaseDocument,
   tenant,
@@ -19,10 +20,13 @@ export default class TenantManager extends BaseDocument {
     if (this.__DOCUMENT_NAME__) {
       const app = tenant.getTenantData(this.__DOCUMENT_NAME__, null);
       if (app || ifNotFound == "new") {
+        // Stored config fills the form; values sent by the request (a save)
+        // win — spreading __DATA__ last, or the save writes back the old ones.
         this.__DATA__ = {
-          ...this.__DATA__,
           id: app?.name,
           domain: app?.domain,
+          sites: Object.entries(app?.sites || {}).map(([d, a]) => `${d} = ${a}`).join('\n'),
+          ...Object.fromEntries(Object.entries(this.__DATA__ || {}).filter(([, v]) => v != null)),
         };
         this.__IS_NEW__ = false;
       } else if (ifNotFound === 'throw') {
@@ -59,8 +63,8 @@ export default class TenantManager extends BaseDocument {
 
   async __data__() {
     // Never hand tenant secrets to the form; saveTenant keeps them when absent.
-    const { jwtSecret, secretKey, installToken, ...data } = tenant.getTenantData(this.name);
-    return data;
+    const { jwtSecret, secretKey, installToken, sites, ...data } = tenant.getTenantData(this.name);
+    return { ...data, sites: Object.entries(sites || {}).map(([d, a]) => `${d} = ${a}`).join('\n') };
   }
 
   async save() {
@@ -70,9 +74,12 @@ export default class TenantManager extends BaseDocument {
       return loopar.throw({ status: 409, title: 'Conflict', message: 'Tenant already exists, try another name' });
     }
 
-    await tenant.saveTenant({...await this.rawValues(), ID: this.id || this.name});
+    await tenant.saveTenant({...await this.rawValues(), sites: this.#sitesMap(), ID: this.id || this.name});
     await tenantOps.refreshCaddy();
     this.#evict();
+    // The running instance isn't evicted; rebuild so its website cache
+    // (loopar.webApps) picks up the new sites now.
+    if (this.#isSelf()) await loopar.build();
 
     return true;
   }
@@ -126,10 +133,38 @@ export default class TenantManager extends BaseDocument {
         return loopar.throw({ status: 409, title: 'Conflict', message: `Domain ${this.domain} is already used by tenant ${conflict.name}` });
       }
     }
+    for (const [domain, app] of Object.entries(this.#sitesMap())) {
+      if (!this.validateDomain(domain)) loopar.throw(`Invalid website domain "${domain}"`);
+      if (!fs.existsSync(loopar.makePath(loopar.pathRoot, 'apps', app, 'installer.json'))) {
+        loopar.throw(`Website ${domain}: app "${app}" doesn't exist in apps/.`);
+      }
+      if (domain === this.domain?.trim().toLowerCase()) {
+        loopar.throw(`${domain} is already this tenant's main domain`);
+      }
+      const owner = this.allApps.find(a =>
+        a.name !== this.name && (a.domain === domain || Object.keys(a.sites || {}).includes(domain))
+      );
+      if (owner) {
+        loopar.throw({ status: 409, title: 'Conflict', message: `Domain ${domain} is already used by tenant ${owner.name}` });
+      }
+    }
     await super.validate();
   }
 
   #hasDomain() { return !!this.domain?.trim(); }
+
+  /** "domain = app" lines → { domain: app }. Throws on a malformed line. */
+  #sitesMap() {
+    const sites = {};
+    for (const raw of String(this.sites || '').split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const [domain, app] = line.split('=').map(v => (v || '').trim());
+      if (!domain || !app) loopar.throw(`Invalid website line "${line}". Use: domain = web app`);
+      sites[domain.toLowerCase()] = app;
+    }
+    return sites;
+  }
 
   /**
    * Create + turn On from the Desk. Persists the form, activates, and routes
@@ -152,6 +187,7 @@ export default class TenantManager extends BaseDocument {
 
     await tenant.saveTenant({
       ...await this.rawValues(),
+      sites: this.#sitesMap(),
       NAME: this.name,
       ID: this.id || this.name,
       STATUS: activate ? 'active' : 'suspended',

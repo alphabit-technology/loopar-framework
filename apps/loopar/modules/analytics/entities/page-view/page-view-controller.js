@@ -103,6 +103,7 @@ export default class PageViewController extends BaseController {
         name: viewId,
         document,
         workspace: "web",
+        site: loopar.webApp?.name || "",
         ip_hash: ipHash,
         country,
         city,

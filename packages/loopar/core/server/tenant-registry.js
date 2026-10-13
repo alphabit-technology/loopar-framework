@@ -36,6 +36,15 @@ class TenantRegistry {
       byName.set(name.toLowerCase(), entry);
       byHost.set(domain, entry);
       byHost.set(`${name.toLowerCase()}.localhost`, entry);
+
+      // Websites: `webApp` tells the request which app renders the web
+      // workspace. Each also gets a local alias <domain>.localhost
+      // (site.dev → site.dev.localhost) to try it without DNS.
+      for (const [siteDomain, webApp] of Object.entries(t.sites || {})) {
+        const siteEntry = { ...entry, webApp };
+        byHost.set(siteDomain, siteEntry);
+        byHost.set(`${siteDomain}.localhost`, siteEntry);
+      }
     }
 
     this.#byHost = byHost;

@@ -33,11 +33,25 @@ export function tenantNames() {
   });
 }
 
+/** { "Alfra.dev": "alfra" } → { "alfra.dev": "alfra" }; drops empty entries. */
+function normalizeSites(sites) {
+  const out = {};
+  for (const [domain, app] of Object.entries(sites || {})) {
+    const d = String(domain || '').trim().toLowerCase();
+    const a = String(app || '').trim();
+    if (d && a) out[d] = a;
+  }
+  return out;
+}
+
 function normalize(name, c = {}) {
   const status = String(c.status || 'suspended').toLowerCase() === 'active' ? 'active' : 'suspended';
   return {
     name,
     domain: c.domain || `${name}.localhost`,
+    // Extra websites served by this tenant: each domain renders its own web
+    // app (the primary `domain` keeps System Settings' active web app).
+    sites: normalizeSites(c.sites),
     status,
     online: status === 'active',
     jwtSecret: c.jwtSecret || null,
@@ -108,6 +122,7 @@ function translatePatch(data) {
   if (status !== undefined) out.status = String(status).toLowerCase();
   const jwt = data.jwtSecret ?? data.JWT_SECRET;
   if (jwt !== undefined) out.jwtSecret = jwt;
+  if (data.sites !== undefined) out.sites = normalizeSites(data.sites);
   const sk = data.secretKey ?? data.SECRET_KEY;
   if (sk !== undefined) out.secretKey = sk;
   const it = data.installToken ?? data.INSTALL_TOKEN;
@@ -148,11 +163,13 @@ export async function saveTenant(data = {}) {
     status: patch.status ?? current.status ?? 'suspended',
     jwtSecret: patch.jwtSecret ?? current.jwtSecret ?? null,
     secretKey: patch.secretKey ?? current.secretKey ?? null,
+    sites: patch.sites ?? current.sites ?? {},
     installToken: patch.installToken ?? current.installToken ?? null,
     cloud: { ...(current.cloud || {}), ...(patch.cloud || {}) },
   };
   if (!next.jwtSecret) delete next.jwtSecret;
   if (!next.secretKey) delete next.secretKey;
+  if (!Object.keys(next.sites).length) delete next.sites;
   if (!next.installToken) delete next.installToken;   // empty → scrubbed
   // Drop empty cloud fields, then the object if nothing's left.
   if (next.cloud) {

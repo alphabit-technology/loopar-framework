@@ -136,8 +136,10 @@ export default class WorkspaceController extends AuthController {
 
     html = html.replace(`<!--__favicon__-->`, `<link rel="icon" href="${faviconSrc || "/assets/public/loopar-favicon.ico"}"/>`)
 
+    let themeVersion = '0';
+    try { themeVersion = Math.floor(fs.statSync(loopar.themeCssPath()).mtimeMs).toString(36); } catch {}
     html = html.replace(`<!--__theme-definition__-->`, `
-      <link rel="stylesheet" href="/assets/public/theme.css"/>
+      <link rel="stylesheet" href="/assets/public/theme.css?v=${themeVersion}"/>
     `)
 
     html = html.replace(`<!--__loopar-meta-data__-->`, `

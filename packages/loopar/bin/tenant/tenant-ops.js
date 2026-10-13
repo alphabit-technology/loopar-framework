@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'pathe';
-import { tenant, tenantList, getTenantData } from './tenant-builder.js';
+import { tenant, getTenantData } from './tenant-builder.js';
 import CaddyManager from './caddy-manager.js';
 import { corePort } from '../../core/config/core-config.js';
 
@@ -22,7 +22,12 @@ export { corePort };
  */
 export async function refreshCaddy() {
   try {
-    const domains = tenantList().map((t) => t.domain).filter(Boolean);
+    // Primary domains plus every website domain and its local
+    // <domain>.localhost alias — see tenant config `sites`.
+    const domains = tenant.tenants().flatMap((t) => [
+      t.domain,
+      ...Object.keys(t.sites || {}).flatMap((d) => [d, `${d}.localhost`]),
+    ]).filter(Boolean);
     if (!domains.length) return '';
     const caddy = new CaddyManager();
     await caddy.ensureReady();

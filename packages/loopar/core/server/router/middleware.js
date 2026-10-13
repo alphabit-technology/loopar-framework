@@ -3,6 +3,7 @@ import path from 'pathe';
 import { loopar } from '../../loopar.js';
 import { RouterUtils } from './router-utils.js';
 import { verifyWorkspaceToken } from '../../auth/workspace-token.js';
+import { getTenant } from './request-context.js';
 import WorkspaceController from '../../controller/workspace-controller.js';
 import { getHttpError } from '../../global/http-errors.js';
 import BaseController from '../../controller/base-controller.js';
@@ -34,6 +35,15 @@ export class Middleware {
       req.__WORKSPACE_NAME__ = route.workspace;
       req.__IS_AJAX__ = RouterUtils.isAjaxRequest(req);
       next();
+    };
+  }
+
+  setupSiteDeskMiddleware() {
+    return (req, res, next) => {
+      if (req.__WORKSPACE_NAME__ !== 'desk' || !getTenant()?.webApp) return next();
+      const err = new Error('Not found');
+      Object.assign(err, { status: 404, code: 404, title: 'Not found' });
+      return next(err);
     };
   }
 

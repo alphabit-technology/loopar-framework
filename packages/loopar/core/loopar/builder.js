@@ -13,6 +13,7 @@ import { existsSync, readdirSync, readFileSync } from "fs";
 
 import inflection from "inflection";
 import { shouldRunJobs } from "../config/core-config.js";
+import { tenant } from "../../bin/tenant/tenant-builder.js";
 
 export class Builder {
   async buildRefs() {
@@ -325,13 +326,27 @@ export class Builder {
     data.__installed__ = this.__installed__;
 
     if (data.__installed__) {
-      const activeWebApp = await this.db.getDoc('System Settings');
-      const webApp = await this.db.getParseDoc('App', activeWebApp.active_web_app);
+      const loadWebApp = async (appName) => {
+        const webApp = appName ? await this.db.getParseDoc('App', appName) : null;
+        return {
+          ...(webApp || {}),
+          menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { parent_id: webApp.id }) : [],
+          menu_actions: webApp ? await this.db.getAll("Menu Action", ["*"], { parent_id: webApp.id }) : []
+        };
+      };
 
-      data.webApp = {
-        ...(webApp || {}),
-        menu_items: webApp ? await this.db.getAll("Menu Item", ["*"], { parent_id: webApp.id }) : [],
-        menu_actions: webApp ? await this.db.getAll("Menu Action", ["*"], { parent_id: webApp.id }) : []
+      const settings = await this.db.getDoc('System Settings');
+      data.webApp = await loadWebApp(settings.active_web_app);
+
+      // One entry per app mapped to a site domain (tenant config `sites`);
+      // loopar.webApp picks the request's one by host.
+      data.webApps = {};
+      const siteApps = new Set(Object.values(tenant.readTenant(this.tenantId)?.sites || {}));
+      for (const appName of siteApps) {
+        data.webApps[appName] = appName === data.webApp.name ? data.webApp : await loadWebApp(appName);
+        if (!data.webApps[appName].name) {
+          console.warn(`[sites] web app "${appName}" is not installed in tenant ${this.tenantId}; its domains fall back to the default web app.`);
+        }
       }
 
       await writeModules(data);

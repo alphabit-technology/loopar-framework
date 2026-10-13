@@ -141,6 +141,17 @@ export class Server extends Router {
   }
 
   async #exposePublicDirectories() {
+    // Per-request theme (the host's web app theme, or the tenant's). First,
+    // so a static theme.css in dist/ or any public root can never shadow it.
+    // The URL carries ?v=<mtime>, so it can be cached hard.
+    server.get("/assets/public/theme.css", (req, res, next) => {
+      if (!loopar.requestTenantId) return next();
+      const cache = req.query?.v ? { maxAge: '1y', immutable: true } : { maxAge: 0 };
+      res.sendFile(loopar.themeCssPath(), cache, (err) => {
+        if (err) next();
+      });
+    });
+
     if (this.serveProduction) {
       server.use(express.static(path.join(loopar.pathRoot, 'dist/client')));
     }
@@ -167,12 +178,6 @@ export class Server extends Router {
       advance();
     });
 
-    server.get("/assets/public/theme.css", (_req, res, next) => {
-      if (!loopar.requestTenantId) return next();
-      res.sendFile(path.join(loopar.tenantPath, "theme.css"), (err) => {
-        if (err) next();
-      });
-    });
   }
 
   #start() {

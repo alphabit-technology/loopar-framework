@@ -135,18 +135,19 @@ function Empty() {
 function AnalyticsDashboard({data}) {
   const [analytics, setAnalytics] = useState(data)
   const [days, setDays] = useState(30);
-  const {kpis={},visits=[],pages=[],countries=[],devices=[],browsers=[],referrers=[],hourly=[],campaigns=[]} = analytics || {}
+  const [site, setSite] = useState('');
+  const {kpis={},visits=[],pages=[],countries=[],devices=[],browsers=[],referrers=[],hourly=[],campaigns=[],sites=[]} = analytics || {}
 
-  const loadAll = useCallback((d) => {
+  const loadAll = useCallback(() => {
     loopar.call("Analytics Dashboard", "view", {
-      query: { days },
+      query: { days, site },
       success: r => {
         setAnalytics(r.data)
       }
     });
-  }, [days]);
+  }, [days, site]);
 
-  useEffect(() => { loadAll(days); }, [days]);
+  useEffect(() => { loadAll(); }, [days, site]);
 
   const maxPages     = Math.max(...pages.map(p => p.views), 1);
   const maxCountries = Math.max(...countries.map(c => c.views), 1);
@@ -172,7 +173,18 @@ function AnalyticsDashboard({data}) {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-bold text-foreground">Analytics</h2>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 items-center">
+          {sites.length > 0 && (
+            <select
+              className="rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+              value={site}
+              onChange={(e) => setSite(e.target.value)}
+              title="Site"
+            >
+              <option value="">All sites</option>
+              {sites.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
           {DAYS_OPTIONS.map(opt => (
             <PeriodBtn
               key={opt.value}

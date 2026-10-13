@@ -148,6 +148,13 @@ export class Core extends Builder {
   }
 
   async unInstallApp(appName) {
+    if (this.installing) {
+      // Not this.throw(): it clears installingApp, which belongs to the
+      // operation that is still running.
+      const err = new Error(`Another app operation is in progress (${this.installingApp}). Try again when it finishes.`);
+      Object.assign(err, { status: 409, code: 'APP_OPERATION_IN_PROGRESS', title: 'Uninstall' });
+      throw err;
+    }
     const installerRoute = this.makePath('apps', appName, 'installer.js');
 
     const installer = await fileManage.importClass(installerRoute, () => {

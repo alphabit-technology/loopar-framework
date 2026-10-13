@@ -21,6 +21,7 @@ import { setupComments } from "./document/comment.js";
 import { StorageManager } from "./global/storage/index.js";
 import argon2 from 'argon2';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { tenant } from '../bin/tenant/tenant-builder.js';
 import { deriveSecretKey, encryptSecret, decryptSecret, isEncryptedSecret } from './global/secrets.js';
 import { migratePlaintextSecrets } from './global/secrets-migration.js';
@@ -195,6 +196,43 @@ export class Loopar extends Document {
       console.warn('[loopar] Could not persist JWT secret for tenant:', err.message);
       this.#jwtSecret = crypto.randomBytes(32).toString('hex');
     }
+  }
+
+  #defaultWebApp = null;
+
+  /**
+   * The web app rendering the current request. A host mapped in the tenant's
+   * `sites` config renders its own app (cached in `webApps` by build());
+   * anything else gets System Settings' active web app. Assigned (not
+   * computed) by loadConfig via Object.assign, hence the setter.
+   */
+  get webApp() {
+    const site = getTenant()?.webApp;
+    const app = site && this.webApps?.[site];
+    return app?.name ? app : this.#defaultWebApp;
+  }
+
+  set webApp(value) {
+    this.#defaultWebApp = value;
+  }
+
+  /** Web app of the request's website domain, or null on the main domain. */
+  get requestSite() {
+    return getTenant()?.webApp || null;
+  }
+
+  /**
+   * Theme stylesheet for the current request: the web app's own theme
+   * (sites/<tenant>/themes/<app>.css, written by App.save) when it has one,
+   * else the tenant theme from System Settings.
+   */
+  themeCssPath() {
+    const app = getTenant()?.webApp || this.#defaultWebApp?.name;
+    if (app) {
+      const own = this.makePath(this.tenantPath, 'themes', `${app}.css`);
+      if (fs.existsSync(own)) return own;
+    }
+    return this.makePath(this.tenantPath, 'theme.css');
   }
 
   #secretKey = null;

@@ -53,7 +53,9 @@ export default class ContactMessageController extends BaseController {
       phone: data.phone || '',
       subject: data.subject,
       message: data.message,
-      source_page: data.source_page || ''
+      source_page: data.source_page || '',
+      // Which website received it (multi-site tenants); never client-provided.
+      site: loopar.webApp?.name || ''
     });
 
     contact.ip_address = ip;
