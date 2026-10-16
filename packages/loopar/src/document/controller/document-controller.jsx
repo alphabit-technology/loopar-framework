@@ -109,8 +109,8 @@ export class DocumentController {
 
   getDocumentHistory(isPage) {
     const entity = this.Document?.Entity || {};
-    const enableHistory = !!entity.enable_history;
-    const enableComments = !!entity.enable_comments;
+    const enableHistory = loopar.utils.trueValue(entity.enable_history);
+    const enableComments = loopar.utils.trueValue(entity.enable_comments);
     if (!enableHistory && !enableComments) return null;
 
     const documentType = entity.name;
@@ -125,7 +125,7 @@ export class DocumentController {
           documentName={documentName}
           enableHistory={enableHistory}
           enableComments={enableComments}
-          requireLogin={!!entity.require_login_to_comment}
+          requireLogin={loopar.utils.trueValue(entity.require_login_to_comment)}
           canModerate
         />
       </section>

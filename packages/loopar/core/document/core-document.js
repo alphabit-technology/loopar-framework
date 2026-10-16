@@ -726,9 +726,9 @@ export default class CoreDocument {
         doc_structure: __ENTITY__.doc_structure,
         ...(this.is_builder ? {is_builder: true} : {}),
         is_single: __ENTITY__.is_single,
-        enable_history: __REF__.enable_history ? 1 : 0,
-        enable_comments: __REF__.enable_comments ? 1 : 0,
-        require_login_to_comment: __REF__.require_login_to_comment ? 1 : 0
+        enable_history: loopar.utils.trueToBinary(__REF__.enable_history),
+        enable_comments: loopar.utils.trueToBinary(__REF__.enable_comments),
+        require_login_to_comment: loopar.utils.trueToBinary(__REF__.require_login_to_comment)
       },
       ...(withData || 1==1 ? { data: await this.rawValues() } : {}),
       spacing: this.__SPACING__

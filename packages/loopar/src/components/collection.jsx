@@ -162,8 +162,8 @@ export default function Collection({ data = {} }) {
   }[cols];
 
   return (
-    <section className="w-full py-12 px-4 min-h-section-min">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+    <section className={card_variant === "list" ? "w-full" : "w-full py-12 px-4 min-h-section-min"}>
+      <div className={card_variant === "list" ? "flex flex-col gap-4" : "max-w-6xl mx-auto flex flex-col gap-8"}>
         {(title || subtitle) && (
           <div className="text-center">
             {title && <h2 className="text-2xl md:text-3xl font-medium">{title}</h2>}
@@ -186,7 +186,7 @@ export default function Collection({ data = {} }) {
         ) : (
           <>
             <div
-              className={`grid ${gridCols} gap-5 transition-opacity duration-200 ${
+              className={`${card_variant === "list" ? "flex flex-col" : `grid ${gridCols} gap-5`} transition-opacity duration-200 ${
                 refetching ? "opacity-60 pointer-events-none" : "opacity-100"
               }`}
               aria-busy={refetching || undefined}
@@ -252,7 +252,7 @@ Collection.metaFields = () => {
           element: SELECT,
           data: {
             label: "Card variant",
-            options: "default\ncompact",
+            options: "default\ncompact\nlist",
           },
         },
         empty_message: {

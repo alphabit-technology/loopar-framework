@@ -61,6 +61,36 @@ export default function DefaultCard({ item, fields = [], variant = "default", co
     : (item?.slug || item?.name || "");
   const isExternal = /^https?:\/\//i.test(to);
 
+  if (variant === "list") {
+    const minutes = parseInt(item?.reading_time, 10);
+    return (
+      <Link
+        to={isExternal ? to : `collection?collection=${collectionSlug}&detailSlug=${item?.slug}`}
+        bare
+        notControlled={isExternal}
+        _target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
+        className="group grid grid-cols-1 sm:grid-cols-[6rem_1fr_auto] gap-1 sm:gap-4 items-baseline py-5 border-t border-border last:border-b"
+      >
+        <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+          {dateValue ? new Date(dateValue).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}
+        </span>
+        <span className="flex flex-col gap-1 min-w-0">
+          <span className="text-base md:text-lg font-medium leading-snug group-hover:text-primary transition-colors">
+            {title}
+          </span>
+          {summary ? (
+            <span className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{summary}</span>
+          ) : null}
+          {minutes > 0 ? (
+            <span className="text-xs text-muted-foreground">{minutes} min read</span>
+          ) : null}
+        </span>
+        <span className="hidden sm:inline text-primary transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       to={`collection?collection=${collectionSlug}&detailSlug=${item?.slug}`}

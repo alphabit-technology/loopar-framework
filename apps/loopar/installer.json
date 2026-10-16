@@ -1,7 +1,7 @@
 {
   "App": {
     "name": "loopar",
-    "version": "7.1.5"
+    "version": "7.1.7"
   },
   "documents": {
     "Entity:Module": {
@@ -27,10 +27,10 @@
       "__root__": "/apps/loopar/modules/core/entities/app"
     },
     "App:loopar": {
-      "type": "Desk App",
+      "has_website": 0,
       "name": "loopar",
       "description": "Loopar",
-      "version": "7.1.3",
+      "version": "7.1.7",
       "autor": "Administrator",
       "icon": "Infinity",
       "gap": "",

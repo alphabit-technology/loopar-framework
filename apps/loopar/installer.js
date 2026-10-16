@@ -101,7 +101,11 @@ export default class Installer extends CoreInstaller {
   }
 
   async install(reinstall = false) {
-    if(reinstall) return super.install(true);
+    if(reinstall) {
+      const result = await super.install(true);
+      await this.#migrateAppTypeToHasWebsite();
+      return result;
+    }
     await this.validate(reinstall);
     
     console.log("Installing Loopar");
@@ -123,6 +127,24 @@ export default class Installer extends CoreInstaller {
     console.log("Core Table Created");
     await super.install();
     return await this.insertAdministratorUser();
+  }
+
+  /**
+   * One-time data migration (7.1.6): App.type ("Desk App" | "Web App") was
+   * replaced by the App.has_website switch. The old `type` column survives as
+   * an orphan after alterSchema, so it can still be read here. Idempotent;
+   * delete this method once every tenant has been updated past 7.1.6.
+   */
+  async #migrateAppTypeToHasWebsite() {
+    const columns = await loopar.db.getTableDescription("App");
+    if (!columns.some(c => c.name.toLowerCase() === "type")) return;
+
+    const table = loopar.db.tableName("App");
+    await loopar.db.raw(
+      `UPDATE ${table} SET ${loopar.db.escapeId("has_website")} = 1 WHERE ${loopar.db.escapeId("type")} = ?`,
+      ["Web App"]
+    );
+    console.log("[Installer] App.type migrated to App.has_website");
   }
 
   async insertAdministratorUser() {
