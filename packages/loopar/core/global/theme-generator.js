@@ -283,9 +283,13 @@ function generateCSSVariables(colors) {
 
 function generateTitleStyles() {
   const opacities = [95, 85, 75, 65, 55, 45];
-  return ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+  const rules = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
     .map((tag, i) => `${tag}{color:hsl(var(--foreground)/${opacities[i]}%)}`)
     .join('');
+  // In @layer base so they stay defaults: unlayered rules beat every
+  // Tailwind utility (those live in @layer utilities), which made classes
+  // like `text-primary` on a title/subtitle silently lose to these colors.
+  return `@layer base{${rules}}`;
 }
 
 function indent(text, spaces) {
